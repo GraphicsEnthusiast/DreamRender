@@ -37,7 +37,7 @@ GLFW，GLAD，GLM库用vcpkg安装，构建时记得修改vcpkg路径
 - 采样器
   - Sobol采样器
 
-- 滤波器(Filter)
+- 滤波器
   - GaussianFilter
   - BoxFilter
   - TriangleFilter
