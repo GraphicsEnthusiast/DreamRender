@@ -20,7 +20,7 @@ GLFW，GLAD，GLM库用vcpkg安装，构建时记得修改vcpkg路径
 
 - 材质
   - Disney BSDF
-  - 粗糙材质(GGX Microfacet BSDF，包括金属，电介质，塑料)
+  - 粗糙材质(GGX Microfacet BSDF，包括金属，电介质，塑料，以及kulla-conty方法)
   - Lambertian
   - Oren-Nayer
   - 平滑材质(包括金属，电介质，塑料)
