@@ -12,6 +12,12 @@ GLFW，GLAD，GLM库用vcpkg安装，构建时记得修改vcpkg路径
   - Sphere
   - Quad
 
+- 加速结构
+  - 使用embree3进行光线求交
+
+- 降噪
+  - 可选择是否开启oidn降噪
+
 - 材质
   - Disney BSDF
   - 粗糙材质(GGX Microfacet BSDF，包括金属，电介质，塑料)
