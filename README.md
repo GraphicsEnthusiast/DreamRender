@@ -1,5 +1,8 @@
 # DreamRender
-这是我写的第一个离线渲染器
+这是我写的第一个离线渲染器，测试场景用到的资产：我用夸克网盘分享了「TestScene.zip」，链接：https://pan.quark.cn/s/c712f40dab1c
+GLFW，GLAD，GLM库用vcpkg安装，构建时记得修改vcpkg路径
+![image](https://github.com/qaz123w/DreamRender/assets/75780167/99953c96-80ea-4e0d-a902-e892995be9d0)
+构建后还需将所需dll移动到exe文件所在的目录。
 
 - 渲染算法
   - 路径追踪(PathTracing，实现了多重重要性采样)
@@ -35,6 +38,7 @@
   - HDR环境光
 
 - 截图
+
 MitsubaKnob
 ![DisneyPrinciple_spp=128](https://github.com/qaz123w/DreamRender/assets/75780167/bfa099a5-f65f-48eb-acf0-280e43ee95c3)
 CornellBox
