@@ -29,7 +29,7 @@
   - TentFilter
 
 - 光源
- - 点光源
- - 面光源(Quad，Sphere)
- - 平行光
- - HDR环境光
+  - 点光源
+  - 面光源(Quad，Sphere)
+  - 平行光
+  - HDR环境光
