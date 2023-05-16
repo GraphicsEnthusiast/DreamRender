@@ -24,8 +24,9 @@ GLFW，GLAD，GLM库用vcpkg安装，构建时记得修改vcpkg路径
   - Lambertian
   - Oren-Nayer
   - 平滑材质(包括金属，电介质，塑料)
-  - MetalWorkflow
-  - ClearcoatedConductor
+  - 薄的电介质(ThinDielectric)
+  - 金属工作流(MetalWorkflow，即Cook-Torrance BRDF)
+  - ClearcoatedConductor(在粗糙金属表面涂一层清漆)
 
 - 相机
   - 针孔相机(PinholeCamera)
