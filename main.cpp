@@ -101,6 +101,8 @@ namespace PathTracingScene {
 			vec3(0.14282f, 0.37414f, 1.43944f), vec3(3.97472f, 2.38066f, 1.59981f));
 		auto die = make_shared<SmoothDielectric>(make_shared<ConstantTexture>(vec3(1.0f)), 1.5f, 1.0f);
 		auto spl = make_shared<SmoothPlastic>(make_shared<ConstantTexture>(vec3(0.2f, 0.54f, 0.72f)), make_shared<ConstantTexture>(vec3(1.0f)), 1.9f, 1.0f, true);
+		auto met = make_shared<MetalWorkflow>(make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/albedo.png"), make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/roughness.png"),
+			make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/metallic.png"), make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/normal.png"));
 
 		auto quad = new Quad(lightmat, vec3(-1.0f, 3.45f, -1.0f), vec3(2.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 2.0f));
 		auto quadlight = make_shared<QuadLight>(quad);
@@ -168,7 +170,7 @@ namespace PathTracingScene {
 		string body = "../TestScene/Boy/Model/body.obj";
 		string base = "../TestScene/Boy/Model/base.obj";
 
-		mat4 model_trans = GetTransformMatrix(vec3(0.0f), vec3(0.0f, 90.0f, 0.0f), vec3(1.0f));
+		mat4 model_trans = GetTransformMatrix(vec3(0.0f), vec3(0.0f, 90.0f, 0.0f), vec3(30.0f));
 
 		shared_ptr<KullaConty> kulla_conty = make_shared<KullaConty>();
 		auto diff = make_shared<SmoothDiffuse>(make_shared<ImageTexture>("../TestScene/Boy/Texture/grid.jpg"));
@@ -209,40 +211,41 @@ namespace PathTracingScene {
 		string head = "../TestScene/Boy/Model/head.obj";
 		string body = "../TestScene/Boy/Model/body.obj";
 		string base = "../TestScene/Boy/Model/base.obj";
+		string background = "../TestScene/Boy/Model/background.obj";
 
-		mat4 model_trans = GetTransformMatrix(vec3(0.0f), vec3(0.0f, 90.0f, 0.0f), vec3(1.0f));
+		mat4 model_trans = GetTransformMatrix(vec3(0.0f), vec3(0.0f), vec3(30.0f));
 
 		shared_ptr<KullaConty> kulla_conty = make_shared<KullaConty>();
 		auto diff = make_shared<SmoothDiffuse>(make_shared<ImageTexture>("../TestScene/Boy/Texture/grid.jpg"));
-		auto lightmat = make_shared<DiffuseLight>(make_shared<ConstantTexture>(vec3(4.0f)));
-		auto die = make_shared<RoughDielectric>(kulla_conty,
-			make_shared<ConstantTexture>(vec3(1.0f)), make_shared<ConstantTexture>(vec3(0.2f)),
-			make_shared<ConstantTexture>(vec3(0.0f)), 1.5f, 1.0f);
-		auto con = make_shared<RoughConductor>(kulla_conty,
-			make_shared<ConstantTexture>(vec3(0.8f, 0.85f, 0.88f)), make_shared<ConstantTexture>(vec3(0.2f)), make_shared<ConstantTexture>(vec3(0.0f)),
-			vec3(0.14282f, 0.37414f, 1.43944f), vec3(3.97472f, 2.38066f, 1.59981f));
-		auto spl = make_shared<RoughPlastic>(kulla_conty,
-			make_shared<ConstantTexture>(vec3(0.63f, 0.065f, 0.05f)), make_shared<ConstantTexture>(vec3(1.0f)),
-			make_shared<ConstantTexture>(vec3(0.2f)), make_shared<ConstantTexture>(vec3(0.0f)),
-			1.5f, 1.0f, true);
-		auto spl2 = make_shared<SmoothPlastic>(make_shared<ConstantTexture>(vec3(0.1f, 0.27f, 0.36f)), make_shared<ConstantTexture>(vec3(1.0f)), 1.9f, 1.0f, true);
+		auto lightmat = make_shared<DiffuseLight>(make_shared<ConstantTexture>(vec3(3.0f)));
+		auto lightmat2 = make_shared<DiffuseLight>(make_shared<ConstantTexture>(vec3(2.0f)));
+		auto head_mat = make_shared<MetalWorkflow>(make_shared<ImageTexture>("../TestScene/Boy/Texture/01_Head_Base_Color.png"),
+			make_shared<ImageTexture>("../TestScene/Boy/Texture/01_Head_MetallicRoughness.png"),
+			make_shared<ImageTexture>("../TestScene/Boy/Texture/01_Head_Normal_DirectX.png"));
+		auto body_mat = make_shared<MetalWorkflow>(make_shared<ImageTexture>("../TestScene/Boy/Texture/02_Body_Base_Color.png"),
+			make_shared<ImageTexture>("../TestScene/Boy/Texture/02_Body_MetallicRoughness.png"),
+			make_shared<ImageTexture>("../TestScene/Boy/Texture/02_Body_Normal_DirectX.png"));
+		auto base_mat = make_shared<MetalWorkflow>(make_shared<ImageTexture>("../TestScene/Boy/Texture/03_Base_Base_Color.png"),
+			make_shared<ImageTexture>("../TestScene/Boy/Texture/03_Base_MetallicRoughness.png"),
+			make_shared<ImageTexture>("../TestScene/Boy/Texture/03_Base_Normal_DirectX.png"));
 
-		auto quad1 = new Quad(lightmat, vec3(-1.5f, 6.0f, -1.5f), vec3(3.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 3.0f));
-		auto quad2 = new Quad(lightmat, vec3(6.5f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 3.0f), vec3(0.0f, 3.0f, 0.0f));
+		scene.AddShape(new TriangleMesh(diff, background, model_trans));
+		scene.AddShape(new TriangleMesh(head_mat, head, model_trans));
+		scene.AddShape(new TriangleMesh(body_mat, body, model_trans));
+		scene.AddShape(new TriangleMesh(base_mat, base, model_trans));
+
+		auto quad1 = new Quad(lightmat, vec3(-3.0f, 6.0f, -3.0f), vec3(6.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 6.0f));
+		auto quad2 = new Quad(lightmat2, vec3(-5.0f, 0.0f, 10.0f), vec3(0.0f, 10.0f, 0.0f), vec3(10.0f, 0.0f, 0.0f));
+		auto quad3 = new Quad(lightmat2, vec3(-5.0f, 0.0f, -10.0f), vec3(10.0f, 0.0f, 0.0f), vec3(0.0f, 10.0f, 0.0f));
+
 		scene.AddLight(make_shared<QuadLight>(quad1), quad1);
 		scene.AddLight(make_shared<QuadLight>(quad2), quad2);
-
-		scene.AddShape(new TriangleMesh(con, head, model_trans));
-		scene.AddShape(new TriangleMesh(die, body, model_trans));
-		scene.AddShape(new TriangleMesh(spl, base, model_trans));
-		scene.AddShape(new Quad(diff, vec3(-5.0f, 0.0f, -5.0f), vec3(10.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 10.0f)));
-		scene.AddShape(new Quad(diff, vec3(-5.0f, 0.0f, 5.0f), vec3(10.0f, 0.0f, 0.0f), vec3(0.0f, 10.0f, 0.0f)));
-		scene.AddShape(new Quad(diff, vec3(-5.0f, 0.0f, -5.0f), vec3(0.0f, 0.0f, 10.0f), vec3(0.0f, 10.0f, 0.0f)));
+		scene.AddLight(make_shared<QuadLight>(quad3), quad3);
 
 		scene.width = 1200;
 		scene.height = 1000;
 		scene.depth = 50;
-		scene.SetCamera(make_shared<PinholeCamera>(vec3(3.0f, 6.5f, -11.0f), vec3(0.0f), vec3(0.0f, 1.0f, 0.0f), 1.0f, 40.0f,
+		scene.SetCamera(make_shared<PinholeCamera>(vec3(9.0f, 4.0f, 0.0f), vec3(0.0f, 2.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), 1.0f, 40.0f,
 			static_cast<float>(scene.width) / static_cast<float>(scene.height)));
 		scene.SetFilter(make_shared<FilterGaussian>());
 
@@ -256,8 +259,8 @@ int main() {
 //	auto scene = PathTracingScene::MitsubaKnob();
 //	auto scene = PathTracingScene::CornellBox();
 //	auto scene = PathTracingScene::Teapot();
-	auto scene = PathTracingScene::BoyHDR();
-//	auto scene = PathTracingScene::BoyQuadLight();
+//	auto scene = PathTracingScene::BoyHDR();
+	auto scene = PathTracingScene::BoyQuadLight();
 
 	auto inte = make_shared<PathTracing>(make_shared<Scene>(scene), TraceLightType::ALL);
 	auto render = make_shared<CPURender>(inte, false);
