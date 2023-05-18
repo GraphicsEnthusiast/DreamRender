@@ -11,14 +11,10 @@ TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, ve
 }
 
 TriangleMesh::~TriangleMesh() {
-	if (aligned_normals != NULL) {
-		delete[] aligned_normals;
-		aligned_normals = NULL;
-	}
-	if (aligned_uvs != NULL) {
-		delete[] aligned_uvs;
-		aligned_uvs = NULL;
-	}
+	vertices.clear();
+	indices.clear();
+	normals.clear();
+	texcoords.clear();
 }
 
 int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
@@ -34,149 +30,117 @@ int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 		return -1;
 	}
 
-	// Load vertices
-	int vertCount = int(attrib.vertices.size() / 3);
-	for (int i = 0; i < vertCount; i++) {
-		vec4 vv(attrib.vertices[3 * i + 0], attrib.vertices[3 * i + 1], attrib.vertices[3 * i + 2], 1);
-		vv = transform * vv;
-		vec3 v(vv.x, vv.y, vv.z);
-		vertices.push_back(v);
-	}
+	// loop over shapes
+	for (size_t s = 0; s < shapes.size(); ++s) {
+		size_t index_offset = 0;
+		// loop over faces
+		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); ++f) {
+			const size_t fv =
+				static_cast<size_t>(shapes[s].mesh.num_face_vertices[f]);
 
-	// Loop over shapes
-	bool hasNormals = true;
-	vector<vec2> t_uvs;
-	vector<vec3> t_normals;
-	for (size_t s = 0; s < shapes.size(); s++) {
-		// Loop over faces(polygon)
-		int index_offset = 0;
+			std::vector<vec3> vertices;
+			std::vector<vec3> normals;
+			std::vector<vec2> texcoords;
 
-		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-			vec4 indices;
-			vec2 uv;
-			vec3 normal;
-			float vx, vy, vz, nx, ny, nz, tx, ty;
+			// loop over vertices
+			// get vertices, normals, texcoords of a triangle
+			for (size_t v = 0; v < fv; ++v) {
+				const tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
 
-			int fv = shapes[s].mesh.num_face_vertices[f];
-			for (int i = 0; i < fv; i++) {
-				tinyobj::index_t idx = tinyobj::index_t(shapes[s].mesh.indices[index_offset + i]);
-				indices[i] = (3 * idx.vertex_index + i) / 3;
-				indices_v.push_back(indices[i]);
+				const tinyobj::real_t vx =
+					attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 0];
+				const tinyobj::real_t vy =
+					attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 1];
+				const tinyobj::real_t vz =
+					attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 2];
 
-				//Normals
-				if (idx.normal_index != -1) {
-					nx = attrib.normals[3 * idx.normal_index + 0];
-					ny = attrib.normals[3 * idx.normal_index + 1];
-					nz = attrib.normals[3 * idx.normal_index + 2];
-					indices[i] = (3 * idx.normal_index + i) / 3;
-					indices_n.push_back(indices[i]);
-				}
-				else {
-					hasNormals = false;
-				}
+				vec4 v_object(vx, vy, vz, 1.0f);
+				vec3 v_world = transform * v_object;
+				vertices.push_back(vec3(v_world.x, v_world.y, v_world.z));
 
-				//TexCoords
-				if (idx.texcoord_index != -1) {
-					tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-					ty = 1.0f - attrib.texcoords[2 * idx.texcoord_index + 1];
-					indices[i] = (2 * idx.texcoord_index + i) / 2;
-					indices_t.push_back(indices[i]);
-				}
-				else {
-					//If model has no texture Coords then default to 0
-					tx = ty = 0;
+				if (idx.normal_index >= 0) {
+					const tinyobj::real_t nx =
+						attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 0];
+					const tinyobj::real_t ny =
+						attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 1];
+					const tinyobj::real_t nz =
+						attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 2];
+
+					vec4 n_object(nx, ny, nz, 0.0f);
+					vec3 n_world = transform * n_object;
+					normals.push_back(normalize(vec3(n_world.x, n_world.y, n_world.z)));
 				}
 
-				normal = vec3(nx, ny, nz);
-				uv = vec2(tx, ty);
-//				cout << to_string(uv) << endl;
-				t_normals.push_back(normal);
-				t_uvs.push_back(uv);
+				if (idx.texcoord_index >= 0) {
+					const tinyobj::real_t tx =
+						attrib
+						.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 0];
+					const tinyobj::real_t ty =
+						attrib
+						.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 1];
+					texcoords.push_back(vec2(tx, ty));
+				}
 			}
+
+			// if normals is empty, add geometric normal
+			if (normals.size() == 0) {
+				const vec3 v1 = normalize(vertices[1] - vertices[0]);
+				const vec3 v2 = normalize(vertices[2] - vertices[0]);
+				const vec3 n = normalize(cross(v1, v2));
+				normals.push_back(n);
+				normals.push_back(n);
+				normals.push_back(n);
+			}
+
+			// if texcoords is empty, add barycentric coords
+			if (texcoords.size() == 0) {
+				texcoords.push_back(vec2(0.0f));
+				texcoords.push_back(vec2(1.0f, 0.0f));
+				texcoords.push_back(vec2(0.0f, 1.0f));
+			}
+
+			for (int i = 0; i < 3; ++i) {
+				this->vertices.push_back(vertices[i][0]);
+				this->vertices.push_back(vertices[i][1]);
+				this->vertices.push_back(vertices[i][2]);
+
+				this->normals.push_back(normals[i][0]);
+				this->normals.push_back(normals[i][1]);
+				this->normals.push_back(normals[i][2]);
+
+				this->texcoords.push_back(texcoords[i][0]);
+				this->texcoords.push_back(texcoords[i][1]);
+
+				this->indices.push_back(this->indices.size());
+			}
+
 			index_offset += fv;
 		}
 	}
 
-	unsigned int vertices_size = vertices.size();
-	unsigned int indices_size = indices_v.size();
+	RTCGeometry geom = rtcNewGeometry(rtc_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
-	normals.resize(vertices_size);
-	uvs.resize(vertices_size);
-	for (int i = 0; i < indices_v.size(); i += 3) {
-		if (/*!hasNormals*/true) {//模型自带法线有些有问题，直接自己算
-			vec3 p1 = vertices[indices_v[i]];
-			vec3 p2 = vertices[indices_v[i + 1]];
-			vec3 p3 = vertices[indices_v[i + 2]];
-			vec3 n = normalize(cross(p2 - p1, p3 - p1));
-			normals[indices_v[i]] = n;
-			normals[indices_v[i + 1]] = n;
-			normals[indices_v[i + 2]] = n;
-		}
-		else {
-			normals[indices_v[i]] = t_normals[indices_n[i]];
-			normals[indices_v[i + 1]] = t_normals[indices_n[i + 1]];
-			normals[indices_v[i + 2]] = t_normals[indices_n[i + 2]];
-		}
-		uvs[indices_v[i]] = t_uvs[indices_t[i]];
-		uvs[indices_v[i + 1]] = t_uvs[indices_t[i + 1]];
-		uvs[indices_v[i + 2]] = t_uvs[indices_t[i + 2]];
-		//		cout << n.x << " " << n.y << " " << n.z << endl;
+	// set vertices
+	float* vb = (float*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+		RTC_FORMAT_FLOAT3,
+		3 * sizeof(float), 
+		Vertices());
+	for (int i = 0; i < vertices.size(); ++i) {
+		vb[i] = vertices[i];
 	}
 
-	// Initializing Embree geometry
-	RTCGeometry mesh = rtcNewGeometry(rtc_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-	// Setting and filling the vertex buffer
-	vec3* embree_vertices = (vec3*)rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3,
-		sizeof(vec3), vertices_size);
-	for (int i = 0; i < vertices_size; ++i) {
-		embree_vertices[i].x = vertices[i].x;
-		embree_vertices[i].y = vertices[i].y;
-		embree_vertices[i].z = vertices[i].z;
+	// set indices
+	unsigned* ib = (unsigned*)rtcSetNewGeometryBuffer(
+		geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 3 * sizeof(unsigned),
+		Faces());
+	for (int i = 0; i < indices.size(); ++i) {
+		ib[i] = indices[i];
 	}
 
-	vertices.clear();
-	aligned_normals = new vec3[vertices_size];
-	aligned_uvs = new vec2[vertices_size];
-
-		// Setting and filling the index buffer
-	uvec3* triangles = (uvec3*)rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3,
-		sizeof(uvec3), indices_size / 3);
-	for (int i = 0; i < indices_size; i += 3) {
-		triangles[i / 3].x = indices_v[i];
-		triangles[i / 3].y = indices_v[i + 1];
-		triangles[i / 3].z = indices_v[i + 2];
-
-		aligned_normals[indices_v[i]] = normals[indices_v[i]];
-		aligned_normals[indices_v[i + 1]] = normals[indices_v[i + 1]];
-		aligned_normals[indices_v[i + 2]] = normals[indices_v[i + 2]];
-
-		aligned_uvs[indices_v[i]] = uvs[indices_v[i]];
-		aligned_uvs[indices_v[i + 1]] = uvs[indices_v[i + 1]];
-		aligned_uvs[indices_v[i + 2]] = uvs[indices_v[i + 2]];
-	}
-
-	uvs.clear();
-	normals.clear();
-	indices_v.clear();
-	indices_n.clear();
-	indices_t.clear();
-
-	// Setting the buffer with normals (in order to get interpolated normals almost for free (since the uv-values are already calculated for intersections))
-	rtcSetGeometryVertexAttributeCount(mesh, 2);
-
-	rtcSetSharedGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, &aligned_normals[0], 0,
-		sizeof(vec3), vertices_size);
-	rtcSetSharedGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTC_FORMAT_FLOAT2, &aligned_uvs[0], 0,
-		 sizeof(vec2), vertices_size);
-
-		// Commiting the geometry
-	rtcCommitGeometry(mesh);
-
-	// Attaching it to the scene and getting the primitive's Id
-	this->geometry_id = rtcAttachGeometry(rtc_scene, mesh);
-
-	rtcReleaseGeometry(mesh);
+	rtcCommitGeometry(geom);
+	rtcAttachGeometry(rtc_scene, geom);
+	rtcReleaseGeometry(geom);
+	rtcCommitScene(rtc_scene);
 
 	return 0;
 }
@@ -353,8 +317,8 @@ vec2 Sphere::GetSphereUV(const vec3& p, const vec3& center) {
 	vec3 object_p = normalize(p - center);
 
 	vec2 uv;
-	float phi = atan2(object_p.z, object_p.x);//点x,y,z的方位角, PI~-PI=>1~0=>0~1
-	float theta = asin(object_p.y);//点x,y,z的天顶角, -PI/2~PI/2=>0~1
+	float phi = atan2(object_p.z, object_p.x);//鐐箈,y,z鐨勬柟浣嶈, PI~-PI=>1~0=>0~1
+	float theta = asin(object_p.y);//鐐箈,y,z鐨勫ぉ椤惰, -PI/2~PI/2=>0~1
 	uv.x = 1.0f - (phi + PI) * INV_2PI;
 	uv.y = (theta + PI / 2.0f) * INV_PI;
 
