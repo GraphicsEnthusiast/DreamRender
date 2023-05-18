@@ -14,9 +14,6 @@ Scene::Scene(RTCDevice& device) {
 }
 
 Scene::~Scene() {
-	for (auto& shape : shapes) {
-		delete shape;
-	}
 	lights.clear();
 	shapes.clear();
 	rtcReleaseScene(rtc_scene);
