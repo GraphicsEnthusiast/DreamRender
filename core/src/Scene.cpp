@@ -72,18 +72,7 @@ void Scene::FlipNormal(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	vec3 dir = GetRayDir(rayhit);
 
 	if (shapes[id]->m_type == ShapeType::TriangleMesh) {
-		float inter_normal[] = { 0.0f, 0.0f, 0.0f };
-		rtcInterpolate0(rtcGetGeometry(rtc_scene, id), rayhit.hit.primID, rayhit.hit.u, rayhit.hit.v,
-			RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, inter_normal, 3);
-		normal = vec3(inter_normal[0], inter_normal[1], inter_normal[2]);
-
-// 		vec3 dPdu, dPdv;
-// 		rtcInterpolate1(rtcGetGeometry(rtc_scene, id), rayhit.hit.primID, rayhit.hit.u, rayhit.hit.v, RTC_BUFFER_TYPE_VERTEX, 0, nullptr, &dPdu.x, &dPdv.x, 3);
-// 		normal = normalize(cross(dPdu, dPdv));
-
-// 		cout << endl;
-// 		cout << inter_normal[0] << " " << inter_normal[1] << " " << inter_normal[2] << endl;
-// 		cout << ffnormal.x << " " << ffnormal.y << " " << ffnormal.z << endl;
+		normal = shapes[id]->GetFaceNormal(rayhit.hit.primID, vec2(rayhit.hit.u, rayhit.hit.v));
 	}
 	else {
 		normal = normalize(vec3(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z));
@@ -97,22 +86,11 @@ void Scene::UpdateInfo(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	FlipNormal(rayhit, info);
 	int id = rayhit.hit.geomID;
 	if (shapes[id]->m_type == ShapeType::TriangleMesh) {
-		float inter_uv[] = { 0.0f, 0.0f };
-		rtcInterpolate0(rtcGetGeometry(rtc_scene, id), rayhit.hit.primID, rayhit.hit.u, rayhit.hit.v,
-			RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, inter_uv, 2);
-		info.uv = vec2(inter_uv[0], inter_uv[1]);
-//		cout << to_string(info.uv) << endl;
+		info.uv = shapes[id]->GetTexcoords(rayhit.hit.primID, vec2(rayhit.hit.u, rayhit.hit.v));
 	}
 	else {
 		info.uv = vec2(rayhit.hit.u, rayhit.hit.v);
 	}
 	info.t = rayhit.ray.tfar;
 	info.position = GetHitPos(rayhit);
-// 	info.uv = vec2(rayhit.hit.u, rayhit.hit.v);
-// 	if (shapes[id]->m_type == ShapeType::Quad) {
-// 		info.uv = Quad::GetQuadUV(info.position, (Quad*)shapes[id]);
-// 	}
-// 	else {
-// 		info.uv = vec2(rayhit.hit.u, rayhit.hit.v);
-// 	}
 }
