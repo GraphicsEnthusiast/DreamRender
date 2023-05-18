@@ -31,8 +31,25 @@ ImageTexture::~ImageTexture() {
 }
 
 vec3 ImageTexture::Value(const vec2& uv, const vec3& p) {
-	int i = static_cast<int>((uv.x) * nx);
-	int j = static_cast<int>((1 - uv.y) * ny);
+	float u = uv.x;
+	float v = uv.y;
+	if (u > 1.0f || u < 0.0f) {
+		int int_u = static_cast<int>(u);
+		u = u - int_u;
+		if (u < 0.0f) {
+			u += 1.0f;
+		}
+	}
+	if (v > 1.0f || v < 0.0f) {
+		int int_v = static_cast<int>(v);
+		v = v - int_v;
+		if (v < 0.0f) {
+			v += 1.0f;
+		}
+	}
+
+	int i = static_cast<int>((u) * nx);
+	int j = static_cast<int>((1.0f - v) * ny);
 
 	if (i < 0) {
 		i = 0;
