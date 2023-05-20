@@ -14,7 +14,7 @@ public:
 	~Scene();
 
 	void AddShape(Shape* shape);
-	void AddLight(shared_ptr<Light> light, Shape* shape);//µ∆±ÿ–Îœ»º”
+	void AddLight(shared_ptr<Light> light, Shape* shape);
 	void SetCamera(shared_ptr<Camera> c);
 	void SetFilter(shared_ptr<Filter> f);
 	void SetHDR(shared_ptr<InfiniteAreaLight> e);
