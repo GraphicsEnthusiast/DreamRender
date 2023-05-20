@@ -3,12 +3,12 @@
 #include <Utils.h>
 #include <SobolMatrices1024x52.h>
 
-//æ ¼æž—ç  
+//¸ñÁÖÂë 
 inline uint GrayCode(uint i) {
 	return i ^ (i >> 1);
 }
 
-//ç”Ÿæˆç¬¬dç»´åº¦çš„ç¬¬iä¸ªSobolæ•°
+//Éú³ÉµÚdÎ¬¶ÈµÄµÚi¸öSobolÊý
 inline float Sobol(uint d, uint i) {
 	uint result = 0;
 	uint offset = d * SobolMatricesSize;
@@ -21,7 +21,7 @@ inline float Sobol(uint d, uint i) {
 	return float(result) * (1.0f / float(0xFFFFFFFFU));
 }
 
-//ç”Ÿæˆç¬¬iå¸§çš„ç¬¬bæ¬¡åå¼¹éœ€è¦çš„äºŒç»´éšæœºå‘é‡
+//Éú³ÉµÚiÖ¡µÄµÚb´Î·´µ¯ÐèÒªµÄ¶þÎ¬Ëæ»úÏòÁ¿
 inline vec2 SobolVec2(uint i, uint b) {
 	float u = Sobol(b * 2, GrayCode(i));
 	float v = Sobol(b * 2 + 1, GrayCode(i));
@@ -29,24 +29,14 @@ inline vec2 SobolVec2(uint i, uint b) {
 	return vec2(u, v);
 }
 
-inline uint WangHash(uint seed) {
-	seed = uint(seed ^ uint(61)) ^ uint(seed >> uint(16));
-	seed *= uint(9);
-	seed = seed ^ (seed >> 4);
-	seed *= uint(0x27d4eb2d);
-	seed = seed ^ (seed >> 15);
-
-	return seed;
-}
-
-inline vec2 CranleyPattersonRotation(vec2 p, vec2 pixel) {
+inline vec2 CranleyPattersonRotation(vec2 p, vec2 pix) {
 	uint pseed = uint(
-		uint(pixel.x) * uint(1973) +
-		uint(pixel.y) * uint(9277) +
+		uint(pix.x) * uint(1973) +
+		uint(pix.y) * uint(9277) +
 		uint(114514 / 1919) * uint(26699)) | uint(1);
 
-	float u = float(WangHash(pseed)) / 4294967296.0f;
-	float v = float(WangHash(pseed)) / 4294967296.0f;
+	float u = RandomFloat();
+	float v = RandomFloat();
 
 	p.x += u;
 	if (p.x > 1.0f) {

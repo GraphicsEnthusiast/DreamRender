@@ -28,6 +28,7 @@ add_subdirectory("embree")
 add_executable(DreamRender main.cpp)
 
 target_include_directories(DreamRender PUBLIC 
+    opengl_utils/
     opengl_utils/include
     embree/include
     core/include

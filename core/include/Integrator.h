@@ -16,7 +16,7 @@ struct GBuffer {
 
 class Integrator {
 public:
-	Integrator(shared_ptr<Scene> s, TraceLightType t) : scene(s), traceLightType(t) {}
+	Integrator(shared_ptr<Scene> s) : scene(s) {}
 
 	bool ReasonableTesting(float value);
 	GBuffer GetSceneGBuffer();
@@ -27,13 +27,12 @@ public:
 
 public:
 	shared_ptr<Scene> scene;
-	TraceLightType traceLightType;
 };
 
 //揃抄弖忸！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
 class PathTracing : public Integrator {
 public:
-	PathTracing(shared_ptr<Scene> s, TraceLightType t = RANDOM) : Integrator(s, t), depth(scene->depth) {}
+	PathTracing(shared_ptr<Scene> s, TraceLightType t = RANDOM) : Integrator(s), traceLightType(t), depth(scene->depth) {}
 
 	vec3 DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& info, const vec3& history);
 
@@ -41,4 +40,5 @@ public:
 
 private:
 	int depth;
+	TraceLightType traceLightType;
 };

@@ -317,8 +317,8 @@ vec2 Sphere::GetSphereUV(const vec3& p, const vec3& center) {
 	vec3 object_p = normalize(p - center);
 
 	vec2 uv;
-	float phi = atan2(object_p.z, object_p.x);//鐐箈,y,z鐨勬柟浣嶈, PI~-PI=>1~0=>0~1
-	float theta = asin(object_p.y);//鐐箈,y,z鐨勫ぉ椤惰, -PI/2~PI/2=>0~1
+	float phi = atan2(object_p.z, object_p.x);//点x,y,z的方位角, PI~-PI=>1~0=>0~1
+	float theta = asin(object_p.y);//点x,y,z的天顶角, -PI/2~PI/2=>0~1
 	uv.x = 1.0f - (phi + PI) * INV_2PI;
 	uv.y = (theta + PI / 2.0f) * INV_PI;
 

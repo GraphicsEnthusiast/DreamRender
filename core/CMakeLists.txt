@@ -19,6 +19,7 @@ target_include_directories(core PUBLIC
     ${PROJECT_SOURCE_DIR}/include
     ../embree/include
     ../opengl_utils/include
+    ../opengl_utils
     ../oidn/include
 )
 

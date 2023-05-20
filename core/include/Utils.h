@@ -17,6 +17,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/optimum_pow.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_ray.h>

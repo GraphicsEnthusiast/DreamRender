@@ -71,7 +71,9 @@ namespace CosWeight {
 namespace GGX {
 	float GeometrySmith_1(const vec3& V, const vec3& H, const vec3& N, float alpha_u, float alpha_v);
 	float DistributionGGX(const vec3& H, const vec3& N, float alpha_u, float alpha_v);
+	float DistributionVisibleGGX(const vec3& V, const vec3& H, const vec3& N, float alpha_u, float alpha_v);
 	vec3 Sample(const vec3& N, float alpha_u, float alpha_v, const vec2& sample);
+	vec3 SampleVisible(const vec3& N, const vec3& V, float alpha_u, float alpha_v, const vec2& sample);
 }
 
 namespace GTR1 {

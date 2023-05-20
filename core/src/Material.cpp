@@ -174,6 +174,10 @@ float GGX::DistributionGGX(const vec3& H, const vec3& N, float alpha_u, float al
 	}
 }
 
+float GGX::DistributionVisibleGGX(const vec3& V, const vec3& H, const vec3& N, float alpha_u, float alpha_v) {
+	return GeometrySmith_1(V, H, N, alpha_u, alpha_v) * dot(V, H) * DistributionGGX(H, N, alpha_u, alpha_v) / dot(N, V);
+}
+
 vec3 GGX::Sample(const vec3& N, float alpha_u, float alpha_v, const vec2& sample) {
 	float sin_phi = 0.0f, cos_phi = 0.0f, alpha_2 = 0.0f;
 	if ((alpha_u - alpha_v) < EPS) {
@@ -194,6 +198,34 @@ vec3 GGX::Sample(const vec3& N, float alpha_u, float alpha_v, const vec2& sample
 	vec3 H = ToWorld({ sin_theta * cos_phi, sin_theta * sin_phi, cos_theta }, N);
 
 	return H;
+}
+
+vec3 GGX::SampleVisible(const vec3& N, const vec3& Ve, float alpha_u, float alpha_v, const vec2& sample) {
+	vec3 V = ToLocal(Ve, N);
+	vec3 Vh = normalize(vec3(alpha_u * V.x, alpha_v * V.y, V.z));
+
+	// Section 4.1: orthonormal basis (with special case if cross product is zero)
+	float len2 = pow2(Vh.x) + pow2(Vh.y);
+	vec3 T1 = len2 > 0.0f ? vec3(-Vh.y, Vh.x, 0.0f) * glm::inversesqrt(len2) : vec3(1.0f, 0.0f, 0.0f);
+	vec3 T2 = glm::cross(Vh, T1);
+
+	// Section 4.2: parameterization of the projected area
+	float u = sample.x;
+	float v = sample.y;
+	float r = std::sqrt(u);
+	float phi = v * 2.0f * PI;
+	float t1 = r * std::cos(phi);
+	float t2 = r * std::sin(phi);
+	float s = 0.5f * (1.0f + Vh.z);
+	t2 = (1.0f - s) * std::sqrt(1.0f - pow2(t1)) + s * t2;
+
+	// Section 4.3: reprojection onto hemisphere
+	vec3 Nh = t1 * T1 + t2 * T2 + std::sqrt(std::max(0.0f, 1.0f - pow2(t1) - pow2(t2))) * Vh;
+
+	// Section 3.4: transforming the normal back to the ellipsoid configuration
+	vec3 H = normalize(vec3(alpha_u * Nh.x, alpha_v * Nh.y, std::max(0.0f, Nh.z)));
+
+	return ToWorld(H, N);
 }
 
 float GTR1::DistributionGTR1(float NdotH, float a) {
@@ -517,7 +549,7 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 			return BsdfSampleError();
 		}
 
-		pdf = pdf_specular + (1.0f - pdf_specular) * std::max(0.0f, dot(N, L)) * INV_PI;
+		pdf = pdf_specular + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 	else { //从漫反射分量抽样光线方向
 		L = CosWeight::Sample(info.normal, xy);
@@ -527,11 +559,7 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 			return BsdfSampleError();
 		}
 
-		Fi = Fresnel::FresnelDielectric(L, N, eta_inv);
-		pdf_specular = Fi * specular_sampling_weight;
-		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);
-		pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
-		pdf = pdf_specular + (1.0f - pdf_specular) * std::max(0.0f, dot(N, L)) * INV_PI;
+		pdf = pdf_specular + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 
 	return { L, pdf };
@@ -657,16 +685,17 @@ BsdfSample RoughConductor::Sample(const vec3& V, const IntersectionInfo& info) {
 	xy = CranleyPattersonRotation(xy, info.pixel);
 //	vec2 xy(RandomFloat(), RandomFloat());
 
-	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
+//	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
+//	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
+	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
+	float pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
 
 	vec3 L = reflect(-V, H);
-	float NdotL = dot(info.normal, L);
+	float NdotL = dot(N, L);
 	if (NdotL < 0.0f) {
 		return BsdfSampleError();
 	}
-
-	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-	float pdf = D * abs(dot(N, H) / (4.0f * dot(V, H)));
 
 	return { L, pdf };
 }
@@ -695,7 +724,9 @@ EvalInfo RoughConductor::Eval(const vec3& V, const vec3& L, const IntersectionIn
 	brdf += mult;
 //	cout << mult.x << " " << mult.y << " " << mult.z << endl;
 	brdf *= albedo;
-	float pdf = D * abs(dot(N, H) / (4.0f * dot(V, H)));
+
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
+	float pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
 
 	return { brdf, NdotL, pdf };
 }
@@ -717,9 +748,10 @@ BsdfSample RoughDielectric::Sample(const vec3& V, const IntersectionInfo& info) 
 	xy = CranleyPattersonRotation(xy, info.pixel);
 //	vec2 xy(RandomFloat(), RandomFloat());
 
-	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
-
-	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
+//	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
+//	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
+	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 
 	float pdf;
@@ -731,8 +763,8 @@ BsdfSample RoughDielectric::Sample(const vec3& V, const IntersectionInfo& info) 
 			return BsdfSampleError();
 		}
 
-		float dwh_dwi = abs(dot(N, H) / (4.0f * dot(V, H)));
-		pdf = F * D * dwh_dwi;
+		float dwh_dwi = abs(1.0f / (4.0f * dot(V, H)));
+		pdf = F * Dv * dwh_dwi;
 	}
 	else {
 		L = refract(-V, H, etai_over_etat);
@@ -745,8 +777,8 @@ BsdfSample RoughDielectric::Sample(const vec3& V, const IntersectionInfo& info) 
 		float HdotV = dot(H, V);
 		float HdotL = dot(H, L);
 		float sqrtDenom = etai_over_etat * HdotV + HdotL;
-		float dwh_dwi = abs(HdotL * dot(N, H)) / sqr(sqrtDenom);
-		pdf = (1.0f - F) * D * dwh_dwi;
+		float dwh_dwi = abs(HdotL) / sqr(sqrtDenom);
+		pdf = (1.0f - F) * Dv * dwh_dwi;
 	}
 
 	return { L, pdf };
@@ -782,8 +814,9 @@ EvalInfo RoughDielectric::Eval(const vec3& V, const vec3& L, const IntersectionI
 		vec3 mult = (1.0f - ratio) * kulla_conty->EvalMultipleScatter(NdotL, NdotV, roughness, vec3(F_a));
 		bsdf = vec3(F) * D * G / (4.0f * NdotV * NdotL);
 		bsdf += mult;
-		dwh_dwi = abs(dot(N, H) / (4.0f * dot(V, H)));
-		pdf = D * dwh_dwi * (isReflect ? F : 1 - F);
+		dwh_dwi = abs(1.0f / (4.0f * dot(V, H)));
+		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
+		pdf = Dv * dwh_dwi * (isReflect ? F : 1 - F);
 // 		cout << "refl";
 // 		cout << mult.x << " " << mult.y << " " << mult.z << endl;
 	}
@@ -804,8 +837,9 @@ EvalInfo RoughDielectric::Eval(const vec3& V, const vec3& L, const IntersectionI
 		vec3 mult = ratio * kulla_conty->EvalMultipleScatter(NdotL, NdotV, roughness, vec3(F_a));
 		bsdf = vec3(1.0f - F) * D * G * factor / sqr(sqrtDenom);
 		bsdf += mult;
-		dwh_dwi = abs(HdotL * dot(N, H)) / sqr(sqrtDenom);
-		pdf = D * dwh_dwi * (isReflect ? F : 1 - F);
+		dwh_dwi = abs(HdotL) / sqr(sqrtDenom);
+		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
+		pdf = Dv * dwh_dwi * (isReflect ? F : 1 - F);
 // 		cout << "refff";
 // 		cout << mult.x << " " << mult.y << " " << mult.z << endl;
 	}
@@ -847,30 +881,32 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 	float pdf;
 	vec3 L;
 	if (RandomFloat() < pdf_specular) { //从镜面反射分量抽样光线方向
-		vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
+//	    vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
+//	    float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
+		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 		L = reflect(-V, H);
 
-		float NdotL = dot(info.normal, L);
+		float NdotL = dot(N, L);
 		if (NdotL < 0.0f) {
 			return BsdfSampleError();
 		}
 
-		float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
 //		pdf = D * abs(dot(N, H) / (4.0f * dot(V, H)));
-		pdf = pdf_specular * D * abs(dot(N, H) / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
+		pdf = pdf_specular * Dv * abs(1.0f / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 	else { //从漫反射分量抽样光线方向
-		L = CosWeight::Sample(info.normal, xy);
+		L = CosWeight::Sample(N, xy);
 
-		float NdotL = dot(info.normal, L);
+		float NdotL = dot(N, L);
 		if (NdotL < 0.0f) {
 			return BsdfSampleError();
 		}
 
 		vec3 H = normalize(V + L);
-		float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
+		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 //		pdf = NdotL * INV_PI;
-		pdf = pdf_specular * D * abs(dot(N, H) / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
+		pdf = pdf_specular * Dv * abs(1.0f / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 
 	return { L, pdf };
@@ -923,7 +959,9 @@ EvalInfo RoughPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInfo
 	specular_brdf += mult;
 
 	brdf += specular_brdf * specular;
-	float pdf = pdf_specular * D * abs(dot(N, H) / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
+
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
+	float pdf = pdf_specular * Dv * abs(1.0f / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
 
 	return { brdf, NdotL, pdf };
 }
@@ -946,9 +984,10 @@ BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& i
 //	vec2 xy(RandomFloat(), RandomFloat());
 
 	if (RandomFloat() < weight_coat) {
-		vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
+//	    vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
+		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+		float Dv_coat = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 		vec3 L = reflect(-V, H);
-		float D_coat = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
 
 		float NdotV = dot(N, V);
 		float NdotL = dot(N, L);
@@ -959,7 +998,7 @@ BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& i
 		const float F_coat = Fresnel::FresnelDielectric(L, H, 1.0f / 1.5f);
 		weight_coat = clear_coat * F_coat;
 
-		float pdf_coat = D_coat * std::abs(dot(N, H) / (4.0f * dot(V, H)));
+		float pdf_coat = Dv_coat * std::abs(1.0f / (4.0f * dot(V, H)));
 		EvalInfo con_info = conductor->Eval(V, L, info);
 
 		float pdf_nested = con_info.bsdf_pdf;
@@ -983,8 +1022,8 @@ BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& i
 		vec3 H = normalize(V + L);
 		const float F_coat = Fresnel::FresnelDielectric(L, H, 1.0f / 1.5f);
 		weight_coat = clear_coat * F_coat;
-		float D_coat = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-		float pdf_coat = D_coat * std::abs(dot(N, H) / (4.0f * dot(V, H)));
+		float Dv_coat = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
+		float pdf_coat = Dv_coat * std::abs(1.0f / (4.0f * dot(V, H)));
 
 		float pdf = pdf_nested * (1.0f - weight_coat) + weight_coat * pdf_coat;
 
@@ -1014,7 +1053,8 @@ EvalInfo ClearcoatedConductor::Eval(const vec3& V, const vec3& L, const Intersec
 	float pdf_coat = 0.0f;
 	vec3 coat_brdf(0.0f);
 	if (D_coat > 0.0f) {
-		pdf_coat = D_coat * std::abs(dot(N, H) / (4.0f * dot(V, H)));
+		float Dv_coat = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
+		pdf_coat = Dv_coat * std::abs(1.0f / (4.0f * dot(V, H)));
 		float G_coat = GGX::GeometrySmith_1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith_1(L, H, N, alpha_u, alpha_v);
 		coat_brdf = vec3(F_coat * D_coat * G_coat / abs(4.0f * NdotL * NdotV));
 	}
@@ -1137,7 +1177,7 @@ BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info) {
 		}
 	}
 	else if (t <= p_diffuse + p_specular) {
-		vec3 H = GGX::Sample(N, roughness, roughness, xy);
+		vec3 H = GGX::SampleVisible(N, V, roughness, roughness, xy);
 		L = reflect(-V, H);
 
 		float NdotL = dot(info.normal, L);
@@ -1151,9 +1191,9 @@ BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info) {
 	vec3 H = normalize(L + V);
 	float NdotH = dot(N, H);
 	float VdotH = dot(V, H);
-	float D = GGX::DistributionGGX(H, N, roughness, roughness);
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, roughness, roughness);
 
-	float specular_pdf = D * abs(dot(N, H) / (4.0f * VdotH));
+	float specular_pdf = Dv * abs(1.0f / (4.0f * VdotH));
 
 	float pdf = p_diffuse * diffuse_pdf + p_specular * specular_pdf;
 
@@ -1208,7 +1248,8 @@ EvalInfo MetalWorkflow::Eval(const vec3& V, const vec3& L, const IntersectionInf
 
 	vec3 brdf = p_diffuse * diffuse_brdf + p_specular * specular_brdf;
 	float diffuse_pdf = dot(N, L) * INV_PI;
-	float specular_pdf = D * abs(dot(N, H) / (4.0f * VdotH));
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, roughness, roughness);
+	float specular_pdf = Dv * abs(1.0f / (4.0f * VdotH));
 	float pdf = p_diffuse * diffuse_pdf + p_specular * specular_pdf;
 
 	return { brdf, NdotL, pdf };
@@ -1289,7 +1330,8 @@ BsdfSample DisneyMetal::Sample(const vec3& V, const IntersectionInfo& info) {
 	float ay = std::max(0.0001f, sqr(roughness) * aspect);
 
 	vec3 N = info.normal;
-	vec3 H = GGX::Sample(N, ax, ay, r2);
+	vec3 H = GGX::SampleVisible(N, V, ax, ay, r2);
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
 
 	vec3 L = reflect(-V, H);
 
@@ -1298,8 +1340,7 @@ BsdfSample DisneyMetal::Sample(const vec3& V, const IntersectionInfo& info) {
 		return BsdfSampleError();
 	}
 
-	float D = GGX::DistributionGGX(H, N, ax, ay);
-	float pdf = D * abs(dot(N, H) / (4.0f * dot(V, H)));
+	float pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
 
 	return { L, pdf };
 }
@@ -1336,7 +1377,9 @@ EvalInfo DisneyMetal::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 	float D = GGX::DistributionGGX(H, N, ax, ay);
 
 	vec3 brdf = FM * D * G / (4.0f * NdotL * NdotV);
-	float pdf = D * abs(dot(N, H) / (4.0f * dot(V, H)));
+
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
+	float pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
 
 	return { brdf, NdotL, pdf };
 }
@@ -1414,9 +1457,8 @@ BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info) {
 	float ay = std::max(0.0001f, sqr(roughness) * aspect);
 
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
-	vec3 H = GGX::Sample(N, ax, ay, r2);
-
-	float D = GGX::DistributionGGX(H, N, ax, ay);
+	vec3 H = GGX::SampleVisible(N, V, ax, ay, r2);
+	float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 
 	float pdf;
@@ -1428,8 +1470,8 @@ BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info) {
 			return BsdfSampleError();
 		}
 
-		float dwh_dwi = abs(dot(N, H) / (4.0f * dot(V, H)));
-		pdf = F * D * dwh_dwi;
+		float dwh_dwi = abs(1.0f / (4.0f * dot(V, H)));
+		pdf = F * Dv * dwh_dwi;
 	}
 	else {
 		L = refract(-V, H, etai_over_etat);
@@ -1442,8 +1484,8 @@ BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info) {
 		float HdotV = dot(H, V);
 		float HdotL = dot(H, L);
 		float sqrtDenom = etai_over_etat * HdotV + HdotL;
-		float dwh_dwi = abs(HdotL * dot(N, H)) / sqr(sqrtDenom);
-		pdf = (1.0f - F) * D * dwh_dwi;
+		float dwh_dwi = abs(HdotL) / sqr(sqrtDenom);
+		pdf = (1.0f - F) * Dv * dwh_dwi;
 	}
 
 	return { L, pdf };
@@ -1475,8 +1517,9 @@ EvalInfo DisneyGlass::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 		float D = GGX::DistributionGGX(H, N, ax, ay);
 
 		bsdf = albedo * F * D * G / (4.0f * NdotL * NdotV);
-		dwh_dwi = abs(dot(N, H) / (4.0f * dot(V, H)));
-		pdf = D * dwh_dwi * (isReflect ? F : 1 - F);
+		float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
+		dwh_dwi = abs(1.0f / (4.0f * dot(V, H)));
+		pdf = Dv * dwh_dwi * (isReflect ? F : 1 - F);
 	}
 	else {
 		H = -normalize(etai_over_etat * V + L);
@@ -1492,9 +1535,10 @@ EvalInfo DisneyGlass::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 		float sqrtDenom = etai_over_etat * HdotV + HdotL;
 		float factor = abs(HdotL * HdotV / (NdotL * NdotV));
 
+		float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
 		bsdf = sqrt(albedo) * (1.0f - F) * D * G * factor / sqr(sqrtDenom);
-		dwh_dwi = abs(HdotL * dot(N, H)) / sqr(sqrtDenom);
-		pdf = D * dwh_dwi * (isReflect ? F : 1 - F);
+		dwh_dwi = abs(HdotL) / sqr(sqrtDenom);
+		pdf = Dv * dwh_dwi * (isReflect ? F : 1 - F);
 	}
 
 	return { bsdf, NdotL, pdf };

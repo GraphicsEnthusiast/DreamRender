@@ -133,6 +133,7 @@ namespace PathTracingScene {
 		Scene scene(rtc_device);
 
 		string teapot = "../TestScene/Teapot/Model/teapot.obj";
+		string quad = "../TestScene/Teapot/Model/quad.obj";
 
 		auto material1 = make_shared<DisneyDiffuse>(make_shared<ConstantTexture>(vec3(0.0f, 0.29f, 0.88f)), make_shared<ConstantTexture>(vec3(0.1f)),
 			make_shared<ConstantTexture>(vec3(0.5f)));
@@ -146,6 +147,7 @@ namespace PathTracingScene {
 		auto material6 = make_shared<DisneyPrinciple>(material1, material2, material3, material4, material5, make_shared<ConstantTexture>(vec3(0.0f)),
 			make_shared<ConstantTexture>(vec3(0.5f)), make_shared<ConstantTexture>(vec3(0.5f)), make_shared<ConstantTexture>(vec3(0.5f)));
 		auto diff = make_shared<SmoothDiffuse>(make_shared<ImageTexture>("../TestScene/Teapot/Texture/checker.png"));
+		auto diff2 = make_shared<SmoothDiffuse>(make_shared<CheckerTexture>(make_shared<ConstantTexture>(vec3(0.4f)), make_shared<ConstantTexture>(vec3(0.8f))));
 
 		scene.AddShape(new TriangleMesh(material6, teapot, mat4(1.0f)));
 		scene.AddShape(new Quad(diff, vec3(-20.0f, 0.0f, -20.0f), vec3(40.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 40.0f)));
@@ -153,8 +155,8 @@ namespace PathTracingScene {
 		scene.width = 1200;
 		scene.height = 1000;
 		scene.depth = 5;
-		scene.SetCamera(make_shared<PinholeCamera>(vec3(20.0f, 12.0f, 0.0f), vec3(-0.953633f, 2.17253f, -0.0972613), vec3(0.0f, 1.0f, 0.0f), 1.0f, 60.0f,
-			static_cast<float>(scene.width) / static_cast<float>(scene.height)));
+		scene.SetCamera(make_shared<ThinlensCamera>(vec3(20.0f, 12.0f, 0.0f), vec3(-0.953633f, 2.17253f, -0.0972613), vec3(0.0f, 1.0f, 0.0f), 1.0f, 60.0f,
+			static_cast<float>(scene.width) / static_cast<float>(scene.height), 2.0f, length(vec3(20.0f, 12.0f, 0.0f) - vec3(-0.953633f, 2.17253f, -0.0972613))));
 		scene.SetFilter(make_shared<FilterGaussian>());
 		scene.SetHDR(make_shared<InfiniteAreaLight>(make_shared<HdrTexture>("../TestScene/Teapot/HDR/sunset.hdr"), 5.0f));
 

@@ -38,6 +38,19 @@ bool CPURender::Init() {
 	}
 
 	glViewport(0, 0, Width, Height);//设置渲染视口的大小
+
+	//imgui
+	const char* glsl_version = "#version 130";
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init(glsl_version);
 #pragma endregion
 
 #pragma region PipelineConfiguration
@@ -77,13 +90,24 @@ void CPURender::Run() {
 	frameOutputPtr = new vec3[Width * Height];
 
 	while (!glfwWindowShouldClose(window)) {
+		//imgui
+		//Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGui::Begin("Render Information");
+		ImGui::SameLine();
+		ImGui::Text("FrameCounter = %d", frameCounter);
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+
 		//帧计时
-		t2 = clock();
-		dt = (double)(t2 - t1) / CLOCKS_PER_SEC;
-		fps = 1.0 / dt;
-		cout << "\r";
-		cout << fixed << setprecision(5) << "FPS : " << fps << "    Iterations: " << frameCounter;
-		t1 = t2;
+// 		t2 = clock();
+// 		dt = (double)(t2 - t1) / CLOCKS_PER_SEC;
+// 		fps = 1.0 / dt;
+// 		cout << "\r";
+// 		cout << fixed << setprecision(5) << "FPS : " << fps << "    Iterations: " << frameCounter;
+//		t1 = t2;
 
 		omp_set_num_threads(32);//线程个数
 #pragma omp parallel for
@@ -178,6 +202,11 @@ void CPURender::Run() {
 		pass2.Draw(pass1.colorAttachments);
 		pass3.Draw(pass2.colorAttachments);
 
+		//imgui
+		//Rendering
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();//检查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数（可以通过回调方法手动设置）
 	}
@@ -190,6 +219,11 @@ void CPURender::Destory() {
 		delete[] g.albedoTexture;
 		delete[] g.normalTexture;
 	}
+
+	//Cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	glfwTerminate();
 }
