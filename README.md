@@ -23,7 +23,7 @@ GLFW，GLAD，GLM库用vcpkg安装，构建时记得修改vcpkg路径
 
 - 材质
   - Disney BSDF
-  - 粗糙材质(GGX Microfacet BSDF，包括金属，电介质，塑料，以及kulla-conty方法)
+  - 粗糙材质(GGX Microfacet BSDF，包括金属，电介质，塑料，以及kulla-conty方法，采样VNDF)
   - Lambertian
   - Oren-Nayer
   - 平滑材质(包括金属，电介质，塑料)
@@ -32,7 +32,8 @@ GLFW，GLAD，GLM库用vcpkg安装，构建时记得修改vcpkg路径
   - ClearcoatedConductor(在粗糙金属表面涂一层清漆)
 
 - 相机
-  - 针孔相机(PinholeCamera)
+  - PinholeCamera
+  - ThinlensCamera
 
 - 采样器
   - Sobol采样器
@@ -57,7 +58,9 @@ CornellBox
 ![spp=128](https://github.com/qaz123w/DreamRender/assets/75780167/10bd6784-cb64-40a6-968f-15346f246a96)
 Teapot
 ![spp=128](https://github.com/qaz123w/DreamRender/assets/75780167/aacae0d8-54c6-4f92-801d-492d3ae1a2cd)
+![g2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/850e5a01-ef81-48f5-8a03-319cfd004d64)
 Boy
 ![spp=1024_quad_light](https://github.com/qaz123w/DreamRender/assets/75780167/eb1a7b93-299f-4c9d-8552-68534994665a)
 ![spp=1024_hdr](https://github.com/qaz123w/DreamRender/assets/75780167/848615c9-05f1-479b-8e7a-f8ef751cafc1)
+![g1](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/b79565a6-1846-4221-9878-400581c89fd8)
 
