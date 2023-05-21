@@ -40,8 +40,10 @@ void Scene::SetFilter(shared_ptr<Filter> f) {
 }
 
 void Scene::SetHDR(shared_ptr<InfiniteAreaLight> e) {
-	env = e;
-	useEnv = true;
+	if (e != NULL) {
+		env = e;
+		useEnv = true;
+	}
 }
 
 void Scene::Commit() {
@@ -93,4 +95,11 @@ void Scene::UpdateInfo(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	}
 	info.t = rayhit.ray.tfar;
 	info.position = GetHitPos(rayhit);
+}
+
+Scene LoadSceneFromJson(const json& j) {
+	RTCDevice rtc_device = rtcNewDevice(NULL);
+	Scene scene(rtc_device);
+
+
 }

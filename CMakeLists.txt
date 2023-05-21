@@ -19,6 +19,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 add_subdirectory("opengl_utils")
 add_subdirectory("core")
@@ -44,5 +45,6 @@ target_link_libraries(DreamRender PUBLIC
     tbb
     tbbmalloc
     core
+    nlohmann_json::nlohmann_json
     ../oidn/lib/OpenImageDenoise
 )

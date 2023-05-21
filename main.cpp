@@ -1,4 +1,5 @@
 #include <Utils.h>
+#include <SceneParser.h>
 #include <Render.h>
 
 namespace PathTracingScene {
@@ -240,9 +241,13 @@ namespace PathTracingScene {
 		auto quad2 = new Quad(lightmat2, vec3(-5.0f, 0.0f, 10.0f), vec3(0.0f, 10.0f, 0.0f), vec3(10.0f, 0.0f, 0.0f));
 		auto quad3 = new Quad(lightmat2, vec3(-5.0f, 0.0f, -10.0f), vec3(10.0f, 0.0f, 0.0f), vec3(0.0f, 10.0f, 0.0f));
 
-		scene.AddLight(make_shared<QuadLight>(quad1), quad1);
-		scene.AddLight(make_shared<QuadLight>(quad2), quad2);
-		scene.AddLight(make_shared<QuadLight>(quad3), quad3);
+		auto light1 = make_shared<QuadLight>(quad1);
+		auto light2 = make_shared<QuadLight>(quad2);
+		auto light3 = make_shared<QuadLight>(quad3);
+
+		scene.AddLight(light1, light1->shape);
+		scene.AddLight(light2, light2->shape);
+		scene.AddLight(light3, light3->shape);
 
 		scene.width = 1200;
 		scene.height = 1000;
@@ -257,15 +262,47 @@ namespace PathTracingScene {
 	}
 }
 
-int main() {
+int main(int argc, char** argv) {
+	cout << "Hello, DreamRender!" << endl << endl;
+
+	SceneParser scene_parser;
+	RTCDevice rtc_device = rtcNewDevice(NULL);
+	Scene scene(rtc_device);
+	bool is_succeed;
+	if (argc > 1) {
+		string fileName(argv[1]);
+		cout << "Scene path: " << fileName << endl << endl;
+		scene_parser.LoadFromJson(fileName, scene, is_succeed);
+		if (!is_succeed) {
+			cout << endl;
+			cout << "Scene path error!" << endl;
+
+			return 0;
+		}
+	}
+	else {
+		cout << "Scene path error!" << endl;
+
+		return 0;
+	}
+
 //	auto scene = PathTracingScene::MitsubaKnob();
 //	auto scene = PathTracingScene::CornellBox();
 //	auto scene = PathTracingScene::Teapot();
 //	auto scene = PathTracingScene::BoyHDR();
-	auto scene = PathTracingScene::BoyQuadLight();
+//	auto scene = PathTracingScene::BoyQuadLight();
+//	auto inte = make_shared<PathTracing>(make_shared<Scene>(scene), scene_parser.inte_info.light_strategy);
 
-	auto inte = make_shared<PathTracing>(make_shared<Scene>(scene), TraceLightType::ALL);
-	auto render = make_shared<CPURender>(inte, false);
+	shared_ptr<Integrator> inte = NULL;
+	if (scene_parser.inte_info.type == "path_tracing") {
+		inte = make_shared<PathTracing>(make_shared<Scene>(scene), scene_parser.inte_info.light_strategy);
+	}
+	else {
+		cout << "Integrator error!" << endl;
+
+		return 0;
+	}
+	auto render = make_shared<CPURender>(inte, scene_parser.use_denoise);
 	render->Init();
 	render->Run();
 	render->Destory();

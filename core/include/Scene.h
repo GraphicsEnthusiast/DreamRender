@@ -7,6 +7,9 @@
 #include <Filter.h>
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_ray.h>
+#include <nlohmann/json.hpp>
+
+using namespace nlohmann;
 
 class Scene {
 public:

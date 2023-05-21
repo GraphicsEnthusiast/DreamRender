@@ -20,12 +20,17 @@ struct HDRSample {
 
 class Light {
 public:
+	Light(Shape* s) : shape(s) {}
+
 	virtual LightSample Sample(const IntersectionInfo& info) = 0;
+
+public:
+	Shape* shape;
 };
 
 class SphereLight : public Light {
 public:
-	SphereLight(Sphere* s) : sphere(s) {}
+	SphereLight(Sphere* s) : sphere(s), Light(s) {}
 
 	virtual LightSample Sample(const IntersectionInfo& info) override;
 
@@ -35,7 +40,7 @@ public:
 
 class QuadLight : public Light {
 public:
-	QuadLight(Quad* q) : quad(q) {}
+	QuadLight(Quad* q) : quad(q), Light(q) {}
 
 	virtual LightSample Sample(const IntersectionInfo& info) override;
 
@@ -45,7 +50,7 @@ public:
 
 class PointLight : public Light {
 public:
-	PointLight(vec3 inten, vec3 pos) : intensity(inten), position(pos) {}
+	PointLight(vec3 inten, vec3 pos) : intensity(inten), position(pos), Light(NULL) {}
 
 	virtual LightSample Sample(const IntersectionInfo& info) override;
 
@@ -56,7 +61,7 @@ public:
 
 class DirectionLight : public Light {
 public:
-	DirectionLight(vec3 ran, vec3 dir) : radiance(ran), direction(dir) {}
+	DirectionLight(vec3 ran, vec3 dir) : radiance(ran), direction(dir), Light(NULL) {}
 
 	virtual LightSample Sample(const IntersectionInfo& info) override;
 
