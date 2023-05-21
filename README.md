@@ -50,6 +50,9 @@ glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路�
   - 平行光
   - HDR环境光
 
+- 场景描述
+  - json场景解析
+
 - 截图
 
 MitsubaKnob
@@ -57,10 +60,8 @@ MitsubaKnob
 CornellBox
 ![spp=128](https://github.com/qaz123w/DreamRender/assets/75780167/10bd6784-cb64-40a6-968f-15346f246a96)
 Teapot
-![spp=128](https://github.com/qaz123w/DreamRender/assets/75780167/aacae0d8-54c6-4f92-801d-492d3ae1a2cd)
-![g2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/850e5a01-ef81-48f5-8a03-319cfd004d64)
+![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/1578a3c0-70d3-4ee2-b1c7-dc5c8896bacd)
 Boy
-![spp=1024_quad_light](https://github.com/qaz123w/DreamRender/assets/75780167/eb1a7b93-299f-4c9d-8552-68534994665a)
-![spp=1024_hdr](https://github.com/qaz123w/DreamRender/assets/75780167/848615c9-05f1-479b-8e7a-f8ef751cafc1)
-![g1](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/b79565a6-1846-4221-9878-400581c89fd8)
+![boy](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/9f009d6b-a023-47d3-bbd2-0abaa3c7afd0)
+![boy2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6a34b36b-7759-4eea-bab6-6462cddb684f)
 
