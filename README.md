@@ -63,5 +63,5 @@ Teapot
 ![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/1578a3c0-70d3-4ee2-b1c7-dc5c8896bacd)
 Boy
 ![boy](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/9f009d6b-a023-47d3-bbd2-0abaa3c7afd0)
-![boy2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6a34b36b-7759-4eea-bab6-6462cddb684f)
+![boy2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6fb67647-6300-4ad1-832e-9289efc0e00f)
 
