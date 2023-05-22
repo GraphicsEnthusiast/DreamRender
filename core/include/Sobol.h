@@ -45,8 +45,8 @@ inline vec2 CranleyPattersonRotation(vec2 p, vec2 pix) {
 		uint(pix.y) * uint(9277) +
 		uint(114514 / 1919) * uint(26699)) | uint(1);
 
-	float u = float(WangHash(pseed)) / 4294967296.0;
-	float v = float(WangHash(pseed)) / 4294967296.0;
+	float u = float(WangHash(pseed)) / 4294967296.0f;
+	float v = float(WangHash(pseed)) / 4294967296.0f;
 
 	p.x += u;
 	if (p.x > 1.0f) {
