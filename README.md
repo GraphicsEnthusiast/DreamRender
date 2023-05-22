@@ -1,5 +1,5 @@
 # DreamRender
-这是我写的第一个离线渲染器(参考了github上的大量开源项目)，测试场景用到的资产：我用夸克网盘分享了「TestScene.zip」，链接：https://pan.quark.cn/s/c712f40dab1c
+这是我写的第一个离线渲染器(参考了github上的大量开源项目，构建非常慢，像运行可以取下release版本的:https://github.com/GraphicsEnthusiast/DreamRender/releases/tag/v1.0)，测试场景用到的资产：我用夸克网盘分享了「TestScene.zip」，链接：https://pan.quark.cn/s/c712f40dab1c
 
 glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路径
 
