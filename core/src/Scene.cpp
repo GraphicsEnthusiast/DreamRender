@@ -96,10 +96,3 @@ void Scene::UpdateInfo(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.t = rayhit.ray.tfar;
 	info.position = GetHitPos(rayhit);
 }
-
-Scene LoadSceneFromJson(const json& j) {
-	RTCDevice rtc_device = rtcNewDevice(NULL);
-	Scene scene(rtc_device);
-
-
-}
