@@ -60,7 +60,7 @@ MitsubaKnob
 Staircase
 ![staircase](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/f37ba1ac-5446-4d73-a518-7f8578bf80a3)
 CornellBox
-![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/df5032df-9c70-4c59-adfc-113894a689bc)
+![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/e3916bde-65b4-4f96-a69f-a834aab860cf)
 Teapot
 ![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/1578a3c0-70d3-4ee2-b1c7-dc5c8896bacd)
 Boy
