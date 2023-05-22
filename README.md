@@ -57,8 +57,10 @@ glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路�
 
 MitsubaKnob
 ![DisneyPrinciple_spp=128](https://github.com/qaz123w/DreamRender/assets/75780167/bfa099a5-f65f-48eb-acf0-280e43ee95c3)
+Staircase
+![staircase](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/7af26472-b07e-4cde-992e-25396dae7322)
 CornellBox
-![spp=128](https://github.com/qaz123w/DreamRender/assets/75780167/10bd6784-cb64-40a6-968f-15346f246a96)
+![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/df5032df-9c70-4c59-adfc-113894a689bc)
 Teapot
 ![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/1578a3c0-70d3-4ee2-b1c7-dc5c8896bacd)
 Boy
