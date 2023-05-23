@@ -3,7 +3,7 @@
 shared_ptr<Material> SceneParser::SearchMaterial(string name) {
 	for (const auto& material : materials) {
 		if (name == material.first) {
-			//			cout << "ÕÒµ½" << endl;
+			//			cout << "æ‰¾åˆ°" << endl;
 			return material.second;
 		}
 	}
@@ -70,11 +70,11 @@ void SceneParser::Parse(const json& data, Scene& scene) {
 	scene.SetHDR(env);
 
 	for (auto light : lights) {
-		scene.AddLight(light.second, light.second->shape);
+		scene.AddLight(light, light->shape);
 	}
 
 	for (auto shape : shapes) {
-		scene.AddShape(shape.second);
+		scene.AddShape(shape);
 	}
 
 	scene.Commit();
@@ -202,7 +202,7 @@ void SceneParser::ParseLights(const json& data) {
 			auto quad = new Quad(mat, pos, u, v);
 			auto quad_light = make_shared<QuadLight>(quad);
 
-			lights.push_back(pair<string, shared_ptr<Light>>(material_name, quad_light));
+			lights.push_back(quad_light);
 		}
 		else if (type == "sphere") {
 			json center_j = light.value("center", json());
@@ -219,7 +219,7 @@ void SceneParser::ParseLights(const json& data) {
 			auto sphere = new Sphere(mat, center, radius);
 			auto sphere_light = make_shared<SphereLight>(sphere);
 
-			lights.push_back(pair<string, shared_ptr<Light>>(material_name, sphere_light));
+			lights.push_back(sphere_light);
 		}
 		else if (type == "point") {
 			json pos_j = light.value("pos", json());
@@ -232,7 +232,7 @@ void SceneParser::ParseLights(const json& data) {
 
 			auto point_light = make_shared<PointLight>(pos, intensity);
 
-			lights.push_back(pair<string, shared_ptr<Light>>("", point_light));
+			lights.push_back(point_light);
 		}
 		else if (type == "direction") {
 			json dir_j = light.value("dir", json());
@@ -245,7 +245,7 @@ void SceneParser::ParseLights(const json& data) {
 
 			auto direction_light = make_shared<DirectionLight>(dir, radiance);
 
-			lights.push_back(pair<string, shared_ptr<Light>>("", direction_light));
+			lights.push_back(direction_light);
 		}
 
 		cout << endl;
@@ -284,7 +284,7 @@ void SceneParser::ParseShapes(const json& data) {
 
 			auto mesh = new TriangleMesh(mat, mesh_path, model_tran);
 
-			shapes.push_back(pair<string, Shape*>(material_name, mesh));
+			shapes.push_back(mesh);
 		}
 		else if (type == "quad") {
 			json pos_j = shape.value("pos", json());
@@ -305,7 +305,7 @@ void SceneParser::ParseShapes(const json& data) {
 			auto mat = SearchMaterial(material_name);
 			auto quad = new Quad(mat, pos, u, v);
 
-			shapes.push_back(pair<string, Shape*>(material_name, quad));
+			shapes.push_back(quad);
 		}
 		else if (type == "sphere") {
 			json center_j = shape.value("center", json());
@@ -321,7 +321,7 @@ void SceneParser::ParseShapes(const json& data) {
 			auto mat = SearchMaterial(material_name);
 			auto sphere = new Sphere(mat, center, radius);
 
-			shapes.push_back(pair<string, Shape*>(material_name, sphere));
+			shapes.push_back(sphere);
 		}
 
 		cout << endl;
