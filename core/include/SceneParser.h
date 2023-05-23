@@ -65,9 +65,9 @@ private:
 
 public:
 	IntegratorInfo inte_info;
-	vector<pair<string, shared_ptr<Light>>> lights;
+	vector<shared_ptr<Light>> lights;
 	vector<pair<string, shared_ptr<Material>>> materials;
-	vector<pair<string, Shape*>> shapes;
+	vector<Shape*> shapes;
 	shared_ptr<InfiniteAreaLight> env;
 	bool use_denoise;
 };
