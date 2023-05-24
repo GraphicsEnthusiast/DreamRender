@@ -8,16 +8,6 @@ Shape::Shape(shared_ptr<Material> mat, vec3 pos, mat4 trans, int geom_id) :
 TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos) :
 	Shape(mat, pos, trans, true), filename(file) {
 	m_type = ShapeType::TriangleMesh;
-}
-
-TriangleMesh::~TriangleMesh() {
-	vertices.clear();
-	indices.clear();
-	normals.clear();
-	texcoords.clear();
-}
-
-int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -26,8 +16,6 @@ int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	std::string err;
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str()) || shapes.size() == 0) {
 		printf("LoadFromObj %s failed!", filename);
-
-		return -1;
 	}
 
 	// loop over shapes
@@ -117,13 +105,15 @@ int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 			index_offset += fv;
 		}
 	}
+}
 
+int TriangleMesh::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	RTCGeometry geom = rtcNewGeometry(rtc_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
 	// set vertices
 	float* vb = (float*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
 		RTC_FORMAT_FLOAT3,
-		3 * sizeof(float), 
+		3 * sizeof(float),
 		Vertices());
 	for (int i = 0; i < vertices.size(); ++i) {
 		vb[i] = vertices[i];
@@ -145,18 +135,8 @@ int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	return 0;
 }
 
-int TriangleMesh::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
-	size_t found = filename.find_last_of(".");
-	string extStr = filename.substr(found + 1);
-
-	if (extStr == "obj") {
-		return LoadFromObj(rtc_device, rtc_scene);
-	}
-// 	else if (extStr == "ply") {
-// 		//return LoadFromPly(rtc_device, rtc_scene);
-// 	}
-
-	return -1;
+float TriangleMesh::Pdf(const IntersectionInfo& info, const vec3& L, float dist) {
+	return 0.0f;
 }
 
 Sphere::Sphere(shared_ptr<Material> mat, vec3 cen, float rad, vec3 pos, mat4 trans) :
@@ -317,8 +297,8 @@ vec2 Sphere::GetSphereUV(const vec3& p, const vec3& center) {
 	vec3 object_p = normalize(p - center);
 
 	vec2 uv;
-	float phi = atan2(object_p.z, object_p.x);//点x,y,z的方位角, PI~-PI=>1~0=>0~1
-	float theta = asin(object_p.y);//点x,y,z的天顶角, -PI/2~PI/2=>0~1
+	float phi = atan2(object_p.z, object_p.x);//鐐箈,y,z鐨勬柟浣嶈, PI~-PI=>1~0=>0~1
+	float theta = asin(object_p.y);//鐐箈,y,z鐨勫ぉ椤惰, -PI/2~PI/2=>0~1
 	uv.x = 1.0f - (phi + PI) * INV_2PI;
 	uv.y = (theta + PI / 2.0f) * INV_PI;
 
