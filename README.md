@@ -5,7 +5,7 @@ glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路�
 
 ![image](https://github.com/qaz123w/DreamRender/assets/75780167/99953c96-80ea-4e0d-a902-e892995be9d0)
 
-构建后还需将所需dll移动到exe文件所在的目录。
+构建后还需将所需dll移动到exe文件所在的目录，shader需要移动到exe文件所在目录的上一级。
 
 - 渲染算法
   - 路径追踪(PathTracing，实现了多重重要性采样)
