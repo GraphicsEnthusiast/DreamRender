@@ -108,7 +108,6 @@ namespace PathTracingScene {
 		auto quad = new Quad(lightmat, vec3(-1.0f, 3.45f, -1.0f), vec3(2.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 2.0f));
 		auto quadlight = make_shared<QuadLight>(quad);
 
-		//灯必须在其他物体前加入————————————————————————————————————————————
 		scene.AddLight(quadlight, quadlight->quad);
 
 		scene.AddShape(new TriangleMesh(grey, back, model_box));
