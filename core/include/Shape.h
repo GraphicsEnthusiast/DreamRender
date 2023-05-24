@@ -18,7 +18,7 @@ public:
 
 	// Creating and committing the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) = 0;
-	virtual float Pdf(const IntersectionInfo& info, const vec3& L, float dist) { return 0.0f; }
+	virtual float Pdf(const IntersectionInfo& info, const vec3& L, float dist) = 0;
 
 public:
 	// Position before any transformation
@@ -29,25 +29,25 @@ public:
 	shared_ptr<Material> material;
 };
 
+struct VertexIndices {
+	uint32_t v1idx;
+	uint32_t v2idx;
+	uint32_t v3idx;
+};
+
 class TriangleMesh : public Shape {
 public:
 	TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos = vec3(0.0f));
-	~TriangleMesh();
 
 	inline uint32_t Vertices() const { return vertices.size() / 3; }
 	inline uint32_t Faces() const { return indices.size() / 3; }
 
-	struct VertexIndices {
-		uint32_t v1idx;
-		uint32_t v2idx;
-		uint32_t v3idx;
-	};
-
-	VertexIndices GetIndices(uint32_t faceID) const {
+	inline VertexIndices GetIndices(uint32_t faceID) const {
 		VertexIndices ret;
 		ret.v1idx = indices[3 * faceID + 0];
 		ret.v2idx = indices[3 * faceID + 1];
 		ret.v3idx = indices[3 * faceID + 2];
+
 		return ret;
 	}
 
@@ -84,17 +84,16 @@ public:
 			t3 * barycentric[1];
 	}
 
-	int LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene);
-
 	// Creating and commiting the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) override;
+	virtual float Pdf(const IntersectionInfo& info, const vec3& L, float dist) override;
 
 public:
 	string filename;
-	std::vector<float> vertices;
-	std::vector<uint32_t> indices;
-	std::vector<float> normals;
-	std::vector<float> texcoords;
+	vector<float> vertices;
+	vector<uint32_t> indices;
+	vector<float> normals;
+	vector<float> texcoords;
 };
 
 class Sphere : public Shape {
