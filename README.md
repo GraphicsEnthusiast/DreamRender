@@ -60,7 +60,7 @@ BreakfastRoom:
 Staircase
 ![staircase](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/f37ba1ac-5446-4d73-a518-7f8578bf80a3)
 Mis
-![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/ae6bbbd3-6a1d-4cb2-8f32-e1afcbd43754)
+![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/02720511-924a-42e4-b13d-c7c10a5f8b4c)
 CornellBox
 ![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/e3916bde-65b4-4f96-a69f-a834aab860cf)
 Teapot
