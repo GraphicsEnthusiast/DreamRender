@@ -82,7 +82,7 @@ void SceneParser::Parse(const json& data, Scene& scene) {
 
 IntegratorInfo SceneParser::ParseIntegrator(const json& data) {
 	cout << "Integrator Information: " << endl;
-	string type = data.value("type", "path_tracing");
+	string type = data.value("filter", "path_tracing");
 	int depth = data.value("depth", 15);
 	string light_strategy = data.value("light_strategy", "random");
 
