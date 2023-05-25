@@ -18,7 +18,7 @@ public:
 
 	// Creating and committing the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) = 0;
-	virtual float Pdf(const IntersectionInfo& info, const vec3& L, float dist) = 0;
+	virtual float Pdf(const IntersectionInfo& info, const vec3& L, float dist) { return 0.0f; }
 
 public:
 	// Position before any transformation
@@ -38,6 +38,7 @@ struct VertexIndices {
 class TriangleMesh : public Shape {
 public:
 	TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos = vec3(0.0f));
+	~TriangleMesh();
 
 	inline uint32_t Vertices() const { return vertices.size() / 3; }
 	inline uint32_t Faces() const { return indices.size() / 3; }
@@ -84,9 +85,10 @@ public:
 			t3 * barycentric[1];
 	}
 
+	void LoadFromObj();
+
 	// Creating and commiting the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) override;
-	virtual float Pdf(const IntersectionInfo& info, const vec3& L, float dist) override;
 
 public:
 	string filename;
