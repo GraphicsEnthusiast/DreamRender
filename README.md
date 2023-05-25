@@ -2,6 +2,7 @@
 ——————————————————————————
 
 低差异序列有bug，正准备修
+
 ——————————————————————————
 
 这是我写的第一个离线渲染器，起源于raytracing三部曲，但已经被我改了看不出来了😄，未来会更新更多的渲染算法(参考了github上的大量开源项目，构建非常慢，资产在release的压缩包里，想运行可以去下release版本的:https://github.com/GraphicsEnthusiast/DreamRender/releases/tag/v1.0 )。
