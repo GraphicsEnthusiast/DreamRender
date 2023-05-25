@@ -8,6 +8,15 @@ Shape::Shape(shared_ptr<Material> mat, vec3 pos, mat4 trans, int geom_id) :
 TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos) :
 	Shape(mat, pos, trans, true), filename(file) {
 	m_type = ShapeType::TriangleMesh;
+	size_t found = filename.find_last_of(".");
+	string extStr = filename.substr(found + 1);
+
+	if (extStr == "obj") {
+		LoadFromObj();
+	}
+}
+
+void TriangleMesh::LoadFromObj() {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -107,6 +116,13 @@ TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, ve
 	}
 }
 
+TriangleMesh::~TriangleMesh() {
+	vertices.clear();
+	normals.clear();
+	texcoords.clear();
+	indices.clear();
+}
+
 int TriangleMesh::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	RTCGeometry geom = rtcNewGeometry(rtc_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
@@ -133,10 +149,6 @@ int TriangleMesh::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_sce
 	rtcCommitScene(rtc_scene);
 
 	return 0;
-}
-
-float TriangleMesh::Pdf(const IntersectionInfo& info, const vec3& L, float dist) {
-	return 0.0f;
 }
 
 Sphere::Sphere(shared_ptr<Material> mat, vec3 cen, float rad, vec3 pos, mat4 trans) :
