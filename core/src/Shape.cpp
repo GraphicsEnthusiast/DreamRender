@@ -8,16 +8,6 @@ Shape::Shape(shared_ptr<Material> mat, vec3 pos, mat4 trans, int geom_id) :
 TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos) :
 	Shape(mat, pos, trans), filename(file) {
 	m_type = ShapeType::TriangleMesh;
-}
-
-TriangleMesh::~TriangleMesh() {
-	vertices.clear();
-	normals.clear();
-	texcoords.clear();
-	indices.clear();
-}
-
-int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -26,8 +16,6 @@ int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	std::string err;
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str()) || shapes.size() == 0) {
 		printf("LoadFromObj %s failed!", filename);
-
-		return -1;
 	}
 
 	// loop over shapes
@@ -117,7 +105,9 @@ int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 			index_offset += fv;
 		}
 	}
+}
 
+int TriangleMesh::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	RTCGeometry geom = rtcNewGeometry(rtc_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
 	// set vertices
@@ -145,18 +135,8 @@ int TriangleMesh::LoadFromObj(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	return 0;
 }
 
-int TriangleMesh::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
-	size_t found = filename.find_last_of(".");
-	string extStr = filename.substr(found + 1);
-
-	if (extStr == "obj") {
-		return LoadFromObj(rtc_device, rtc_scene);
-	}
-// 	else if (extStr == "ply") {
-// 		//return LoadFromPly(rtc_device, rtc_scene);
-// 	}
-
-	return -1;
+float TriangleMesh::Pdf(const IntersectionInfo& info, const vec3& L, float dist) {
+	return 0.0f;
 }
 
 Sphere::Sphere(shared_ptr<Material> mat, vec3 cen, float rad, vec3 pos, mat4 trans) :
