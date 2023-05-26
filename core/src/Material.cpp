@@ -239,12 +239,12 @@ float GTR1::DistributionGTR1(float NdotH, float a) {
 	return (a2 - 1.0f) / (PI * log(a2) * t);
 }
 
-vec3 GTR1::Sample(float xi_1, float xi_2, vec3 V, vec3 N, float alpha) {
-	float phi_h = 2.0f * PI * xi_1;
+vec3 GTR1::Sample(vec3 V, vec3 N, float alpha, vec2 sample) {
+	float phi_h = 2.0f * PI * sample.x;
 	float sin_phi_h = sin(phi_h);
 	float cos_phi_h = cos(phi_h);
 
-	float cos_theta_h = sqrt((1.0f - pow(alpha * alpha, 1.0f - xi_2)) / (1.0f - alpha * alpha));
+	float cos_theta_h = sqrt((1.0f - pow(alpha * alpha, 1.0f - sample.y)) / (1.0f - alpha * alpha));
 	float sin_theta_h = sqrt(std::max(0.0f, 1.0f - cos_theta_h * cos_theta_h));
 
 	//采样 "微平面" 的法向量 作为镜面反射的半角向量h 
@@ -387,11 +387,10 @@ BsdfSample SmoothDiffuse::Sample(const vec3& V, const IntersectionInfo& info) {
 
 // 	float x1 = RandomFloat();
 // 	float x2 = RandomFloat();
-	vec2 r2 = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	r2 = CranleyPattersonRotation(r2, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 //	cout << to_string(r2) << endl;
 //	cout << "fr:" << info.frameCounter << " bo" << info.bounceCounter << endl;
-	vec3 L = CosWeight::Sample(info.normal, r2);
+	vec3 L = CosWeight::Sample(info.normal, sample);
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -534,10 +533,7 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//抽样漫反射分量的概率
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
-	//低差异序列
-	vec2 xy = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	xy = CranleyPattersonRotation(xy, info.pixel);
-	//	vec2 xy(RandomFloat(), RandomFloat());
+	vec2 sample(RandomFloat(), RandomFloat());
 
 	float pdf;
 	vec3 L;
@@ -552,7 +548,7 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 		pdf = pdf_specular + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 	else { //从漫反射分量抽样光线方向
-		L = CosWeight::Sample(info.normal, xy);
+		L = CosWeight::Sample(info.normal, sample);
 
 		float NdotL = dot(info.normal, L);
 		if (NdotL < 0.0f) {
@@ -625,10 +621,9 @@ BsdfSample RoughDiffuse::Sample(const vec3& V, const IntersectionInfo& info) {
 
 // 	float x1 = RandomFloat();
 // 	float x2 = RandomFloat();
-	vec2 r2 = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	r2 = CranleyPattersonRotation(r2, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 
-	vec3 L = CosWeight::Sample(info.normal, r2);
+	vec3 L = CosWeight::Sample(info.normal, sample);
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -680,14 +675,11 @@ BsdfSample RoughConductor::Sample(const vec3& V, const IntersectionInfo& info) {
 
 	vec3 N = info.normal;
 
-	//低差异序列
-	vec2 xy = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	xy = CranleyPattersonRotation(xy, info.pixel);
-//	vec2 xy(RandomFloat(), RandomFloat());
+	vec2 sample(RandomFloat(), RandomFloat());
 
 //	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
 //	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 	float pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
 
@@ -743,14 +735,12 @@ BsdfSample RoughDielectric::Sample(const vec3& V, const IntersectionInfo& info) 
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
 	vec3 N = info.normal;
-	//低差异序列
-	vec2 xy = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	xy = CranleyPattersonRotation(xy, info.pixel);
-//	vec2 xy(RandomFloat(), RandomFloat());
+
+	vec2 sample(RandomFloat(), RandomFloat());
 
 //	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
 //	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 
@@ -873,17 +863,14 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 	float alpha_u = sqr(roughness) * (1.0f + aniso);
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
-	//低差异序列
-	vec2 xy = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	xy = CranleyPattersonRotation(xy, info.pixel);
-	//	vec2 xy(RandomFloat(), RandomFloat());
+	vec2 sample(RandomFloat(), RandomFloat());
 
 	float pdf;
 	vec3 L;
 	if (RandomFloat() < pdf_specular) { //从镜面反射分量抽样光线方向
 //	    vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
 //	    float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
 		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 		L = reflect(-V, H);
 
@@ -896,7 +883,7 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 		pdf = pdf_specular * Dv * abs(1.0f / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 	else { //从漫反射分量抽样光线方向
-		L = CosWeight::Sample(N, xy);
+		L = CosWeight::Sample(N, sample);
 
 		float NdotL = dot(N, L);
 		if (NdotL < 0.0f) {
@@ -978,14 +965,11 @@ BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& i
 	float NdotV = dot(V, N); // 出射光线方向和宏观表面法线方向夹角的余弦
 	float weight_coat = clear_coat * Fresnel::FresnelDielectric(V, N, 1.0f / 1.5f);
 
-	//低差异序列
-	vec2 xy = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	xy = CranleyPattersonRotation(xy, info.pixel);
-//	vec2 xy(RandomFloat(), RandomFloat());
+	vec2 sample(RandomFloat(), RandomFloat());
 
 	if (RandomFloat() < weight_coat) {
 //	    vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
-		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, xy);
+		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
 		float Dv_coat = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 		vec3 L = reflect(-V, H);
 
@@ -1162,14 +1146,13 @@ BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info) {
 	float p_diffuse = diffuse / deom;
 	float p_specular = specular / deom;
 
-	vec2 xy = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	xy = CranleyPattersonRotation(xy, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 
 	float t = RandomFloat();
 	vec3 L;
 	if (t <= p_diffuse) {
 		//diffuse
-		vec3 L = CosWeight::Sample(info.normal, xy);
+		vec3 L = CosWeight::Sample(info.normal, sample);
 
 		float NdotL = dot(info.normal, L);
 		if (NdotL < 0.0f) {
@@ -1177,7 +1160,7 @@ BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info) {
 		}
 	}
 	else if (t <= p_diffuse + p_specular) {
-		vec3 H = GGX::SampleVisible(N, V, roughness, roughness, xy);
+		vec3 H = GGX::SampleVisible(N, V, roughness, roughness, sample);
 		L = reflect(-V, H);
 
 		float NdotL = dot(info.normal, L);
@@ -1262,10 +1245,9 @@ vec3 MetalWorkflow::GetAlbedo(const IntersectionInfo& info) {
 BsdfSample DisneyDiffuse::Sample(const vec3& V, const IntersectionInfo& info) {
 	vec3 N = info.normal;
 
-	vec2 r2 = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	r2 = CranleyPattersonRotation(r2, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 
-	vec3 L = CosWeight::Sample(info.normal, r2);
+	vec3 L = CosWeight::Sample(info.normal, sample);
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -1318,8 +1300,7 @@ vec3 DisneyDiffuse::GetAlbedo(const IntersectionInfo& info) {
 }
 
 BsdfSample DisneyMetal::Sample(const vec3& V, const IntersectionInfo& info) {
-	vec2 r2 = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	r2 = CranleyPattersonRotation(r2, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 
 	vec3 albedo = albedoTexture->Value(info.uv, info.position);
 	float roughness = roughnessTexture->Value(info.uv, info.position).r;
@@ -1330,7 +1311,7 @@ BsdfSample DisneyMetal::Sample(const vec3& V, const IntersectionInfo& info) {
 	float ay = std::max(0.0001f, sqr(roughness) * aspect);
 
 	vec3 N = info.normal;
-	vec3 H = GGX::SampleVisible(N, V, ax, ay, r2);
+	vec3 H = GGX::SampleVisible(N, V, ax, ay, sample);
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
 
 	vec3 L = reflect(-V, H);
@@ -1389,14 +1370,13 @@ vec3 DisneyMetal::GetAlbedo(const IntersectionInfo& info) {
 }
 
 BsdfSample DisneyClearcoat::Sample(const vec3& V, const IntersectionInfo& info) {
-	vec2 r2 = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	r2 = CranleyPattersonRotation(r2, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 
 	float clearcoatGloss = clearcoatGlossTexture->Value(info.uv, info.position).r;
 	float ag = glm::mix(0.1f, 0.001f, clearcoatGloss);
 
 	vec3 N = info.normal;
-	vec3 H = GTR1::Sample(r2.x, r2.y, V, N, ag);
+	vec3 H = GTR1::Sample(V, N, ag, sample);
 	float NdotH = dot(N, H);
 
 	vec3 L = reflect(-V, H);
@@ -1445,8 +1425,7 @@ vec3 DisneyClearcoat::GetAlbedo(const IntersectionInfo& info) {
 BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info) {
 	vec3 N = info.normal;
 
-	vec2 r2 = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	r2 = CranleyPattersonRotation(r2, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 
 	vec3 albedo = albedoTexture->Value(info.uv, info.position);
 	float roughness = roughnessTexture->Value(info.uv, info.position).r;
@@ -1457,7 +1436,7 @@ BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info) {
 	float ay = std::max(0.0001f, sqr(roughness) * aspect);
 
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
-	vec3 H = GGX::SampleVisible(N, V, ax, ay, r2);
+	vec3 H = GGX::SampleVisible(N, V, ax, ay, sample);
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 
@@ -1551,10 +1530,9 @@ vec3 DisneyGlass::GetAlbedo(const IntersectionInfo& info) {
 BsdfSample DisneySheen::Sample(const vec3& V, const IntersectionInfo& info) {
 	vec3 N = info.normal;
 
-	vec2 r2 = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	r2 = CranleyPattersonRotation(r2, info.pixel);
+	vec2 sample(RandomFloat(), RandomFloat());
 
-	vec3 L = CosWeight::Sample(info.normal, r2);
+	vec3 L = CosWeight::Sample(info.normal, sample);
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -1618,10 +1596,6 @@ BsdfSample DisneyPrinciple::Sample(const vec3& V, const IntersectionInfo& info) 
 	float cdf_glass = cdf_metal + glassWeight;
 
 	vec3 N = info.normal;
-
-	//低差异序列
-	vec2 xy = SobolVec2(info.frameCounter + 1, info.bounceCounter);
-	xy = CranleyPattersonRotation(xy, info.pixel);
 
 	BsdfSample bsdf_sample;
 	if (!info.frontFace) {

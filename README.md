@@ -64,7 +64,7 @@ glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路�
 BreakfastRoom:
 ![breakfast](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/cda01ee4-c6dd-4a0b-8c03-5fc7725063f8)
 Staircase
-![staircase](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/d98a1177-16f5-4abb-96b0-29ed46da34a1)
+![staircase](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/d9781eb6-ff2a-4fba-bef3-a218d73d51e9)
 Mis
 ![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6e73c199-8480-47d2-bffb-7d9ac00e99ba)
 CornellBox

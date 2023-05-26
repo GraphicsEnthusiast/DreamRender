@@ -3,7 +3,6 @@
 #include <Utils.h>
 #include <Random.h>
 #include <Texture.h>
-#include <Sobol.h>
 
 //材质类型
 enum class MaterialType {
@@ -78,7 +77,7 @@ namespace GGX {
 
 namespace GTR1 {
 	float DistributionGTR1(float NdotH, float a);
-	vec3 Sample(float xi_1, float xi_2, vec3 V, vec3 N, float alpha);
+	vec3 Sample(vec3 V, vec3 N, float alpha, vec2 sample);
 }
 
 class KullaConty {
