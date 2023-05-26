@@ -66,12 +66,12 @@ BreakfastRoom:
 Staircase
 ![staircase](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/d98a1177-16f5-4abb-96b0-29ed46da34a1)
 Mis
-![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/02720511-924a-42e4-b13d-c7c10a5f8b4c)
+![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6e73c199-8480-47d2-bffb-7d9ac00e99ba)
 CornellBox
-![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/e3916bde-65b4-4f96-a69f-a834aab860cf)
+![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/7eab90a1-a5f4-4325-9a52-796ce41767df)
 Teapot
-![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/1578a3c0-70d3-4ee2-b1c7-dc5c8896bacd)
+![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/4a746f38-0d04-4e33-abda-7d071981c505)
 Boy
-![boy](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/9f009d6b-a023-47d3-bbd2-0abaa3c7afd0)
-![boy2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6fb67647-6300-4ad1-832e-9289efc0e00f)
+![boy](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/47a5acd6-dfe9-4734-80a5-7b8cf9847caf)
+![boy2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/5002aaa3-679d-4a4c-8914-705d77fbe813)
 
