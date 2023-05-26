@@ -61,5 +61,6 @@ inline vec2 CranleyPattersonRotation(vec2 p, vec2 pix) {
 		p.y += 1.0f;
 	}
 
-	return p;
+//	return p;
+	return vec2(RandomFloat(), RandomFloat());
 }
