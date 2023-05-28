@@ -42,7 +42,8 @@ glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路�
   - ThinlensCamera
 
 - 采样器
-  - 普通随机数
+  - Independent
+  - SimpleSobol
 
 - 滤波器
   - GaussianFilter
