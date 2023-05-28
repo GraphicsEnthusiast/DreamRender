@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
 	shared_ptr<Integrator> inte = NULL;
 	if (scene_parser.inte_info.type == "path_tracing") {
-		inte = make_shared<PathTracing>(make_shared<Scene>(scene), scene_parser.inte_info.light_strategy);
+		inte = make_shared<PathTracing>(make_shared<Scene>(scene), scene_parser.inte_info.sampler_type, scene_parser.inte_info.light_strategy);
 	}
 	else {
 		cout << "Integrator error!" << endl;

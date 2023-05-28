@@ -28,7 +28,8 @@ void SceneParser::Parse(const json& data, Scene& scene) {
 	use_denoise = data.value("denoise", false);
 	cout << "Settings Information: " << endl;
 	cout << "width: " << width << endl;
-	cout << "height: " << height << endl << endl;
+	cout << "height: " << height << endl;
+	cout << "denoise: " << use_denoise << endl << endl;
 
 	json inteData = data.value("integrator", json());
 	inte_info = ParseIntegrator(inteData);
@@ -82,13 +83,15 @@ void SceneParser::Parse(const json& data, Scene& scene) {
 
 IntegratorInfo SceneParser::ParseIntegrator(const json& data) {
 	cout << "Integrator Information: " << endl;
-	string type = data.value("filter", "path_tracing");
+	string type = data.value("type", "path_tracing");
 	int depth = data.value("depth", 15);
 	string light_strategy = data.value("light_strategy", "random");
+	string sampler_type = data.value("sampler_type", "sobol");
 
 	cout << "type: " << type << endl;
 	cout << "depth: " << depth << endl;
-	cout << "light strategy: " << light_strategy << endl << endl;
+	cout << "light strategy: " << light_strategy << endl;
+	cout << "sampler type: " << sampler_type << endl << endl;
 
 	TraceLightType ls_type;
 	if (light_strategy == "random") {
@@ -98,7 +101,15 @@ IntegratorInfo SceneParser::ParseIntegrator(const json& data) {
 		ls_type = TraceLightType::ALL;
 	}
 
-	return { type, depth, ls_type };
+	SamplerType sp_type;
+	if (sampler_type == "sobol") {
+		sp_type = SamplerType::SimpleSobol;
+	}
+	else if (sampler_type == "independent") {
+		sp_type = SamplerType::Independent;
+	}
+
+	return { type, depth, ls_type, sp_type };
 }
 
 shared_ptr<Filter> SceneParser::ParseFilter(const json& data) {

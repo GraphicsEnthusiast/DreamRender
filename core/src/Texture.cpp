@@ -2,18 +2,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-vec3 ConstantTexture::Value(const vec2& uv, const vec3& p) {
+vec3 ConstantTexture::Value(const vec2& uv) {
 	return color;
-}
-
-vec3 CheckerTexture::Value(const vec2& uv, const vec3& p) {
-	float sines = sin(10.0f * p.x) * sin(10.0f * p.y) * sin(10.0f * p.z);
-	if (sines < 0.0f) {
-		return odd->Value(uv, p);
-	}
-	else {
-		return even->Value(uv, p);
-	}
 }
 
 ImageTexture::ImageTexture(const char* filename) {
@@ -30,7 +20,7 @@ ImageTexture::~ImageTexture() {
 	}
 }
 
-vec3 ImageTexture::Value(const vec2& uv, const vec3& p) {
+vec3 ImageTexture::Value(const vec2& uv) {
 	float u = uv.x;
 	float v = uv.y;
 	if (u > 1.0f || u < 0.0f) {
@@ -85,7 +75,7 @@ HdrTexture::~HdrTexture() {
 	}
 }
 
-vec3 HdrTexture::Value(const vec2& uv, const vec3& p) {
+vec3 HdrTexture::Value(const vec2& uv) {
 	if (data == NULL) {
 		cerr << "texture is null.\n";
 	}

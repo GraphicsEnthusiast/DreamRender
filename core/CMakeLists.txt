@@ -15,6 +15,7 @@ add_library(core
     src/Integrator.cpp
     src/Render.cpp
     src/SceneParser.cpp
+    src/Sampler.cpp
 )
 
 target_include_directories(core PUBLIC 

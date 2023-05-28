@@ -22,7 +22,7 @@ class Light {
 public:
 	Light(Shape* s) : shape(s) {}
 
-	virtual LightSample Sample(const IntersectionInfo& info) = 0;
+	virtual LightSample Sample(const IntersectionInfo& info, vec2 sample) = 0;
 
 public:
 	Shape* shape;
@@ -32,7 +32,7 @@ class SphereLight : public Light {
 public:
 	SphereLight(Sphere* s) : sphere(s), Light(s) {}
 
-	virtual LightSample Sample(const IntersectionInfo& info) override;
+	virtual LightSample Sample(const IntersectionInfo& info, vec2 sample) override;
 
 public:
 	Sphere* sphere;
@@ -42,7 +42,7 @@ class QuadLight : public Light {
 public:
 	QuadLight(Quad* q) : quad(q), Light(q) {}
 
-	virtual LightSample Sample(const IntersectionInfo& info) override;
+	virtual LightSample Sample(const IntersectionInfo& info, vec2 sample) override;
 
 public:
 	Quad* quad;
@@ -52,7 +52,7 @@ class PointLight : public Light {
 public:
 	PointLight(vec3 inten, vec3 pos) : intensity(inten), position(pos), Light(NULL) {}
 
-	virtual LightSample Sample(const IntersectionInfo& info) override;
+	virtual LightSample Sample(const IntersectionInfo& info, vec2 sample) override;
 
 public:
 	vec3 intensity;//∑¯…‰«ø∂»
@@ -63,7 +63,7 @@ class DirectionLight : public Light {
 public:
 	DirectionLight(vec3 ran, vec3 dir) : radiance(ran), direction(dir), Light(NULL) {}
 
-	virtual LightSample Sample(const IntersectionInfo& info) override;
+	virtual LightSample Sample(const IntersectionInfo& info, vec2 sample) override;
 
 public:
 	vec3 radiance;//∑¯…‰¡¡∂»
@@ -105,7 +105,7 @@ public:
 	InfiniteAreaLight(shared_ptr<HdrTexture> h, float scl = 1.0f);
 
 	vec3 Emitted(const vec3& dir);
-	HDRSample Sample(const IntersectionInfo& info);
+	HDRSample Sample(const IntersectionInfo& info, vec4 sample);
 	float Pdf(const vec3& wi);
 	float GetPortion(const vec3& wi);
 

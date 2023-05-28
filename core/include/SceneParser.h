@@ -45,6 +45,7 @@ struct IntegratorInfo {
 	string type;
 	int depth;
 	TraceLightType light_strategy;
+	SamplerType sampler_type;
 };
 
 class SceneParser {

@@ -366,7 +366,7 @@ vec3 KullaConty::EvalMultipleScatter(float NdotL, float NdotV, float roughness, 
 	return f_ms * f_add;
 }
 
-BsdfSample DiffuseLight::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample DiffuseLight::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	return { vec3(0.0f), 0.0f };
 }
 
@@ -375,22 +375,16 @@ EvalInfo DiffuseLight::Eval(const vec3& V, const vec3& L, const IntersectionInfo
 }
 
 vec3 DiffuseLight::Emitted(const IntersectionInfo& info) {
-	return emittedTexture->Value(info.uv, info.position);
+	return emittedTexture->Value(info.uv);
 }
 
 vec3 DiffuseLight::GetAlbedo(const IntersectionInfo& info) {
-	return emittedTexture->Value(info.uv, info.position);
+	return emittedTexture->Value(info.uv);
 }
 
-BsdfSample SmoothDiffuse::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample SmoothDiffuse::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
-
-// 	float x1 = RandomFloat();
-// 	float x2 = RandomFloat();
-	vec2 sample(RandomFloat(), RandomFloat());
-//	cout << to_string(r2) << endl;
-//	cout << "fr:" << info.frameCounter << " bo" << info.bounceCounter << endl;
-	vec3 L = CosWeight::Sample(info.normal, sample);
+	vec3 L = CosWeight::Sample(info.normal, sampler->Get2());
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -403,7 +397,7 @@ BsdfSample SmoothDiffuse::Sample(const vec3& V, const IntersectionInfo& info) {
 }
 
 EvalInfo SmoothDiffuse::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
+	vec3 albedo = albedoTexture->Value(info.uv);
 
 	float NdotL = dot(info.normal, L);
 	float NdotV = dot(info.normal, V);
@@ -417,13 +411,13 @@ EvalInfo SmoothDiffuse::Eval(const vec3& V, const vec3& L, const IntersectionInf
 }
 
 vec3 SmoothDiffuse::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample SmoothConductor::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample SmoothConductor::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 	vec3 L = reflect(-V, N);
@@ -438,10 +432,10 @@ BsdfSample SmoothConductor::Sample(const vec3& V, const IntersectionInfo& info) 
 EvalInfo SmoothConductor::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
-	vec3 brdf = albedoTexture->Value(info.uv, info.position) * Fresnel::FresnelConductor(L, N, eta, k);
+	vec3 brdf = albedoTexture->Value(info.uv) * Fresnel::FresnelConductor(L, N, eta, k);
 
 	return { brdf, 1.0f, 1.0f };
 }
@@ -451,19 +445,19 @@ bool SmoothConductor::IsDelta() const noexcept {
 }
 
 vec3 SmoothConductor::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample SmoothDielectric::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample SmoothDielectric::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 
 	float F = Fresnel::FresnelDielectric(V, N, etai_over_etat);
-	if (RandomFloat() < F) {
+	if (sampler->Get1() < F) {
 		vec3 L = reflect(-V, N);
 		if (dot(N, L) < 0.0f) {
 			return BsdfSampleError();
@@ -486,11 +480,11 @@ BsdfSample SmoothDielectric::Sample(const vec3& V, const IntersectionInfo& info)
 
 EvalInfo SmoothDielectric::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
+	vec3 albedo = albedoTexture->Value(info.uv);
 
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 
@@ -515,12 +509,12 @@ bool SmoothDielectric::IsDelta() const noexcept {
 }
 
 vec3 SmoothDielectric::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
-	const vec3 kd = diffuseTexture->Value(info.uv, info.position),
-		ks = specularTexture->Value(info.uv, info.position);
+BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	const vec3 kd = diffuseTexture->Value(info.uv),
+		ks = specularTexture->Value(info.uv);
 	const float d_sum = kd.r + kd.g + kd.b,
 		s_sum = ks.r + ks.g + ks.b;
 
@@ -533,11 +527,9 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//抽样漫反射分量的概率
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
-	vec2 sample(RandomFloat(), RandomFloat());
-
 	float pdf;
 	vec3 L;
-	if (RandomFloat() < pdf_specular) { //从镜面反射分量抽样光线方向
+	if (sampler->Get1() < pdf_specular) { //从镜面反射分量抽样光线方向
 		L = reflect(-V, N);
 
 		float NdotL = dot(info.normal, L);
@@ -548,7 +540,7 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 		pdf = pdf_specular + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 	else { //从漫反射分量抽样光线方向
-		L = CosWeight::Sample(info.normal, sample);
+		L = CosWeight::Sample(info.normal, sampler->Get2());
 
 		float NdotL = dot(info.normal, L);
 		if (NdotL < 0.0f) {
@@ -562,15 +554,15 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 }
 
 EvalInfo SmoothPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
-	const vec3 kd = diffuseTexture->Value(info.uv, info.position),
-		ks = specularTexture->Value(info.uv, info.position);
+	const vec3 kd = diffuseTexture->Value(info.uv),
+		ks = specularTexture->Value(info.uv);
 	const float d_sum = kd.r + kd.g + kd.b,
 		s_sum = ks.r + ks.g + ks.b;
 
 	bool sampled_specular = false;//是否抽样到了镜面反射分量
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 
@@ -613,17 +605,12 @@ EvalInfo SmoothPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInf
 }
 
 vec3 SmoothPlastic::GetAlbedo(const IntersectionInfo& info) {
-	return diffuseTexture->Value(info.uv, info.position);
+	return diffuseTexture->Value(info.uv);
 }
 
-BsdfSample RoughDiffuse::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample RoughDiffuse::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
-
-// 	float x1 = RandomFloat();
-// 	float x2 = RandomFloat();
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	vec3 L = CosWeight::Sample(info.normal, sample);
+	vec3 L = CosWeight::Sample(info.normal, sampler->Get2());
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -646,8 +633,8 @@ EvalInfo RoughDiffuse::Eval(const vec3& V, const vec3& L, const IntersectionInfo
 		return { vec3(0.0f), 0.0f };
 	}
 
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
+	vec3 albedo = albedoTexture->Value(info.uv);
+	float roughness = roughnessTexture->Value(info.uv).r;
 
 	float a = roughness * roughness;
 	float s = a;
@@ -664,22 +651,20 @@ EvalInfo RoughDiffuse::Eval(const vec3& V, const vec3& L, const IntersectionInfo
 }
 
 vec3 RoughDiffuse::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample RoughConductor::Sample(const vec3& V, const IntersectionInfo& info) {
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float aniso = anisotropyTexture->Value(info.uv, info.position).r;
+BsdfSample RoughConductor::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float aniso = anisotropyTexture->Value(info.uv).r;
 	float alpha_u = sqr(roughness) * (1.0f + aniso);
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
 	vec3 N = info.normal;
 
-	vec2 sample(RandomFloat(), RandomFloat());
-
 //	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
 //	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
+	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 	float pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
 
@@ -693,12 +678,12 @@ BsdfSample RoughConductor::Sample(const vec3& V, const IntersectionInfo& info) {
 }
 
 EvalInfo RoughConductor::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float aniso = anisotropyTexture->Value(info.uv, info.position).r;
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float aniso = anisotropyTexture->Value(info.uv).r;
 	float alpha_u = sqr(roughness) * (1.0f + aniso);
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
+	vec3 albedo = albedoTexture->Value(info.uv);
 	vec3 N = info.normal;
 	vec3 H = normalize(V + L);
 	float NdotV = dot(N, V);
@@ -724,29 +709,27 @@ EvalInfo RoughConductor::Eval(const vec3& V, const vec3& L, const IntersectionIn
 }
 
 vec3 RoughConductor::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample RoughDielectric::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample RoughDielectric::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	float etai_over_etat = info.frontFace ? (eta_inv) : (eta);
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float aniso = anisotropyTexture->Value(info.uv, info.position).r;
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float aniso = anisotropyTexture->Value(info.uv).r;
 	float alpha_u = sqr(roughness) * (1.0f + aniso);
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
 	vec3 N = info.normal;
 
-	vec2 sample(RandomFloat(), RandomFloat());
-
 //	vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
 //	float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
+	vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 
 	float pdf;
 	vec3 L;
-	if (RandomFloat() < F) {
+	if (sampler->Get1() < F) {
 		L = reflect(-V, H);
 
 		if (dot(N, L) < 0.0f) {
@@ -780,12 +763,12 @@ EvalInfo RoughDielectric::Eval(const vec3& V, const vec3& L, const IntersectionI
 	float ratio = inside ? ratio_t_inv : ratio_t;
 	float F_a = inside ? F_avg_inv : F_avg;
 	// 	cout << etai_over_etat << " " << ratio << " " << F_a << endl;
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float aniso = anisotropyTexture->Value(info.uv, info.position).r;
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float aniso = anisotropyTexture->Value(info.uv).r;
 	float alpha_u = sqr(roughness) * (1.0f + aniso);
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
+	vec3 albedo = albedoTexture->Value(info.uv);
 	vec3 N = info.normal;
 	vec3 H;
 	float NdotV = abs(dot(N, V));
@@ -840,12 +823,12 @@ EvalInfo RoughDielectric::Eval(const vec3& V, const vec3& L, const IntersectionI
 }
 
 vec3 RoughDielectric::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
-	const vec3 kd = diffuseTexture->Value(info.uv, info.position),
-		ks = specularTexture->Value(info.uv, info.position);
+BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	const vec3 kd = diffuseTexture->Value(info.uv),
+		ks = specularTexture->Value(info.uv);
 	const float d_sum = kd.r + kd.g + kd.b,
 		s_sum = ks.r + ks.g + ks.b;
 
@@ -858,19 +841,17 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//抽样漫反射分量的概率
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float aniso = anisotropyTexture->Value(info.uv, info.position).r;
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float aniso = anisotropyTexture->Value(info.uv).r;
 	float alpha_u = sqr(roughness) * (1.0f + aniso);
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
-	vec2 sample(RandomFloat(), RandomFloat());
-
 	float pdf;
 	vec3 L;
-	if (RandomFloat() < pdf_specular) { //从镜面反射分量抽样光线方向
+	if (sampler->Get1() < pdf_specular) { //从镜面反射分量抽样光线方向
 //	    vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
 //	    float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
-		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
+		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 		L = reflect(-V, H);
 
@@ -883,7 +864,7 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 		pdf = pdf_specular * Dv * abs(1.0f / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
 	else { //从漫反射分量抽样光线方向
-		L = CosWeight::Sample(N, sample);
+		L = CosWeight::Sample(N, sampler->Get2());
 
 		float NdotL = dot(N, L);
 		if (NdotL < 0.0f) {
@@ -900,8 +881,8 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info) {
 }
 
 EvalInfo RoughPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
-	const vec3 kd = diffuseTexture->Value(info.uv, info.position),
-		ks = specularTexture->Value(info.uv, info.position);
+	const vec3 kd = diffuseTexture->Value(info.uv),
+		ks = specularTexture->Value(info.uv);
 	const float d_sum = kd.r + kd.g + kd.b,
 		s_sum = ks.r + ks.g + ks.b;
 
@@ -922,8 +903,8 @@ EvalInfo RoughPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInfo
 		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//抽样漫反射分量的概率
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float aniso = anisotropyTexture->Value(info.uv, info.position).r;
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float aniso = anisotropyTexture->Value(info.uv).r;
 	float alpha_u = sqr(roughness) * (1.0f + aniso);
 	float alpha_v = sqr(roughness) * (1.0f - aniso);
 
@@ -954,22 +935,20 @@ EvalInfo RoughPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInfo
 }
 
 vec3 RoughPlastic::GetAlbedo(const IntersectionInfo& info) {
-	return diffuseTexture->Value(info.uv, info.position);
+	return diffuseTexture->Value(info.uv);
 }
 
-BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& info) {
-	float alpha_u = sqr(roughnessTexture_u->Value(info.uv, info.position).r);
-	float alpha_v = sqr(roughnessTexture_v->Value(info.uv, info.position).r);
+BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	float alpha_u = sqr(roughnessTexture_u->Value(info.uv).r);
+	float alpha_v = sqr(roughnessTexture_v->Value(info.uv).r);
 
 	vec3 N = info.normal;
 	float NdotV = dot(V, N); // 出射光线方向和宏观表面法线方向夹角的余弦
 	float weight_coat = clear_coat * Fresnel::FresnelDielectric(V, N, 1.0f / 1.5f);
 
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	if (RandomFloat() < weight_coat) {
+	if (sampler->Get1() < weight_coat) {
 //	    vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
-		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sample);
+		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 		float Dv_coat = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
 		vec3 L = reflect(-V, H);
 
@@ -992,7 +971,7 @@ BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& i
 		return { L, pdf };
 	}
 	else {
-		BsdfSample con_sample = conductor->Sample(V, info);
+		BsdfSample con_sample = conductor->Sample(V, info, sampler);
 		vec3 L = con_sample.bsdf_dir;
 
 		float NdotL = dot(N, L);
@@ -1015,8 +994,8 @@ BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& i
 	}
 }
 EvalInfo ClearcoatedConductor::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
-	float alpha_u = sqr(roughnessTexture_u->Value(info.uv, info.position).r);
-	float alpha_v = sqr(roughnessTexture_v->Value(info.uv, info.position).r);
+	float alpha_u = sqr(roughnessTexture_u->Value(info.uv).r);
+	float alpha_v = sqr(roughnessTexture_v->Value(info.uv).r);
 
 	vec3 N = info.normal;
 	float NdotV = dot(N, V);
@@ -1052,10 +1031,10 @@ vec3 ClearcoatedConductor::GetAlbedo(const IntersectionInfo& info) {
 	return conductor->GetAlbedo(info);
 }
 
-BsdfSample ThinDielectric::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample ThinDielectric::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 
@@ -1065,7 +1044,7 @@ BsdfSample ThinDielectric::Sample(const vec3& V, const IntersectionInfo& info) {
 	if (F < 1.0f) {
 		F *= 2.0f / (1.0f + F);
 	}
-	if (RandomFloat() < F) {
+	if (sampler->Get1() < F) {
 		L = reflect(-V, N);
 		if (dot(N, L) < 0.0f) {
 			return BsdfSampleError();
@@ -1086,10 +1065,10 @@ BsdfSample ThinDielectric::Sample(const vec3& V, const IntersectionInfo& info) {
 }
 
 EvalInfo ThinDielectric::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
-	vec3 albedo = albedoTexture->Value(info.uv, info.normal);
+	vec3 albedo = albedoTexture->Value(info.uv);
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 
@@ -1116,24 +1095,24 @@ bool ThinDielectric::IsDelta() const noexcept {
 }
 
 vec3 ThinDielectric::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	float roughness;
 	float metallic;
 	if (metallicRoughnessTexture == NULL) {
-		roughness = roughnessTexture->Value(info.uv, info.position).r;
-		metallic = metallicTexture->Value(info.uv, info.position).r;
+		roughness = roughnessTexture->Value(info.uv).r;
+		metallic = metallicTexture->Value(info.uv).r;
 	}
 	if(metallicTexture == NULL && roughnessTexture == NULL) {
-		roughness = metallicRoughnessTexture->Value(info.uv, info.position).g;
-		metallic = metallicRoughnessTexture->Value(info.uv, info.position).b;
+		roughness = metallicRoughnessTexture->Value(info.uv).g;
+		metallic = metallicRoughnessTexture->Value(info.uv).b;
 	}
 
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 
@@ -1146,13 +1125,11 @@ BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info) {
 	float p_diffuse = diffuse / deom;
 	float p_specular = specular / deom;
 
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	float t = RandomFloat();
+	float t = sampler->Get1();
 	vec3 L;
 	if (t <= p_diffuse) {
 		//diffuse
-		vec3 L = CosWeight::Sample(info.normal, sample);
+		vec3 L = CosWeight::Sample(info.normal, sampler->Get2());
 
 		float NdotL = dot(info.normal, L);
 		if (NdotL < 0.0f) {
@@ -1160,7 +1137,7 @@ BsdfSample MetalWorkflow::Sample(const vec3& V, const IntersectionInfo& info) {
 		}
 	}
 	else if (t <= p_diffuse + p_specular) {
-		vec3 H = GGX::SampleVisible(N, V, roughness, roughness, sample);
+		vec3 H = GGX::SampleVisible(N, V, roughness, roughness, sampler->Get2());
 		L = reflect(-V, H);
 
 		float NdotL = dot(info.normal, L);
@@ -1187,14 +1164,14 @@ EvalInfo MetalWorkflow::Eval(const vec3& V, const vec3& L, const IntersectionInf
 	float roughness;
 	float metallic;
 	if (metallicRoughnessTexture == NULL) {
-		roughness = roughnessTexture->Value(info.uv, info.position).r;
-		metallic = metallicTexture->Value(info.uv, info.position).r;
+		roughness = roughnessTexture->Value(info.uv).r;
+		metallic = metallicTexture->Value(info.uv).r;
 	}
 	if (metallicTexture == NULL && roughnessTexture == NULL) {
-		roughness = metallicRoughnessTexture->Value(info.uv, info.position).g;
-		metallic = metallicRoughnessTexture->Value(info.uv, info.position).b;
+		roughness = metallicRoughnessTexture->Value(info.uv).g;
+		metallic = metallicRoughnessTexture->Value(info.uv).b;
 	}
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
+	vec3 albedo = albedoTexture->Value(info.uv);
 
 	float metallic_brdf = metallic;
 	float dieletric_brdf = (1.0f - metallic);
@@ -1207,7 +1184,7 @@ EvalInfo MetalWorkflow::Eval(const vec3& V, const vec3& L, const IntersectionInf
 
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
-		vec3 tangentNormal = normalTexture->Value(info.uv, info.position);
+		vec3 tangentNormal = normalTexture->Value(info.uv);
 		N = NormalFormTangentToWorld(info.normal, tangentNormal);
 	}
 
@@ -1239,15 +1216,12 @@ EvalInfo MetalWorkflow::Eval(const vec3& V, const vec3& L, const IntersectionInf
 }
 
 vec3 MetalWorkflow::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample DisneyDiffuse::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample DisneyDiffuse::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
-
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	vec3 L = CosWeight::Sample(info.normal, sample);
+	vec3 L = CosWeight::Sample(info.normal, sampler->Get2());
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -1272,9 +1246,9 @@ EvalInfo DisneyDiffuse::Eval(const vec3& V, const vec3& L, const IntersectionInf
 
 	float pdf = NdotL * INV_PI;
 
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float subsurface = subsurfaceTexture->Value(info.uv, info.position).r;
+	vec3 albedo = albedoTexture->Value(info.uv);
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float subsurface = subsurfaceTexture->Value(info.uv).r;
 	
 	float FL = Fresnel::SchlickWeight(NdotL);
 	float FV = Fresnel::SchlickWeight(NdotV);
@@ -1296,22 +1270,20 @@ EvalInfo DisneyDiffuse::Eval(const vec3& V, const vec3& L, const IntersectionInf
 }
 
 vec3 DisneyDiffuse::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample DisneyMetal::Sample(const vec3& V, const IntersectionInfo& info) {
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float anisotropic = anisotropicTexture->Value(info.uv, info.position).r;
+BsdfSample DisneyMetal::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	vec3 albedo = albedoTexture->Value(info.uv);
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float anisotropic = anisotropicTexture->Value(info.uv).r;
 
 	float aspect = sqrt(1.0f - 0.9f * anisotropic);
 	float ax = std::max(0.0001f, sqr(roughness) / aspect);
 	float ay = std::max(0.0001f, sqr(roughness) * aspect);
 
 	vec3 N = info.normal;
-	vec3 H = GGX::SampleVisible(N, V, ax, ay, sample);
+	vec3 H = GGX::SampleVisible(N, V, ax, ay, sampler->Get2());
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
 
 	vec3 L = reflect(-V, H);
@@ -1337,12 +1309,12 @@ EvalInfo DisneyMetal::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 		return { vec3(0.0f), NdotL, 1.0f };
 	}
 
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float anisotropic = anisotropicTexture->Value(info.uv, info.position).r;
-	float metallic = metallicTexture->Value(info.uv, info.position).r;
-	vec3 specular = specularTexture->Value(info.uv, info.position);
-	vec3 specularTint = specularTintTexture->Value(info.uv, info.position);
+	vec3 albedo = albedoTexture->Value(info.uv);
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float anisotropic = anisotropicTexture->Value(info.uv).r;
+	float metallic = metallicTexture->Value(info.uv).r;
+	vec3 specular = specularTexture->Value(info.uv);
+	vec3 specularTint = specularTintTexture->Value(info.uv);
 
 	float aspect = sqrt(1.0f - 0.9f * anisotropic);
 	float ax = std::max(0.0001f, sqr(roughness) / aspect);
@@ -1366,17 +1338,15 @@ EvalInfo DisneyMetal::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 }
 
 vec3 DisneyMetal::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample DisneyClearcoat::Sample(const vec3& V, const IntersectionInfo& info) {
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	float clearcoatGloss = clearcoatGlossTexture->Value(info.uv, info.position).r;
+BsdfSample DisneyClearcoat::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	float clearcoatGloss = clearcoatGlossTexture->Value(info.uv).r;
 	float ag = glm::mix(0.1f, 0.001f, clearcoatGloss);
 
 	vec3 N = info.normal;
-	vec3 H = GTR1::Sample(V, N, ag, sample);
+	vec3 H = GTR1::Sample(V, N, ag, sampler->Get2());
 	float NdotH = dot(N, H);
 
 	vec3 L = reflect(-V, H);
@@ -1404,7 +1374,7 @@ EvalInfo DisneyClearcoat::Eval(const vec3& V, const vec3& L, const IntersectionI
 		return { vec3(0.0f), NdotL, 1.0f };
 	}
 
-	float clearcoatGloss = clearcoatGlossTexture->Value(info.uv, info.position).r;
+	float clearcoatGloss = clearcoatGlossTexture->Value(info.uv).r;
 	float ag = glm::mix(0.1f, 0.001f, clearcoatGloss);
 
 	float R0 = (1.5f - 1.0f) / (1.5f + 1.0f);
@@ -1422,27 +1392,25 @@ vec3 DisneyClearcoat::GetAlbedo(const IntersectionInfo& info) {
 	return vec3(1.0f);
 }
 
-BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
 
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float anisotropic = anisotropicTexture->Value(info.uv, info.position).r;
+	vec3 albedo = albedoTexture->Value(info.uv);
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float anisotropic = anisotropicTexture->Value(info.uv).r;
 
 	float aspect = sqrt(1.0f - 0.9f * anisotropic);
 	float ax = std::max(0.0001f, sqr(roughness) / aspect);
 	float ay = std::max(0.0001f, sqr(roughness) * aspect);
 
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
-	vec3 H = GGX::SampleVisible(N, V, ax, ay, sample);
+	vec3 H = GGX::SampleVisible(N, V, ax, ay, sampler->Get2());
 	float Dv = GGX::DistributionVisibleGGX(V, H, N, ax, ay);
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 
 	float pdf;
 	vec3 L;
-	if (RandomFloat() < F) {
+	if (sampler->Get1() < F) {
 		L = reflect(-V, H);
 
 		if (dot(N, L) < 0.0f) {
@@ -1472,9 +1440,9 @@ BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info) {
 EvalInfo DisneyGlass::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
 	bool inside = info.frontFace;
 	float etai_over_etat = inside ? (1.0f / eta) : (eta);
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
-	float roughness = roughnessTexture->Value(info.uv, info.position).r;
-	float anisotropic = anisotropicTexture->Value(info.uv, info.position).r;
+	vec3 albedo = albedoTexture->Value(info.uv);
+	float roughness = roughnessTexture->Value(info.uv).r;
+	float anisotropic = anisotropicTexture->Value(info.uv).r;
 
 	float aspect = sqrt(1.0f - 0.9f * anisotropic);
 	float ax = std::max(0.0001f, sqr(roughness) / aspect);
@@ -1524,15 +1492,12 @@ EvalInfo DisneyGlass::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 }
 
 vec3 DisneyGlass::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample DisneySheen::Sample(const vec3& V, const IntersectionInfo& info) {
+BsdfSample DisneySheen::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
-
-	vec2 sample(RandomFloat(), RandomFloat());
-
-	vec3 L = CosWeight::Sample(info.normal, sample);
+	vec3 L = CosWeight::Sample(info.normal, sampler->Get2());
 
 	float NdotL = dot(info.normal, L);
 	if (NdotL < 0.0f) {
@@ -1557,8 +1522,8 @@ EvalInfo DisneySheen::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 
 	float pdf = NdotL * INV_PI;
 
-	vec3 albedo = albedoTexture->Value(info.uv, info.position);
-	float sheenTint = sheenTintTexture->Value(info.uv, info.position).r;
+	vec3 albedo = albedoTexture->Value(info.uv);
+	float sheenTint = sheenTintTexture->Value(info.uv).r;
 
 	float clum = Luminance(albedo);
 	vec3 ctint = clum > 0.0f ? albedo / clum : vec3(1.0f);
@@ -1571,14 +1536,14 @@ EvalInfo DisneySheen::Eval(const vec3& V, const vec3& L, const IntersectionInfo&
 }
 
 vec3 DisneySheen::GetAlbedo(const IntersectionInfo& info) {
-	return albedoTexture->Value(info.uv, info.position);
+	return albedoTexture->Value(info.uv);
 }
 
-BsdfSample DisneyPrinciple::Sample(const vec3& V, const IntersectionInfo& info) {
-	float metallic = metallicTexture->Value(info.uv, info.position).r;
-	float specularTransmission = specularTransmissionTexture->Value(info.uv, info.position).r;
-	vec3 sheen = sheenTexture->Value(info.uv, info.position);
-	float clearcoat = clearcoatTexture->Value(info.uv, info.position).r;
+BsdfSample DisneyPrinciple::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	float metallic = metallicTexture->Value(info.uv).r;
+	float specularTransmission = specularTransmissionTexture->Value(info.uv).r;
+	vec3 sheen = sheenTexture->Value(info.uv);
+	float clearcoat = clearcoatTexture->Value(info.uv).r;
 
 	float diffuseWeight = (1.0f - metallic) * (1.0f - specularTransmission);
 	float metalWeight = (1.0f - specularTransmission) * (1.0f - metallic);
@@ -1599,23 +1564,23 @@ BsdfSample DisneyPrinciple::Sample(const vec3& V, const IntersectionInfo& info) 
 
 	BsdfSample bsdf_sample;
 	if (!info.frontFace) {
-		bsdf_sample = glass_m->Sample(V, info);
+		bsdf_sample = glass_m->Sample(V, info, sampler);
 
 		return { bsdf_sample.bsdf_dir, bsdf_sample.bsdf_pdf };
 	}
 
-	float rnd = RandomFloat();
+	float rnd = sampler->Get1();
 	if (rnd < cdf_clearcoat) {
-		bsdf_sample = clearcoat_m->Sample(V, info);
+		bsdf_sample = clearcoat_m->Sample(V, info, sampler);
 	}
 	else if (rnd < cdf_metal) {
-		bsdf_sample = metal_m->Sample(V, info);
+		bsdf_sample = metal_m->Sample(V, info, sampler);
 	}
 	else if (rnd < cdf_glass) {
-		bsdf_sample = glass_m->Sample(V, info);
+		bsdf_sample = glass_m->Sample(V, info, sampler);
 	}
 	else {
-		bsdf_sample = diffuse_m->Sample(V, info);
+		bsdf_sample = diffuse_m->Sample(V, info, sampler);
 	}
 
 	vec3 L = bsdf_sample.bsdf_dir;
@@ -1635,10 +1600,10 @@ BsdfSample DisneyPrinciple::Sample(const vec3& V, const IntersectionInfo& info) 
 EvalInfo DisneyPrinciple::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
 	vec3 N = info.normal;
 
-	float metallic = metallicTexture->Value(info.uv, info.position).r;
-	float specularTransmission = specularTransmissionTexture->Value(info.uv, info.position).r;
-	vec3 sheen = sheenTexture->Value(info.uv, info.position);
-	float clearcoat = clearcoatTexture->Value(info.uv, info.position).r;
+	float metallic = metallicTexture->Value(info.uv).r;
+	float specularTransmission = specularTransmissionTexture->Value(info.uv).r;
+	vec3 sheen = sheenTexture->Value(info.uv);
+	float clearcoat = clearcoatTexture->Value(info.uv).r;
 
 	float diffuseWeight = (1.0f - metallic) * (1.0f - specularTransmission);
 	float metalWeight = (1.0f - specularTransmission) * (1.0f - metallic);

@@ -2,6 +2,7 @@
 
 #include <Utils.h>
 #include <Scene.h>
+#include <Sampler.h>
 #include <Material.h>
 
 enum TraceLightType {
@@ -16,7 +17,7 @@ struct GBuffer {
 
 class Integrator {
 public:
-	Integrator(shared_ptr<Scene> s) : scene(s) {}
+	Integrator(shared_ptr<Scene> s, SamplerType sp) : scene(s), sp_type(sp) {}
 
 	bool ReasonableTesting(float value);
 	GBuffer GetSceneGBuffer();
@@ -27,12 +28,14 @@ public:
 
 public:
 	shared_ptr<Scene> scene;
+	Sampler* sampler;
+	SamplerType sp_type;
 };
 
 //揃抄弖忸！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
 class PathTracing : public Integrator {
 public:
-	PathTracing(shared_ptr<Scene> s, TraceLightType t = RANDOM) : Integrator(s), traceLightType(t), depth(scene->depth) {}
+	PathTracing(shared_ptr<Scene> s, SamplerType sp, TraceLightType t = RANDOM) : Integrator(s, sp), traceLightType(t), depth(scene->depth) {}
 
 	vec3 DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& info, const vec3& history);
 

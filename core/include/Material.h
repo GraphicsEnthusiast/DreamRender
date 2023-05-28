@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include <Utils.h>
-#include <Random.h>
 #include <Texture.h>
+#include <Sampler.h>
 
 //材质类型
 enum class MaterialType {
@@ -85,6 +85,18 @@ public:
 	KullaConty(float (*G1)(const vec3& V, const vec3& H, const vec3& N, float alpha_u, float alpha_v) = GGX::GeometrySmith_1,
 		vec3(*Sample)(const vec3& N, float alpha_u, float alpha_v, const vec2& sample) = GGX::Sample);
 
+	//已知样本容量，生成前两维的哈默斯利序列
+	inline vec2 Hammersley(uint32_t i, uint32_t N) {
+		uint32_t bits = (i << 16u) | (i >> 16u);
+		bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+		bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+		bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+		bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+		auto rdi = static_cast<float>(float(bits) * 2.3283064365386963e-10f);
+
+		return { float(i) / float(N), rdi };
+	}
+
 	float Albedo(float cos_theta, float roughness) const;
 	float AverageAlbedo(float roughness) const;
 	vec3 EvalMultipleScatter(float NdotL, float NdotV, float roughness, vec3 F_avg);
@@ -100,7 +112,7 @@ private:
 
 class Material {
 public:
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) = 0;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) = 0;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) = 0;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) = 0;
 	virtual vec3 Emitted(const IntersectionInfo& info) { return vec3(0.0f); }
@@ -114,7 +126,7 @@ class DiffuseLight : public Material {
 public:
 	DiffuseLight(shared_ptr<Texture> e) : emittedTexture(e) { m_type = MaterialType::DiffuseLight; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 Emitted(const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
@@ -127,7 +139,7 @@ class SmoothDiffuse : public Material {
 public:
 	SmoothDiffuse(shared_ptr<Texture> a) : albedoTexture(a) { m_type = MaterialType::SmoothDiffuse; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -140,7 +152,7 @@ public:
 	SmoothConductor(shared_ptr<Texture> a, vec3 e, vec3 _k, shared_ptr<Texture> n = NULL) :
 		albedoTexture(a), eta(e), k(_k), normalTexture(n) { m_type = MaterialType::SmoothConductor; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual bool IsDelta() const noexcept override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
@@ -157,7 +169,7 @@ public:
 	SmoothDielectric(shared_ptr<Texture> a, float int_ior, float ext_ior, shared_ptr<Texture> n = NULL) :
 		albedoTexture(a), eta(int_ior / ext_ior), normalTexture(n) { m_type = MaterialType::SmoothDielectric; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual bool IsDelta() const noexcept override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
@@ -174,7 +186,7 @@ public:
 		diffuseTexture(d), specularTexture(s), eta_inv(ext_ior / int_ior), nonlinear(non), 
 		fdr(Fresnel::AverageFresnelDielectric(int_ior / ext_ior)), normalTexture(n) { m_type = MaterialType::SmoothPlastic; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -191,7 +203,7 @@ class RoughDiffuse : public Material {
 public:
 	RoughDiffuse(shared_ptr<Texture> a, shared_ptr<Texture> r) : albedoTexture(a), roughnessTexture(r) { m_type = MaterialType::RoughDiffuse; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -208,7 +220,7 @@ public:
 		m_type = MaterialType::RoughConductor;
 	}
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -233,7 +245,7 @@ public:
 		m_type = MaterialType::RoughDielectric;
 	}
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -258,7 +270,7 @@ public:
 		m_type = MaterialType::RoughPlastic;
 	}
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -278,7 +290,7 @@ public:
 	ClearcoatedConductor(shared_ptr<RoughConductor> con, shared_ptr<Texture> r_u, shared_ptr<Texture> r_v, float cle) : 
 		conductor(con), roughnessTexture_u(r_u), roughnessTexture_v(r_v), clear_coat(cle) { m_type = MaterialType::ClearcoatedConductor; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -294,7 +306,7 @@ public:
 	ThinDielectric(shared_ptr<Texture> a, float int_ior, float ext_ior, shared_ptr<Texture> n = NULL) :
 		albedoTexture(a), eta_inv(ext_ior / int_ior), normalTexture(n) { m_type = MaterialType::ThinDielectric; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual bool IsDelta() const noexcept override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
@@ -314,7 +326,7 @@ public:
 		m_type = MaterialType::MetalWorkflow;
 	}
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -331,7 +343,7 @@ public:
 	DisneyDiffuse(shared_ptr<Texture> a, shared_ptr<Texture> r, shared_ptr<Texture> s) :
 		albedoTexture(a), roughnessTexture(r), subsurfaceTexture(s) { m_type = MaterialType::DisneyDiffuse; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -348,7 +360,7 @@ public:
 		albedoTexture(a), roughnessTexture(r), anisotropicTexture(an), metallicTexture(metallic),
 	specularTexture(specular), specularTintTexture(specularTint) { m_type = MaterialType::DisneyMetal; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -365,7 +377,7 @@ class DisneyClearcoat : public Material {
 public:
 	DisneyClearcoat(shared_ptr<Texture> c) : clearcoatGlossTexture(c) { m_type = MaterialType::DisneyClearcoat; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -378,7 +390,7 @@ public:
 	DisneyGlass(shared_ptr<Texture> a, shared_ptr<Texture> r, shared_ptr<Texture> an, float int_ior, float ext_ior) :
 		albedoTexture(a), roughnessTexture(r), anisotropicTexture(an), eta(int_ior / ext_ior) { m_type = MaterialType::DisneyGlass; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -393,7 +405,7 @@ class DisneySheen : public Material {
 public:
 	DisneySheen(shared_ptr<Texture> a, shared_ptr<Texture> s) : albedoTexture(a), sheenTintTexture(s) { m_type = MaterialType::DisneySheen; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 
@@ -411,7 +423,7 @@ public:
 		metallicTexture(metallic), specularTransmissionTexture(specularTransmission), sheenTexture(sheen),
 	    clearcoatTexture(clearcoat) { m_type = MaterialType::DisneyPrinciple; }
 
-	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info) override;
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
 	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 

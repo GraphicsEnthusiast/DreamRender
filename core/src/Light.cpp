@@ -1,9 +1,9 @@
 #include <Light.h>
 #include <Texture.h>
 
-LightSample SphereLight::Sample(const IntersectionInfo& info) {
-	float x1 = RandomFloat();
-	float x2 = RandomFloat();
+LightSample SphereLight::Sample(const IntersectionInfo& info, vec2 sample) {
+	float x1 = sample.x;
+	float x2 = sample.y;
 
 	//球面均匀采样
 	float costheta = 1.0f - 2.0f * x1;
@@ -26,9 +26,9 @@ LightSample SphereLight::Sample(const IntersectionInfo& info) {
 	return { L, light_pdf, dist, light_normal, radiance };
 }
 
-LightSample QuadLight::Sample(const IntersectionInfo& info) {
-	float r1 = RandomFloat();
-	float r2 = RandomFloat();
+LightSample QuadLight::Sample(const IntersectionInfo& info, vec2 sample) {
+	float r1 = sample.x;
+	float r2 = sample.y;
 
 	float area = length(quad->u) * length(quad->v);
 	vec3 light_pos = quad->position + quad->u * r1 + quad->v * r2;
@@ -47,7 +47,7 @@ LightSample QuadLight::Sample(const IntersectionInfo& info) {
 	return { L, light_pdf, dist, light_normal, radiance };
 }
 
-LightSample PointLight::Sample(const IntersectionInfo& info) {
+LightSample PointLight::Sample(const IntersectionInfo& info, vec2 sample) {
 	float dist = length(info.position - position);
 	vec3 radiance = intensity / sqr(dist);
 	vec3 L = normalize(position - info.position);
@@ -55,7 +55,7 @@ LightSample PointLight::Sample(const IntersectionInfo& info) {
 	return { L, 1.0f, dist, -L, radiance };
 }
 
-LightSample DirectionLight::Sample(const IntersectionInfo& info) {
+LightSample DirectionLight::Sample(const IntersectionInfo& info, vec2 sample) {
 	vec3 L = -direction;
 
 	return { L, 1.0f, INF, -L, radiance };
@@ -150,12 +150,12 @@ InfiniteAreaLight::InfiniteAreaLight(shared_ptr<HdrTexture> h, float scl) {
 vec3 InfiniteAreaLight::Emitted(const vec3& dir) {
 	vec2 planeUV = SphereToPlane(normalize(dir));
 
-	return scale * hdr->Value(planeUV, vec3(0.0f));
+	return scale * hdr->Value(planeUV);
 }
 
-HDRSample InfiniteAreaLight::Sample(const IntersectionInfo& info) {
-	vec2 u1(RandomFloat(), RandomFloat());
-	vec2 u2(RandomFloat(), RandomFloat());
+HDRSample InfiniteAreaLight::Sample(const IntersectionInfo& info, vec4 sample) {
+	vec2 u1(sample.x, sample.y);
+	vec2 u2(sample.z, sample.w);
 	auto [col, row] = mDistrib.Sample(u1, u2);
 
 	int mWidth = hdr->nx;
@@ -180,7 +180,7 @@ float InfiniteAreaLight::Pdf(const vec3& wi) {
 
 float InfiniteAreaLight::GetPortion(const vec3& wi) {
 	vec2 planeUV = SphereToPlane(normalize(wi));
-	vec3 l = hdr->Value(planeUV, vec3(0.0f));
+	vec3 l = hdr->Value(planeUV);
 
 	return Luminance(l) / mDistrib.Sum();
 }

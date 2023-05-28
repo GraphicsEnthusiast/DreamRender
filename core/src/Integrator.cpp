@@ -76,7 +76,8 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 	if (!hitmat->IsDelta()) {
 		//HDR环境光
 		if (scene->useEnv) {
-			HDRSample envsample = scene->env->Sample(info);
+			vec4 sample = sampler->Get4();
+			HDRSample envsample = scene->env->Sample(info, sample);
 			vec3 lightL = envsample.L;
 
 			//HDR环境贴图重要性采样    
@@ -106,9 +107,10 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 		if (scene->lights.size() != 0) {
 			//方法1. 随机选择一个光源
 			if (traceLightType == RANDOM) {
-				int index = RandomFloat(0.0f, 0.99f) * scene->lights.size();
+				int index = sampler->Get1() * scene->lights.size();
 				auto light = scene->lights[index];
-				LightSample light_sample = light->Sample(info);
+				vec2 sample = sampler->Get2();
+				LightSample light_sample = light->Sample(info, sample);
 				light_pdf = light_sample.light_pdf;
 				EvalInfo bsdf_info = hitmat->Eval(V, light_sample.light_dir, info);
 
@@ -135,7 +137,8 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 			if (traceLightType == ALL) {
 				for (int index = 0; index < scene->lights.size(); index++) {
 					auto light = scene->lights[index];
-					LightSample light_sample = light->Sample(info);
+					vec2 sample = sampler->Get2();
+					LightSample light_sample = light->Sample(info, sample);
 					light_pdf = light_sample.light_pdf;
 					EvalInfo bsdf_info = hitmat->Eval(V, light_sample.light_dir, info);
 
@@ -211,13 +214,13 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 		//间接光照————————————————————————————————————————————————
 		//该条路径radiance越小越容易丢失
 		float prr = hitmat->IsDelta() ? 1.0f : std::min(1.0f, (history[0] + history[1] + history[2]) / 3.0f);
-		if (RandomFloat() > prr) {
+		if (sampler->Get1() > prr) {
 			break;
 		}
 
-		BsdfSample sample = scene->shapes[rayhit.hit.geomID]->material->Sample(V, info);
-		float bsdf_pdf = sample.bsdf_pdf;
-		vec3 L = sample.bsdf_dir;
+		BsdfSample bsdf_sample = scene->shapes[rayhit.hit.geomID]->material->Sample(V, info, sampler);
+		float bsdf_pdf = bsdf_sample.bsdf_pdf;
+		vec3 L = bsdf_sample.bsdf_dir;
 		EvalInfo bsdf_info = scene->shapes[rayhit.hit.geomID]->material->Eval(V, L, info);
 
 		if (!(ReasonableTesting(bsdf_pdf) && ReasonableTesting(bsdf_info.costheta))) {

@@ -89,6 +89,13 @@ void CPURender::Run() {
 	}
 	frameOutputPtr = new vec3[Width * Height];
 
+	if (inte->sp_type == SamplerType::Independent) {
+		inte->sampler = new IndependentSampler();
+	}
+	else if(inte->sp_type == SamplerType::SimpleSobol) {
+		inte->sampler = new SobolSampler(frameCounter);
+	}
+
 	while (!glfwWindowShouldClose(window)) {
 		//imgui
 		//Start the Dear ImGui frame
@@ -113,11 +120,12 @@ void CPURender::Run() {
 #pragma omp parallel for
 		for (int j = 0; j < Height; j++) {
 			for (int i = 0; i < Width; i++) {
-				vec2 jitter = inte->scene->filter->FilterVec2(vec2(RandomFloat(), RandomFloat()));
+				vec2 jitter = inte->scene->filter->FilterVec2(inte->sampler->Get2());
 
 				const float px = (static_cast<float>(i) + jitter.x) / static_cast<float>(Width);
 				const float py = (static_cast<float>(j) + jitter.y) / static_cast<float>(Height);
 
+				inte->sampler->SetPixel(i, j);
 				IntersectionInfo info;
 				info.pixel_ndc = vec2(px, py);
 
@@ -144,6 +152,7 @@ void CPURender::Run() {
 				nowTexture[j * Width + i] = radiance;
 			}
 		}
+		inte->sampler->NextSample();
 
 		if (use_denoise) {
 			//Create an Intel Open Image Denoise device
@@ -209,6 +218,7 @@ void CPURender::Run() {
 }
 
 void CPURender::Destory() {
+	delete inte->sampler;
 	delete[] nowTexture;
 	delete[] frameOutputPtr;
 	if (use_denoise) {

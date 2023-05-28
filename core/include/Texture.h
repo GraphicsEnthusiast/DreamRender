@@ -4,28 +4,17 @@
 
 class Texture {
 public:
-	virtual vec3 Value(const vec2& uv, const vec3& p) = 0;
+	virtual vec3 Value(const vec2& uv) = 0;
 };
 
 class ConstantTexture : public Texture {
 public:
 	ConstantTexture(vec3 c) : color(c) {}
 
-	virtual vec3 Value(const vec2& uv, const vec3& p) override;
+	virtual vec3 Value(const vec2& uv) override;
 
 public:
 	vec3 color;
-};
-
-class CheckerTexture : public Texture {
-public:
-    CheckerTexture(shared_ptr<Texture> t0, shared_ptr<Texture> t1): even(t0), odd(t1) {}
-
-    virtual vec3 Value(const vec2& uv, const vec3& p) override;
-
-public:
-	shared_ptr<Texture> odd;
-	shared_ptr<Texture> even;
 };
 
 class ImageTexture : public Texture {
@@ -33,7 +22,7 @@ public:
 	ImageTexture(const char* filename);
 	~ImageTexture();
 
-	virtual vec3 Value(const vec2& uv, const vec3& p) override;
+	virtual vec3 Value(const vec2& uv) override;
 
 public:
 	unsigned char* data;
@@ -45,7 +34,7 @@ public:
 	HdrTexture(const char* filename);
 	~HdrTexture();
 
-	virtual vec3 Value(const vec2& uv, const vec3& p) override;
+	virtual vec3 Value(const vec2& uv) override;
 
 public:
 	float* data;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Utils.h>
-#include <Random.h>
 
 class Camera {
 public:
@@ -25,6 +24,10 @@ public:
 class ThinlensCamera : public Camera {
 public:
 	ThinlensCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float znear, float vfov, float aspect, float aperture, float focus_dist);
+
+	inline float RandomFloat() {
+		return static_cast<float>(rand() / (RAND_MAX + 1.0f));
+	}
 
 	inline vec3 RandomInUnitDisk() {
 		while (true) {

@@ -25,6 +25,7 @@
 using namespace std;
 using namespace glm;
 
+static const float OneMinusEpsilon = 0x1.fffffep-1f;
 static const float INF = numeric_limits<float>::infinity();
 static const float EPS = 1e-4f;
 static const float PI = 3.14159265358979323846f;
