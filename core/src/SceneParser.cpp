@@ -65,7 +65,6 @@ void SceneParser::Parse(const json& data, Scene& scene) {
 
 	scene.width = width;
 	scene.height = height;
-	scene.depth = inte_info.depth;
 	scene.SetCamera(camera);
 	scene.SetFilter(filter);
 	scene.SetHDR(env);

@@ -34,7 +34,6 @@ public:
 	RTCScene rtc_scene;
 	RTCIntersectContext context;
 	int width, height;
-	int depth;
 	vector<Shape*> shapes;
 	vector<shared_ptr<Light>> lights;
 	shared_ptr<Camera> camera;

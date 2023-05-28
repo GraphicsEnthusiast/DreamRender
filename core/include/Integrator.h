@@ -35,7 +35,7 @@ public:
 //揃抄弖忸！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
 class PathTracing : public Integrator {
 public:
-	PathTracing(shared_ptr<Scene> s, SamplerType sp, TraceLightType t = RANDOM) : Integrator(s, sp), traceLightType(t), depth(scene->depth) {}
+	PathTracing(shared_ptr<Scene> s, int d, SamplerType sp, TraceLightType t = RANDOM) : Integrator(s, sp), traceLightType(t), depth(d) {}
 
 	vec3 DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& info, const vec3& history);
 
