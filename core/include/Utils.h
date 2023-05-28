@@ -38,9 +38,6 @@ struct IntersectionInfo {
 	vec3 position;
 	vec3 normal;
 	bool frontFace;
-	unsigned int frameCounter;
-	unsigned int bounceCounter;
-	vec2 pixel;
 	vec2 pixel_ndc;
 
 	inline void SetFaceNormal(const vec3& dir, const vec3& outward_normal) {

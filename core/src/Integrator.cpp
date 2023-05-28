@@ -202,7 +202,6 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 	vec3 radiance(0.0f);
 	vec3 history(1.0f);
 	for (int i = 0; i < depth; i++) {
-		info.bounceCounter = i;
 		auto hitmat = scene->shapes[rayhit.hit.geomID]->material;
 
 		vec3 V = -GetRayDir(rayhit);

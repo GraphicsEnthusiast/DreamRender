@@ -118,11 +118,7 @@ void CPURender::Run() {
 				const float px = (static_cast<float>(i) + jitter.x) / static_cast<float>(Width);
 				const float py = (static_cast<float>(j) + jitter.y) / static_cast<float>(Height);
 
-				RTCRay ray = inte->scene->camera->GenerateRay(px, py);
-				RTCRayHit rayhit = MakeRayHit(ray);
 				IntersectionInfo info;
-				info.frameCounter = frameCounter;
-				info.pixel = vec2(i, j);
 				info.pixel_ndc = vec2(px, py);
 
 				vec3 radiance = inte->GetPixelColor(info);
