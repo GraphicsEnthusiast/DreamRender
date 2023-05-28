@@ -6,7 +6,7 @@ IndependentSampler::IndependentSampler() : Sampler(SamplerType::Independent) {
 }
 
 float IndependentSampler::Get1() {
-	return std::uniform_real_distribution<float>(0.0f, OneMinusEpsilon)(rng);
+	return uniform_real_distribution<float>(0.0f, OneMinusEpsilon)(rng);
 }
 
 void IndependentSampler::SetPixel(int x, int y) {
@@ -28,6 +28,7 @@ uint32_t SobolSample(uint64_t index, int dim, uint32_t scramble = 0) {
 			r ^= SobolMatrices[i];
 		}
 	}
+
 	return r;
 }
 
