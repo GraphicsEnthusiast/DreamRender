@@ -62,16 +62,6 @@ glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路�
 
 - 截图
 
-sobol：
-
-BreakfastRoom
-![breakfast_sobol](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/b838db4e-b4dc-46dd-9e5a-86cab3cb725e)
-Staircase
-![staircase_sobol](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/63a875a6-5dd7-4119-b449-0fa1eb993bc1)
-
-
-Independent：
-
 BreakfastRoom
 ![breakfast](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/cda01ee4-c6dd-4a0b-8c03-5fc7725063f8)
 Staircase
