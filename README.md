@@ -69,7 +69,7 @@ Staircase
 Mis
 ![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6e73c199-8480-47d2-bffb-7d9ac00e99ba)
 CornellBox
-![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/4a66e37f-bc29-4a95-a493-44b6686e02ba)
+![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8902ff4f-bdf0-45db-bc53-3dee55575d04)
 Teapot
 ![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/a9f9ef80-7535-45bf-ab5a-98365393f1c4)
 Boy
