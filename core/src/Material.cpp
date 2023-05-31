@@ -1621,7 +1621,8 @@ EvalInfo DisneyPrinciple::Eval(const vec3& V, const vec3& L, const IntersectionI
 	EvalInfo glass_info = glass_m->Eval(V, L, info);
 	f_glass = glass_info.bsdf;
 	float pdf = glass_info.bsdf_pdf;
-	if (info.frontFace) {
+	bool isReflect = NdotV * NdotL > 0.0f;
+	if (isReflect) {
 		pdf *= glassWeight;
 
 		EvalInfo diffuse_info = diffuse_m->Eval(V, L, info);

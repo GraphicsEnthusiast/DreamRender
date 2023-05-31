@@ -150,7 +150,9 @@ private:
 class SmoothConductor : public Material {
 public:
 	SmoothConductor(shared_ptr<Texture> a, vec3 e, vec3 _k, shared_ptr<Texture> n = NULL) :
-		albedoTexture(a), eta(e), k(_k), normalTexture(n) { m_type = MaterialType::SmoothConductor; }
+		albedoTexture(a), eta(e), k(_k), normalTexture(n) {
+		m_type = MaterialType::SmoothConductor;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -167,7 +169,9 @@ private:
 class SmoothDielectric : public Material {
 public:
 	SmoothDielectric(shared_ptr<Texture> a, float int_ior, float ext_ior, shared_ptr<Texture> n = NULL) :
-		albedoTexture(a), eta(int_ior / ext_ior), normalTexture(n) { m_type = MaterialType::SmoothDielectric; }
+		albedoTexture(a), eta(int_ior / ext_ior), normalTexture(n) {
+		m_type = MaterialType::SmoothDielectric;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -183,8 +187,10 @@ private:
 class SmoothPlastic : public Material {
 public:
 	SmoothPlastic(shared_ptr<Texture> d, shared_ptr<Texture> s, float int_ior, float ext_ior, bool non, shared_ptr<Texture> n = NULL) :
-		diffuseTexture(d), specularTexture(s), eta_inv(ext_ior / int_ior), nonlinear(non), 
-		fdr(Fresnel::AverageFresnelDielectric(int_ior / ext_ior)), normalTexture(n) { m_type = MaterialType::SmoothPlastic; }
+		diffuseTexture(d), specularTexture(s), eta_inv(ext_ior / int_ior), nonlinear(non),
+		fdr(Fresnel::AverageFresnelDielectric(int_ior / ext_ior)), normalTexture(n) {
+		m_type = MaterialType::SmoothPlastic;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -215,7 +221,7 @@ private:
 class RoughConductor : public Material {
 public:
 	RoughConductor(shared_ptr<KullaConty> ku, shared_ptr<Texture> a, shared_ptr<Texture> r, shared_ptr<Texture> an, vec3 e, vec3 _k) :
-		albedoTexture(a), roughnessTexture(r), anisotropyTexture(an), eta(e), k(_k) ,kulla_conty(ku) {
+		albedoTexture(a), roughnessTexture(r), anisotropyTexture(an), eta(e), k(_k), kulla_conty(ku) {
 		F_avg = Fresnel::AverageFresnelConductor(eta, k);
 		m_type = MaterialType::RoughConductor;
 	}
@@ -287,8 +293,10 @@ private:
 
 class ClearcoatedConductor : public Material {
 public:
-	ClearcoatedConductor(shared_ptr<RoughConductor> con, shared_ptr<Texture> r_u, shared_ptr<Texture> r_v, float cle) : 
-		conductor(con), roughnessTexture_u(r_u), roughnessTexture_v(r_v), clear_coat(cle) { m_type = MaterialType::ClearcoatedConductor; }
+	ClearcoatedConductor(shared_ptr<RoughConductor> con, shared_ptr<Texture> r_u, shared_ptr<Texture> r_v, float cle) :
+		conductor(con), roughnessTexture_u(r_u), roughnessTexture_v(r_v), clear_coat(cle) {
+		m_type = MaterialType::ClearcoatedConductor;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -304,7 +312,9 @@ private:
 class ThinDielectric : public Material {
 public:
 	ThinDielectric(shared_ptr<Texture> a, float int_ior, float ext_ior, shared_ptr<Texture> n = NULL) :
-		albedoTexture(a), eta_inv(ext_ior / int_ior), normalTexture(n) { m_type = MaterialType::ThinDielectric; }
+		albedoTexture(a), eta_inv(ext_ior / int_ior), normalTexture(n) {
+		m_type = MaterialType::ThinDielectric;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -320,7 +330,9 @@ private:
 class MetalWorkflow : public Material {
 public:
 	MetalWorkflow(shared_ptr<Texture> a, shared_ptr<Texture> r, shared_ptr<Texture> m, shared_ptr<Texture> n) :
-		albedoTexture(a), roughnessTexture(r), metallicTexture(m), metallicRoughnessTexture(NULL), normalTexture(n) { m_type = MaterialType::MetalWorkflow; }
+		albedoTexture(a), roughnessTexture(r), metallicTexture(m), metallicRoughnessTexture(NULL), normalTexture(n) {
+		m_type = MaterialType::MetalWorkflow;
+	}
 	MetalWorkflow(shared_ptr<Texture> a, shared_ptr<Texture> metallicRoughness, shared_ptr<Texture> n) :
 		albedoTexture(a), roughnessTexture(NULL), metallicTexture(NULL), metallicRoughnessTexture(metallicRoughness), normalTexture(n) {
 		m_type = MaterialType::MetalWorkflow;
@@ -341,7 +353,9 @@ private:
 class DisneyDiffuse : public Material {
 public:
 	DisneyDiffuse(shared_ptr<Texture> a, shared_ptr<Texture> r, shared_ptr<Texture> s) :
-		albedoTexture(a), roughnessTexture(r), subsurfaceTexture(s) { m_type = MaterialType::DisneyDiffuse; }
+		albedoTexture(a), roughnessTexture(r), subsurfaceTexture(s) {
+		m_type = MaterialType::DisneyDiffuse;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -358,7 +372,9 @@ public:
 	DisneyMetal(shared_ptr<Texture> a, shared_ptr<Texture> r, shared_ptr<Texture> an, shared_ptr<Texture> metallic,
 		shared_ptr<Texture> specular, shared_ptr<Texture> specularTint) :
 		albedoTexture(a), roughnessTexture(r), anisotropicTexture(an), metallicTexture(metallic),
-	specularTexture(specular), specularTintTexture(specularTint) { m_type = MaterialType::DisneyMetal; }
+		specularTexture(specular), specularTintTexture(specularTint) {
+		m_type = MaterialType::DisneyMetal;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -388,7 +404,9 @@ private:
 class DisneyGlass : public Material {
 public:
 	DisneyGlass(shared_ptr<Texture> a, shared_ptr<Texture> r, shared_ptr<Texture> an, float int_ior, float ext_ior) :
-		albedoTexture(a), roughnessTexture(r), anisotropicTexture(an), eta(int_ior / ext_ior) { m_type = MaterialType::DisneyGlass; }
+		albedoTexture(a), roughnessTexture(r), anisotropicTexture(an), eta(int_ior / ext_ior) {
+		m_type = MaterialType::DisneyGlass;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
@@ -418,10 +436,12 @@ class DisneyPrinciple : public Material {
 public:
 	DisneyPrinciple(shared_ptr<DisneyDiffuse> diff, shared_ptr<DisneyMetal> met, shared_ptr<DisneyClearcoat> clear,
 		shared_ptr<DisneyGlass> gla, shared_ptr<DisneySheen> she, shared_ptr<Texture> metallic, shared_ptr<Texture> specularTransmission,
-		shared_ptr<Texture> sheen, shared_ptr<Texture> clearcoat) : 
-		diffuse_m(diff), metal_m(met), clearcoat_m(clear), glass_m(gla), sheen_m(she), 
+		shared_ptr<Texture> sheen, shared_ptr<Texture> clearcoat) :
+		diffuse_m(diff), metal_m(met), clearcoat_m(clear), glass_m(gla), sheen_m(she),
 		metallicTexture(metallic), specularTransmissionTexture(specularTransmission), sheenTexture(sheen),
-	    clearcoatTexture(clearcoat) { m_type = MaterialType::DisneyPrinciple; }
+		clearcoatTexture(clearcoat) {
+		m_type = MaterialType::DisneyPrinciple;
+	}
 
 	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
 	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
