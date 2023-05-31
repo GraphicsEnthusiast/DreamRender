@@ -70,6 +70,8 @@ Mis
 ![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6e73c199-8480-47d2-bffb-7d9ac00e99ba)
 CornellBox
 ![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8902ff4f-bdf0-45db-bc53-3dee55575d04)
+Hyperion
+![hyperion](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/499beb77-3a91-4f0f-af07-27fe8a001447)
 Teapot
 ![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/a9f9ef80-7535-45bf-ab5a-98365393f1c4)
 Boy
