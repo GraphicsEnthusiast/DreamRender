@@ -1,7 +1,7 @@
 # DreamRender
 ——————————————————————————
 
-低差异序列有bug，正准备修，看代码请看这个分支：
+看代码请看这个分支：
 https://github.com/GraphicsEnthusiast/DreamRender/tree/stage-1
 删除了冗余代码，并且没有bug。
 
