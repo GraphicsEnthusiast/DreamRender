@@ -33,20 +33,6 @@ static const float INV_PI = 0.31830988618379067154f;
 static const float INV_2PI = 0.15915494309189533577f;
 static const float INV_4PI = 0.07957747154594766788f;
 
-struct IntersectionInfo {
-	float t;
-	vec2 uv;
-	vec3 position;
-	vec3 normal;
-	bool frontFace;
-	vec2 pixel_ndc;
-
-	inline void SetFaceNormal(const vec3& dir, const vec3& outward_normal) {
-        frontFace = dot(dir, outward_normal) < 0.0f;
-        normal = frontFace ? outward_normal : -outward_normal;
-    }
-};
-
 inline float sqr(float x) {
 	return x * x;
 }

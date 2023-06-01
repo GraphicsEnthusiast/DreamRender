@@ -2,6 +2,7 @@
 
 #include <Utils.h>
 #include <Material.h>
+#include <Medium.h>
 
 enum class ShapeType {
 	TriangleMesh,
@@ -20,6 +21,11 @@ public:
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) = 0;
 	virtual float Pdf(const IntersectionInfo& info, const vec3& L, float dist) = 0;
 
+	inline void SetMedium(shared_ptr<Medium> m_int, shared_ptr<Medium> m_ext) {
+		medium_int = m_int;
+		medium_ext = m_ext;
+	}
+
 public:
 	// Position before any transformation
 	ShapeType m_type;
@@ -27,6 +33,8 @@ public:
 	mat4 transform;
 	int geometry_id;
 	shared_ptr<Material> material;
+	shared_ptr<Medium> medium_int; //表面内侧介质
+	shared_ptr<Medium> medium_ext; //表面外侧介质
 };
 
 struct VertexIndices {
