@@ -6,10 +6,7 @@
 ——————————————————————————
 
 这是我写的第一个离线渲染器，起源于raytracing三部曲，但已经被我改了看不出来了😄，未来会更新更多的渲染算法(参考了github上的大量开源项目)。
-
-glfw, glad, glm, nlohmann_json库用vcpkg安装，构建时记得修改vcpkg路径
-
-![image](https://github.com/qaz123w/DreamRender/assets/75780167/99953c96-80ea-4e0d-a902-e892995be9d0)
+直接构建即可运行，构建速度很快，移除了vcpkg，将embree和tbb换成了和oidn一样的提前编译好的库。
 
 - 构建项目
 ```bash
