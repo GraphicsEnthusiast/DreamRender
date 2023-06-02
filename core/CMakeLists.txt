@@ -2,9 +2,6 @@ project ("core")
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(glm CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
-
 add_library(core 
     src/Camera.cpp 
     src/Shape.cpp
@@ -20,15 +17,13 @@ add_library(core
 
 target_include_directories(core PUBLIC 
     ${PROJECT_SOURCE_DIR}/include
-    ../embree/include
+    ../dep/embree/include
     ../opengl_utils/include
     ../opengl_utils
-    ../oidn/include
+    ../dep/oidn/include
 )
 
 target_link_libraries(core PUBLIC
-    glm::glm
-    ../embree/lib/embree3
-    ../embree/lib/tbb
-    nlohmann_json::nlohmann_json
+    ../dep/embree/lib/embree3
+    ../dep/embree/lib/tbb
 )

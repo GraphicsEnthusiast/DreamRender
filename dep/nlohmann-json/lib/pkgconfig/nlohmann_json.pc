@@ -1,0 +1,5 @@
+prefix=${pcfiledir}/../..
+Name: nlohmann_json
+Description: JSON for Modern C++
+Version: 3.10.5
+Cflags: -I"${prefix}/include"
