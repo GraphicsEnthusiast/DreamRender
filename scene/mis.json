@@ -1,0 +1,168 @@
+{
+    "width": 1280,
+    "height": 720,
+    "denoise": false,
+    "integrator": {
+        "type": "path_tracing",
+        "depth": 2,
+        "light_strategy": "all",
+        "sampler_type": "sobol"
+    },
+    "filter": "gaussian",
+    "camera": {
+        "type": "pinhole",
+        "look_from": [ 0, 3.5, 7.5 ],
+        "look_at": [ 0, 3.5, 0 ],
+        "up": [ 0, 1, 0 ],
+        "znear": 1,
+        "fov": 60
+    },
+    "light": [
+        {
+            "type": "sphere",
+            "center": [ 1.6, 5, 1.5 ],
+            "radius": 0.9,
+            "material": "light_material1"
+        },
+        {
+            "type": "sphere",
+            "center": [ -0.2, 5, 1.5 ],
+            "radius": 0.3,
+            "material": "light_material2"
+        },
+        {
+            "type": "sphere",
+            "center": [ -1.1, 5, 1.5 ],
+            "radius": 0.1,
+            "material": "light_material3"
+        },
+        {
+            "type": "sphere",
+            "center": [ -1.8, 5, 1.5 ],
+            "radius": 0.03,
+            "material": "light_material4"
+        }
+    ],
+    "shape": [
+        {
+            "type": "mesh",
+            "mesh_path": "scene/mis/model/plate1.obj",
+            "translate": [ 0, -0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1.5, 1, 1 ],
+            "material": "smooth"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/mis/model/plate2.obj",
+            "translate": [ 0, -0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1.5, 1, 1 ],
+            "material": "glossy"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/mis/model/plate3.obj",
+            "translate": [ 0, -0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1.5, 1, 1 ],
+            "material": "rough"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/mis/model/plate4.obj",
+            "translate": [ 0, -0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1.5, 1, 1 ],
+            "material": "super_rough"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/mis/model/floor.obj",
+            "translate": [ 0, -0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 2, 1, 1 ],
+            "material": "floor"
+        }
+    ],
+    "material": [
+        {
+            "type": "diffuse_light",
+            "name": "light_material1",
+            "emitted_texture_type": "constant",
+            "emitted": [ 5.6, 0.8, 1.8 ]
+        },
+        {
+            "type": "diffuse_light",
+            "name": "light_material2",
+            "emitted_texture_type": "constant",
+            "emitted": [ 2.5, 1.6, 0.36 ]
+        },
+        {
+            "type": "diffuse_light",
+            "name": "light_material3",
+            "emitted_texture_type": "constant",
+            "emitted": [ 0.6, 2.8, 0.43 ]
+        },
+        {
+            "type": "diffuse_light",
+            "name": "light_material4",
+            "emitted_texture_type": "constant",
+            "emitted": [ 0.3, 1.0, 1.25 ]
+        },
+        {
+            "type": "smooth_diffuse",
+            "name": "floor",
+            "albedo_texture_type": "constant",
+            "albedo": [ 0.8, 0.8, 0.8 ]
+        },
+        {
+            "type": "rough_conductor",
+            "name": "smooth",
+            "albedo_texture_type": "constant",
+            "albedo": [ 1, 1, 1 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.01,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "eta": [ 0.200438, 0.924033, 1.102212 ],
+            "k": [ 3.912949, 2.452848, 2.142188 ]
+        },
+        {
+            "type": "rough_conductor",
+            "name": "glossy",
+            "albedo_texture_type": "constant",
+            "albedo": [ 1, 1, 1 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.05,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "eta": [ 0.200438, 0.924033, 1.102212 ],
+            "k": [ 3.912949, 2.452848, 2.142188 ]
+        },
+        {
+            "type": "rough_conductor",
+            "name": "rough",
+            "albedo_texture_type": "constant",
+            "albedo": [ 1, 1, 1 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.1,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "eta": [ 0.200438, 0.924033, 1.102212 ],
+            "k": [ 3.912949, 2.452848, 2.142188 ]
+        },
+        {
+            "type": "rough_conductor",
+            "name": "super_rough",
+            "albedo_texture_type": "constant",
+            "albedo": [ 1, 1, 1 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.25,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "eta": [ 0.200438, 0.924033, 1.102212 ],
+            "k": [ 3.912949, 2.452848, 2.142188 ]
+        }
+    ]
+}

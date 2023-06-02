@@ -14,7 +14,7 @@ target_include_directories(opengl_utils
 )
 
 target_link_libraries(opengl_utils PUBLIC
-glfw
-glad::glad
-glm::glm
+    glfw
+    glad::glad
+    glm::glm
 )

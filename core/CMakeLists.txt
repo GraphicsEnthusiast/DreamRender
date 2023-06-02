@@ -16,8 +16,6 @@ add_library(core
     src/Render.cpp
     src/SceneParser.cpp
     src/Sampler.cpp
-    src/Medium.cpp
-    src/Intersection.cpp
 )
 
 target_include_directories(core PUBLIC 
@@ -30,6 +28,7 @@ target_include_directories(core PUBLIC
 
 target_link_libraries(core PUBLIC
     glm::glm
-    embree
+    ../embree/lib/embree3
+    ../embree/lib/tbb
     nlohmann_json::nlohmann_json
 )

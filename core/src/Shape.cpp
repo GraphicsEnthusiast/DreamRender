@@ -3,7 +3,7 @@
 #include <tiny_obj_loader.h>
 
 Shape::Shape(shared_ptr<Material> mat, vec3 pos, mat4 trans, int geom_id) :
-	material(mat), position(pos), transform(trans), geometry_id(geom_id), medium_ext(NULL), medium_int(NULL) {}
+	material(mat), position(pos), transform(trans), geometry_id(geom_id) {}
 
 TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos) :
 	Shape(mat, pos, trans), filename(file) {

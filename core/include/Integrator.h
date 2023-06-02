@@ -4,7 +4,6 @@
 #include <Scene.h>
 #include <Sampler.h>
 #include <Material.h>
-#include <Intersection.h>
 
 enum TraceLightType {
 	RANDOM,
@@ -33,22 +32,10 @@ public:
 	SamplerType sp_type;
 };
 
+//揃抄弖忸！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
 class PathTracing : public Integrator {
 public:
 	PathTracing(shared_ptr<Scene> s, int d, SamplerType sp, TraceLightType t = RANDOM) : Integrator(s, sp), traceLightType(t), depth(d) {}
-
-	vec3 DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& info, const vec3& history);
-
-	virtual vec3 SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) override;
-
-private:
-	int depth;
-	TraceLightType traceLightType;
-};
-
-class VolumetricPathTracing : public Integrator {
-public:
-	VolumetricPathTracing(shared_ptr<Scene> s, int d, SamplerType sp, TraceLightType t = RANDOM) : Integrator(s, sp), traceLightType(t), depth(d) {}
 
 	vec3 DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& info, const vec3& history);
 

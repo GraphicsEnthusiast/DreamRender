@@ -1,0 +1,19 @@
+# This file uses centimeters as units for non-parametric coordinates.
+
+mtllib cbox_redwall.mtl
+g default
+v 27.419998 -27.439995 -27.960007
+v 27.740002 27.439995 27.960007
+v 27.740002 27.440006 -27.959993
+v 27.099998 -27.440008 27.959995
+vn -0.999958 0.008700 -0.002800
+vn -0.999957 0.008800 -0.002900
+vn -0.999983 0.005800 0.000000
+vn -0.999958 0.008700 -0.002800
+vn -0.999915 0.011700 -0.005700
+vn -0.999957 0.008800 -0.002900
+s off
+g cbox_redwall:Mesh
+usemtl initialShadingGroup
+f 1//1 2//2 3//3
+f 1//4 4//5 2//6

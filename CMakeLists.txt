@@ -23,8 +23,6 @@ find_package(nlohmann_json CONFIG REQUIRED)
 
 add_subdirectory("opengl_utils")
 add_subdirectory("core")
-add_subdirectory("tbb")
-add_subdirectory("embree")
 
 add_executable(DreamRender main.cpp)
 
@@ -41,10 +39,29 @@ target_link_libraries(DreamRender PUBLIC
     glad::glad
     glm::glm
     opengl_utils
-    embree
-    tbb
-    tbbmalloc
     core
     nlohmann_json::nlohmann_json
     ../oidn/lib/OpenImageDenoise
+    ../embree/lib/embree3
+    ../embree/lib/tbb
+)
+
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(TARGET_NAME DreamRender)
+
+add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/shader $<TARGET_FILE_DIR:${TARGET_NAME}>/../shader
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/scene $<TARGET_FILE_DIR:${TARGET_NAME}>/scene
+
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/embree/bin/embree3.dll $<TARGET_FILE_DIR:${TARGET_NAME}>/embree3.dll
+
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/embree/bin/tbb12.dll $<TARGET_FILE_DIR:${TARGET_NAME}>/tbb12.dll
+
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/oidn/bin/OpenImageDenoise.dll $<TARGET_FILE_DIR:${TARGET_NAME}>/OpenImageDenoise.dll
 )

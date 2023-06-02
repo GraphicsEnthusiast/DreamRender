@@ -1,0 +1,166 @@
+{
+    "width": 1200,
+    "height": 1000,
+    "denoise": false,
+    "integrator": {
+        "type": "path_tracing",
+        "depth": 64,
+        "light_strategy": "all",
+        "sampler_type": "sobol"
+    },
+    "filter": "gaussian",
+    "camera": {
+        "type": "pinhole",
+        "look_from": [ 7.1, 1, 2.6 ],
+        "look_at": [ 0, 2, 0 ],
+        "up": [ 0, 1, 0 ],
+        "znear": 1,
+        "fov": 60
+    },
+    "light": [
+        {
+            "type": "infinite",
+            "hdr_path": "scene/staircase/hdr/drackenstein_quarry_puresky_4k.hdr",
+            "scale": 1.0
+        }
+    ],
+    "shape": [
+        {
+            "type": "mesh",
+            "mesh_path": "scene/staircase/model/floor.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "material1"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/staircase/model/glass.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "material2"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/staircase/model/wall.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "material3"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/staircase/model/wall2.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "material4"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/staircase/model/wood_plastic.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "material5"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/staircase/model/widget.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "material6"
+        },
+        {
+            "type": "mesh",
+            "mesh_path": "scene/staircase/model/figure.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "material7"
+        }
+    ],
+    "material": [
+        {
+            "type": "rough_plastic",
+            "name": "material1",
+            "diffuse_texture_type": "image",
+            "diffuse_path": "scene/staircase/texture/Tiles.jpg",
+            "specular_texture_type": "constant",
+            "specular": [ 1.0, 1.0, 1.0 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.15,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "int_ior": 1.7,
+            "ext_ior": 1.0,
+            "nonlinear": true
+        },
+        {
+            "type": "rough_dielectric",
+            "name": "material2",
+            "albedo_texture_type": "constant",
+            "albedo": [ 1.0, 1.0, 1.0 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.15,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "int_ior": 1.5,
+            "ext_ior": 1.0
+        },
+        {
+            "type": "rough_diffuse",
+            "name": "material3",
+            "albedo_texture_type": "constant",
+            "albedo": [ 0.9, 0.9, 0.9 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.3
+        },
+        {
+            "type": "smooth_diffuse",
+            "name": "material4",
+            "albedo_texture_type": "constant",
+            "albedo": [ 0.9, 0.9, 0.9 ]
+        },
+        {
+            "type": "rough_plastic",
+            "name": "material5",
+            "diffuse_texture_type": "image",
+            "diffuse_path": "scene/staircase/texture/wood5.jpg",
+            "specular_texture_type": "constant",
+            "specular": [ 1.0, 1.0, 1.0 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.3,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "int_ior": 1.7,
+            "ext_ior": 1.0,
+            "nonlinear": true
+        },
+        {
+            "type": "rough_conductor",
+            "name": "material6",
+            "albedo_texture_type": "constant",
+            "albedo": [ 0.88, 0.85, 0.8 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.1,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.0,
+            "eta": [ 2.76404, 1.95417, 1.62766 ],
+            "k": [ 3.83077, 2.73841, 2.31812 ]
+        },
+        {
+            "type": "smooth_plastic",
+            "name": "material7",
+            "diffuse_texture_type": "image",
+            "diffuse_path": "scene/staircase/texture/Wallpaper.jpg",
+            "specular_texture_type": "constant",
+            "specular": [ 1.0, 1.0, 1.0 ],
+            "int_ior": 1.8,
+            "ext_ior": 1.0,
+            "nonlinear": true
+        }
+    ]
+}

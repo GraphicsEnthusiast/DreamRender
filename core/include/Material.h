@@ -3,7 +3,6 @@
 #include <Utils.h>
 #include <Texture.h>
 #include <Sampler.h>
-#include <Intersection.h>
 
 //材质类型
 enum class MaterialType {

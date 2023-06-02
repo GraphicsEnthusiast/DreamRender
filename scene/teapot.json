@@ -1,0 +1,83 @@
+{
+    "width": 1200,
+    "height": 1000,
+    "denoise": false,
+    "integrator": {
+        "type": "path_tracing",
+        "depth": 5,
+        "light_strategy": "all",
+        "sampler_type": "sobol"
+    },
+    "filter": "gaussian",
+    "camera": {
+        "type": "thinlens",
+        "look_from": [ 20.0, 12.0, 0.0 ],
+        "look_at": [ 0, 0, 0 ],
+        "up": [ 0, 1, 0 ],
+        "znear": 1,
+        "fov": 60,
+        "aperture": 2.0
+    },
+    "light": [
+        {
+            "type": "infinite",
+            "hdr_path": "scene/teapot/hdr/sunset.hdr",
+            "scale": 5.0
+        }
+    ],
+    "shape": [
+        {
+            "type": "mesh",
+            "mesh_path": "scene/teapot/model/teapot.obj",
+            "translate": [ 0, 0, 0 ],
+            "rotate": [ 0, 0, 0 ],
+            "scale": [ 1, 1, 1 ],
+            "material": "teapot_material"
+        },
+        {
+            "type": "quad",
+            "pos": [ -20, 0, -20 ],
+            "u": [ 40, 0, 0 ],
+            "v": [ 0, 0, 40 ],
+            "material": "quad_material"
+        }
+    ],
+    "material": [
+        {
+            "type": "smooth_diffuse",
+            "name": "quad_material",
+            "albedo_texture_type": "image",
+            "albedo_path": "scene/teapot/texture/checker.png"
+        },
+        {
+            "type": "disney_principle",
+            "name": "teapot_material",
+            "albedo_texture_type": "constant",
+            "albedo": [ 0.82, 0.67, 0.16 ],
+            "specular_texture_type": "constant",
+            "specular": [ 0.82, 0.67, 0.16 ],
+            "specularTint_texture_type": "constant",
+            "specularTint": [ 0.82, 0.67, 0.16 ],
+            "sheen_texture_type": "constant",
+            "sheen": [ 0.82, 0.67, 0.16 ],
+            "roughness_texture_type": "constant",
+            "roughness": 0.1,
+            "metallic_texture_type": "constant",
+            "metallic": 0.5,
+            "anisotropy_texture_type": "constant",
+            "anisotropy": 0.5,
+            "subsurface_texture_type": "constant",
+            "subsurface": 0.5,
+            "specularTransmission_texture_type": "constant",
+            "specularTransmission": 0.5,
+            "clearcoat_texture_type": "constant",
+            "clearcoat": 0.5,
+            "clearcoatGloss_texture_type": "constant",
+            "clearcoatGloss": 0.5,
+            "sheenTint_texture_type": "constant",
+            "sheenTint": 0.5,
+            "int_ior": 1.5,
+            "ext_ior": 1.0
+        }
+    ]
+}
