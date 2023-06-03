@@ -21,9 +21,16 @@ target_include_directories(core PUBLIC
     ../opengl_utils/include
     ../opengl_utils
     ../dep/oidn/include
+    ../dep/glad/include
+    ../dep/glfw3/include
+    ../dep/glm/include
+    ../dep/nlohmann-json/include
 )
 
 target_link_libraries(core PUBLIC
+    opengl_utils
     ../dep/embree/lib/embree3
     ../dep/embree/lib/tbb
+    ../dep/glfw3/lib/glfw3dll
+    ../dep/glad/lib/glad
 )
