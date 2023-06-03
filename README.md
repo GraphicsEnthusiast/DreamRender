@@ -14,7 +14,7 @@ mkdir build
 cmake -B ./build -DCMAKE_BUILD_TYPE=Release
 cmake --build ./build --config Release
 cd bin/Release
-dreamrender scene/boy.json
+./DreamRender scene/boy.json
 ```
 
 - 渲染算法
