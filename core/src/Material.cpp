@@ -789,7 +789,7 @@ EvalInfo RoughDielectric::Eval(const vec3& V, const vec3& L, const IntersectionI
 		bsdf += mult;
 		dwh_dwi = abs(1.0f / (4.0f * dot(V, H)));
 		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
-		pdf = Dv * dwh_dwi * (isReflect ? F : 1 - F);
+		pdf = Dv * dwh_dwi * F;
 // 		cout << "refl";
 // 		cout << mult.x << " " << mult.y << " " << mult.z << endl;
 	}
@@ -812,7 +812,7 @@ EvalInfo RoughDielectric::Eval(const vec3& V, const vec3& L, const IntersectionI
 		bsdf += mult;
 		dwh_dwi = abs(HdotL) / sqr(sqrtDenom);
 		float Dv = GGX::DistributionVisibleGGX(V, H, N, alpha_u, alpha_v);
-		pdf = Dv * dwh_dwi * (isReflect ? F : 1 - F);
+		pdf = Dv * dwh_dwi * (1.0f - F);
 // 		cout << "refff";
 // 		cout << mult.x << " " << mult.y << " " << mult.z << endl;
 	}
