@@ -13,7 +13,6 @@
 mkdir build
 cmake -B ./build -DCMAKE_BUILD_TYPE=Release
 cmake --build ./build --config Release
-cd bin/Release
 ```
 
 - 渲染算法
