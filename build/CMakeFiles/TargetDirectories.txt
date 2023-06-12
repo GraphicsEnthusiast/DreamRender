@@ -1,7 +1,0 @@
-C:/Users/17199/Desktop/stage-2-code/DreamRender/build/CMakeFiles/DreamRender.dir
-C:/Users/17199/Desktop/stage-2-code/DreamRender/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/17199/Desktop/stage-2-code/DreamRender/build/CMakeFiles/ZERO_CHECK.dir
-C:/Users/17199/Desktop/stage-2-code/DreamRender/build/opengl_utils/CMakeFiles/opengl_utils.dir
-C:/Users/17199/Desktop/stage-2-code/DreamRender/build/opengl_utils/CMakeFiles/ALL_BUILD.dir
-C:/Users/17199/Desktop/stage-2-code/DreamRender/build/core/CMakeFiles/core.dir
-C:/Users/17199/Desktop/stage-2-code/DreamRender/build/core/CMakeFiles/ALL_BUILD.dir
