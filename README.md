@@ -43,6 +43,13 @@ cmd: DreamRender scene/boy.json
   - 金属工作流(MetalWorkflow，即Cook-Torrance BRDF)
   - ClearcoatedConductor(在粗糙金属表面涂一层清漆)
 
+- 相函数
+  - IsotropicPhaseFunction
+  - HenyeyGreensteinPhaseFunction
+
+- 参与介质
+  - HomogeneousMedium
+
 - 相机
   - PinholeCamera
   - ThinlensCamera
