@@ -1,7 +1,7 @@
 # DreamRender
 ——————————————————————————
 
-该分支没有bug了，并且删除了冗余代码。
+相对于stage-2，加入了体渲染路径追踪。
 
 ——————————————————————————
 
@@ -19,7 +19,8 @@ cmd: DreamRender scene/boy.json
 ```
 
 - 渲染算法
-  - 路径追踪(PathTracing，实现了多重重要性采样)
+  - 路径追踪(PathTracing)
+  - 体渲染路径追踪(VolumetricPathTracing)
 
 - 几何
   - TriangleMesh
@@ -66,21 +67,9 @@ cmd: DreamRender scene/boy.json
   - json场景解析
 
 - 截图
+![S5STOR8@6M 7JTZQPBBVMHT](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/5f7ec90f-93d3-4764-be35-64377dba9dce)
 
-BreakfastRoom
-![breakfast](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/cda01ee4-c6dd-4a0b-8c03-5fc7725063f8)
-Staircase
-![staircase](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/d9781eb6-ff2a-4fba-bef3-a218d73d51e9)
-Mis
-![mis](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6e73c199-8480-47d2-bffb-7d9ac00e99ba)
-CornellBox
-![cor](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/2efdb7fe-576d-4bfc-b228-7a76de41cdf2)
-![cornellbox](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8902ff4f-bdf0-45db-bc53-3dee55575d04)
-Hyperion
-![hyperion](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/499beb77-3a91-4f0f-af07-27fe8a001447)
-Teapot
-![teapot](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/a9f9ef80-7535-45bf-ab5a-98365393f1c4)
-Boy
-![boy](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/47a5acd6-dfe9-4734-80a5-7b8cf9847caf)
-![boy2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/5002aaa3-679d-4a4c-8914-705d77fbe813)
+![vpt](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/97833289-3b16-4ad6-aa8b-c042fdb688bd)
+
+![X(XKN`IW{MVA8ZG(RTV 3P](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8f6ad074-7109-47af-8dc5-44ae2b35c33c)
 
