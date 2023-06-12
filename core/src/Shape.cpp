@@ -2,11 +2,11 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-Shape::Shape(shared_ptr<Material> mat, vec3 pos, mat4 trans, int geom_id) :
-	material(mat), position(pos), transform(trans), geometry_id(geom_id) {}
+Shape::Shape(shared_ptr<Material> mat, mat4 trans, shared_ptr<Medium> ex_med, shared_ptr<Medium> in_med, int geom_id) :
+	material(mat), transform(trans), geometry_id(geom_id), int_medium(in_med), ext_medium(ex_med) {}
 
-TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos) :
-	Shape(mat, pos, trans), filename(file) {
+TriangleMesh::TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, shared_ptr<Medium> ex_med, shared_ptr<Medium> in_med) :
+	Shape(mat, trans, ex_med, in_med), filename(file) {
 	m_type = ShapeType::TriangleMesh;
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -139,8 +139,8 @@ float TriangleMesh::Pdf(const IntersectionInfo& info, const vec3& L, float dist)
 	return 0.0f;
 }
 
-Sphere::Sphere(shared_ptr<Material> mat, vec3 cen, float rad, vec3 pos, mat4 trans) :
-	Shape(mat, pos, trans), radius(rad), center(cen) {
+Sphere::Sphere(shared_ptr<Material> mat, vec3 cen, float rad, shared_ptr<Medium> ex_med, shared_ptr<Medium> in_med, mat4 trans) :
+	Shape(mat, trans, ex_med, in_med), radius(rad), center(cen) {
 	m_type = ShapeType::Sphere;
 }
 
@@ -305,7 +305,8 @@ vec2 Sphere::GetSphereUV(const vec3& p, const vec3& center) {
 	return uv;
 }
 
-Quad::Quad(shared_ptr<Material> mat, vec3 p, vec3 _u, vec3 _v, vec3 pos, mat4 trans) : Shape(mat, pos, trans) {
+Quad::Quad(shared_ptr<Material> mat, vec3 p, vec3 _u, vec3 _v, shared_ptr<Medium> ex_med, shared_ptr<Medium> in_med, mat4 trans) :
+	Shape(mat, trans, ex_med, in_med) {
 	position = p;
 	u = _u;
 	v = _v;

@@ -128,7 +128,8 @@ void CPURender::Run() {
 				inte->sampler->SetPixel(i, j);
 				IntersectionInfo info;
 				info.pixel_ndc = vec2(px, py);
-
+				info.mi = MediumInterface(inte->scene->camera->medium);
+	
 				vec3 radiance = inte->GetPixelColor(info);
 
 				if (IsNan(radiance)) {
@@ -138,16 +139,16 @@ void CPURender::Run() {
 				//color = glm::clamp(color, vec3(0.0f), vec3(5.0f));
 
 				//这一步可以极大的减少白噪点（特别是由点光源产生）
-				if (!use_denoise) {
-					int lightNum = inte->scene->lights.size();
-					if (inte->scene->useEnv) {
-						lightNum++;
-					}
-					float illum = dot(radiance, vec3(0.2126f, 0.7152f, 0.072f));
-					if (illum > lightNum) {
-						radiance *= lightNum / illum;
-					}
-				}
+// 				if (!use_denoise) {
+// 					int lightNum = inte->scene->lights.size();
+// 					if (inte->scene->useEnv) {
+// 						lightNum++;
+// 					}
+// 					float illum = dot(radiance, vec3(0.2126f, 0.7152f, 0.072f));
+// 					if (illum > lightNum) {
+// 						radiance *= lightNum / illum;
+// 					}
+// 				}
 
 				nowTexture[j * Width + i] = radiance;
 			}

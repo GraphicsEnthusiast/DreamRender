@@ -13,6 +13,7 @@ add_library(core
     src/Render.cpp
     src/SceneParser.cpp
     src/Sampler.cpp
+    src/Medium.cpp
 )
 
 target_include_directories(core PUBLIC 

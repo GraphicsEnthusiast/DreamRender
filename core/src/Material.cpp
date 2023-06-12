@@ -366,6 +366,18 @@ vec3 KullaConty::EvalMultipleScatter(float NdotL, float NdotV, float roughness, 
 	return f_ms * f_add;
 }
 
+BsdfSample NullMaterial::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	return { vec3(0.0f), 0.0f };
+}
+
+EvalInfo NullMaterial::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
+	return { vec3(0.0f), 0.0f };
+}
+
+vec3 NullMaterial::GetAlbedo(const IntersectionInfo& info) {
+	return vec3(0.0f);
+}
+
 BsdfSample DiffuseLight::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	return { vec3(0.0f), 0.0f };
 }

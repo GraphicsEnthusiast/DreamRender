@@ -2,6 +2,7 @@
 
 #include <Utils.h>
 #include <Material.h>
+#include <Medium.h>
 
 enum class ShapeType {
 	TriangleMesh,
@@ -11,7 +12,7 @@ enum class ShapeType {
 
 class Shape {
 public:
-	Shape(shared_ptr<Material> mat, vec3 pos, mat4 trans, int geom_id = 0);
+	Shape(shared_ptr<Material> mat, mat4 trans, shared_ptr<Medium> ex_med = NULL, shared_ptr<Medium> in_med = NULL, int geom_id = 0);
 
 	inline virtual vec3 GetFaceNormal(uint32_t faceID, const vec2& barycentric) const { return vec3(0.0f); }
 	inline virtual vec2 GetTexcoords(uint32_t faceID, const vec2& barycentric) const { return vec2(0.0f); }
@@ -23,10 +24,11 @@ public:
 public:
 	// Position before any transformation
 	ShapeType m_type;
-	vec3 position;
 	mat4 transform;
 	int geometry_id;
 	shared_ptr<Material> material;
+	shared_ptr<Medium> int_medium;
+	shared_ptr<Medium> ext_medium;
 };
 
 struct VertexIndices {
@@ -37,7 +39,7 @@ struct VertexIndices {
 
 class TriangleMesh : public Shape {
 public:
-	TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, vec3 pos = vec3(0.0f));
+	TriangleMesh(shared_ptr<Material> mat, string file, mat4 trans, shared_ptr<Medium> ex_med = NULL, shared_ptr<Medium> in_med = NULL);
 
 	inline uint32_t Vertices() const { return vertices.size() / 3; }
 	inline uint32_t Faces() const { return indices.size() / 3; }
@@ -98,7 +100,7 @@ public:
 
 class Sphere : public Shape {
 public:
-	Sphere(shared_ptr<Material> mat, vec3 cen, float rad, vec3 pos = vec3(0.0f), mat4 trans = mat4(1.0f));
+	Sphere(shared_ptr<Material> mat, vec3 cen, float rad, shared_ptr<Medium> ex_med = NULL, shared_ptr<Medium> in_med = NULL, mat4 trans = mat4(1.0f));
 
 	// User defined intersection functions for the Sphere primitive
 	static void SphereBoundsFunc(const struct RTCBoundsFunctionArguments* args);
@@ -117,7 +119,7 @@ public:
 
 class Quad : public Shape {
 public:
-	Quad(shared_ptr<Material> mat, vec3 p, vec3 _u, vec3 _v, vec3 pos = vec3(0.0f), mat4 trans = mat4(1.0f));
+	Quad(shared_ptr<Material> mat, vec3 p, vec3 _u, vec3 _v, shared_ptr<Medium> ex_med = NULL, shared_ptr<Medium> in_med = NULL, mat4 trans = mat4(1.0f));
 
 	static vec2 GetQuadUV(const vec3& p, const Quad* quad);
 

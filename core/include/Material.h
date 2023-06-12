@@ -6,6 +6,7 @@
 
 //材质类型
 enum class MaterialType {
+	NullMaterial,          //介质分界面
 	DiffuseLight,          //漫反射光源的材质
 	SmoothDiffuse,         //平滑的理想漫反射材质，由朗伯模型描述
 	RoughDiffuse,          //粗糙的理想漫反射材质，由 Oren–Nayar Reflectance Model 描述
@@ -120,6 +121,15 @@ public:
 
 public:
 	MaterialType m_type;
+};
+
+class NullMaterial : public Material {
+public:
+	NullMaterial() { m_type = MaterialType::NullMaterial; }
+
+	virtual BsdfSample Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) override;
+	virtual EvalInfo Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) override;
+	virtual vec3 GetAlbedo(const IntersectionInfo& info) override;
 };
 
 class DiffuseLight : public Material {

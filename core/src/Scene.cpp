@@ -85,6 +85,14 @@ void Scene::FlipNormal(const RTCRayHit& rayhit, IntersectionInfo& info) {
 }
 
 void Scene::UpdateInfo(const RTCRayHit& rayhit, IntersectionInfo& info) {
+	if (rayhit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
+		info.t = INF;
+		info.frontFace = true;
+		info.mi = MediumInterface(camera->medium);
+
+		return;
+	}
+
 	FlipNormal(rayhit, info);
 	int id = rayhit.hit.geomID;
 	if (shapes[id]->m_type == ShapeType::TriangleMesh) {
@@ -95,4 +103,5 @@ void Scene::UpdateInfo(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	}
 	info.t = rayhit.ray.tfar;
 	info.position = GetHitPos(rayhit);
+	info.mi = MediumInterface(shapes[id]->int_medium, shapes[id]->ext_medium);
 }

@@ -33,6 +33,24 @@ static const float INV_PI = 0.31830988618379067154f;
 static const float INV_2PI = 0.15915494309189533577f;
 static const float INV_4PI = 0.07957747154594766788f;
 
+class Medium;
+struct MediumInterface {
+	MediumInterface() : in_medium(NULL), out_medium(NULL) {}
+	MediumInterface(shared_ptr<Medium> medium) : in_medium(medium), out_medium(medium) {}
+	MediumInterface(shared_ptr<Medium> inside, shared_ptr<Medium> outside)
+		: in_medium(inside), out_medium(outside) {}
+	inline shared_ptr<Medium> GetMedium(bool frontFace) const {
+		if (frontFace) {
+			return out_medium;
+		}
+		else {
+			return in_medium;
+		}
+	}
+
+	shared_ptr<Medium> in_medium, out_medium;
+};
+
 struct IntersectionInfo {
 	float t;
 	vec2 uv;
@@ -40,6 +58,7 @@ struct IntersectionInfo {
 	vec3 normal;
 	bool frontFace;
 	vec2 pixel_ndc;
+	MediumInterface mi;
 
 	inline void SetFaceNormal(const vec3& dir, const vec3& outward_normal) {
         frontFace = dot(dir, outward_normal) < 0.0f;

@@ -84,7 +84,7 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 			RTCRayHit shadowRayHit = MakeRayHit(info.position, lightL, EPS, INF);
 
 			//进行一次求交测试，判断是否有遮挡
-			if (dot(info.normal, lightL) > EPS) { //如果采样方向背向点p则放弃测试，因为N dot L < 0            
+			if (dot(info.normal, lightL) > 0.0f) { //如果采样方向背向点p则放弃测试，因为N dot L < 0            
 				//天空光仅在没有遮挡的情况下积累亮度
 				if (scene->IsVisibility(shadowRayHit)) {
 					//获取采样方向L上的: 1.光照贡献, 2.环境贴图在该位置的pdf, 3.BSDF函数值, 4.BSDF在该方向的pdf
@@ -115,7 +115,7 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 				EvalInfo bsdf_info = hitmat->Eval(V, light_sample.light_dir, info);
 
 				//阴影测试
-				if (dot(light_sample.light_dir, light_sample.light_normal) < -EPS) {
+				if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 					RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 					if (scene->IsVisibility(shadowRayHit)) {
 						auto lightmat = scene->shapes[index]->material;
@@ -143,7 +143,7 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 					EvalInfo bsdf_info = hitmat->Eval(V, light_sample.light_dir, info);
 
 					//阴影测试
-					if (dot(light_sample.light_dir, light_sample.light_normal) < -EPS) {
+					if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 						RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 						if (scene->IsVisibility(shadowRayHit)) {
 							auto lightmat = scene->shapes[index]->material;
@@ -286,5 +286,407 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 		info = newInfo;
 	}
 
+	return radiance;
+}
+
+vec3 VolumetricPathTracing::NextEventEstimationMedium(const RTCRayHit& rayhit, const IntersectionInfo& info, const vec3& history, shared_ptr<Medium> medium, int& bounce) {
+	vec3 radiance(0.0f);
+	vec3 shadow_history(1.0f);
+	vec3 V = -GetRayDir(rayhit);
+	auto shadow_medium = medium;
+	IntersectionInfo shadow_info;
+	float total_dist = 0.0f;
+	float mult_trans_pdf = 1.0f;
+
+	if (scene->lights.size() != 0) {
+		//方法1. 随机选择一个光源
+		if (traceLightType == RANDOM) {
+			int index = sampler->Get1() * scene->lights.size();
+			auto light = scene->lights[index];
+			vec2 sample = sampler->Get2();
+			LightSample light_sample = light->Sample(info, sample);
+			float light_pdf = light_sample.light_pdf;
+			PhaseInfo p_info = medium->EvalPhaseFunction(V, light_sample.light_dir, info);
+			vec3 Le = light_sample.radiance * static_cast<float>(scene->lights.size());
+			float phase_pdf = p_info.phase_pdf;
+
+			if (!(ReasonableTesting(phase_pdf) && ReasonableTesting(light_pdf))) {
+				return vec3(0.0f);
+			}
+
+			//阴影测试
+			if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
+				RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
+
+				while (true) {
+					scene->Intersect(shadowRayHit);
+					scene->UpdateInfo(shadowRayHit, shadow_info);
+					if (shadowRayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+						if (scene->shapes[shadowRayHit.hit.geomID]->material->m_type != MaterialType::NullMaterial) {
+							break;
+						}
+
+						if (shadow_medium != NULL) {
+							auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, shadow_info.t);
+							mult_trans_pdf *= trans_pdf;
+							shadow_history *= (transmittance / trans_pdf);
+
+							bounce++;
+							if (bounce >= depth) {
+								break;
+							}
+						}
+
+						total_dist += shadow_info.t;
+						shadowRayHit = MakeRayHit(shadow_info.position, light_sample.light_dir, EPS, light_sample.dist - EPS - total_dist);
+						shadow_medium = shadow_info.mi.GetMedium(!shadow_info.frontFace);
+					}
+					else {
+						if (shadow_medium != NULL) {
+							auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, light_sample.dist - total_dist);
+							mult_trans_pdf *= trans_pdf;
+							shadow_history *= (transmittance / trans_pdf);
+						}
+
+						if (IsNan(shadow_history)) {
+							break;
+						}
+
+						phase_pdf *= mult_trans_pdf;
+     				    float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
+
+						radiance += misWeight * Le * shadow_history * history * p_info.attenuation / light_pdf;
+
+						break;
+					}
+				}
+			}
+		}
+
+		//方法2. 选择全部光源
+		if (traceLightType == ALL) {
+			for (int index = 0; index < scene->lights.size(); index++) {
+				auto light = scene->lights[index];
+				vec2 sample = sampler->Get2();
+				LightSample light_sample = light->Sample(info, sample);
+				float light_pdf = light_sample.light_pdf;
+				PhaseInfo p_info = medium->EvalPhaseFunction(V, light_sample.light_dir, info);
+				vec3 Le = light_sample.radiance;
+				float phase_pdf = p_info.phase_pdf;
+
+				if (!(ReasonableTesting(phase_pdf) && ReasonableTesting(light_pdf))) {
+					break;
+				}
+
+				//阴影测试
+				if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
+					RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
+
+					while (true) {
+						scene->Intersect(shadowRayHit);
+						scene->UpdateInfo(shadowRayHit, shadow_info);
+						if (shadowRayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+							if (scene->shapes[shadowRayHit.hit.geomID]->material->m_type != MaterialType::NullMaterial) {
+								break;
+							}
+							
+							if (shadow_medium != NULL) {
+								auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, shadow_info.t);
+								mult_trans_pdf *= trans_pdf;
+								shadow_history *= (transmittance / trans_pdf);
+
+								bounce++;
+								if (bounce >= depth) {
+									break;
+								}
+							}
+							
+							total_dist += shadow_info.t;
+							shadowRayHit = MakeRayHit(shadow_info.position, light_sample.light_dir, EPS, light_sample.dist - EPS - total_dist);
+							shadow_medium = shadow_info.mi.GetMedium(!shadow_info.frontFace);
+						}
+						else {
+							if (shadow_medium != NULL) {
+								auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, light_sample.dist - total_dist);
+								mult_trans_pdf *= trans_pdf;
+								shadow_history *= (transmittance / trans_pdf);
+							}
+							
+							if (IsNan(shadow_history)) {
+								break;
+							}
+
+							phase_pdf *= mult_trans_pdf;
+							float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
+
+							radiance += misWeight * Le * shadow_history * history * p_info.attenuation / light_pdf;
+
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return radiance;
+}
+
+vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, const IntersectionInfo& info, const vec3& history, shared_ptr<Medium> medium, int& bounce) {
+	vec3 radiance(0.0f);
+	vec3 shadow_history(1.0f);
+	vec3 V = -GetRayDir(rayhit);
+	auto shadow_medium = medium;
+	IntersectionInfo shadow_info;
+	float total_dist = 0.0f;
+	float mult_trans_pdf = 1.0f;
+	auto hitmat = scene->shapes[rayhit.hit.geomID]->material;
+
+	if (scene->lights.size() != 0) {
+		//方法1. 随机选择一个光源
+		if (traceLightType == RANDOM) {
+			int index = sampler->Get1() * scene->lights.size();
+			auto light = scene->lights[index];
+			vec2 sample = sampler->Get2();
+			LightSample light_sample = light->Sample(info, sample);
+			float light_pdf = light_sample.light_pdf;
+			EvalInfo b_info = hitmat->Eval(V, light_sample.light_dir, info);
+			vec3 Le = light_sample.radiance * static_cast<float>(scene->lights.size());
+			float bsdf_pdf = b_info.bsdf_pdf;
+
+			if (!(ReasonableTesting(bsdf_pdf) && ReasonableTesting(light_pdf) && ReasonableTesting(b_info.costheta))) {
+				return vec3(0.0f);
+			}
+
+			//阴影测试
+			if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
+				RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
+
+				while (true) {
+					scene->Intersect(shadowRayHit);
+					scene->UpdateInfo(shadowRayHit, shadow_info);
+					if (shadowRayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+						if (scene->shapes[shadowRayHit.hit.geomID]->material->m_type != MaterialType::NullMaterial) {
+							break;
+						}
+
+						if (shadow_medium != NULL) {
+							auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, shadow_info.t);
+							mult_trans_pdf *= trans_pdf;
+							shadow_history *= (transmittance / trans_pdf);
+
+							bounce++;
+							if (bounce >= depth) {
+								break;
+							}
+						}
+
+						total_dist += shadow_info.t;
+						shadowRayHit = MakeRayHit(shadow_info.position, light_sample.light_dir, EPS, light_sample.dist - EPS - total_dist);
+						shadow_medium = shadow_info.mi.GetMedium(!shadow_info.frontFace);
+					}
+					else {
+						if (shadow_medium != NULL) {
+							auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, light_sample.dist - total_dist);
+							mult_trans_pdf *= trans_pdf;
+							shadow_history *= (transmittance / trans_pdf);
+						}
+
+						if (IsNan(shadow_history)) {
+							break;
+						}
+
+						bsdf_pdf *= mult_trans_pdf;
+						float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);
+
+						radiance += misWeight * Le * shadow_history * history * b_info.bsdf * abs(b_info.costheta) / light_pdf;
+
+						break;
+					}
+				}
+			}
+		}
+
+		//方法2. 选择全部光源
+		if (traceLightType == ALL) {
+			for (int index = 0; index < scene->lights.size(); index++) {
+				auto light = scene->lights[index];
+				vec2 sample = sampler->Get2();
+				LightSample light_sample = light->Sample(info, sample);
+				float light_pdf = light_sample.light_pdf;
+				EvalInfo b_info = hitmat->Eval(V, light_sample.light_dir, info);
+				vec3 Le = light_sample.radiance * static_cast<float>(scene->lights.size());
+				float bsdf_pdf = b_info.bsdf_pdf;
+
+				if (!(ReasonableTesting(bsdf_pdf) && ReasonableTesting(light_pdf) && ReasonableTesting(b_info.costheta))) {
+					break;
+				}
+
+				//阴影测试
+				if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
+					RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
+
+					while (true) {
+						scene->Intersect(shadowRayHit);
+						scene->UpdateInfo(shadowRayHit, shadow_info);
+						if (shadowRayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+							if (scene->shapes[shadowRayHit.hit.geomID]->material->m_type != MaterialType::NullMaterial) {
+								break;
+							}
+
+							if (shadow_medium != NULL) {
+								auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, shadow_info.t);
+								mult_trans_pdf *= trans_pdf;
+								shadow_history *= (transmittance / trans_pdf);
+
+								bounce++;
+								if (bounce >= depth) {
+									break;
+								}
+							}
+
+							total_dist += shadow_info.t;
+							shadowRayHit = MakeRayHit(shadow_info.position, light_sample.light_dir, EPS, light_sample.dist - EPS - total_dist);
+							shadow_medium = shadow_info.mi.GetMedium(!shadow_info.frontFace);
+						}
+						else {
+							if (shadow_medium != NULL) {
+								auto [transmittance, trans_pdf] = shadow_medium->EvalDistance(false, light_sample.dist - total_dist);
+								mult_trans_pdf *= trans_pdf;
+								shadow_history *= (transmittance / trans_pdf);
+							}
+
+							if (IsNan(shadow_history)) {
+								break;
+							}
+
+							bsdf_pdf *= mult_trans_pdf;
+							float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);
+
+							radiance += misWeight * Le * shadow_history * history * b_info.bsdf * abs(b_info.costheta) / light_pdf;
+
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return radiance;
+}
+
+vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
+	vec3 radiance(0.0f);
+	vec3 history(1.0f);
+	vec3 pre_position = GetRayOrg(rayhit);//初始化为相机位置
+	vec3 V = -GetRayDir(rayhit);
+	vec3 L = GetRayDir(rayhit);
+	float mult_trans_pdf = 1.0f;//穿过介质的概率
+	float p_s_pdf = 0.0f;//记录参与介质或者表面材质的pdf，用于mis
+	bool pre_isDelta = false;
+
+	for(int bounce = 0; bounce < depth; bounce++) {
+		scene->Intersect(rayhit);
+		scene->UpdateInfo(rayhit, info);
+
+		auto medium = info.mi.GetMedium(info.frontFace);
+		bool scattered = false;
+		float trans_pdf = 1.0f, t = 0.0f;
+		vec3 transmittance(0.0f);
+
+		if(medium != NULL){
+			scattered = medium->SampleDistance(info.t, &t, &trans_pdf, &transmittance, sampler);
+			history *= (transmittance / trans_pdf);
+			mult_trans_pdf *= trans_pdf;
+
+			if (scattered) {//光线在介质里发生散射
+				info.position = pre_position + t * L;
+				info.t = t;
+
+				radiance += NextEventEstimationMedium(rayhit, info, history, medium, bounce);
+				
+				PhaseSample p_sample = medium->SamplePhaseFunction(V, info, sampler);
+				L = p_sample.phase_dir;
+				PhaseInfo p_info = medium->EvalPhaseFunction(V, L, info);
+				float phase_pdf = p_sample.phase_pdf;
+				if (!ReasonableTesting(phase_pdf)) {
+					break;
+				}
+
+				p_s_pdf = phase_pdf;
+				history *= (p_info.attenuation / phase_pdf);
+			}
+		}
+		
+		if (!scattered) {//光线没有在介质里发生散射，直至击中物体表面
+			if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+				if (scene->shapes[rayhit.hit.geomID]->material->m_type == MaterialType::DiffuseLight) {//击中灯光
+					if (info.frontFace) {
+						float misWeight = 1.0f;
+						if (bounce != 0 && !pre_isDelta) {
+							p_s_pdf *= mult_trans_pdf;
+							float light_pdf = scene->shapes[rayhit.hit.geomID]->Pdf(info, L, info.t);
+							if (!(ReasonableTesting(p_s_pdf) && ReasonableTesting(light_pdf))) {
+								break;
+							}
+							misWeight = PowerHeuristic(p_s_pdf, light_pdf, 2);
+						}
+						vec3 Le = scene->shapes[rayhit.hit.geomID]->material->Emitted(info);
+
+						radiance += misWeight * Le * history;
+
+						break;
+					}
+					else {
+						break;
+					}
+				}
+				else if (scene->shapes[rayhit.hit.geomID]->material->m_type == MaterialType::NullMaterial) {
+					pre_position = info.position;
+					V = -L;
+					rayhit = MakeRayHit(pre_position, L);
+
+					continue;
+				}
+				else {
+					if (!scene->shapes[rayhit.hit.geomID]->material->IsDelta()) {
+						radiance += NextEventEstimationSurface(rayhit, info, history, medium, bounce);
+					}
+
+					BsdfSample b_sample = scene->shapes[rayhit.hit.geomID]->material->Sample(V, info, sampler);
+					float bsdf_pdf = b_sample.bsdf_pdf;
+					L = b_sample.bsdf_dir;
+					EvalInfo b_info = scene->shapes[rayhit.hit.geomID]->material->Eval(V, L, info);
+					pre_isDelta = scene->shapes[rayhit.hit.geomID]->material->IsDelta();
+
+					if (!(ReasonableTesting(bsdf_pdf) && ReasonableTesting(b_info.costheta))) {
+						break;
+					}
+
+					p_s_pdf = bsdf_pdf;
+					history *= (b_info.bsdf * abs(b_info.costheta) / bsdf_pdf);
+				}
+			}
+		}
+
+		float prr = pre_isDelta ? 1.0f : std::min((history[0] + history[1] + history[2]) / 3.0f, 0.95f);
+		if (sampler->Get1() > prr) {
+			break;
+		}
+		else {
+			history /= prr;
+		}
+
+		if (IsNan(history)) {
+			break;
+		}
+
+		pre_position = info.position;
+		V = -L;
+		rayhit = MakeRayHit(pre_position, L);
+		mult_trans_pdf = 1.0f;
+	}
+	
 	return radiance;
 }

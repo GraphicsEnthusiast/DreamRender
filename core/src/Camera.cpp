@@ -1,6 +1,6 @@
 #include <Camera.h>
 
-PinholeCamera::PinholeCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float znear, float vfov, float aspect) {
+PinholeCamera::PinholeCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float znear, float vfov, float aspect, shared_ptr<Medium> m) : Camera(m) {
 	//右手坐标系
 	origin = lookfrom;
 
@@ -40,7 +40,7 @@ RTCRay PinholeCamera::GenerateRay(float x, float y) noexcept {
 	return ray;
 }
 
-ThinlensCamera::ThinlensCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float znear, float vfov, float aspect, float aperture, float focus_dist) {
+ThinlensCamera::ThinlensCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float znear, float vfov, float aspect, float aperture, float focus_dist, shared_ptr<Medium> m) : Camera(m) {
 	//右手坐标系
 	origin = lookfrom;
 

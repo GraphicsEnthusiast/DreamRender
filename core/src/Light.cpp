@@ -5,12 +5,12 @@ LightSample SphereLight::Sample(const IntersectionInfo& info, vec2 sample) {
 	float x1 = sample.x;
 	float x2 = sample.y;
 
-	//ÇòÃæ¾ùÔÈ²ÉÑù
+	//球面均匀采样
 	float costheta = 1.0f - 2.0f * x1;
 	float sintheta = sqrt(std::max(0.0f, 1.0f - costheta * costheta));
 	float phi = 2.0f * PI * x2;
 
-	vec3 lightL = normalize(vec3(sintheta * cos(phi), sintheta * sin(phi), costheta));
+	vec3 lightL(sintheta * cos(phi), sintheta * sin(phi), costheta);
 	vec3 light_pos = sphere->center + lightL * sphere->radius;
 	float dist = length(light_pos - info.position);
 	float area = 4.0f * PI * sqr(sphere->radius);
