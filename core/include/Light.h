@@ -48,28 +48,6 @@ public:
 	Quad* quad;
 };
 
-class PointLight : public Light {
-public:
-	PointLight(vec3 inten, vec3 pos) : intensity(inten), position(pos), Light(NULL) {}
-
-	virtual LightSample Sample(const IntersectionInfo& info, vec2 sample) override;
-
-public:
-	vec3 intensity;//辐射强度
-	vec3 position;//世界空间下的位置
-};
-
-class DirectionLight : public Light {
-public:
-	DirectionLight(vec3 ran, vec3 dir) : radiance(ran), direction(dir), Light(NULL) {}
-
-	virtual LightSample Sample(const IntersectionInfo& info, vec2 sample) override;
-
-public:
-	vec3 radiance;//辐射亮度
-	vec3 direction;//世界空间下的方向
-};
-
 class Piecewise1D {
 public:
 	Piecewise1D() = default;

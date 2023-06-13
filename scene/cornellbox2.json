@@ -3,8 +3,8 @@
     "height": 800,
     "denoise": false,
     "integrator": {
-        "type": "path_tracing",
-        "depth": 15,
+        "type": "volumetric_path_tracing",
+        "depth": 100,
         "light_strategy": "all",
         "sampler_type": "sobol"
     },
@@ -15,7 +15,8 @@
         "look_at": [ 0, 0, 0 ],
         "up": [ 0, 1, 0 ],
         "znear": 1,
-        "fov": 60
+        "fov": 60,
+        "medium": "room"
     },
     "light": [
         {
@@ -23,7 +24,9 @@
             "pos": [ -6.5, 27.4, -5 ],
             "u": [ 12, 0, 0 ],
             "v": [ 0, 0, 10 ],
-            "material": "light_material"
+            "material": "light_material",
+            "medium_int": "room",
+            "medium_ext": "room"
         }
     ],
     "shape": [
@@ -33,7 +36,9 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 1, 1, 1 ],
-            "material": "white"
+            "material": "white",
+            "medium_int": "room",
+            "medium_ext": "room"
         },
         {
             "type": "mesh",
@@ -41,7 +46,9 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 1, 1, 1 ],
-            "material": "white"
+            "material": "white",
+            "medium_int": "room",
+            "medium_ext": "room"
         },
         {
             "type": "mesh",
@@ -49,7 +56,9 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 1, 1, 1 ],
-            "material": "white"
+            "material": "white",
+            "medium_int": "room",
+            "medium_ext": "room"
         },
         {
             "type": "mesh",
@@ -57,7 +66,9 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 1, 1, 1 ],
-            "material": "green"
+            "material": "green",
+            "medium_int": "room",
+            "medium_ext": "room"
         },
         {
             "type": "mesh",
@@ -65,7 +76,8 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 1, 1, 1 ],
-            "material": "white"
+            "material": "white",
+            "medium_ext": "room"
         },
         {
             "type": "mesh",
@@ -73,7 +85,9 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 1, 1, 1 ],
-            "material": "red"
+            "material": "red",
+            "medium_int": "room",
+            "medium_ext": "room"
         },
         {
             "type": "mesh",
@@ -81,7 +95,8 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 1, 1, 1 ],
-            "material": "white"
+            "material": "white",
+            "medium_ext": "room"
         }
     ],
     "material": [
@@ -120,6 +135,16 @@
             "anisotropy": 0.0,
             "eta": [ 0.14282, 0.37414, 1.43944 ],
             "k": [ 3.97472, 2.38066, 1.59981 ]
+        }
+    ],
+    "medium": [
+        {
+            "type": "homogeneous",
+            "name": "room",
+            "phase": "isotropic",
+            "sigma_a": [ 1, 1.5, 1.5 ],
+            "sigma_s": [ 0.5, 0.75, 0.25 ],
+            "scale": 200
         }
     ]
 }

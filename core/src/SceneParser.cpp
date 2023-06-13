@@ -3,11 +3,27 @@
 shared_ptr<Material> SceneParser::SearchMaterial(string name) {
 	for (const auto& material : materials) {
 		if (name == material.first) {
-			//			cout << "找到" << endl;
+//			cout << "找到" << endl;
 			return material.second;
 		}
 	}
 	cout << "Material loss!" << endl;
+
+	return NULL;
+}
+
+shared_ptr<Medium> SceneParser::SearchMedium(string name) {
+	if (name == "") {
+		return NULL;
+	}
+
+	for (const auto& medium : mediums) {
+		if (name == medium.first) {
+//			cout << "找到" << endl;
+			return medium.second;
+		}
+	}
+	cout << "Medium loss!" << endl;
 
 	return NULL;
 }
@@ -40,14 +56,11 @@ void SceneParser::Parse(const json& data, Scene& scene) {
 		cout << "Filter Error!" << endl;
 	}
 
-	json cameraData = data.value("camera", json());
-	auto camera = ParseCamera(cameraData, static_cast<float>(width) / static_cast<float>(height));
-	if (camera == NULL) {
-		cout << "Camera Error!" << endl;
-	}
-
 	json materialData = data.value("material", json());
 	ParseMaterials(materialData);
+
+	json mediumData = data.value("medium", json());
+	ParseMediums(mediumData);
 
 	json lightData = data.value("light", json());
 	ParseLights(lightData);
@@ -55,13 +68,20 @@ void SceneParser::Parse(const json& data, Scene& scene) {
 	json shapeData = data.value("shape", json());
 	ParseShapes(shapeData);
 
+	json cameraData = data.value("camera", json());
+	auto camera = ParseCamera(cameraData, static_cast<float>(width) / static_cast<float>(height));
+	if (camera == NULL) {
+		cout << "Camera Error!" << endl;
+	}
+
 	float light_size = lights.size();
 	if (env != NULL) {
 		light_size++;
 	}
-	cout << "light_size: " << light_size << endl;
-	cout << "shape_size: " << shapes.size() << endl;
-	cout << "material_size: " << materials.size() << endl;
+	cout << "light size: " << light_size << endl;
+	cout << "shape size: " << shapes.size() << endl;
+	cout << "material size: " << materials.size() << endl;
+	cout << "medium size: " << mediums.size() << endl;
 
 	scene.width = width;
 	scene.height = height;
@@ -138,6 +158,10 @@ shared_ptr<Camera> SceneParser::ParseCamera(const json& data, float aspect) {
 	string cameraType = data.value("type", "pinhole");
 	cout << "type: " << cameraType << endl;
 
+	string medium_name = data.value("medium", "");
+	cout << "medium: " << medium_name << endl;
+	auto me = SearchMedium(medium_name);
+
 	json look_from_j = data.value("look_from",json());
 	vec3 look_from(look_from_j.at(0), look_from_j.at(1), look_from_j.at(2));
 	cout << "look_from: " << to_string(look_from) << endl;
@@ -159,7 +183,7 @@ shared_ptr<Camera> SceneParser::ParseCamera(const json& data, float aspect) {
 	if (cameraType == "pinhole") {
 		cout << "aspect: " << aspect << endl << endl;
 
-		return make_shared<PinholeCamera>(look_from, look_at, up, znear, fov, aspect);
+		return make_shared<PinholeCamera>(look_from, look_at, up, znear, fov, aspect, me);
 	}
 	else if (cameraType == "thinlens") {
 		cout << "aspect: " << aspect << endl;
@@ -170,7 +194,7 @@ shared_ptr<Camera> SceneParser::ParseCamera(const json& data, float aspect) {
 		float focus_dist = length(look_from - look_at);
 		cout << "focus_dist: " << focus_dist << endl << endl;
 		
-		return make_shared<ThinlensCamera>(look_from, look_at, up, znear, fov, aspect, aperture, focus_dist);
+		return make_shared<ThinlensCamera>(look_from, look_at, up, znear, fov, aspect, aperture, focus_dist, me);
 	}
 
 	return NULL;
@@ -209,7 +233,17 @@ void SceneParser::ParseLights(const json& data) {
 			cout << "material: " << material_name << endl;
 
 			auto mat = SearchMaterial(material_name);
-			auto quad = new Quad(mat, pos, u, v);
+
+			string medium_int_name = light.value("medium_int", "");
+			cout << "medium_int: " << medium_int_name << endl;
+
+			string medium_ext_name = light.value("medium_ext", "");
+			cout << "medium_ext: " << medium_ext_name << endl;
+
+			auto me_int = SearchMedium(medium_int_name);
+			auto me_ext = SearchMedium(medium_ext_name);
+
+			auto quad = new Quad(mat, pos, u, v, me_ext, me_int);
 			auto quad_light = make_shared<QuadLight>(quad);
 
 			lights.push_back(quad_light);
@@ -226,36 +260,20 @@ void SceneParser::ParseLights(const json& data) {
 			cout << "material: " << material_name << endl;
 
 			auto mat = SearchMaterial(material_name);
-			auto sphere = new Sphere(mat, center, radius);
+
+			string medium_int_name = light.value("medium_int", "");
+			cout << "medium_int: " << medium_int_name << endl;
+
+			string medium_ext_name = light.value("medium_ext", "");
+			cout << "medium_ext: " << medium_ext_name << endl;
+
+			auto me_int = SearchMedium(medium_int_name);
+			auto me_ext = SearchMedium(medium_ext_name);
+
+			auto sphere = new Sphere(mat, center, radius, me_ext, me_int);
 			auto sphere_light = make_shared<SphereLight>(sphere);
 
 			lights.push_back(sphere_light);
-		}
-		else if (type == "point") {
-			json pos_j = light.value("pos", json());
-			vec3 pos(pos_j.at(0), pos_j.at(1), pos_j.at(2));
-			cout << "pos: " << to_string(pos) << endl;
-
-			json intensity_j = light.value("intensity", json());
-			vec3 intensity(intensity_j.at(0), intensity_j.at(1), intensity_j.at(2));
-			cout << "intensity: " << to_string(intensity) << endl;
-
-			auto point_light = make_shared<PointLight>(pos, intensity);
-
-			lights.push_back(point_light);
-		}
-		else if (type == "direction") {
-			json dir_j = light.value("dir", json());
-			vec3 dir(dir_j.at(0), dir_j.at(1), dir_j.at(2));
-			cout << "dir: " << to_string(dir) << endl;
-
-			json radiance_j = light.value("radiance", json());
-			vec3 radiance(radiance_j.at(0), radiance_j.at(1), radiance_j.at(2));
-			cout << "radiance: " << to_string(radiance) << endl;
-
-			auto direction_light = make_shared<DirectionLight>(dir, radiance);
-
-			lights.push_back(direction_light);
 		}
 
 		cout << endl;
@@ -289,10 +307,19 @@ void SceneParser::ParseShapes(const json& data) {
 			string material_name = shape.value("material", "");
 			cout << "material: " << material_name << endl;
 
+			string medium_int_name = shape.value("medium_int", "");
+			cout << "medium_int: " << medium_int_name << endl;
+
+			string medium_ext_name = shape.value("medium_ext", "");
+			cout << "medium_ext: " << medium_ext_name << endl;
+
+			auto me_int = SearchMedium(medium_int_name);
+			auto me_ext = SearchMedium(medium_ext_name);
+
 			mat4 model_tran = GetTransformMatrix(translate, rotate, scale);
 			auto mat = SearchMaterial(material_name);
 
-			auto mesh = new TriangleMesh(mat, mesh_path, model_tran);
+			auto mesh = new TriangleMesh(mat, mesh_path, model_tran, me_ext, me_int);
 
 			shapes.push_back(mesh);
 		}
@@ -313,7 +340,17 @@ void SceneParser::ParseShapes(const json& data) {
 			cout << "material: " << material_name << endl;
 
 			auto mat = SearchMaterial(material_name);
-			auto quad = new Quad(mat, pos, u, v);
+
+			string medium_int_name = shape.value("medium_int", "");
+			cout << "medium_int: " << medium_int_name << endl;
+
+			string medium_ext_name = shape.value("medium_ext", "");
+			cout << "medium_ext: " << medium_ext_name << endl;
+
+			auto me_int = SearchMedium(medium_int_name);
+			auto me_ext = SearchMedium(medium_ext_name);
+
+			auto quad = new Quad(mat, pos, u, v, me_ext, me_int);
 
 			shapes.push_back(quad);
 		}
@@ -329,7 +366,17 @@ void SceneParser::ParseShapes(const json& data) {
 			cout << "material: " << material_name << endl;
 
 			auto mat = SearchMaterial(material_name);
-			auto sphere = new Sphere(mat, center, radius);
+
+			string medium_int_name = shape.value("medium_int", "");
+			cout << "medium_int: " << medium_int_name << endl;
+
+			string medium_ext_name = shape.value("medium_ext", "");
+			cout << "medium_ext: " << medium_ext_name << endl;
+
+			auto me_int = SearchMedium(medium_int_name);
+			auto me_ext = SearchMedium(medium_ext_name);
+
+			auto sphere = new Sphere(mat, center, radius, me_ext, me_int);
 
 			shapes.push_back(sphere);
 		}
@@ -1244,5 +1291,53 @@ void SceneParser::ParseMaterials(const json& data) {
 
 		cout << endl;
 		i++;
+	}
+}
+
+void SceneParser::ParseMediums(const json& data) {
+	int i = 0;
+	for (auto iter = data.cbegin(); iter != data.cend(); ++iter) {
+		json medium = data.at(i);
+		string type = medium.value("type", "");
+		cout << "type: " << type << endl;
+
+		if (type == "homogeneous") {
+			string phase = medium.value("phase", "");
+			cout << "phase: " << phase << endl;
+
+			string name = medium.value("name", "");
+			cout << "name: " << name << endl;
+
+			json sigma_a_j = medium.value("sigma_a", json());
+			vec3 sigma_a(sigma_a_j.at(0), sigma_a_j.at(1), sigma_a_j.at(2));
+			cout << "sigma_a: " << to_string(sigma_a) << endl;
+
+			json sigma_s_j = medium.value("sigma_s", json());
+			vec3 sigma_s(sigma_s_j.at(0), sigma_s_j.at(1), sigma_s_j.at(2));
+			cout << "sigma_s: " << to_string(sigma_s) << endl;
+
+			float scale = medium.value("scale", 1.0f);
+			cout << "scale: " << scale << endl;
+
+			if (phase == "isotropic") {
+				auto ph = new IsotropicPhaseFunction();
+				auto me = make_shared<HomogeneousMedium>(sigma_a * scale, sigma_s * scale, ph);
+
+				mediums.push_back(pair<string, shared_ptr<Medium>>(name, me));
+			}
+			else if (phase == "henyey_greenstein") {
+				json g_j = medium.value("g", json());
+				vec3 g(g_j.at(0), g_j.at(1), g_j.at(2));
+				cout << "g: " << to_string(g) << endl;
+
+				auto ph = new HenyeyGreensteinPhaseFunction(g);
+				auto me = make_shared<HomogeneousMedium>(sigma_a * scale, sigma_s * scale, ph);
+
+				mediums.push_back(pair<string, shared_ptr<Medium>>(name, me));
+			}
+		}
+
+		i++;
+		cout << endl;
 	}
 }

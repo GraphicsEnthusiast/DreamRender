@@ -48,20 +48,6 @@ LightSample QuadLight::Sample(const IntersectionInfo& info, vec2 sample) {
 	return { L, light_pdf, dist, light_normal, radiance };
 }
 
-LightSample PointLight::Sample(const IntersectionInfo& info, vec2 sample) {
-	float dist = length(info.position - position);
-	vec3 radiance = intensity / sqr(dist);
-	vec3 L = normalize(position - info.position);
-
-	return { L, 1.0f, dist, -L, radiance };
-}
-
-LightSample DirectionLight::Sample(const IntersectionInfo& info, vec2 sample) {
-	vec3 L = -direction;
-
-	return { L, 1.0f, INF, -L, radiance };
-}
-
 Piecewise1D::Piecewise1D(const vector<float>& distrib) {
 	queue<Element> greater, lesser;
 

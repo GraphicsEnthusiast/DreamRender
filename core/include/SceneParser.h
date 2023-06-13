@@ -60,14 +60,17 @@ public:
 	void ParseLights(const json& data);
 	void ParseShapes(const json& data);
 	void ParseMaterials(const json& data);
+	void ParseMediums(const json& data);
 
 private:
 	shared_ptr<Material> SearchMaterial(string name);
+	shared_ptr<Medium> SearchMedium(string name);
 
 public:
 	IntegratorInfo inte_info;
 	vector<shared_ptr<Light>> lights;
 	vector<pair<string, shared_ptr<Material>>> materials;
+	vector<pair<string, shared_ptr<Medium>>> mediums;
 	vector<Shape*> shapes;
 	shared_ptr<InfiniteAreaLight> env;
 	bool use_denoise;

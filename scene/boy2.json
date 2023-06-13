@@ -3,8 +3,8 @@
     "height": 1000,
     "denoise": false,
     "integrator": {
-        "type": "path_tracing",
-        "depth": 50,
+        "type": "volumetric_path_tracing",
+        "depth": 100,
         "light_strategy": "all",
         "sampler_type": "sobol"
     },
@@ -39,7 +39,8 @@
             "translate": [ 0, 0, 0 ],
             "rotate": [ 0, 0, 0 ],
             "scale": [ 30, 30, 30 ],
-            "material": "body_material"
+            "material": "body_material",
+            "medium_int": "fluid"
         },
         {
             "type": "mesh",
@@ -103,6 +104,16 @@
             "int_ior": 1.5,
             "ext_ior": 1.0,
             "nonlinear": true
+        }
+    ],
+    "medium": [
+        {
+            "type": "homogeneous",
+            "name": "fluid",
+            "phase": "isotropic",
+            "sigma_a": [ 0.1486, 0.321, 0.736 ],
+            "sigma_s": [ 0, 0, 0 ],
+            "scale": 5.0
         }
     ]
 }
