@@ -1,9 +1,7 @@
 # DreamRender
-——————————————————————————
 
-相对于stage-1，加入了体渲染路径追踪。
+相对于stage-1，加入了体渲染路径追踪，删除了点光源，平行光。
 
-——————————————————————————
 
 这是我写的第一个离线渲染器，起源于raytracing三部曲，但已经被我改了看不出来了😄，未来会更新更多的渲染算法(参考了github上的大量开源项目)。
 直接构建即可运行，构建速度很快，移除了vcpkg，将embree和tbb换成了和oidn一样的提前编译好的库。
@@ -71,11 +69,6 @@ cmake --build ./build --config Release
   - json场景解析
 
 - 截图
-- ![y](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/dfb4d77c-32a3-40ee-99d7-a3bd895c6ac8)
-
-![S5STOR8@6M 7JTZQPBBVMHT](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/5f7ec90f-93d3-4764-be35-64377dba9dce)
-
-![vpt](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/97833289-3b16-4ad6-aa8b-c042fdb688bd)
-
-![X(XKN`IW{MVA8ZG(RTV 3P](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8f6ad074-7109-47af-8dc5-44ae2b35c33c)
+![vol1](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/3c745d57-d093-4152-89a2-e8968f427593)
+![vol2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/704e9421-ff91-4068-bcfb-1470d2fe0b5d)
 
