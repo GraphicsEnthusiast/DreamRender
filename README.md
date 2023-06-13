@@ -71,6 +71,8 @@ cmake --build ./build --config Release
   - json场景解析
 
 - 截图
+- ![y](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/dfb4d77c-32a3-40ee-99d7-a3bd895c6ac8)
+
 ![S5STOR8@6M 7JTZQPBBVMHT](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/5f7ec90f-93d3-4764-be35-64377dba9dce)
 
 ![vpt](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/97833289-3b16-4ad6-aa8b-c042fdb688bd)
