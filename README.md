@@ -1,7 +1,7 @@
 # DreamRender
 ——————————————————————————
 
-该分支没有bug了，并且删除了冗余代码。
+该分支没有bug了，并且删除了冗余代码。stage-2更新了体渲染路径追踪：https://github.com/GraphicsEnthusiast/DreamRender/tree/stage-2
 
 ——————————————————————————
 
