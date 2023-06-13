@@ -26,10 +26,10 @@ Scene CornellBox() {
 		vec3(0.14282f, 0.37414f, 1.43944f), vec3(3.97472f, 2.38066f, 1.59981f));
 	auto die = make_shared<SmoothDielectric>(make_shared<ConstantTexture>(vec3(1.0f)), 1.33f, 1.0f);
 	auto spl = make_shared<SmoothPlastic>(make_shared<ConstantTexture>(vec3(0.2f, 0.54f, 0.72f)), make_shared<ConstantTexture>(vec3(1.0f)), 1.9f, 1.0f, true);
-	auto met = make_shared<MetalWorkflow>(make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/albedo.png"), make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/roughness.png"),
-		make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/metallic.png"), make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/normal.png"));
+// 	auto met = make_shared<MetalWorkflow>(make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/albedo.png"), make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/roughness.png"),
+// 		make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/metallic.png"), make_shared<ImageTexture>("../TestScene/MitsubaKnob/Texture/normal.png"));
 
-	auto medium = make_shared<HomogeneousMedium>(vec3(200.0f, 300.0f, 300.0f), vec3(100.0f, 150.0f, 150.0f), new IsotropicPhaseFunction());
+	auto medium = make_shared<HomogeneousMedium>(vec3(0.1486, 0.321, 0.736) * 10.0f, vec3(0.0f), new IsotropicPhaseFunction());
 	auto medium2 = make_shared<HomogeneousMedium>(vec3(0.05f, 0.025f, 0.02f), vec3(0.05f, 0.03f, 0.06f), new IsotropicPhaseFunction());
 
 // 	auto lightmat = make_shared<DiffuseLight>(make_shared<ConstantTexture>(vec3(8.0f, 46.4f, 64.0f)));
@@ -77,16 +77,16 @@ Scene CornellBox() {
 	auto lightmat = make_shared<DiffuseLight>(make_shared<ConstantTexture>(vec3(8.0f, 46.4f, 64.0f)));
 	auto sphere = new Sphere(lightmat, vec3(1.0f, 1.0f, -1.0f), 0.25f);
 	auto sphere_light = make_shared<SphereLight>(sphere);
-	scene.AddLight(sphere_light, sphere_light->shape);
+//	scene.AddLight(sphere_light, sphere_light->shape);
 
-	auto sphere2 = new Sphere(nullmat, vec3(0.0f), 0.75f, NULL, medium);
+	auto sphere2 = new Sphere(die, vec3(0.0f), 0.75f, NULL, medium);
 	scene.AddShape(sphere2);
 
 	auto lightmat2 = make_shared<DiffuseLight>(make_shared<ConstantTexture>(vec3(2.4f, 1.0f, 2.4f)));
 	
 	auto sphere3 = new Sphere(lightmat2, vec3(-1.5f, 1.5f, -1.0f), 1.0f);
 	auto sphere_light3 = make_shared<SphereLight>(sphere3);
-	scene.AddLight(sphere_light3, sphere_light3->shape);
+//	scene.AddLight(sphere_light3, sphere_light3->shape);
 
 // 	auto medium = make_shared<HomogeneousMedium>(vec3(200.0f), vec3(100.0f), new IsotropicPhaseFunction());
 // 	auto medium2 = make_shared<HomogeneousMedium>(vec3(0.05f, 0.025f, 0.02f), vec3(0.05f, 0.03f, 0.06f), new IsotropicPhaseFunction());
@@ -105,6 +105,7 @@ Scene CornellBox() {
 	scene.SetCamera(make_shared<PinholeCamera>(vec3(0.0f, 0.0f, -4.0f), vec3(0.0f), vec3(0.0f, 1.0f, 0.0f), 1.0f, 45.0f,
 		static_cast<float>(scene.width) / static_cast<float>(scene.height)));
 	scene.SetFilter(make_shared<FilterGaussian>());
+	scene.SetHDR(make_shared<InfiniteAreaLight>(make_shared<HdrTexture>("../TestScene/Boy/HDR/spaichingen_hill_4k.hdr")));
 
 	scene.Commit();
 
@@ -153,7 +154,7 @@ int main(int argc, char** argv) {
 // 	render->Destory();
 
 	auto scene = CornellBox();
-	auto inte = make_shared<VolumetricPathTracing>(make_shared<Scene>(scene), 50, SamplerType::Independent, TraceLightType::ALL);
+	auto inte = make_shared<VolumetricPathTracing>(make_shared<Scene>(scene), 100, SamplerType::Independent, TraceLightType::ALL);
 
 	auto render = make_shared<CPURender>(inte, 0);
 	render->Init();

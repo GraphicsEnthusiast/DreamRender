@@ -442,6 +442,35 @@ vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, 
 	float mult_trans_pdf = 1.0f;
 	auto hitmat = scene->shapes[rayhit.hit.geomID]->material;
 
+	if (scene->useEnv && medium == NULL) {
+		vec4 sample = sampler->Get4();
+		HDRSample envsample = scene->env->Sample(info, sample);
+		vec3 lightL = envsample.L;
+
+		//HDR环境贴图重要性采样    
+		RTCRayHit shadowRayHit = MakeRayHit(info.position, lightL, EPS, INF);
+
+		//进行一次求交测试，判断是否有遮挡
+		if (dot(info.normal, lightL) > 0.0f) { //如果采样方向背向点p则放弃测试，因为N dot L < 0            
+			//天空光仅在没有遮挡的情况下积累亮度
+			if (scene->IsVisibility(shadowRayHit)) {
+				//获取采样方向L上的: 1.光照贡献, 2.环境贴图在该位置的pdf, 3.BSDF函数值, 4.BSDF在该方向的pdf
+				vec3 emitted = envsample.radiance;
+				float light_pdf = envsample.pdf;
+				EvalInfo bsdf_info = hitmat->Eval(V, lightL, info);
+				float bsdf_pdf = bsdf_info.bsdf_pdf;
+
+				if (!(ReasonableTesting(bsdf_pdf) && ReasonableTesting(light_pdf) && ReasonableTesting(bsdf_info.costheta))) {
+					return vec3(0.0f);
+				}
+
+				float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);
+
+				radiance += misWeight * emitted * history * bsdf_info.bsdf * abs(bsdf_info.costheta) / light_pdf;
+			}
+		}
+	}
+
 	if (scene->lights.size() != 0) {
 		//方法1. 随机选择一个光源
 		if (traceLightType == RANDOM) {
@@ -614,6 +643,7 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 					break;
 				}
 
+				pre_isDelta = false;
 				p_s_pdf = phase_pdf;
 				history *= (p_info.attenuation / phase_pdf);
 			}
@@ -646,6 +676,7 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 					pre_position = info.position;
 					V = -L;
 					rayhit = MakeRayHit(pre_position, L);
+					pre_isDelta = false;
 
 					continue;
 				}
@@ -667,6 +698,24 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 					p_s_pdf = bsdf_pdf;
 					history *= (b_info.bsdf * abs(b_info.costheta) / bsdf_pdf);
 				}
+			}
+			else {//没有击中任何物体
+				if (scene->useEnv && medium == NULL) {
+					vec3 Le = scene->env->Emitted(L);
+
+					float misWeight = 1.0f;
+					if (bounce != 0 && !pre_isDelta) {
+						float light_pdf = scene->env->Pdf(L);
+						if (!ReasonableTesting(light_pdf)) {
+							break;
+						}
+						misWeight = PowerHeuristic(p_s_pdf, light_pdf, 2);
+					}
+
+					radiance += misWeight * Le * history;
+				}
+
+				break;
 			}
 		}
 
