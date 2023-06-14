@@ -1,7 +1,7 @@
 # DreamRender
 
 相对于stage-1，加入了体渲染路径追踪，删除了点光源，平行光，注释了这个有偏的去除噪点的方法![image](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/4a793f5c-4e3f-4a14-9e2b-7979da1b00c1)
-
+scene网盘链接: 我用夸克网盘分享了「scene.7z」：https://pan.quark.cn/s/0962a3a1b1ab
 
 这是我写的第一个离线渲染器，起源于raytracing三部曲，但已经被我改了看不出来了😄，未来会更新更多的渲染算法(参考了github上的大量开源项目)。
 直接构建即可运行，构建速度很快，移除了vcpkg，将embree和tbb换成了和oidn一样的提前编译好的库。
@@ -62,15 +62,15 @@ cmd: DreamRender scene/boy.json
   - TentFilter
 
 - 光源
-  - 点光源
   - 面光源(Quad，Sphere)
-  - 平行光
   - HDR环境光
 
 - 场景描述
   - json场景解析
 
 - 截图
-![vol1](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/3c745d57-d093-4152-89a2-e8968f427593)
-![vol2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/704e9421-ff91-4068-bcfb-1470d2fe0b5d)
+![vol3](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/2885448a-17d8-447f-ba07-9af83a2053ff)
+![vol4](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/2fa9bb02-063e-4ac5-becf-e21cf7e4ad42)
+![vol2](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/2742b0da-857c-48b9-86e4-a645a1709184)
+![vol1](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/e19ad1b9-a0f8-48fa-98e1-b32cd8daa0f7)
 
