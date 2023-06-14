@@ -11,6 +11,7 @@ scene网盘链接: 我用夸克网盘分享了「scene.7z」：https://pan.quark
 mkdir build
 cmake -B ./build -DCMAKE_BUILD_TYPE=Release
 cmake --build ./build --config Release
+cd bin/Release
 powershell: ./DreamRender scene/boy.json
 cmd: DreamRender scene/boy.json
 ```
