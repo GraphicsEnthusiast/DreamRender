@@ -433,6 +433,14 @@ void SceneParser::ParseMaterials(const json& data) {
 				materials.push_back(pair<string, shared_ptr<Material>>(name, mat));
 			}
 		}
+		else if (type == "null_material") {
+			string name = material.value("name", "");
+			cout << "name: " << name << endl;
+
+			mat = make_shared<NullMaterial>();
+
+			materials.push_back(pair<string, shared_ptr<Material>>(name, mat));
+		}
 		else if (type == "smooth_diffuse") {
 			 string name = material.value("name", "");
 			 cout << "name: " << name << endl;
