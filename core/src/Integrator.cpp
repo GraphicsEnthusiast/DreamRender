@@ -353,7 +353,7 @@ vec3 VolumetricPathTracing::NextEventEstimationMedium(const RTCRayHit& rayhit, c
 						}
 
 						phase_pdf *= mult_trans_pdf;
-     				    float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
+     				                                float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
 
 						radiance += misWeight * Le * shadow_history * history * p_info.attenuation / light_pdf;
 
