@@ -382,6 +382,18 @@ vec3 DiffuseLight::GetAlbedo(const IntersectionInfo& info) {
 	return emittedTexture->Value(info.uv);
 }
 
+BsdfSample NullMaterial::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
+	return { vec3(0.0f), 0.0f };
+}
+
+EvalInfo NullMaterial::Eval(const vec3& V, const vec3& L, const IntersectionInfo& info) {
+	return { vec3(0.0f), 0.0f };
+}
+
+vec3 NullMaterial::GetAlbedo(const IntersectionInfo& info) {
+	return vec3(0.0f);
+}
+
 BsdfSample SmoothDiffuse::Sample(const vec3& V, const IntersectionInfo& info, Sampler* sampler) {
 	vec3 N = info.normal;
 	vec3 L = CosWeight::Sample(info.normal, sampler->Get2());
