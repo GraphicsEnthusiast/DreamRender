@@ -2,7 +2,7 @@
 
 bool Integrator::ReasonableTesting(float value) {
 	if (isnan(value) || value < EPS) {
-//		cout << "²»ºÏÀíµÄÊı£º" << value << endl;
+//		cout << "ä¸åˆç†çš„æ•°ï¼š" << value << endl;
 
 		return false;
 	}
@@ -23,7 +23,7 @@ GBuffer Integrator::GetSceneGBuffer() {
 	gbuffer.albedoTexture = new vec3[scene->width * scene->height];
 	gbuffer.normalTexture = new vec3[scene->width * scene->height];
 
-	omp_set_num_threads(32);//Ïß³Ì¸öÊı
+	omp_set_num_threads(32);//çº¿ç¨‹ä¸ªæ•°
 #pragma omp parallel for
 	for (int j = 0; j < scene->height; j++) {
 		for (int i = 0; i < scene->width; i++) {
@@ -72,22 +72,22 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 	float light_pdf;
 
 	vec3 V = -GetRayDir(rayhit);
-	//Ö±½Ó¹âÕÕ¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª
+	//ç›´æ¥å…‰ç…§â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 	if (!hitmat->IsDelta()) {
-		//HDR»·¾³¹â
+		//HDRç¯å¢ƒå…‰
 		if (scene->useEnv) {
 			vec4 sample = sampler->Get4();
 			HDRSample envsample = scene->env->Sample(info, sample);
 			vec3 lightL = envsample.L;
 
-			//HDR»·¾³ÌùÍ¼ÖØÒªĞÔ²ÉÑù    
+			//HDRç¯å¢ƒè´´å›¾é‡è¦æ€§é‡‡æ ·    
 			RTCRayHit shadowRayHit = MakeRayHit(info.position, lightL, EPS, INF);
 
-			//½øĞĞÒ»´ÎÇó½»²âÊÔ£¬ÅĞ¶ÏÊÇ·ñÓĞÕÚµ²
-			if (dot(info.normal, lightL) > 0.0f) { //Èç¹û²ÉÑù·½Ïò±³ÏòµãpÔò·ÅÆú²âÊÔ£¬ÒòÎªN dot L < 0            
-				//Ìì¿Õ¹â½öÔÚÃ»ÓĞÕÚµ²µÄÇé¿öÏÂ»ıÀÛÁÁ¶È
+			//è¿›è¡Œä¸€æ¬¡æ±‚äº¤æµ‹è¯•ï¼Œåˆ¤æ–­æ˜¯å¦æœ‰é®æŒ¡
+			if (dot(info.normal, lightL) > 0.0f) { //å¦‚æœé‡‡æ ·æ–¹å‘èƒŒå‘ç‚¹påˆ™æ”¾å¼ƒæµ‹è¯•ï¼Œå› ä¸ºN dot L < 0            
+				//å¤©ç©ºå…‰ä»…åœ¨æ²¡æœ‰é®æŒ¡çš„æƒ…å†µä¸‹ç§¯ç´¯äº®åº¦
 				if (scene->IsVisibility(shadowRayHit)) {
-					//»ñÈ¡²ÉÑù·½ÏòLÉÏµÄ: 1.¹âÕÕ¹±Ï×, 2.»·¾³ÌùÍ¼ÔÚ¸ÃÎ»ÖÃµÄpdf, 3.BSDFº¯ÊıÖµ, 4.BSDFÔÚ¸Ã·½ÏòµÄpdf
+					//è·å–é‡‡æ ·æ–¹å‘Lä¸Šçš„: 1.å…‰ç…§è´¡çŒ®, 2.ç¯å¢ƒè´´å›¾åœ¨è¯¥ä½ç½®çš„pdf, 3.BSDFå‡½æ•°å€¼, 4.BSDFåœ¨è¯¥æ–¹å‘çš„pdf
 					vec3 emitted = envsample.radiance;
 					light_pdf = envsample.pdf;
 					EvalInfo bsdf_info = hitmat->Eval(V, lightL, info);
@@ -105,7 +105,7 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 		}
 
 		if (scene->lights.size() != 0) {
-			//·½·¨1. Ëæ»úÑ¡ÔñÒ»¸ö¹âÔ´
+			//æ–¹æ³•1. éšæœºé€‰æ‹©ä¸€ä¸ªå…‰æº
 			if (traceLightType == RANDOM) {
 				int index = sampler->Get1() * scene->lights.size();
 				auto light = scene->lights[index];
@@ -114,7 +114,7 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 				light_pdf = light_sample.light_pdf;
 				EvalInfo bsdf_info = hitmat->Eval(V, light_sample.light_dir, info);
 
-				//ÒõÓ°²âÊÔ
+				//é˜´å½±æµ‹è¯•
 				if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 					RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 					if (scene->IsVisibility(shadowRayHit)) {
@@ -133,7 +133,7 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 				}
 			}
 
-			//·½·¨2. Ñ¡ÔñÈ«²¿¹âÔ´
+			//æ–¹æ³•2. é€‰æ‹©å…¨éƒ¨å…‰æº
 			if (traceLightType == ALL) {
 				for (int index = 0; index < scene->lights.size(); index++) {
 					auto light = scene->lights[index];
@@ -142,7 +142,7 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 					light_pdf = light_sample.light_pdf;
 					EvalInfo bsdf_info = hitmat->Eval(V, light_sample.light_dir, info);
 
-					//ÒõÓ°²âÊÔ
+					//é˜´å½±æµ‹è¯•
 					if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 						RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 						if (scene->IsVisibility(shadowRayHit)) {
@@ -168,11 +168,11 @@ vec3 PathTracing::DirectLight(const RTCRayHit& rayhit, const IntersectionInfo& i
 }
 
 vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
-	//µÚÒ»´Î»÷ÖĞ
+	//ç¬¬ä¸€æ¬¡å‡»ä¸­
 	scene->Intersect(rayhit);
 	if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
 		scene->UpdateInfo(rayhit, info);
-		//ÅĞ¶ÏÊÇ·ñÊÇ¹âÔ´£¬Èç¹ûÊÇÔò·µ»Ø¹âÔ´ÑÕÉ«
+		//åˆ¤æ–­æ˜¯å¦æ˜¯å…‰æºï¼Œå¦‚æœæ˜¯åˆ™è¿”å›å…‰æºé¢œè‰²
 		if (scene->shapes[rayhit.hit.geomID]->material->m_type == MaterialType::DiffuseLight) {
 			if (info.frontFace) {
 				return scene->shapes[rayhit.hit.geomID]->material->Emitted(info);
@@ -186,7 +186,7 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 // 		}
 	}
 	else {
-		//ÅĞ¶ÏÊÇ·ñÓĞ±³¾°É«£¬Èç¹ûÓĞÔò·µ»Ø±³¾°É«£¬·ñÔò·µ»Ø0
+		//åˆ¤æ–­æ˜¯å¦æœ‰èƒŒæ™¯è‰²ï¼Œå¦‚æœæœ‰åˆ™è¿”å›èƒŒæ™¯è‰²ï¼Œå¦åˆ™è¿”å›0
 		if (scene->useEnv) {
 			vec3 L = GetRayDir(rayhit);
 
@@ -208,11 +208,11 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 		auto hitmat = scene->shapes[rayhit.hit.geomID]->material;
 
 		vec3 V = -GetRayDir(rayhit);
-		//Ö±½Ó¹âÕÕ¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª
+		//ç›´æ¥å…‰ç…§â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 		radiance += DirectLight(rayhit, info, history);
 
-		//¼ä½Ó¹âÕÕ¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª
-		//¸ÃÌõÂ·¾¶radianceÔ½Ğ¡Ô½ÈİÒ×¶ªÊ§
+		//é—´æ¥å…‰ç…§â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+		//è¯¥æ¡è·¯å¾„radianceè¶Šå°è¶Šå®¹æ˜“ä¸¢å¤±
 		float prr = hitmat->IsDelta() ? 1.0f : std::min(1.0f, (history[0] + history[1] + history[2]) / 3.0f);
 		if (sampler->Get1() > prr) {
 			break;
@@ -240,7 +240,7 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 		if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
 			scene->UpdateInfo(rayhit, newInfo);
 
-			//ÅĞ¶ÏÊÇ·ñ»÷ÖĞµÆ¹â
+			//åˆ¤æ–­æ˜¯å¦å‡»ä¸­ç¯å…‰
 			if (scene->shapes[rayhit.hit.geomID]->material->m_type == MaterialType::DiffuseLight) {
 				if (!newInfo.frontFace) {
 					break;
@@ -265,7 +265,7 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 			}
 		}
 		else {
-			//Î´»÷ÖĞÈÎºÎÎïÌå£¬·µ»Ø±³¾°É«
+			//æœªå‡»ä¸­ä»»ä½•ç‰©ä½“ï¼Œè¿”å›èƒŒæ™¯è‰²
 // 			float t = 0.5f * (L.y + 1.0f);
 // 			radiance += history * mix(vec3(1.0f), vec3(0.5f, 0.7f, 1.0f), t);
 			if (scene->useEnv) {
@@ -299,7 +299,7 @@ vec3 VolumetricPathTracing::NextEventEstimationMedium(const RTCRayHit& rayhit, c
 	float mult_trans_pdf = 1.0f;
 
 	if (scene->lights.size() != 0) {
-		//·½·¨1. Ëæ»úÑ¡ÔñÒ»¸ö¹âÔ´
+		//æ–¹æ³•1. éšæœºé€‰æ‹©ä¸€ä¸ªå…‰æº
 		if (traceLightType == RANDOM) {
 			int index = sampler->Get1() * scene->lights.size();
 			auto light = scene->lights[index];
@@ -314,7 +314,7 @@ vec3 VolumetricPathTracing::NextEventEstimationMedium(const RTCRayHit& rayhit, c
 				return vec3(0.0f);
 			}
 
-			//ÒõÓ°²âÊÔ
+			//é˜´å½±æµ‹è¯•
 			if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 				RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 
@@ -353,7 +353,7 @@ vec3 VolumetricPathTracing::NextEventEstimationMedium(const RTCRayHit& rayhit, c
 						}
 
 						phase_pdf *= mult_trans_pdf;
-     				                                float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
+     				                float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
 
 						radiance += misWeight * Le * shadow_history * history * p_info.attenuation / light_pdf;
 
@@ -363,7 +363,7 @@ vec3 VolumetricPathTracing::NextEventEstimationMedium(const RTCRayHit& rayhit, c
 			}
 		}
 
-		//·½·¨2. Ñ¡ÔñÈ«²¿¹âÔ´
+		//æ–¹æ³•2. é€‰æ‹©å…¨éƒ¨å…‰æº
 		if (traceLightType == ALL) {
 			for (int index = 0; index < scene->lights.size(); index++) {
 				auto light = scene->lights[index];
@@ -378,7 +378,7 @@ vec3 VolumetricPathTracing::NextEventEstimationMedium(const RTCRayHit& rayhit, c
 					break;
 				}
 
-				//ÒõÓ°²âÊÔ
+				//é˜´å½±æµ‹è¯•
 				if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 					RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 
@@ -447,14 +447,14 @@ vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, 
 		HDRSample envsample = scene->env->Sample(info, sample);
 		vec3 lightL = envsample.L;
 
-		//HDR»·¾³ÌùÍ¼ÖØÒªĞÔ²ÉÑù    
+		//HDRç¯å¢ƒè´´å›¾é‡è¦æ€§é‡‡æ ·    
 		RTCRayHit shadowRayHit = MakeRayHit(info.position, lightL, EPS, INF);
 
-		//½øĞĞÒ»´ÎÇó½»²âÊÔ£¬ÅĞ¶ÏÊÇ·ñÓĞÕÚµ²
-		if (dot(info.normal, lightL) > 0.0f) { //Èç¹û²ÉÑù·½Ïò±³ÏòµãpÔò·ÅÆú²âÊÔ£¬ÒòÎªN dot L < 0            
-			//Ìì¿Õ¹â½öÔÚÃ»ÓĞÕÚµ²µÄÇé¿öÏÂ»ıÀÛÁÁ¶È
+		//è¿›è¡Œä¸€æ¬¡æ±‚äº¤æµ‹è¯•ï¼Œåˆ¤æ–­æ˜¯å¦æœ‰é®æŒ¡
+		if (dot(info.normal, lightL) > 0.0f) { //å¦‚æœé‡‡æ ·æ–¹å‘èƒŒå‘ç‚¹påˆ™æ”¾å¼ƒæµ‹è¯•ï¼Œå› ä¸ºN dot L < 0            
+			//å¤©ç©ºå…‰ä»…åœ¨æ²¡æœ‰é®æŒ¡çš„æƒ…å†µä¸‹ç§¯ç´¯äº®åº¦
 			if (scene->IsVisibility(shadowRayHit)) {
-				//»ñÈ¡²ÉÑù·½ÏòLÉÏµÄ: 1.¹âÕÕ¹±Ï×, 2.»·¾³ÌùÍ¼ÔÚ¸ÃÎ»ÖÃµÄpdf, 3.BSDFº¯ÊıÖµ, 4.BSDFÔÚ¸Ã·½ÏòµÄpdf
+				//è·å–é‡‡æ ·æ–¹å‘Lä¸Šçš„: 1.å…‰ç…§è´¡çŒ®, 2.ç¯å¢ƒè´´å›¾åœ¨è¯¥ä½ç½®çš„pdf, 3.BSDFå‡½æ•°å€¼, 4.BSDFåœ¨è¯¥æ–¹å‘çš„pdf
 				vec3 emitted = envsample.radiance;
 				float light_pdf = envsample.pdf;
 				EvalInfo bsdf_info = hitmat->Eval(V, lightL, info);
@@ -472,7 +472,7 @@ vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, 
 	}
 
 	if (scene->lights.size() != 0) {
-		//·½·¨1. Ëæ»úÑ¡ÔñÒ»¸ö¹âÔ´
+		//æ–¹æ³•1. éšæœºé€‰æ‹©ä¸€ä¸ªå…‰æº
 		if (traceLightType == RANDOM) {
 			int index = sampler->Get1() * scene->lights.size();
 			auto light = scene->lights[index];
@@ -487,7 +487,7 @@ vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, 
 				return vec3(0.0f);
 			}
 
-			//ÒõÓ°²âÊÔ
+			//é˜´å½±æµ‹è¯•
 			if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 				RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 
@@ -536,7 +536,7 @@ vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, 
 			}
 		}
 
-		//·½·¨2. Ñ¡ÔñÈ«²¿¹âÔ´
+		//æ–¹æ³•2. é€‰æ‹©å…¨éƒ¨å…‰æº
 		if (traceLightType == ALL) {
 			for (int index = 0; index < scene->lights.size(); index++) {
 				auto light = scene->lights[index];
@@ -551,7 +551,7 @@ vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, 
 					break;
 				}
 
-				//ÒõÓ°²âÊÔ
+				//é˜´å½±æµ‹è¯•
 				if (dot(light_sample.light_dir, light_sample.light_normal) < 0.0f) {
 					RTCRayHit shadowRayHit = MakeRayHit(info.position, light_sample.light_dir, EPS, light_sample.dist - EPS);
 
@@ -608,11 +608,11 @@ vec3 VolumetricPathTracing::NextEventEstimationSurface(const RTCRayHit& rayhit, 
 vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 	vec3 radiance(0.0f);
 	vec3 history(1.0f);
-	vec3 pre_position = GetRayOrg(rayhit);//³õÊ¼»¯ÎªÏà»úÎ»ÖÃ
+	vec3 pre_position = GetRayOrg(rayhit);//åˆå§‹åŒ–ä¸ºç›¸æœºä½ç½®
 	vec3 V = -GetRayDir(rayhit);
 	vec3 L = GetRayDir(rayhit);
-	float mult_trans_pdf = 1.0f;//´©¹ı½éÖÊµÄ¸ÅÂÊ
-	float p_s_pdf = 0.0f;//¼ÇÂ¼²ÎÓë½éÖÊ»òÕß±íÃæ²ÄÖÊµÄpdf£¬ÓÃÓÚmis
+	float mult_trans_pdf = 1.0f;//ç©¿è¿‡ä»‹è´¨çš„æ¦‚ç‡
+	float p_s_pdf = 0.0f;//è®°å½•å‚ä¸ä»‹è´¨æˆ–è€…è¡¨é¢æè´¨çš„pdfï¼Œç”¨äºmis
 	bool pre_isDelta = false;
 
 	for(int bounce = 0; bounce < depth; bounce++) {
@@ -629,7 +629,7 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 			history *= (transmittance / trans_pdf);
 			mult_trans_pdf *= trans_pdf;
 
-			if (scattered) {//¹âÏßÔÚ½éÖÊÀï·¢ÉúÉ¢Éä
+			if (scattered) {//å…‰çº¿åœ¨ä»‹è´¨é‡Œå‘ç”Ÿæ•£å°„
 				info.position = pre_position + t * L;
 				info.t = t;
 
@@ -649,9 +649,9 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 			}
 		}
 		
-		if (!scattered) {//¹âÏßÃ»ÓĞÔÚ½éÖÊÀï·¢ÉúÉ¢Éä£¬Ö±ÖÁ»÷ÖĞÎïÌå±íÃæ
+		if (!scattered) {//å…‰çº¿æ²¡æœ‰åœ¨ä»‹è´¨é‡Œå‘ç”Ÿæ•£å°„ï¼Œç›´è‡³å‡»ä¸­ç‰©ä½“è¡¨é¢
 			if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
-				if (scene->shapes[rayhit.hit.geomID]->material->m_type == MaterialType::DiffuseLight) {//»÷ÖĞµÆ¹â
+				if (scene->shapes[rayhit.hit.geomID]->material->m_type == MaterialType::DiffuseLight) {//å‡»ä¸­ç¯å…‰
 					if (info.frontFace) {
 						float misWeight = 1.0f;
 						if (bounce != 0 && !pre_isDelta) {
@@ -699,7 +699,7 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 					history *= (b_info.bsdf * abs(b_info.costheta) / bsdf_pdf);
 				}
 			}
-			else {//Ã»ÓĞ»÷ÖĞÈÎºÎÎïÌå
+			else {//æ²¡æœ‰å‡»ä¸­ä»»ä½•ç‰©ä½“
 				if (scene->useEnv && medium == NULL) {
 					vec3 Le = scene->env->Emitted(L);
 
