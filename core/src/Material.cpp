@@ -247,9 +247,9 @@ vec3 GTR1::Sample(vec3 V, vec3 N, float alpha, vec2 sample) {
 	float cos_theta_h = sqrt((1.0f - pow(alpha * alpha, 1.0f - sample.y)) / (1.0f - alpha * alpha));
 	float sin_theta_h = sqrt(std::max(0.0f, 1.0f - cos_theta_h * cos_theta_h));
 
-	//²ÉÑù "Î¢Æ½Ãæ" µÄ·¨ÏòÁ¿ ×÷Îª¾µÃæ·´ÉäµÄ°ë½ÇÏòÁ¿h 
+	//é‡‡æ · "å¾®å¹³é¢" çš„æ³•å‘é‡ ä½œä¸ºé•œé¢åå°„çš„åŠè§’å‘é‡h 
 	vec3 H = vec3(sin_theta_h * cos_phi_h, sin_theta_h * sin_phi_h, cos_theta_h);
-	H = ToWorld(H, N);   //Í¶Ó°µ½ÕæÕıµÄ·¨Ïò°ëÇò
+	H = ToWorld(H, N);   //æŠ•å½±åˆ°çœŸæ­£çš„æ³•å‘åŠçƒ
 
 	return H;
 }
@@ -260,10 +260,10 @@ KullaConty::KullaConty(float (*G1)(const vec3& V, const vec3& H, const vec3& N, 
 
 	vec3 h(0.0f, 1.0f, 0.0f);
 
-	//´Ö²Ú¶È±ä»¯
+	//ç²—ç³™åº¦å˜åŒ–
 	for (int k = 0; k < kLutResolution; k++) {
 		float roughness = kStep * (k + 0.5f);
-		//Ô¤¼ÆËã¹âÏß³öÉä·½ÏòÓë·¨Ïß·½Ïò¼Ğ½ÇµÄÓàÏÒ´Ó0µ½1µÄÒ»ÏµÁĞ·´ÕÕÂÊ
+		//é¢„è®¡ç®—å…‰çº¿å‡ºå°„æ–¹å‘ä¸æ³•çº¿æ–¹å‘å¤¹è§’çš„ä½™å¼¦ä»0åˆ°1çš„ä¸€ç³»åˆ—åç…§ç‡
 		for (int j = 0; j < kLutResolution; j++) {
 			float cos_theta_o = kStep * (j + 0.5f);
 			vec3 wo = { sqrt(1.0f - sqr(cos_theta_o)), 0.0f, cos_theta_o };
@@ -274,7 +274,7 @@ KullaConty::KullaConty(float (*G1)(const vec3& V, const vec3& H, const vec3& N, 
 				float G = G1(wi, h, normal, roughness, roughness) * G1(wo, h, normal, roughness, roughness),
 					cos_m_o = std::max(dot(wo, h), 0.0f),
 					cos_m_n = std::max(dot(normal, h), 0.0f);
-				//ÖØÒªĞÔ²ÉÑùµÄÎ¢±íÃæÄ£ĞÍBSDF£¬²¢ÇÒ·ÆÄù¶ûÏîÖÃÎª1£¨»ò0£©
+				//é‡è¦æ€§é‡‡æ ·çš„å¾®è¡¨é¢æ¨¡å‹BSDFï¼Œå¹¶ä¸”è²æ¶…å°”é¡¹ç½®ä¸º1ï¼ˆæˆ–0ï¼‰
 				albedo_lut[k][j] += (cos_m_o * G / (cos_theta_o * cos_m_n));
 			}
 			albedo_lut[k][j] = std::max(kSampleCountInv * albedo_lut[k][j], 0.0f);
@@ -283,7 +283,7 @@ KullaConty::KullaConty(float (*G1)(const vec3& V, const vec3& H, const vec3& N, 
 	}
 
 	albedo_avg_lut.fill(0.0f);
-	//»ı·Ö£¬¼ÆËãÆ½¾ù·´ÕÕÂÊ
+	//ç§¯åˆ†ï¼Œè®¡ç®—å¹³å‡åç…§ç‡
 	for (int k = 0; k < kLutResolution; k++) {
 		float roughness = kStep * (k + 0.5f);
 		for (int j = 0; j < kLutResolution; j++) {
@@ -468,9 +468,9 @@ BsdfSample SmoothDielectric::Sample(const vec3& V, const IntersectionInfo& info,
 	else {
 		vec3 L = refract(-V, N, etai_over_etat);
 
-		//²ÉÑù²»ºÏ·¨£¬ÉáÈ¥
+		//é‡‡æ ·ä¸åˆæ³•ï¼Œèˆå»
 		if (dot(N, L) * dot(N, V) > 0.0f) {
-//			cout << "²»ºÏ·¨" << endl;
+//			cout << "ä¸åˆæ³•" << endl;
 			return BsdfSampleError();
 		}
 
@@ -519,17 +519,17 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info, Sa
 		s_sum = ks.r + ks.g + ks.b;
 
 	vec3 N = info.normal;
-	//	bool add_specular = true;//Éú³ÉµÄ¹âÏß·½ÏòÊÇ·ñÔÚ¾µÃæ·´Éä²¨°êÖ®ÖĞ
-	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//³öÉä·ÆÄù¶ûÏî
-		Fi = Fo,//ÈëÉä·ÆÄù¶ûÏî
-		specular_sampling_weight = s_sum / (s_sum + d_sum),//³éÑù¾µÃæ·´ÉäµÄÈ¨ÖØ
-		pdf_specular = Fi * specular_sampling_weight,//³éÑù¾µÃæ·´Éä·ÖÁ¿µÄ¸ÅÂÊ
-		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//³éÑùÂş·´Éä·ÖÁ¿µÄ¸ÅÂÊ
+	//	bool add_specular = true;//ç”Ÿæˆçš„å…‰çº¿æ–¹å‘æ˜¯å¦åœ¨é•œé¢åå°„æ³¢ç“£ä¹‹ä¸­
+	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//å‡ºå°„è²æ¶…å°”é¡¹
+		Fi = Fo,//å…¥å°„è²æ¶…å°”é¡¹
+		specular_sampling_weight = s_sum / (s_sum + d_sum),//æŠ½æ ·é•œé¢åå°„çš„æƒé‡
+		pdf_specular = Fi * specular_sampling_weight,//æŠ½æ ·é•œé¢åå°„åˆ†é‡çš„æ¦‚ç‡
+		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//æŠ½æ ·æ¼«åå°„åˆ†é‡çš„æ¦‚ç‡
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
 	float pdf;
 	vec3 L;
-	if (sampler->Get1() < pdf_specular) { //´Ó¾µÃæ·´Éä·ÖÁ¿³éÑù¹âÏß·½Ïò
+	if (sampler->Get1() < pdf_specular) { //ä»é•œé¢åå°„åˆ†é‡æŠ½æ ·å…‰çº¿æ–¹å‘
 		L = reflect(-V, N);
 
 		float NdotL = dot(info.normal, L);
@@ -539,7 +539,7 @@ BsdfSample SmoothPlastic::Sample(const vec3& V, const IntersectionInfo& info, Sa
 
 		pdf = pdf_specular + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
-	else { //´ÓÂş·´Éä·ÖÁ¿³éÑù¹âÏß·½Ïò
+	else { //ä»æ¼«åå°„åˆ†é‡æŠ½æ ·å…‰çº¿æ–¹å‘
 		L = CosWeight::Sample(info.normal, sampler->Get2());
 
 		float NdotL = dot(info.normal, L);
@@ -559,7 +559,7 @@ EvalInfo SmoothPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInf
 	const float d_sum = kd.r + kd.g + kd.b,
 		s_sum = ks.r + ks.g + ks.b;
 
-	bool sampled_specular = false;//ÊÇ·ñ³éÑùµ½ÁË¾µÃæ·´Éä·ÖÁ¿
+	bool sampled_specular = false;//æ˜¯å¦æŠ½æ ·åˆ°äº†é•œé¢åå°„åˆ†é‡
 	vec3 N = info.normal;
 	if (normalTexture != NULL) {
 		vec3 tangentNormal = normalTexture->Value(info.uv);
@@ -572,15 +572,15 @@ EvalInfo SmoothPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInf
 		return { vec3(0.0f), NdotL };
 	}
 
-	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//³öÉä·ÆÄù¶ûÏî
-		Fi = Fresnel::FresnelDielectric(L, N, eta_inv),//ÈëÉä·ÆÄù¶ûÏî
-		specular_sampling_weight = s_sum / (s_sum + d_sum),//³éÑù¾µÃæ·´ÉäµÄÈ¨ÖØ
-		pdf_specular = Fi * specular_sampling_weight,//³éÑù¾µÃæ·´Éä·ÖÁ¿µÄ¸ÅÂÊ
-		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//³éÑùÂş·´Éä·ÖÁ¿µÄ¸ÅÂÊ
+	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//å‡ºå°„è²æ¶…å°”é¡¹
+		Fi = Fresnel::FresnelDielectric(L, N, eta_inv),//å…¥å°„è²æ¶…å°”é¡¹
+		specular_sampling_weight = s_sum / (s_sum + d_sum),//æŠ½æ ·é•œé¢åå°„çš„æƒé‡
+		pdf_specular = Fi * specular_sampling_weight,//æŠ½æ ·é•œé¢åå°„åˆ†é‡çš„æ¦‚ç‡
+		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//æŠ½æ ·æ¼«åå°„åˆ†é‡çš„æ¦‚ç‡
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
 	float pdf = (1.0f - pdf_specular) * std::max(0.0f, dot(N, V)) * INV_PI;
-	if (SameDirection(L, reflect(-V, N))) { //Èç¹û³öÉä·½ÏòÎ»ÓÚ¾µÃæ·´Éä²¨°êÖ®ÄÚ£¬ÔòÔÙ¼ÓÉÏ¾µÃæ·´Éä³É·ÖµÄ¸ÅÂÊ
+	if (SameDirection(L, reflect(-V, N))) { //å¦‚æœå‡ºå°„æ–¹å‘ä½äºé•œé¢åå°„æ³¢ç“£ä¹‹å†…ï¼Œåˆ™å†åŠ ä¸Šé•œé¢åå°„æˆåˆ†çš„æ¦‚ç‡
 		sampled_specular = true;
 		pdf += pdf_specular;
 	}
@@ -742,7 +742,7 @@ BsdfSample RoughDielectric::Sample(const vec3& V, const IntersectionInfo& info, 
 	else {
 		L = refract(-V, H, etai_over_etat);
 
-		//ÕÛÉä²»¿ÉÄÜÔÚÍ¬²à£¬ÉáÈ¥
+		//æŠ˜å°„ä¸å¯èƒ½åœ¨åŒä¾§ï¼Œèˆå»
 		if (dot(N, L) * dot(N, V) > 0.0f) {
 			return BsdfSampleError();
 		}
@@ -833,12 +833,12 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info, Sam
 		s_sum = ks.r + ks.g + ks.b;
 
 	vec3 N = info.normal;
-	//	bool add_specular = true;//Éú³ÉµÄ¹âÏß·½ÏòÊÇ·ñÔÚ¾µÃæ·´Éä²¨°êÖ®ÖĞ
-	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//³öÉä·ÆÄù¶ûÏî
-		Fi = Fo,//ÈëÉä·ÆÄù¶ûÏî
-		specular_sampling_weight = s_sum / (s_sum + d_sum),//³éÑù¾µÃæ·´ÉäµÄÈ¨ÖØ
-		pdf_specular = Fi * specular_sampling_weight,//³éÑù¾µÃæ·´Éä·ÖÁ¿µÄ¸ÅÂÊ
-		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//³éÑùÂş·´Éä·ÖÁ¿µÄ¸ÅÂÊ
+	//	bool add_specular = true;//ç”Ÿæˆçš„å…‰çº¿æ–¹å‘æ˜¯å¦åœ¨é•œé¢åå°„æ³¢ç“£ä¹‹ä¸­
+	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//å‡ºå°„è²æ¶…å°”é¡¹
+		Fi = Fo,//å…¥å°„è²æ¶…å°”é¡¹
+		specular_sampling_weight = s_sum / (s_sum + d_sum),//æŠ½æ ·é•œé¢åå°„çš„æƒé‡
+		pdf_specular = Fi * specular_sampling_weight,//æŠ½æ ·é•œé¢åå°„åˆ†é‡çš„æ¦‚ç‡
+		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//æŠ½æ ·æ¼«åå°„åˆ†é‡çš„æ¦‚ç‡
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
 	float roughness = roughnessTexture->Value(info.uv).r;
@@ -848,7 +848,7 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info, Sam
 
 	float pdf;
 	vec3 L;
-	if (sampler->Get1() < pdf_specular) { //´Ó¾µÃæ·´Éä·ÖÁ¿³éÑù¹âÏß·½Ïò
+	if (sampler->Get1() < pdf_specular) { //ä»é•œé¢åå°„åˆ†é‡æŠ½æ ·å…‰çº¿æ–¹å‘
 //	    vec3 H = GGX::Sample(N, alpha_u, alpha_v, xy);
 //	    float D = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
 		vec3 H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
@@ -863,7 +863,7 @@ BsdfSample RoughPlastic::Sample(const vec3& V, const IntersectionInfo& info, Sam
 //		pdf = D * abs(dot(N, H) / (4.0f * dot(V, H)));
 		pdf = pdf_specular * Dv * abs(1.0f / (4.0f * dot(V, H))) + (1.0f - pdf_specular) * NdotL * INV_PI;
 	}
-	else { //´ÓÂş·´Éä·ÖÁ¿³éÑù¹âÏß·½Ïò
+	else { //ä»æ¼«åå°„åˆ†é‡æŠ½æ ·å…‰çº¿æ–¹å‘
 		L = CosWeight::Sample(N, sampler->Get2());
 
 		float NdotL = dot(N, L);
@@ -896,11 +896,11 @@ EvalInfo RoughPlastic::Eval(const vec3& V, const vec3& L, const IntersectionInfo
 		return { vec3(0.0f), NdotL, 1.0f };
 	}
 
-	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//³öÉä·ÆÄù¶ûÏî
-		Fi = Fresnel::FresnelDielectric(L, N, eta_inv),//ÈëÉä·ÆÄù¶ûÏî
-		specular_sampling_weight = s_sum / (s_sum + d_sum),//³éÑù¾µÃæ·´ÉäµÄÈ¨ÖØ
-		pdf_specular = Fi * specular_sampling_weight,//³éÑù¾µÃæ·´Éä·ÖÁ¿µÄ¸ÅÂÊ
-		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//³éÑùÂş·´Éä·ÖÁ¿µÄ¸ÅÂÊ
+	float Fo = Fresnel::FresnelDielectric(V, N, eta_inv),//å‡ºå°„è²æ¶…å°”é¡¹
+		Fi = Fresnel::FresnelDielectric(L, N, eta_inv),//å…¥å°„è²æ¶…å°”é¡¹
+		specular_sampling_weight = s_sum / (s_sum + d_sum),//æŠ½æ ·é•œé¢åå°„çš„æƒé‡
+		pdf_specular = Fi * specular_sampling_weight,//æŠ½æ ·é•œé¢åå°„åˆ†é‡çš„æ¦‚ç‡
+		pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);//æŠ½æ ·æ¼«åå°„åˆ†é‡çš„æ¦‚ç‡
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
 	float roughness = roughnessTexture->Value(info.uv).r;
@@ -943,7 +943,7 @@ BsdfSample ClearcoatedConductor::Sample(const vec3& V, const IntersectionInfo& i
 	float alpha_v = sqr(roughnessTexture_v->Value(info.uv).r);
 
 	vec3 N = info.normal;
-	float NdotV = dot(V, N); // ³öÉä¹âÏß·½ÏòºÍºê¹Û±íÃæ·¨Ïß·½Ïò¼Ğ½ÇµÄÓàÏÒ
+	float NdotV = dot(V, N); // å‡ºå°„å…‰çº¿æ–¹å‘å’Œå®è§‚è¡¨é¢æ³•çº¿æ–¹å‘å¤¹è§’çš„ä½™å¼¦
 	float weight_coat = clear_coat * Fresnel::FresnelDielectric(V, N, 1.0f / 1.5f);
 
 	if (sampler->Get1() < weight_coat) {
@@ -1009,7 +1009,7 @@ EvalInfo ClearcoatedConductor::Eval(const vec3& V, const vec3& L, const Intersec
 	vec3 con_brdf = con_info.bsdf;
 	float pdf_nested = con_info.bsdf_pdf;
 
-	const float F_coat = Fresnel::FresnelDielectric(L, H, 1.0f / 1.5f); // ·ÆÄù¶ûÏî
+	const float F_coat = Fresnel::FresnelDielectric(L, H, 1.0f / 1.5f); // è²æ¶…å°”é¡¹
 	float weight_coat = clear_coat * F_coat;
 	float D_coat = GGX::DistributionGGX(H, N, alpha_u, alpha_v);
 
@@ -1423,7 +1423,7 @@ BsdfSample DisneyGlass::Sample(const vec3& V, const IntersectionInfo& info, Samp
 	else {
 		L = refract(-V, H, etai_over_etat);
 
-		//ÕÛÉä²»¿ÉÄÜÔÚÍ¬²à£¬ÉáÈ¥
+		//æŠ˜å°„ä¸å¯èƒ½åœ¨åŒä¾§ï¼Œèˆå»
 		if (dot(N, L) * dot(N, V) > 0.0f) {
 			return BsdfSampleError();
 		}
@@ -1546,7 +1546,7 @@ BsdfSample DisneyPrinciple::Sample(const vec3& V, const IntersectionInfo& info, 
 	float clearcoat = clearcoatTexture->Value(info.uv).r;
 
 	float diffuseWeight = (1.0f - metallic) * (1.0f - specularTransmission);
-	float metalWeight = (1.0f - specularTransmission) * (1.0f - metallic);
+	float metalWeight = metallic * (1.0f - specularTransmission);
 	float glassWeight = (1.0f - metallic) * specularTransmission;
 	float clearcoatWeight = 0.25f * clearcoat;
 
@@ -1606,7 +1606,7 @@ EvalInfo DisneyPrinciple::Eval(const vec3& V, const vec3& L, const IntersectionI
 	float clearcoat = clearcoatTexture->Value(info.uv).r;
 
 	float diffuseWeight = (1.0f - metallic) * (1.0f - specularTransmission);
-	float metalWeight = (1.0f - specularTransmission) * (1.0f - metallic);
+	float metalWeight = metallic * (1.0f - specularTransmission);
 	float glassWeight = (1.0f - metallic) * specularTransmission;
 	float clearcoatWeight = 0.25f * clearcoat;
 
