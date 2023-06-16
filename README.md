@@ -7,7 +7,7 @@ scene文件太大，移动到网盘了，链接: https://pan.quark.cn/s/0d9c27f7
 这是我写的第一个离线渲染器，起源于raytracing三部曲，但已经被我改了看不出来了😄，未来会更新更多的渲染算法(参考了github上的大量开源项目)。
 直接构建即可运行，构建速度很快，移除了vcpkg，将embree和tbb换成了和oidn一样的提前编译好的库。
 
-- 构建项目(使用vs打开运行)
+- 构建项目
 ```bash
 mkdir build
 cmake -B ./build -DCMAKE_BUILD_TYPE=Release
