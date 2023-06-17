@@ -76,4 +76,3 @@ cmd: DreamRender scene/sub.json
 ![241098159-cda01ee4-c6dd-4a0b-8c03-5fc7725063f8](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/7dda3381-21bb-4186-8574-d7c5bdfce6a9)
 ![241333870-d9781eb6-ff2a-4fba-bef3-a218d73d51e9](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/37f58c24-1432-4c95-ab9b-b4f45951058d)
 ![vol](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/f45965c8-09d8-4eb2-a5e1-d438e03141fe)
-![vol](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/dbac4fa3-331b-4b8f-b471-ae8ab1baf48f)
