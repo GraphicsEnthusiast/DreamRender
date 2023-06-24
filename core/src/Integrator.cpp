@@ -676,7 +676,7 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 					pre_position = info.position;
 					V = -L;
 					rayhit = MakeRayHit(pre_position, L);
-					pre_isDelta = false;
+					pre_isDelta = true;
 
 					continue;
 				}
