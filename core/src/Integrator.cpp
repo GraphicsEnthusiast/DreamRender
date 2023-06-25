@@ -705,6 +705,7 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 
 					float misWeight = 1.0f;
 					if (bounce != 0 && !pre_isDelta) {
+						p_s_pdf *= mult_trans_pdf;
 						float light_pdf = scene->env->Pdf(L);
 						if (!ReasonableTesting(light_pdf)) {
 							break;
