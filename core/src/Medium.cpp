@@ -69,13 +69,12 @@ PhaseInfo HenyeyGreensteinPhaseFunction::Eval(const vec3& V, const vec3& L, cons
 	return { attenuation, pdf };
 }
 
-HomogeneousMedium::HomogeneousMedium(const vec3& sigma_a, const vec3& sigma_s, PhaseFunction* phase_function)
+HomogeneousMedium::HomogeneousMedium(const vec3& albedo, const vec3& sigma_t, PhaseFunction* phase_function)
 	:
-	sigma_s_(sigma_s),
-	sigma_t_(sigma_a + sigma_s),
+	sigma_t_(sigma_t),
+	albedo_(albedo),
 	medium_sampling_weight_(0.0f),
 	phase_function_(phase_function) {
-	const vec3 albedo = sigma_s / (sigma_a + sigma_s);
 	for (int dim = 0; dim < 3; ++dim) {
 		if (albedo[dim] > medium_sampling_weight_ && sigma_t_[dim] != 0.0f) {
 			medium_sampling_weight_ = albedo[dim];
@@ -126,6 +125,7 @@ bool HomogeneousMedium::SampleDistance(float max_distance, float* distance, floa
 		}
 	}
 	if (scattered) {
+		vec3 sigma_s_ = albedo_ * sigma_t_;
 		*transmittance *= sigma_s_;
 	}
 	if (!valid) {
@@ -146,6 +146,7 @@ std::pair<vec3, float> HomogeneousMedium::EvalDistance(bool scattered, float dis
 		}
 	}
 
+	vec3 sigma_s_ = albedo_ * sigma_t_;
 	if (scattered) {
 		for (int dim = 0; dim < 3; ++dim) {
 			pdf += sigma_t_[dim] * attenuation[dim];

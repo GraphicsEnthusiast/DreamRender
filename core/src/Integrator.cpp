@@ -270,7 +270,7 @@ vec3 PathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) {
 // 			radiance += history * mix(vec3(1.0f), vec3(0.5f, 0.7f, 1.0f), t);
 			if (scene->useEnv) {
 				vec3 emitted = scene->env->Emitted(L);
-				float light_pdf = scene->env->Pdf(L);
+				float light_pdf = scene->env->Pdf(L, info.normal);
 
 				if (!ReasonableTesting(light_pdf)) {
 					break;
@@ -706,7 +706,7 @@ vec3 VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, IntersectionInf
 					float misWeight = 1.0f;
 					if (bounce != 0 && !pre_isDelta) {
 						p_s_pdf *= mult_trans_pdf;
-						float light_pdf = scene->env->Pdf(L);
+						float light_pdf = scene->env->Pdf(L, info.normal);
 						if (!ReasonableTesting(light_pdf)) {
 							break;
 						}

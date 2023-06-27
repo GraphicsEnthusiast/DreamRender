@@ -149,24 +149,26 @@ HDRSample InfiniteAreaLight::Sample(const IntersectionInfo& info, vec4 sample) {
 	int mHeight = hdr->ny;
 
 	float sinTheta = sin(PI * (row + 0.5f) / mHeight);
-	auto wi = PlaneToSphere(vec2((col + 0.5f) / mWidth, (row + 0.5f) / mHeight));
+	auto L = PlaneToSphere(vec2((col + 0.5f) / mWidth, (row + 0.5f) / mHeight));
 
-	float pdf = Pdf(wi);
+	float pdf = Pdf(L, info.normal);
 
-	return { wi, Emitted(wi), pdf };
+	return { L, Emitted(L), pdf };
 }
 
-float InfiniteAreaLight::Pdf(const vec3& wi) {
+float InfiniteAreaLight::Pdf(const vec3& L, const vec3& N) {
 	int mWidth = hdr->nx;
 	int mHeight = hdr->ny;
 
-	float pdf = GetPortion(wi) * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
+	float sinTheta = sqrt(1.0f - sqr(abs(dot(L, N))));
+
+	float pdf = GetPortion(L) * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI * 1.0f / sinTheta;
 
 	return pdf;
 }
 
-float InfiniteAreaLight::GetPortion(const vec3& wi) {
-	vec2 planeUV = SphereToPlane(normalize(wi));
+float InfiniteAreaLight::GetPortion(const vec3& L) {
+	vec2 planeUV = SphereToPlane(normalize(L));
 	vec3 l = hdr->Value(planeUV);
 
 	return Luminance(l) / mDistrib.Sum();
