@@ -56,7 +56,7 @@ public:
 //均匀介质
 class HomogeneousMedium : public Medium {
 public:
-	HomogeneousMedium(const vec3& albedo, const vec3& sigma_t, PhaseFunction* phase_function);
+	HomogeneousMedium(const vec3& sigma_a, const vec3& sigma_s, PhaseFunction* phase_function);
 	~HomogeneousMedium();
 
 	bool SampleDistance(float max_distance, float* distance, float* trans_pdf, vec3* transmittance, Sampler* sampler) const override;
@@ -67,6 +67,6 @@ public:
 private:
 	PhaseFunction* phase_function_;//相函数
 	float medium_sampling_weight_; //抽样光线在介质内部发生散射的权重
-	vec3 albedo_;
+	vec3 sigma_s_;                 //散射系数
 	vec3 sigma_t_;                 //衰减系数
 };

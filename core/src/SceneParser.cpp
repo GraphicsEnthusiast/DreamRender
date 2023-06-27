@@ -1316,20 +1316,20 @@ void SceneParser::ParseMediums(const json& data) {
 			string name = medium.value("name", "");
 			cout << "name: " << name << endl;
 
-			json sigma_t_j = medium.value("sigma_t", json());
-			vec3 sigma_t(sigma_t_j.at(0), sigma_t_j.at(1), sigma_t_j.at(2));
-			cout << "sigma_t: " << to_string(sigma_t) << endl;
+			json sigma_a_j = medium.value("sigma_a", json());
+			vec3 sigma_a(sigma_a_j.at(0), sigma_a_j.at(1), sigma_a_j.at(2));
+			cout << "sigma_a: " << to_string(sigma_a) << endl;
 
-			json albedo_j = medium.value("albedo", json());
-			vec3 albedo(albedo_j.at(0), albedo_j.at(1), albedo_j.at(2));
-			cout << "albedo: " << to_string(albedo) << endl;
+			json sigma_s_j = medium.value("sigma_s", json());
+			vec3 sigma_s(sigma_s_j.at(0), sigma_s_j.at(1), sigma_s_j.at(2));
+			cout << "sigma_s: " << to_string(sigma_s) << endl;
 
 			float scale = medium.value("scale", 1.0f);
 			cout << "scale: " << scale << endl;
 
 			if (phase == "isotropic") {
 				auto ph = new IsotropicPhaseFunction();
-				auto me = make_shared<HomogeneousMedium>(albedo, sigma_t * scale, ph);
+				auto me = make_shared<HomogeneousMedium>(sigma_a * scale, sigma_s * scale, ph);
 
 				mediums.push_back(pair<string, shared_ptr<Medium>>(name, me));
 			}
@@ -1339,7 +1339,7 @@ void SceneParser::ParseMediums(const json& data) {
 				cout << "g: " << to_string(g) << endl;
 
 				auto ph = new HenyeyGreensteinPhaseFunction(g);
-				auto me = make_shared<HomogeneousMedium>(albedo, sigma_t * scale, ph);
+				auto me = make_shared<HomogeneousMedium>(sigma_a * scale, sigma_s * scale, ph);
 
 				mediums.push_back(pair<string, shared_ptr<Medium>>(name, me));
 			}

@@ -84,8 +84,8 @@ public:
 
 	vec3 Emitted(const vec3& dir);
 	HDRSample Sample(const IntersectionInfo& info, vec4 sample);
-	float Pdf(const vec3& wi);
-	float GetPortion(const vec3& wi);
+	float Pdf(const vec3& L, const vec3& N);
+	float GetPortion(const vec3& L);
 
 	inline float Power() { return mDistrib.Sum(); }
 
