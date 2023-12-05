@@ -1,0 +1,31 @@
+name: C++ AutoBuild (Windows)
+
+on: 
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  build_test:
+    name: "build DreamRender (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-2019
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      # Windows
+      - name: setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1.12.0
+        with:
+          arch: amd64
+          vsversion: 2019
+      - name: build with MSVC
+        run: ./build.bat
