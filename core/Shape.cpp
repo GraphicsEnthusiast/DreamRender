@@ -273,11 +273,11 @@ int Sphere::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 }
 
 Point2f Sphere::GetSphereUV(const  Point3f& surface_pos, const Point3f& center) {
-	Point3f object_p = glm::normalize(surface_pos - center);
+	Vector3f dir = glm::normalize(surface_pos - center);
 
 	Point2f uv;
-	float phi = atan2(object_p.z, object_p.x);// PI~-PI=>1~0=>0~1
-	float theta = asin(object_p.y);// -PI/2~PI/2=>0~1
+	float phi = atan2(dir.z, dir.x);// PI ~ -PI => 1 ~ 0 => 0 ~ 1
+	float theta = asin(dir.y);// -PI / 2 ~ PI / 2 => 0 ~ 1
 	uv.x = 1.0f - (phi + PI) * INV_2PI;
 	uv.y = (theta + PI / 2.0f) * INV_PI;
 
