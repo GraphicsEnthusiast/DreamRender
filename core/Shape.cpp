@@ -272,7 +272,7 @@ int Sphere::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	return 0;
 }
 
-Point2f Sphere::GetSphereUV(const  Point3f& surface_pos, const Point3f& center) {
+Point2f Sphere::GetSphereUV(const Point3f& surface_pos, const Point3f& center) {
 	Vector3f dir = glm::normalize(surface_pos - center);
 
 	Point2f uv;
