@@ -519,12 +519,6 @@ public:
 		rgb[2] = c[2];
 	}
 
-	void ToRGB(glm::vec3& rgb) const {
-		rgb[0] = c[0];
-		rgb[1] = c[1];
-		rgb[2] = c[2];
-	}
-
 	const RGBSpectrum& ToRGBSpectrum() const {
 		return *this;
 	}
