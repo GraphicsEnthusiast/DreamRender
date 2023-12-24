@@ -78,12 +78,11 @@ int main() {
 	pass3.height = Height;
 	pass3.BindData(true);
 
-	vec3* nowTexture = new vec3[Width * Height];
+	RGBSpectrum* nowTexture = new RGBSpectrum[Width * Height];
 	unsigned int nowFrame = GetTextureRGB32F(Width, Height);
 #pragma endregion
 
 	PostProcessing post(std::make_shared<ACES>());
-    SampledSpectrum::Init();
 
 	while (!glfwWindowShouldClose(window)) {
 		t2 = clock();
@@ -100,12 +99,9 @@ int main() {
 				const float px = static_cast<float>(i) / static_cast<float>(Width);
 				const float py = static_cast<float>(j) / static_cast<float>(Height);
 
-				//vec3 color(0.1f, 0.7f, 0.8f);
-				SampledSpectrum color(0.8f);
-				RGBSpectrum rgb = post.GetScreenColor(color.ToRGBSpectrum());
-				vec3 rgb_vec3(rgb[0], rgb[1], rgb[2]);
+				RGBSpectrum rgb = post.GetScreenColor(RGBSpectrum(vec3(0.1f, 0.7f, 0.8f)));
 
-				nowTexture[j * Width + i] = rgb_vec3;
+				nowTexture[j * Width + i] = rgb;
 			}
 		}
 

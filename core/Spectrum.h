@@ -68,6 +68,13 @@ public:
 		assert(!HasNaNs());
 	}
 
+	CoefficientSpectrum(const glm::vec3& rgb) {
+		for (int i = 0; i < 3; ++i) {
+			c[i] = rgb[i];
+		}
+		assert(!HasNaNs());
+	}
+
 	CoefficientSpectrum(const CoefficientSpectrum& s) {
 		assert(!s.HasNaNs());
 		for (int i = 0; i < nSpectrumSamples; ++i) {
@@ -497,6 +504,8 @@ public:
 	// RGBSpectrum Public Methods
 	RGBSpectrum(float v = 0.0f) : CoefficientSpectrum<3>(v) {}
 
+	RGBSpectrum(const glm::vec3& rgb) : CoefficientSpectrum<3>(rgb) {}
+
 	RGBSpectrum(const CoefficientSpectrum<3>& v) : CoefficientSpectrum<3>(v) {}
 
 	RGBSpectrum(const RGBSpectrum& s, SpectrumType type = SpectrumType::Reflectance) {
@@ -514,6 +523,12 @@ public:
 	}
 
 	void ToRGB(float* rgb) const {
+		rgb[0] = c[0];
+		rgb[1] = c[1];
+		rgb[2] = c[2];
+	}
+
+	void ToRGB(glm::vec3& rgb) const {
 		rgb[0] = c[0];
 		rgb[1] = c[1];
 		rgb[2] = c[2];

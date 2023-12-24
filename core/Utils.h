@@ -23,8 +23,13 @@
 
 template <int nSpectrumSamples>
 class CoefficientSpectrum;
-class RGBSpectrum;
+class RGBSpectrum;// now only use rgb
 class SampledSpectrum;
+
+class ToneMapper;
+class Reinhard;
+class Uncharted2;
+class ACES;
 
 constexpr float Infinity = std::numeric_limits<float>::infinity();
 
