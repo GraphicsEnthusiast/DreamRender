@@ -32,7 +32,7 @@ public:
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
 
-protected:
+private:
 	static constexpr float limit = 1.5f;
 };
 
@@ -42,7 +42,7 @@ public:
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
 
-protected:
+private:
 	static constexpr float a = 0.15f;
 	static constexpr float b = 0.50f;
 	static constexpr float c = 0.10f;
@@ -58,7 +58,7 @@ public:
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
 
-protected:
+private:
 	static constexpr float a = 2.51f;
 	static constexpr float b = 0.03f;
 	static constexpr float c = 2.43f;
@@ -72,6 +72,6 @@ public:
 
 	RGBSpectrum GetScreenColor(const RGBSpectrum& color);
 
-protected:
+private:
 	std::shared_ptr<ToneMapper> toneMapper;
 };
