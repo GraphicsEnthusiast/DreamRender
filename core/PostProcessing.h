@@ -32,7 +32,7 @@ public:
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
 
-public:
+protected:
 	static constexpr float limit = 1.5f;
 };
 
