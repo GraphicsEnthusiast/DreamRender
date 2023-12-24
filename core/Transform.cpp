@@ -1,6 +1,6 @@
 #include "Transform.h"
 
-Vector3f Transform::TransformPoint(const Point3f& p) const {
+Point3f Transform::TransformPoint(const Point3f& p) const {
 	if (identity) {
 		return p;
 	}

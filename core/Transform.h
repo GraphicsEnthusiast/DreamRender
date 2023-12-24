@@ -8,7 +8,7 @@ public:
 
 	Transform(const Matrix4f& transformMatrix) : identity(false), transformMatrix(transformMatrix) {}
 
-	Vector3f TransformPoint(const Point3f& p) const;
+	Point3f TransformPoint(const Point3f& p) const;
 
 	Vector3f TransformVector(const Vector3f& v) const;
 
