@@ -56,9 +56,9 @@ int main() {
 #pragma endregion
 
 #pragma region PipelineConfiguration
-	Shader shader1("shader/vertex.vert", "shader/mixframe.frag");
-	Shader shader2("shader/vertex.vert", "shader/lastframe.frag");
-	Shader shader3("shader/vertex.vert", "shader/output.frag");
+	Shader shader1("shader/Vertex.vert", "shader/MixFrame.frag");
+	Shader shader2("shader/Vertex.vert", "shader/LastFrame.frag");
+	Shader shader3("shader/Vertex.vert", "shader/Output.frag");
 
 	pass1.program = shader1.ID;
 	pass1.width = Width;
