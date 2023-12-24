@@ -35,6 +35,11 @@ class ACES;
 
 class Transform;
 
+class Shape;
+class TriangleMesh;
+class Sphere;
+class Quad;
+
 using Vector2i = glm::ivec2;
 using Vector2f = glm::vec2;
 using Vector3i = glm::ivec3;
