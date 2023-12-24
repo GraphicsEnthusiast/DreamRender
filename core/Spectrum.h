@@ -68,13 +68,6 @@ public:
 		assert(!HasNaNs());
 	}
 
-	CoefficientSpectrum(const glm::vec3& rgb) {
-		for (int i = 0; i < 3; ++i) {
-			c[i] = rgb[i];
-		}
-		assert(!HasNaNs());
-	}
-
 	CoefficientSpectrum(const CoefficientSpectrum& s) {
 		assert(!s.HasNaNs());
 		for (int i = 0; i < nSpectrumSamples; ++i) {
@@ -503,8 +496,6 @@ class RGBSpectrum : public CoefficientSpectrum<3> {
 public:
 	// RGBSpectrum Public Methods
 	RGBSpectrum(float v = 0.0f) : CoefficientSpectrum<3>(v) {}
-
-	RGBSpectrum(const glm::vec3& rgb) : CoefficientSpectrum<3>(rgb) {}
 
 	RGBSpectrum(const CoefficientSpectrum<3>& v) : CoefficientSpectrum<3>(v) {}
 

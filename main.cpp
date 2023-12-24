@@ -99,9 +99,10 @@ int main() {
 				const float px = static_cast<float>(i) / static_cast<float>(Width);
 				const float py = static_cast<float>(j) / static_cast<float>(Height);
 
-				RGBSpectrum rgb = post.GetScreenColor(RGBSpectrum(vec3(0.1f, 0.7f, 0.8f)));
+				float rgb_f[3] = { 0.1f, 0.7f, 0.8f };
+				RGBSpectrum rgb = RGBSpectrum::FromRGB(rgb_f);
 
-				nowTexture[j * Width + i] = rgb;
+				nowTexture[j * Width + i] = post.GetScreenColor(rgb);
 			}
 		}
 
