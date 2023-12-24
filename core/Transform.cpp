@@ -6,7 +6,7 @@ Vector3f Transform::TransformPoint(const Point3f& p) const {
 	}
 
 	Point4f ret = transformMatrix * Vector4f(p, 1.0f);
-	assert(ret[3] != 0.0f, "Coordinate w can't be zero.");
+	assert(ret[3] != 0.0f);
 	if (ret[3] == 1.0f) {
 		return Vector3f(ret[0], ret[1], ret[2]);
 	}
