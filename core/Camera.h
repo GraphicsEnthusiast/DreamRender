@@ -17,6 +17,7 @@ public:
 
 protected:
 	Point3f origin;
+	Vector3f front;
 	float nearClip;
 	float farClip;
 	float lensRadius;

@@ -14,6 +14,7 @@ Camera::Camera(Transform cameraToWorld, float width, float height, float hFov, f
 	cameraToRaster = rasterToCamera.Inverse();
 
 	origin = cameraToWorld.TransformPoint(Point3f(0.0f));
+	front = glm::normalize(cameraToWorld.TransformPoint(Vector3f(0.0f, 0.0f, 1.0f)) - cameraToWorld.TransformPoint(Vector3f(0.0f)));
 }
 
 Ray Pinhole::GenerateRay(float x, float y) {

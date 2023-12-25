@@ -2,23 +2,6 @@
 
 #include "Utils.h"
 
-class Ray {
-public:
-	Ray(const Point3f& ori, const Vector3f& dir) : origin(ori), direction(dir) {}
-
-	inline Point3f GetOrg() const {
-		return origin;
-	}
-
-	inline Vector3f GetDir() const {
-		return direction;
-	}
-
-private:
-	Point3f origin;
-	Vector3f direction;
-};
-
 inline constexpr float Origin() {
 	return 1.0f / 32.0f;
 }
@@ -45,27 +28,26 @@ inline Point3f OffsetRay(const Point3f& p, const Vector3f& n) {
 		std::abs(p.z) < Origin() ? p.z + FloatScale() * n.z : p_i.z);
 }
 
-inline Ray SpawnRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng) {
-	Vector3f N = Ng;
-	if (glm::dot(L, Ng) < 0.0f) {
-		N = -Ng;
+class Ray {
+public:
+	Ray(const Point3f& ori, const Vector3f& dir) : origin(ori), direction(dir) {}
+
+	inline Point3f GetOrg() const {
+		return origin;
 	}
 
-	Ray ray(OffsetRay(pos, N), L);
-
-	return ray;
-}
-
-inline Ray SpawnOcclusRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng) {
-	Vector3f N = Ng;
-	if (glm::dot(L, Ng) < 0.0f) {
-		N = -Ng;
+	inline Vector3f GetDir() const {
+		return direction;
 	}
 
-	Ray ray(pos + N * 0.02f, L);
+	static Ray SpawnRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng);
 
-	return ray;
-}
+	static Ray SpawnOcclusRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng);
+
+private:
+	Point3f origin;
+	Vector3f direction;
+};
 
 inline RTCRay RayToRTCRay(const Ray& ray) {
 	return MakeRay(ray.GetOrg(), ray.GetDir());

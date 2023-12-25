@@ -2,6 +2,7 @@
 #include "RenderPass.h"
 #include "Spectrum.h"
 #include "PostProcessing.h"
+#include "Camera.h"
 
 using namespace std;
 using namespace glm;
@@ -82,6 +83,7 @@ int main() {
 	unsigned int nowFrame = GetTextureRGB32F(Width, Height);
 #pragma endregion
 
+	Pinhole camera(Matrix4f(1.0f), Width, Height, 60.0f);
 	PostProcessing post(std::make_shared<ACES>());
 
 	while (!glfwWindowShouldClose(window)) {
@@ -96,13 +98,15 @@ int main() {
 #pragma omp parallel for
 		for (int j = 0; j < Height; j++) {
 			for (int i = 0; i < Width; i++) {
-				const float px = static_cast<float>(i) / static_cast<float>(Width);
-				const float py = static_cast<float>(j) / static_cast<float>(Height);
-
-				float rgb[3] = { 0.1f, 0.7f, 0.8f };
-				RGBSpectrum spectrum = RGBSpectrum::FromRGB(rgb);
-
-				nowTexture[j * Width + i] = post.GetScreenColor(spectrum);
+				Ray ray = camera.GenerateRay(i, j);
+				float t = 0.5f * (ray.GetDir().y + 1.0f);
+				float a[3] = { 0.5f, 0.7f, 1.0f };
+				float b[3] = { 1.0f, 1.0f, 1.0f };
+				RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
+				RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
+				RGBSpectrum color = Lerp(t, color1, color2);
+				nowTexture[j * Width + i] = color;
+				//nowTexture[j * Width + i] = post.GetScreenColor(color);
 			}
 		}
 
