@@ -42,8 +42,8 @@ class Sphere;
 class Quad;
 
 class Camera;
-class PinholeCamera;
-class ThinlensCamera;
+class Pinhole;
+class Thinlens;
 
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;

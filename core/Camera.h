@@ -3,6 +3,11 @@
 #include "Utils.h"
 #include "Transform.h"
 
+enum CameraType {
+	PinholeCamera,
+	ThinlensCamera
+};
+
 class Camera {
 public:
 	Camera(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f);
@@ -20,17 +25,17 @@ protected:
 	Transform cameraToRaster;
 };
 
-class PinholeCamera : public Camera {
+class Pinhole : public Camera {
 public:
-	PinholeCamera(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
+	Pinhole(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
 		Camera(cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
 	virtual RTCRay GenerateRay(float x, float y) override;
 };
 
-class ThinlensCamera : public Camera {
+class Thinlens : public Camera {
 public:
-	ThinlensCamera(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
+	Thinlens(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
 		Camera(cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
 	virtual RTCRay GenerateRay(float x, float y) override;

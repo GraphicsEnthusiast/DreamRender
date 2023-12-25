@@ -16,7 +16,7 @@ Camera::Camera(Transform cameraToWorld, float width, float height, float hFov, f
 	origin = cameraToWorld.TransformPoint(Point3f(0.0f));
 }
 
-RTCRay PinholeCamera::GenerateRay(float x, float y) {
+RTCRay Pinhole::GenerateRay(float x, float y) {
 	// Camera space
 	Point3f pOrigin(0.0f);
 
@@ -30,7 +30,7 @@ RTCRay PinholeCamera::GenerateRay(float x, float y) {
 	return MakeRay(pOriginWorld, pDirWorld);
 }
 
-RTCRay ThinlensCamera::GenerateRay(float x, float y) {
+RTCRay Thinlens::GenerateRay(float x, float y) {
 	// Camera space
 	Point3f pOrigin(0.0f);
 

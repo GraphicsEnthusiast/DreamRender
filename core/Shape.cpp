@@ -2,7 +2,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans) : Shape(ShapeType::TriangleMesh, trans) {
+TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans) : Shape(ShapeType::TriangleMeshShape, trans) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;

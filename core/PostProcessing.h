@@ -21,6 +21,12 @@ inline RGBSpectrum LinearToSRGB(const RGBSpectrum& linear) {
 	return srgb;
 }
 
+enum ToneMapperType {
+	ReinhardToneMapper,
+	Uncharted2ToneMapper,
+	ACESToneMapper
+};
+
 class ToneMapper {
 public:
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) = 0;

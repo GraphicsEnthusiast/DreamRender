@@ -4,9 +4,9 @@
 #include "Transform.h"
 
 enum ShapeType {
-	TriangleMesh,
-	Sphere,
-	Quad,
+	TriangleMeshShape,
+	SphereShape,
+	QuadShape,
 };
 
 class Shape {
@@ -108,7 +108,7 @@ private:
 
 class Sphere : public Shape {
 public:
-	Sphere(Point3f cen, float rad) : Shape(ShapeType::Sphere, Transform()), center(cen), radius(rad) {}
+	Sphere(Point3f cen, float rad) : Shape(ShapeType::SphereShape, Transform()), center(cen), radius(rad) {}
 
 	// User defined intersection functions for the Sphere primitive
 	static void SphereBoundsFunc(const struct RTCBoundsFunctionArguments* args);
@@ -129,7 +129,7 @@ private:
 
 class Quad : public Shape {
 public:
-	Quad(const Point3f& pos, const Vector3f& _u, const Vector3f& _v) : Shape(ShapeType::Quad, Transform()), position(pos), u(_u), v(_v) {}
+	Quad(const Point3f& pos, const Vector3f& _u, const Vector3f& _v) : Shape(ShapeType::QuadShape, Transform()), position(pos), u(_u), v(_v) {}
 
 	// Creating and commiting the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) override;
