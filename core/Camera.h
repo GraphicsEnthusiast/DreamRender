@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utils.h"
+#include "Ray.h"
 #include "Transform.h"
 
 enum CameraType {
@@ -10,9 +11,9 @@ enum CameraType {
 
 class Camera {
 public:
-	Camera(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f);
+	Camera(Transform cameraToWorld, float width, float height, float hFov, float nearclip = 1.0f, float farclip = 10000.0f);
 
-	virtual RTCRay GenerateRay(float x, float y) = 0;
+	virtual Ray GenerateRay(float x, float y) = 0;
 
 protected:
 	Point3f origin;
@@ -30,7 +31,7 @@ public:
 	Pinhole(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
 		Camera(cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
-	virtual RTCRay GenerateRay(float x, float y) override;
+	virtual Ray GenerateRay(float x, float y) override;
 };
 
 class Thinlens : public Camera {
@@ -38,5 +39,5 @@ public:
 	Thinlens(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
 		Camera(cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
-	virtual RTCRay GenerateRay(float x, float y) override;
+	virtual Ray GenerateRay(float x, float y) override;
 };
