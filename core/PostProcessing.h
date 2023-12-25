@@ -29,12 +29,21 @@ enum ToneMapperType {
 
 class ToneMapper {
 public:
+	ToneMapper(ToneMapperType type) : m_type(type) {}
+
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) = 0;
+
+	inline virtual ToneMapperType GetType() const {
+		return m_type;
+	}
+
+protected:
+	ToneMapperType m_type;
 };
 
 class Reinhard : public ToneMapper {
 public:
-	Reinhard() = default;
+	Reinhard() : ToneMapper(ToneMapperType::ReinhardToneMapper) {}
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
 
@@ -44,7 +53,7 @@ private:
 
 class Uncharted2 : public ToneMapper {
 public:
-	Uncharted2() = default;
+	Uncharted2() : ToneMapper(ToneMapperType::Uncharted2ToneMapper) {}
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
 
@@ -60,7 +69,7 @@ private:
 
 class ACES : public ToneMapper {
 public:
-	ACES() = default;
+	ACES() : ToneMapper(ToneMapperType::ACESToneMapper) {}
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
 

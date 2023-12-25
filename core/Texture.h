@@ -3,8 +3,16 @@
 #include "Utils.h"
 #include "Spectrum.h"
 
+enum TextureType {
+	ConstantTexture,
+	ImageTexture,
+	HdrTexture
+};
+
 class Texture {
 public:
+	Texture(TextureType type) : m_type(type) {}
+
 	virtual RGBSpectrum GetColor(const Point2f& uv) = 0;
 
 	inline virtual int GetWidth() const {
@@ -14,11 +22,18 @@ public:
 	inline virtual int GetHeight() const {
 		return 0;
 	}
+
+	inline virtual TextureType GetType() const {
+		return m_type;
+	}
+
+protected:
+	TextureType m_type;
 };
 
 class Constant : public Texture {
 public:
-	Constant(const RGBSpectrum& c) : color(c) {}
+	Constant(const RGBSpectrum& c) : Texture(TextureType::ConstantTexture), color(c) {}
 
 	virtual RGBSpectrum GetColor(const Point2f& uv) override;
 

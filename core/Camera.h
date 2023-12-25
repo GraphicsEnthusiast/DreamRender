@@ -11,11 +11,16 @@ enum CameraType {
 
 class Camera {
 public:
-	Camera(Transform cameraToWorld, float width, float height, float hFov, float nearclip = 1.0f, float farclip = 10000.0f);
+	Camera(CameraType type, Transform cameraToWorld, float width, float height, float hFov, float nearclip = 1.0f, float farclip = 10000.0f);
 
 	virtual Ray GenerateRay(float x, float y) = 0;
 
+	inline virtual CameraType GetType() const {
+		return m_type;
+	}
+
 protected:
+	CameraType m_type;
 	Point3f origin;
 	Vector3f front;
 	float nearClip;
@@ -30,7 +35,7 @@ protected:
 class Pinhole : public Camera {
 public:
 	Pinhole(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
-		Camera(cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
+		Camera(CameraType::PinholeCamera, cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
 	virtual Ray GenerateRay(float x, float y) override;
 };
@@ -38,7 +43,7 @@ public:
 class Thinlens : public Camera {
 public:
 	Thinlens(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
-		Camera(cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
+		Camera(CameraType::ThinlensCamera, cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
 	virtual Ray GenerateRay(float x, float y) override;
 };

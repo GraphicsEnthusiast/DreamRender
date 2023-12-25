@@ -1,6 +1,7 @@
 #include "Camera.h"
 
-Camera::Camera(Transform cameraToWorld, float width, float height, float hFov, float nearclip, float farclip) : nearClip(nearclip), farClip(farclip) {
+Camera::Camera(CameraType type, Transform cameraToWorld, float width, float height, float hFov, float nearclip, float farclip) : 
+	m_type(type), nearClip(nearclip), farClip(farclip) {
 	float aspect = float(width) / float(height);
 	lensRadius = 0.000025f;
 
