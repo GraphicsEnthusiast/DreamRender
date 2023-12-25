@@ -78,7 +78,7 @@ int main() {
 	pass3.height = Height;
 	pass3.BindData(true);
 
-	Spectrum* nowTexture = new Spectrum[Width * Height];
+	RGBSpectrum* nowTexture = new RGBSpectrum[Width * Height];
 	unsigned int nowFrame = GetTextureRGB32F(Width, Height);
 #pragma endregion
 
@@ -100,7 +100,7 @@ int main() {
 				const float py = static_cast<float>(j) / static_cast<float>(Height);
 
 				float rgb[3] = { 0.1f, 0.7f, 0.8f };
-				Spectrum spectrum = Spectrum::FromRGB(rgb);
+				RGBSpectrum spectrum = RGBSpectrum::FromRGB(rgb);
 
 				nowTexture[j * Width + i] = post.GetScreenColor(spectrum);
 			}
