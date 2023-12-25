@@ -7,6 +7,7 @@
 #include <string>
 #include <algorithm>
 #include <cinttypes>
+#include <random>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -49,6 +50,10 @@ class Ray;
 
 class AliasTable1D;
 class AliasTable2D;
+
+class Sampler;
+class Independent;
+class SimpleSobol;
 
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;
