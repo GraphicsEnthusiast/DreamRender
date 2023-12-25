@@ -12,6 +12,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <queue>
 #include <vector>
 #include <time.h>
 #include <glad/glad.h>
@@ -45,6 +46,9 @@ class Pinhole;
 class Thinlens;
 
 class Ray;
+
+class AliasTable1D;
+class AliasTable2D;
 
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;

@@ -83,7 +83,7 @@ int main() {
 	unsigned int nowFrame = GetTextureRGB32F(Width, Height);
 #pragma endregion
 
-	Pinhole camera(Matrix4f(1.0f), Width, Height, 60.0f);
+	Pinhole camera(Transform(), Width, Height, 60.0f);
 	PostProcessing post(std::make_shared<ACES>());
 
 	while (!glfwWindowShouldClose(window)) {
