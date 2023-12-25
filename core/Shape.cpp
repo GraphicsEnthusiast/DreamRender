@@ -300,8 +300,8 @@ int Quad::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	}
 
 	// Setting and filling the index buffer
-	Point4i* quads = (Point4i*)rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4,
-		sizeof(Point4i), 1);
+	Point4u* quads = (Point4u*)rtcSetNewGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4,
+		sizeof(Point4u), 1);
 	quads[0].x = 0;
 	quads[0].y = 1;
 	quads[0].z = 2;
