@@ -43,7 +43,7 @@ private:
 
 class Image : public Texture {
 public:
-	Image(const std::string& filename);
+	Image(const std::string& filepath);
 
 	~Image();
 
@@ -64,7 +64,7 @@ private:
 
 class Hdr : public Texture {
 public:
-	Hdr(const std::string& filename);
+	Hdr(const std::string& filepath);
 
 	~Hdr();
 

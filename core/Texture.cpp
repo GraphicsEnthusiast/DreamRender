@@ -6,8 +6,9 @@ RGBSpectrum Constant::GetColor(const Point2f& uv) {
 	return color;
 }
 
-Image::Image(const std::string& filename) : Texture(TextureType::ImageTexture) {
-	data = stbi_load(filename.c_str(), &nx, &ny, &nn, 0);
+Image::Image(const std::string& filepath) : Texture(TextureType::ImageTexture) {
+	stbi_set_flip_vertically_on_load(true);
+	data = stbi_load(filepath.c_str(), &nx, &ny, &nn, 0);
 	if (data == NULL) {
 		std::cerr << "Texture is null.\n";
 		assert(0);
@@ -63,8 +64,9 @@ RGBSpectrum Image::GetColor(const Point2f& uv) {
 	return RGBSpectrum::FromRGB(rgb);
 }
 
-Hdr::Hdr(const std::string& filename) : Texture(TextureType::HdrTexture) {
-	data = stbi_loadf(filename.c_str(), &nx, &ny, &nn, 0);
+Hdr::Hdr(const std::string& filepath) : Texture(TextureType::HdrTexture) {
+	stbi_set_flip_vertically_on_load(true);
+	data = stbi_loadf(filepath.c_str(), &nx, &ny, &nn, 0);
 	if (data == NULL) {
 		std::cerr << "Texture is null.\n";
 		assert(0);
