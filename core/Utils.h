@@ -27,6 +27,7 @@ template <int nSpectrumSamples>
 class CoefficientSpectrum;
 class RGBSpectrum;// Now only use rgb
 class SampledSpectrum;
+typedef RGBSpectrum Spectrum;
 
 class ToneMapper;
 class Reinhard;
@@ -39,6 +40,10 @@ class Shape;
 class TriangleMesh;
 class Sphere;
 class Quad;
+
+class Camera;
+class PinholeCamera;
+class ThinlensCamera;
 
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;
