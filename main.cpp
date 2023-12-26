@@ -99,7 +99,11 @@ int main() {
 #pragma omp parallel for
 		for (int j = 0; j < Height; j++) {
 			for (int i = 0; i < Width; i++) {
-				Ray ray = camera.GenerateRay(sampler, i, j);
+				float pixelX = (float)i + 0.5f;
+				float pixelY = (float)j + 0.5f;
+
+				Ray ray = camera.GenerateRay(sampler, pixelX, pixelY);
+
 				float t = 0.5f * (ray.GetDir().y + 1.0f);
 				float a[3] = { 0.5f, 0.7f, 1.0f };
 				float b[3] = { 1.0f, 1.0f, 1.0f };
