@@ -10,8 +10,8 @@ using namespace glm;
 clock_t t1, t2;
 double dt, fps;
 unsigned int frameCounter = 0;
-int Width = 1280;
-int Height = 720;
+int Width = 800;
+int Height = 800;
 
 RenderPass pass1;
 RenderPass pass2;
@@ -84,6 +84,7 @@ int main() {
 #pragma endregion
 
 	Pinhole camera(Transform(), Width, Height, 60.0f);
+	Sampler* sampler = new Independent();
 	PostProcessing post(std::make_shared<ACES>());
 
 	while (!glfwWindowShouldClose(window)) {
@@ -98,7 +99,7 @@ int main() {
 #pragma omp parallel for
 		for (int j = 0; j < Height; j++) {
 			for (int i = 0; i < Width; i++) {
-				Ray ray = camera.GenerateRay(i, j);
+				Ray ray = camera.GenerateRay(sampler, i, j);
 				float t = 0.5f * (ray.GetDir().y + 1.0f);
 				float a[3] = { 0.5f, 0.7f, 1.0f };
 				float b[3] = { 1.0f, 1.0f, 1.0f };

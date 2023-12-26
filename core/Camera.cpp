@@ -18,7 +18,7 @@ Camera::Camera(CameraType type, Transform cameraToWorld, float width, float heig
 	front = glm::normalize(cameraToWorld.TransformPoint(Vector3f(0.0f, 0.0f, 1.0f)) - cameraToWorld.TransformPoint(Vector3f(0.0f)));
 }
 
-Ray Pinhole::GenerateRay(float x, float y) {
+Ray Pinhole::GenerateRay(Sampler* sampler, float x, float y) {
 	// Camera space
 	Point3f pOrigin(0.0f);
 
@@ -32,13 +32,13 @@ Ray Pinhole::GenerateRay(float x, float y) {
 	return Ray(pOriginWorld, pDirWorld);
 }
 
-Ray Thinlens::GenerateRay(float x, float y) {
+Ray Thinlens::GenerateRay(Sampler* sampler, float x, float y) {
 	// Camera space
 	Point3f pOrigin(0.0f);
 
 	if (lensRadius > 0.0f) {
-// 		Vector2f diskSample = math::sampling::diskUniformSampling(sampler, _lensRadius);
-// 		pOrigin = Point3f(diskSample.x, diskSample.y, 0.0f);
+		Vector2f diskSample = UniformSampleDisk(sampler->Get2(), lensRadius);
+		pOrigin = Point3f(diskSample.x, diskSample.y, 0.0f);
 	}
 
 	Point3f pTarget = rasterToCamera.TransformPoint(Point3f(x, y, 0.0f));

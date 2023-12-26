@@ -3,6 +3,8 @@
 #include "Utils.h"
 #include "Ray.h"
 #include "Transform.h"
+#include "Sampling.h"
+#include "Sampler.h"
 
 enum CameraType {
 	PinholeCamera,
@@ -13,7 +15,7 @@ class Camera {
 public:
 	Camera(CameraType type, Transform cameraToWorld, float width, float height, float hFov, float nearclip = 1.0f, float farclip = 10000.0f);
 
-	virtual Ray GenerateRay(float x, float y) = 0;
+	virtual Ray GenerateRay(Sampler* sampler, float x, float y) = 0;
 
 	inline virtual CameraType GetType() const {
 		return m_type;
@@ -37,7 +39,7 @@ public:
 	Pinhole(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
 		Camera(CameraType::PinholeCamera, cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
-	virtual Ray GenerateRay(float x, float y) override;
+	virtual Ray GenerateRay(Sampler* sampler, float x, float y) override;
 };
 
 class Thinlens : public Camera {
@@ -45,5 +47,5 @@ public:
 	Thinlens(Transform cameraToWorld, float width, float height, float hFov, float _nearclip = 1.0f, float _farclip = 10000.0f) :
 		Camera(CameraType::ThinlensCamera, cameraToWorld, width, height, hFov, _nearclip, _farclip) {}
 
-	virtual Ray GenerateRay(float x, float y) override;
+	virtual Ray GenerateRay(Sampler* sampler, float x, float y) override;
 };

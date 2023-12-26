@@ -43,7 +43,7 @@ private:
 	AliasTable1D colTable;
 };
 
-Point2f UniformSampleDisk(const Point2f& sample, float radius) {
+inline Point2f UniformSampleDisk(const Point2f& sample, float radius) {
 	float sampleY = sample.x;
 	float sampleX = sample.y;
 
