@@ -110,7 +110,7 @@ int main() {
 				Ray ray = camera.GenerateRay(sampler, pixelX, pixelY);
 				RTCRay rtc_ray = RayToRTCRay(ray);
 				IntersectionInfo info;
-				scene.TraceRadianceRay(MakeRayHit(rtc_ray), info);
+				scene.TraceRay(MakeRayHit(rtc_ray), info);
 				if (info.t == Infinity) {
 					float t = 0.5f * (ray.GetDir().y + 1.0f);
 					float a[3] = { 0.5f, 0.7f, 1.0f };

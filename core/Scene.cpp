@@ -84,7 +84,7 @@ bool Scene::IsVisibility(RTCRayHit& shadowRayHit) {
 	return true;
 }
 
-void Scene::TraceRadianceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
+void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	Intersect(rayhit);
 	if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
 		ClosestHitRadiance(rayhit, info);
@@ -92,8 +92,4 @@ void Scene::TraceRadianceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	else {
 		MissRadiance(rayhit, info);
 	}
-}
-
-void Scene::TraceShadowRay(RTCRayHit& shadowRayHit, bool& isVisibility) {
-	isVisibility = IsVisibility(shadowRayHit);
 }

@@ -16,14 +16,12 @@ public:
 
 	void Commit();
 
-	void TraceRadianceRay(RTCRayHit& rayhit, IntersectionInfo& info);
+	bool IsVisibility(RTCRayHit& shadowRayHit);
 
-	void TraceShadowRay(RTCRayHit& shadowRayHit, bool& isVisibility);
+	void TraceRay(RTCRayHit& rayhit, IntersectionInfo& info);
 
 private:
 	void Intersect(RTCRayHit& rayhit);
-
-	bool IsVisibility(RTCRayHit& shadowRayHit);
 
 	void ClosestHitRadiance(const RTCRayHit& rayhit, IntersectionInfo& info);
 
