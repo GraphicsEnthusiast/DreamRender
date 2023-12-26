@@ -86,11 +86,59 @@ constexpr float FloatOneMinusEpsilon = 0x1.fffffep-1f;
 constexpr float MaxFloat = std::numeric_limits<float>::max();
 constexpr float Infinity = std::numeric_limits<float>::infinity();
 constexpr float Epsilon = std::numeric_limits<float>::epsilon() * 0.5f;
-constexpr float ShadowEpsilon = 0.0001f;
+constexpr float ShadowEpsilon = 1e-3f;
 constexpr float PI = 3.1415926535897932385f;
 constexpr float INV_PI = 1.0f / PI;
 constexpr float INV_2PI = 1.0f / (2.0f * PI);
 constexpr float INV_4PI = 1.0f / (4.0f * PI);
+
+struct IntersectionInfo {
+	float t;
+	Point2f uv;
+	Point3f position;
+	Vector3f Ng;
+	Vector3f Ns;
+	bool frontFace;
+
+	inline void SetNormal(const Vector3f& L, const Vector3f& _Ng, const Vector3f& _Ns) {
+		frontFace = glm::dot(L, Ng) > 0.0f;
+		Ng = frontFace ? _Ng : -_Ng;
+		Ns = frontFace ? _Ns : -_Ns;
+		if (glm::dot(Ng, Ns) < 0.0f) {
+			Ns = glm::reflect(Ns, Ng);
+		}
+	}
+};
+
+inline Vector3f ToLocal(const Vector3f& up, const Vector3f& dir) {
+	auto B = Vector3f(0.0f), C = Vector3f(0.0f);
+	if (std::abs(up.x) > std::abs(up.y)) {
+		float len_inv = 1.0f / std::sqrt(up.x * up.x + up.z * up.z);
+		C = Vector3f(up.z * len_inv, 0.0f, -up.x * len_inv);
+	}
+	else {
+		float len_inv = 1.0f / std::sqrt(up.y * up.y + up.z * up.z);
+		C = Vector3f(0.0f, up.z * len_inv, -up.y * len_inv);
+	}
+	B = glm::cross(C, up);
+
+	return Vector3f(glm::dot(dir, B), glm::dot(dir, C), glm::dot(dir, up));
+}
+
+inline Vector3f ToWorld(const Vector3f& up, const Vector3f& dir) {
+	auto B = Vector3f(0.0f), C = Vector3f(0.0f);
+	if (std::abs(up.x) > std::abs(up.y)) {
+		float len_inv = 1.0f / std::sqrt(up.x * up.x + up.z * up.z);
+		C = Vector3f(up.z * len_inv, 0.0f, -up.x * len_inv);
+	}
+	else {
+		float len_inv = 1.0f / std::sqrt(up.y * up.y + up.z * up.z);
+		C = Vector3f(0.0f, up.z * len_inv, -up.y * len_inv);
+	}
+	B = glm::cross(C, up);
+
+	return glm::normalize(dir.x * B + dir.y * C + dir.z * up);
+}
 
 inline Vector3f GetNormal(const RTCRayHit& rayhit) {
 	return Vector3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z);

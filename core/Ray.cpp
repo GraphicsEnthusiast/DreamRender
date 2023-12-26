@@ -17,7 +17,7 @@ Ray Ray::SpawnOcclusRay(const Point3f& pos, const Vector3f& L, const Vector3f& N
 		N = -Ng;
 	}
 
-	Ray ray(pos + N * 0.02f, L);
+	Ray ray(pos + N * ShadowEpsilon, L);
 
 	return ray;
 }
