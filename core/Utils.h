@@ -60,6 +60,11 @@ class Constant;
 class Image;
 class Hdr;
 
+class Material;
+class Diffuse;
+
+class Scene;
+
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;
 using Vector2f = glm::vec2;
@@ -100,8 +105,8 @@ struct IntersectionInfo {
 	Vector3f Ns;
 	bool frontFace;
 
-	inline void SetNormal(const Vector3f& L, const Vector3f& _Ng, const Vector3f& _Ns) {
-		frontFace = glm::dot(L, Ng) > 0.0f;
+	inline void SetNormal(const Vector3f& V, const Vector3f& _Ng, const Vector3f& _Ns) {
+		frontFace = glm::dot(V, Ng) > 0.0f;
 		Ng = frontFace ? _Ng : -_Ng;
 		Ns = frontFace ? _Ns : -_Ns;
 		if (glm::dot(Ng, Ns) < 0.0f) {

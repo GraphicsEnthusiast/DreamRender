@@ -18,7 +18,11 @@ public:
 		return m_type;
 	}
 
-	inline virtual Vector3f GetFaceNormal(uint32_t faceID, const Point2f& barycentric) const { 
+	inline virtual Vector3f GetGeometryNormal(uint32_t faceID, const Point2f& barycentric) const {
+		return Point3f(0.0f);
+	}
+
+	inline virtual Vector3f GetShadeNormal(uint32_t faceID, const Point2f& barycentric) const { 
 		return Vector3f(0.0f); 
 	}
 
@@ -63,6 +67,12 @@ public:
 		return ret;
 	}
 
+	// return vertex
+	inline Vector3f GetVertex(uint32_t vertexID) const {
+		return Vector3f(vertices[3 * vertexID + 0], vertices[3 * vertexID + 1],
+			vertices[3 * vertexID + 2]);
+	}
+
 	// return vertex normal
 	inline Vector3f GetVertexNormal(uint32_t vertexID) const {
 		return Vector3f(normals[3 * vertexID + 0], normals[3 * vertexID + 1],
@@ -74,15 +84,25 @@ public:
 		return Point2f(texcoords[2 * vertexID + 0], texcoords[2 * vertexID + 1]);
 	}
 
+	// compute position of specified face, barycentric
+	inline virtual Vector3f GetGeometryNormal(uint32_t faceID, const Point2f& barycentric) const {
+		const VertexIndices vidx = GetIndices(faceID);
+		const Point3f A = GetVertex(vidx.v1idx);
+		const Point3f B = GetVertex(vidx.v2idx);
+		const Point3f C = GetVertex(vidx.v3idx);
+
+		return glm::normalize(glm::cross(B - A, C - A));
+	}
+
 	// compute normal of specified face, barycentric
-	inline Vector3f GetFaceNormal(uint32_t faceID, const Point2f& barycentric) const override {
+	inline Vector3f GetShadeNormal(uint32_t faceID, const Point2f& barycentric) const override {
 		const VertexIndices vidx = GetIndices(faceID);
 		const Vector3f n1 = GetVertexNormal(vidx.v1idx);
 		const Vector3f n2 = GetVertexNormal(vidx.v2idx);
 		const Vector3f n3 = GetVertexNormal(vidx.v3idx);
 
-		return n1 * (1.0f - barycentric[0] - barycentric[1]) + n2 * barycentric[0] +
-			n3 * barycentric[1];
+		return glm::normalize(n1 * (1.0f - barycentric[0] - barycentric[1]) + n2 * barycentric[0] +
+			n3 * barycentric[1]);
 	}
 
 	// compute texcoords of specified face, barycentric

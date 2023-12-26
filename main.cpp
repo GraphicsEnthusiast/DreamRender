@@ -3,6 +3,7 @@
 #include "Spectrum.h"
 #include "PostProcessing.h"
 #include "Camera.h"
+#include "Scene.h"
 
 using namespace std;
 using namespace glm;
@@ -86,6 +87,10 @@ int main() {
 	Pinhole camera(Transform(), Width, Height, 60.0f);
 	Sampler* sampler = new Independent();
 	PostProcessing post(std::make_shared<ACES>());
+	RTCDevice rtc_device = rtcNewDevice(NULL);
+	Scene scene(rtc_device);
+	scene.AddShape(new Sphere(Point3f(0.0f, 0.0f, 3.0f), 0.5f));
+	scene.Commit();
 
 	while (!glfwWindowShouldClose(window)) {
 		t2 = clock();
@@ -103,14 +108,24 @@ int main() {
 				float pixelY = (float)j + 0.5f;
 
 				Ray ray = camera.GenerateRay(sampler, pixelX, pixelY);
+				RTCRay rtc_ray = RayToRTCRay(ray);
+				IntersectionInfo info;
+				scene.TraceRadianceRay(MakeRayHit(rtc_ray), info);
+				if (info.t == Infinity) {
+					float t = 0.5f * (ray.GetDir().y + 1.0f);
+					float a[3] = { 0.5f, 0.7f, 1.0f };
+					float b[3] = { 1.0f, 1.0f, 1.0f };
+					RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
+					RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
+					RGBSpectrum color = Lerp(t, color1, color2);
+					nowTexture[j * Width + i] = color;
+				}
+				else {
+					float a[3] = { info.Ns[0], info.Ns[1], info.Ns[2] };
+					RGBSpectrum color = (RGBSpectrum::FromRGB(a) + 1.0f) * 0.5f;
+					nowTexture[j * Width + i] = color;
+				}
 
-				float t = 0.5f * (ray.GetDir().y + 1.0f);
-				float a[3] = { 0.5f, 0.7f, 1.0f };
-				float b[3] = { 1.0f, 1.0f, 1.0f };
-				RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
-				RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
-				RGBSpectrum color = Lerp(t, color1, color2);
-				nowTexture[j * Width + i] = color;
 				//nowTexture[j * Width + i] = post.GetScreenColor(color);
 			}
 		}
