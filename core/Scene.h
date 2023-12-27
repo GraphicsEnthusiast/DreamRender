@@ -16,8 +16,6 @@ public:
 
 	void Commit();
 
-	bool IsVisibility(RTCRayHit& shadowRayHit);
-
 	void TraceRay(RTCRayHit& rayhit, IntersectionInfo& info);
 
 private:

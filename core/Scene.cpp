@@ -75,15 +75,6 @@ void Scene::MissRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.uv = Point2f(0.0f);
 }
 
-bool Scene::IsVisibility(RTCRayHit& shadowRayHit) {
-	rtcIntersect1(rtc_scene, &context, &shadowRayHit);
-	if (shadowRayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
-		return false;
-	}
-
-	return true;
-}
-
 void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	Intersect(rayhit);
 	if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
