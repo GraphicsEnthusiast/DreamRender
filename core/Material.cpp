@@ -5,7 +5,7 @@ RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	float roughness = roughnessTexture->GetColor(info.uv)[0];
 
 	Vector3f N = info.Ns;
-	Vector3f local_L = ToLocal(N, L);
+	Vector3f local_L = ToLocal(L, N);
 	Vector3f H = glm::normalize(V + L);
 	float NdotL = local_L.z;
 	float NdotV = glm::dot(N, V);
@@ -36,7 +36,7 @@ RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 
 	Vector3f N = info.Ns;
 	Vector3f local_L = CosineSampleHemisphere(sampler->Get2());
-	L = ToWorld(N, local_L);
+	L = ToWorld(local_L, N);
 	Vector3f H = glm::normalize(V + L);
 	float NdotL = local_L.z;
 	float NdotV = glm::dot(N, V);

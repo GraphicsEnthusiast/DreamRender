@@ -115,7 +115,7 @@ struct IntersectionInfo {
 	}
 };
 
-inline Vector3f ToLocal(const Vector3f& up, const Vector3f& dir) {
+inline Vector3f ToLocal(const Vector3f& dir, const Vector3f& up) {
 	auto B = Vector3f(0.0f), C = Vector3f(0.0f);
 	if (std::abs(up.x) > std::abs(up.y)) {
 		float len_inv = 1.0f / std::sqrt(up.x * up.x + up.z * up.z);
@@ -130,7 +130,7 @@ inline Vector3f ToLocal(const Vector3f& up, const Vector3f& dir) {
 	return Vector3f(glm::dot(dir, B), glm::dot(dir, C), glm::dot(dir, up));
 }
 
-inline Vector3f ToWorld(const Vector3f& up, const Vector3f& dir) {
+inline Vector3f ToWorld(const Vector3f& dir, const Vector3f& up) {
 	auto B = Vector3f(0.0f), C = Vector3f(0.0f);
 	if (std::abs(up.x) > std::abs(up.y)) {
 		float len_inv = 1.0f / std::sqrt(up.x * up.x + up.z * up.z);
