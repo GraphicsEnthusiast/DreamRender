@@ -18,15 +18,11 @@ public:
 
 	Transform operator*(const Transform& t) const;
 
-	static Transform Perspective(float fov, float nearClip, float farClip);
-
 	static Transform Translate(float x, float y, float z);
 
 	static Transform Rotate(float rx, float ry, float rz);
 
 	static Transform Scale(float sx, float sy, float sz);
-
-	static Transform LookAt(const Point3f& origin, const Point3f& target, const Vector3f& up);
 
 private:
 	bool identity;

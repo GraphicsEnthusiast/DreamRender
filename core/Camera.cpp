@@ -1,52 +1,55 @@
 #include "Camera.h"
 
-Camera::Camera(CameraType type, Transform cameraToWorld, float width, float height, float hFov, float nearclip, float farclip) : 
-	m_type(type), nearClip(nearclip), farClip(farclip) {
-	float aspect = float(width) / float(height);
-	lensRadius = 0.000025f;
+Pinhole::Pinhole(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect) 
+	: Camera(CameraType::PinholeCamera) {
+	origin = lookfrom;
 
-	cameraToWorld = cameraToWorld;
-	worldToCamera = cameraToWorld.Inverse();
+	float theta = glm::radians(vfov);
 
-	rasterToCamera = (Transform::Scale(width, height, 1.0f) *
-		Transform::Scale(-0.5f, 0.5f * aspect, 1.0f) *
-		Transform::Translate(-1.0f, 1.0f / aspect, 0.0f) *
-		Transform::Perspective(hFov, nearClip, farClip)).Inverse();
-	cameraToRaster = rasterToCamera.Inverse();
+	float half_height = std::abs(znear) * std::tan(theta / 2.0f);
+	float half_width = aspect * half_height;
+	w = glm::normalize(lookfrom - lookat);// z
+	u = glm::normalize(glm::cross(vup, w));// x
+	v = glm::normalize(glm::cross(w, u));// y
 
-	origin = cameraToWorld.TransformPoint(Point3f(0.0f));
-	front = glm::normalize(cameraToWorld.TransformPoint(Vector3f(0.0f, 0.0f, 1.0f)) - cameraToWorld.TransformPoint(Vector3f(0.0f)));
+	lower_left_corner = origin - half_width * u - half_height * v - std::abs(znear) * w;
+
+	horizontal = 2.0f * half_width * u;
+	vertical = 2.0f * half_height * v;
 }
 
 Ray Pinhole::GenerateRay(Sampler* sampler, float x, float y) {
-	// Camera space
-	Point3f pOrigin(0.0f);
+	Vector3f direction = glm::normalize(lower_left_corner + x * horizontal + y * vertical - origin);
 
-	Point3f pTarget = rasterToCamera.TransformPoint(Point3f(x, y, 0.0f));
-	Vector3f rayDir = glm::normalize(pTarget - pOrigin);
+	return Ray(origin, direction);
+}
 
-	// Convert to world space
-	Point3f pOriginWorld = cameraToWorld.TransformPoint(pOrigin);
-	Vector3f pDirWorld = glm::normalize(cameraToWorld.TransformVector(rayDir));
+Thinlens::Thinlens(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, float aperture)
+	: Camera(CameraType::ThinlensCamera) {
+	origin = lookfrom;
+	float focus_dist = glm::length(lookfrom - lookat);
 
-	return Ray(pOriginWorld, pDirWorld);
+	lens_radius = aperture / 2.0f;
+	float theta = glm::radians(vfov);
+
+	float half_height = std::abs(znear) * std::tan(theta / 2.0f);
+	float half_width = aspect * half_height;
+	w = glm::normalize(lookfrom - lookat);
+	u = glm::normalize(glm::cross(vup, w));
+	v = glm::normalize(glm::cross(w, u));
+
+	lower_left_corner = origin - half_width * u * focus_dist - half_height * v * focus_dist - std::abs(znear) * w * focus_dist;
+
+	horizontal = 2.0f * half_width * u * focus_dist;
+	vertical = 2.0f * half_height * v * focus_dist;
 }
 
 Ray Thinlens::GenerateRay(Sampler* sampler, float x, float y) {
-	// Camera space
-	Point3f pOrigin(0.0f);
+	Point2f rd = UniformSampleDisk(sampler->Get2(), lens_radius);
+	Point3f offset = u * rd.x + v * rd.y;
+	offset.z = 0.0f;
 
-	if (lensRadius > 0.0f) {
-		Vector2f diskSample = UniformSampleDisk(sampler->Get2(), lensRadius);
-		pOrigin = Point3f(diskSample.x, diskSample.y, 0.0f);
-	}
+	Vector3f direction = glm::normalize(lower_left_corner + x * horizontal + y * vertical - origin - offset);
 
-	Point3f pTarget = rasterToCamera.TransformPoint(Point3f(x, y, 0.0f));
-	Vector3f rayDir = glm::normalize(pTarget - pOrigin);
-
-	// Convert to world space
-	Point3f pOriginWorld = cameraToWorld.TransformPoint(pOrigin);
-	Vector3f pDirWorld = glm::normalize(cameraToWorld.TransformVector(rayDir));
-
-	return Ray(pOriginWorld, pDirWorld);
+	return Ray(origin + offset, direction);
 }
