@@ -21,9 +21,9 @@ public:
 private:
 	void Intersect(RTCRayHit& rayhit);
 
-	void ClosestHitRadiance(const RTCRayHit& rayhit, IntersectionInfo& info);
+	void ClosestHit(const RTCRayHit& rayhit, IntersectionInfo& info);
 
-	void MissRadiance(const RTCRayHit& rayhit, IntersectionInfo& info);
+	void Miss(const RTCRayHit& rayhit, IntersectionInfo& info);
 
 private:
 	RTCDevice rtc_device;

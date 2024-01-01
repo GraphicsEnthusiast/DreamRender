@@ -45,7 +45,7 @@ void Scene::Intersect(RTCRayHit& rayhit) {
 	rtcIntersect1(rtc_scene, &context, &rayhit);
 }
 
-void Scene::ClosestHitRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) {
+void Scene::ClosestHit(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	int id = rayhit.hit.geomID;
 	Vector3f V = -GetRayDir(rayhit);
 
@@ -67,7 +67,7 @@ void Scene::ClosestHitRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) 
 	info.material = shapes[id]->GetMaterial();
 }
 
-void Scene::MissRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) {
+void Scene::Miss(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.t = Infinity;
 	info.frontFace = true;
 	info.Ng = Vector3f(0.0f);
@@ -80,9 +80,9 @@ void Scene::MissRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) {
 void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	Intersect(rayhit);
 	if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
-		ClosestHitRadiance(rayhit, info);
+		ClosestHit(rayhit, info);
 	}
 	else {
-		MissRadiance(rayhit, info);
+		Miss(rayhit, info);
 	}
 }
