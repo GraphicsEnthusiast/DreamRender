@@ -23,7 +23,7 @@ public:
 		return 0;
 	}
 
-	inline virtual TextureType GetType() const {
+	virtual TextureType GetType() const {
 		return m_type;
 	}
 

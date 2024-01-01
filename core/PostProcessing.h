@@ -33,7 +33,7 @@ public:
 
 	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) = 0;
 
-	inline virtual ToneMapperType GetType() const {
+	inline ToneMapperType GetType() const {
 		return m_type;
 	}
 

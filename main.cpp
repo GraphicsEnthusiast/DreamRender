@@ -92,7 +92,7 @@ int main() {
 	RTCDevice rtc_device = rtcNewDevice(NULL);
 	Scene scene(rtc_device);
 	//scene.AddShape(new Sphere(Point3f(0.0f, 0.0f, 3.0f), 0.5f));
-	scene.AddShape(new TriangleMesh("teapot.obj", tran));
+	scene.AddShape(new TriangleMesh(NULL, "teapot.obj", tran));
 	scene.Commit();
 
 	while (!glfwWindowShouldClose(window)) {

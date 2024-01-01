@@ -42,7 +42,7 @@ public:
 
 	virtual void NextSamples(size_t samples) = 0;
 
-	virtual SamplerType GetType() const {
+	inline SamplerType GetType() const {
 		return m_type;
 	}
 

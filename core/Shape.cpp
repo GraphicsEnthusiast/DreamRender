@@ -2,7 +2,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans) : Shape(ShapeType::TriangleMeshShape, trans) {
+TriangleMesh::TriangleMesh(std::shared_ptr<Material> m, const std::string& file, const Transform& trans) : Shape(ShapeType::TriangleMeshShape, m, trans) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -316,4 +316,15 @@ int Quad::ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) {
 	rtcReleaseGeometry(mesh);
 
 	return 0;
+}
+
+Point2f Quad::GetQuadUV(const Point3f& p, const Point3f& position, const Vector3f& u, const Vector3f& v) {
+	Point2f uv;
+	Vector3f op = p - position;
+	float a1 = glm::dot(glm::normalize(u), op);
+	float a2 = glm::dot(glm::normalize(v), op);
+	uv.y = a1 / glm::length(u);
+	uv.x = a2 / glm::length(v);
+
+	return uv;
 }

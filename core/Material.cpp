@@ -1,5 +1,26 @@
 #include "Material.h"
 
+RGBSpectrum Material::Emit(const Point2f& uv) {
+	return RGBSpectrum(0.0f);
+}
+
+RGBSpectrum DiffuseLight::Emit(const Point2f& uv) {
+	return emittedTexture->GetColor(uv);
+}
+
+RGBSpectrum DiffuseLight::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	pdf = 0.0f;
+
+	return RGBSpectrum(0.0f);
+}
+
+RGBSpectrum DiffuseLight::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, Sampler* sampler) {
+	L = Vector3f(0.0f);
+	pdf = 0.0f;
+
+	return RGBSpectrum(0.0f);
+}
+
 RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
 	float roughness = roughnessTexture->GetColor(info.uv)[0];

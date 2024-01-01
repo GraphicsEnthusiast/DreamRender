@@ -2,6 +2,7 @@
 
 #include "Utils.h"
 #include "Transform.h"
+#include "Material.h"
 
 enum ShapeType {
 	TriangleMeshShape,
@@ -10,9 +11,11 @@ enum ShapeType {
 };
 
 class Shape {
+	friend Light;
+
 public:
-	Shape(ShapeType type, const Transform& trans, int geom_id = 0) : 
-	    m_type(type), transform(trans), geometry_id(geom_id) {}
+	Shape(ShapeType type, std::shared_ptr<Material> m, const Transform& trans, int geom_id = 0) :
+	    m_type(type), material(m), transform(trans), geometry_id(geom_id) {}
 
 	inline ShapeType GetType() const {
 		return m_type;
@@ -38,11 +41,12 @@ protected:
 	ShapeType m_type;
 	Transform transform;
 	int geometry_id;
+	std::shared_ptr<Material> material;
 };
 
 class TriangleMesh : public Shape {
 public:
-	TriangleMesh(const std::string& file, const Transform& trans);
+	TriangleMesh(std::shared_ptr<Material> m, const std::string& file, const Transform& trans);
 
 	inline uint32_t Vertices() const { 
 		return vertices.size() / 3; 
@@ -128,7 +132,7 @@ private:
 
 class Sphere : public Shape {
 public:
-	Sphere(Point3f cen, float rad) : Shape(ShapeType::SphereShape, Transform()), center(cen), radius(rad) {}
+	Sphere(std::shared_ptr<Material> m, Point3f cen, float rad) : Shape(ShapeType::SphereShape, m, Transform()), center(cen), radius(rad) {}
 
 	// User defined intersection functions for the Sphere primitive
 	static void SphereBoundsFunc(const struct RTCBoundsFunctionArguments* args);
@@ -148,11 +152,15 @@ private:
 };
 
 class Quad : public Shape {
+	friend QuadArea;
+
 public:
-	Quad(const Point3f& pos, const Vector3f& _u, const Vector3f& _v) : Shape(ShapeType::QuadShape, Transform()), position(pos), u(_u), v(_v) {}
+	Quad(std::shared_ptr<Material> m, const Point3f& pos, const Vector3f& _u, const Vector3f& _v) : Shape(ShapeType::QuadShape, m, Transform()), position(pos), u(_u), v(_v) {}
 
 	// Creating and commiting the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) override;
+
+	static Point2f GetQuadUV(const Point3f& p, const Point3f& position, const Vector3f& u, const Vector3f& v);
 
 private:
 	Point3f position;

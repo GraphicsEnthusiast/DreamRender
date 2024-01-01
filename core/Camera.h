@@ -17,7 +17,7 @@ public:
 
 	virtual Ray GenerateRay(Sampler* sampler, float x, float y) = 0;
 
-	virtual inline CameraType GetType() const {
+	inline CameraType GetType() const {
 		return m_type;
 	}
 
