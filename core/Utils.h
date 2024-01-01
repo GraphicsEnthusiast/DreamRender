@@ -62,6 +62,7 @@ class Image;
 class Hdr;
 
 class Material;
+class DiffuseLight;
 class Diffuse;
 
 class Scene;
