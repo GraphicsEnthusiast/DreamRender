@@ -21,6 +21,10 @@ public:
 		return m_type;
 	}
 
+	inline std::shared_ptr<Material> GetMaterial() const {
+		return material;
+	}
+
 	inline virtual Vector3f GetGeometryNormal(uint32_t faceID, const Point2f& barycentric) const {
 		return Point3f(0.0f);
 	}

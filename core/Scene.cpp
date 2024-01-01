@@ -64,6 +64,7 @@ void Scene::ClosestHitRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) 
 
 	info.t = rayhit.ray.tfar;
 	info.position = GetHitPos(rayhit);
+	info.material = shapes[id]->GetMaterial();
 }
 
 void Scene::MissRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) {
@@ -73,6 +74,7 @@ void Scene::MissRadiance(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.Ns = Vector3f(0.0f);
 	info.position = Point3f(Infinity);
 	info.uv = Point2f(0.0f);
+	info.material = NULL;
 }
 
 void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {

@@ -109,6 +109,7 @@ struct IntersectionInfo {
 	Vector3f Ng;
 	Vector3f Ns;
 	bool frontFace;
+	std::shared_ptr<Material> material;
 
 	inline void SetNormal(const Vector3f& V, const Vector3f& _Ng, const Vector3f& _Ns) {
 		frontFace = glm::dot(V, Ng) > 0.0f;
