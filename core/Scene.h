@@ -14,6 +14,8 @@ public:
 
 	void SetCamera(std::shared_ptr<Camera> c);
 
+	std::shared_ptr<Camera> GetCamera() const;
+
 	void Commit();
 
 	void TraceRay(RTCRayHit& rayhit, IntersectionInfo& info);

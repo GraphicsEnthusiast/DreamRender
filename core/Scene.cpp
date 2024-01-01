@@ -31,6 +31,10 @@ void Scene::SetCamera(std::shared_ptr<Camera> c) {
 	camera = c;
 }
 
+std::shared_ptr<Camera> Scene::GetCamera() const {
+	return camera;
+}
+
 void Scene::Commit() {
 	// Constructing Embree objects, setting VBOs/IBOs
 	for (int i = 0; i < shapes.size(); i++) {

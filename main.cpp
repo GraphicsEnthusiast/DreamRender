@@ -4,6 +4,7 @@
 #include "PostProcessing.h"
 #include "Camera.h"
 #include "Scene.h"
+#include "Integrator.h"
 
 using namespace std;
 using namespace glm;
@@ -80,20 +81,23 @@ int main() {
 	pass3.height = Height;
 	pass3.BindData(true);
 
-	RGBSpectrum* nowTexture = new RGBSpectrum[Width * Height];
+	RGBSpectrum* nowTexture = NULL;
 	unsigned int nowFrame = GetTextureRGB32F(Width, Height);
 #pragma endregion
 
 	Transform tran;
 	Pinhole camera(Point3f(10.0f, 8.0f, 10.0f), Point3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 60.0f, (float)Width / (float)Height);
-	Thinlens camera2(Point3f(10.0f, 8.0f, 10.0f), Point3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 60.0f, (float)Width / (float)Height, 2.0f);
-	Sampler* sampler = new Independent();
+	//Thinlens camera2(Point3f(10.0f, 8.0f, 10.0f), Point3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 60.0f, (float)Width / (float)Height, 2.0f);
+	Sampler* sampler = new SimpleSobol(0);
 	PostProcessing post(std::make_shared<ACES>());
 	RTCDevice rtc_device = rtcNewDevice(NULL);
 	Scene scene(rtc_device);
 	//scene.AddShape(new Sphere(Point3f(0.0f, 0.0f, 3.0f), 0.5f));
 	scene.AddShape(new TriangleMesh(NULL, "teapot.obj", tran));
+	scene.SetCamera(std::make_shared<Pinhole>(camera));
 	scene.Commit();
+
+	VolumetricPathTracing inte(std::make_shared<Scene>(scene), sampler, std::make_shared<Gaussian>(), Width, Height, 5);
 
 	while (!glfwWindowShouldClose(window)) {
 		t2 = clock();
@@ -103,35 +107,7 @@ int main() {
 		cout << fixed << setprecision(2) << "FPS : " << fps << "    FrameCounter: " << frameCounter;
 		t1 = t2;
 
-		omp_set_num_threads(32);
-#pragma omp parallel for
-		for (int j = 0; j < Height; j++) {
-			for (int i = 0; i < Width; i++) {
-				float pixelX = ((float)i + 0.5f) / Width;
-				float pixelY = ((float)j + 0.5f) / Height;
-
-				Ray ray = camera.GenerateRay(sampler, pixelX, pixelY);
-				RTCRay rtc_ray = RayToRTCRay(ray);
-				IntersectionInfo info;
-				scene.TraceRay(MakeRayHit(rtc_ray), info);
-				if (info.t == Infinity) {
-					float t = 0.5f * (ray.GetDir().y + 1.0f);
-					float a[3] = { 0.5f, 0.7f, 1.0f };
-					float b[3] = { 1.0f, 1.0f, 1.0f };
-					RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
-					RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
-					RGBSpectrum color = Lerp(t, color1, color2);
-					nowTexture[j * Width + i] = color;
-				}
-				else {
-					float a[3] = { info.Ns[0], info.Ns[1], info.Ns[2] };
-					RGBSpectrum color = (RGBSpectrum::FromRGB(a) + 1.0f) * 0.5f;
-					nowTexture[j * Width + i] = color;
-				}
-
-				//nowTexture[j * Width + i] = post.GetScreenColor(color);
-			}
-		}
+		nowTexture = inte.RenderImage();
 
 		glBindTexture(GL_TEXTURE_2D, nowFrame);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, Width, Height, 0, GL_RGB, GL_FLOAT, nowTexture);
@@ -155,8 +131,6 @@ int main() {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-
-	delete[] nowTexture;
 
 	glfwTerminate();
 
