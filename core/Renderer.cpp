@@ -12,9 +12,9 @@ unsigned int Renderer::GetTextureRGB32F(int w, int h) {
 	return texture;
 }
 
-Renderer::Renderer(std::shared_ptr<Integrator> inte, const PostProcessing& p, int w, int h) {
-	width = w;
-	height = h;
+Renderer::Renderer(std::shared_ptr<Integrator> inte, const PostProcessing& p) {
+	width = inte->width;
+	height = inte->height;
 	integrator = inte;
 	post = p;
 	frameCounter = 0;

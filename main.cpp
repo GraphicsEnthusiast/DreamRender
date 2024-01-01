@@ -17,7 +17,7 @@ int main() {
 	scene.Commit();
 
 	VolumetricPathTracing vpt(std::make_shared<Scene>(scene), sampler, std::make_shared<Gaussian>(), Width, Height, 5);
-	Renderer renderer(std::make_shared<VolumetricPathTracing>(vpt), post, Width, Height);
+	Renderer renderer(std::make_shared<VolumetricPathTracing>(vpt), post);
 
 	renderer.Run();
 

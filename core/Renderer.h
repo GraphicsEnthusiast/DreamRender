@@ -7,7 +7,7 @@
 
 class Renderer {
 public:
-	Renderer(std::shared_ptr<Integrator> inte, const PostProcessing& p, int w, int h);
+	Renderer(std::shared_ptr<Integrator> inte, const PostProcessing& p);
 
 	~Renderer();
 
