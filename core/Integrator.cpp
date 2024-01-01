@@ -1,17 +1,5 @@
 #include "Integrator.h"
 
-Integrator::~Integrator() {
-	if (image != NULL) {
-		delete[] image;
-		image = NULL;
-	}
-
-	if (sampler != NULL) {
-		delete sampler;
-		sampler = NULL;
-	}
-}
-
 float Integrator::PowerHeuristic(float pdf1, float pdf2, int beta) {
 	float p1 = pow(pdf1, beta);
 	float p2 = pow(pdf2, beta);
@@ -23,7 +11,9 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, Intersec
 	return RGBSpectrum();
 }
 
-RGBSpectrum* VolumetricPathTracing::RenderImage() {
+RGBSpectrum* VolumetricPathTracing::RenderImage(const PostProcessing& post) {
+	image = new RGBSpectrum[width * height];
+
 	omp_set_num_threads(32);
 #pragma omp parallel for
 	for (int j = 0; j < height; j++) {
@@ -40,22 +30,21 @@ RGBSpectrum* VolumetricPathTracing::RenderImage() {
 			IntersectionInfo info;
 			scene->TraceRay(MakeRayHit(rtc_ray), info);
 
+			RGBSpectrum color;
 			if (info.t == Infinity) {
 				float t = 0.5f * (ray.GetDir().y + 1.0f);
 				float a[3] = { 0.5f, 0.7f, 1.0f };
 				float b[3] = { 1.0f, 1.0f, 1.0f };
 				RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
 				RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
-				RGBSpectrum color = Lerp(t, color1, color2);
-				image[j * width + i] = color;
+				color = Lerp(t, color1, color2);
 			}
 			else {
 				float a[3] = { info.Ns[0], info.Ns[1], info.Ns[2] };
-				RGBSpectrum color = (RGBSpectrum::FromRGB(a) + 1.0f) * 0.5f;
-				image[j * width + i] = color;
+				color = (RGBSpectrum::FromRGB(a) + 1.0f) * 0.5f;
 			}
 
-			//nowTexture[j * Width + i] = post.GetScreenColor(color);
+			image[j * width + i] = const_cast<PostProcessing&>(post).GetScreenColor(color);
 		}
 	}
 	sampler->NextSample();

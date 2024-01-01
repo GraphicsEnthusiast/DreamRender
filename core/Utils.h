@@ -79,6 +79,8 @@ class Gaussian;
 class Integrator;
 class VolumetricPathTracing;
 
+class Renderer;
+
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;
 using Vector2f = glm::vec2;

@@ -1,5 +1,12 @@
 #include "Light.h"
 
+Light::~Light() {
+	if (shape != NULL) {
+		delete shape;
+		shape = NULL;
+	}
+}
+
 RGBSpectrum Light::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	pdf = 0.0f;
 

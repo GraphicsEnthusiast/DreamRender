@@ -13,12 +13,7 @@ class Light {
 public:
 	Light(LightType type, Shape* s) : m_type(type), shape(s) {}
 
-	virtual ~Light() {
-		if (shape != NULL) {
-			delete shape;
-			shape = NULL;
-		}
-	}
+	virtual ~Light();
 
 	inline LightType GetType() const {
 		return m_type;

@@ -12,13 +12,6 @@ Scene::Scene(const RTCDevice& device) {
 }
 
 Scene::~Scene() {
-	for (auto& shape : shapes) {
-		if (shape != NULL) {
-			delete shape;
-			shape = NULL;
-		}
-	}
-
 	rtcReleaseScene(rtc_scene);
 	rtcReleaseDevice(rtc_device);
 }

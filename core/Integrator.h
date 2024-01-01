@@ -5,17 +5,18 @@
 #include "Sampler.h"
 #include "Filter.h"
 #include "Spectrum.h"
+#include "PostProcessing.h"
 
 enum IntegratorType {
 	VolumetricPathTracingIntegrator
 };
 
 class Integrator {
+	friend Renderer;
+
 public:
 	Integrator(IntegratorType type, std::shared_ptr<Scene> s, Sampler* sa, std::shared_ptr<Filter> f, int w, int h) :
-		m_type(type), scene(s), sampler(sa), filter(f), width(w), height(h), image(new RGBSpectrum[width * height]) {}
-
-	virtual ~Integrator();
+		m_type(type), scene(s), sampler(sa), filter(f), width(w), height(h), image(NULL) {}
 
 	inline IntegratorType GetType() const {
 		return m_type;
@@ -25,14 +26,14 @@ public:
 
 	virtual RGBSpectrum SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) = 0;
 
-	virtual RGBSpectrum* RenderImage() = 0;
+	virtual RGBSpectrum* RenderImage(const PostProcessing& post) = 0;
 
 protected:
+	IntegratorType m_type;
+	int width, height;
 	std::shared_ptr<Scene> scene;
 	std::shared_ptr<Filter> filter;
 	Sampler* sampler;
-	int width, height;
-	IntegratorType m_type;
 	RGBSpectrum* image;
 };
 
@@ -43,7 +44,7 @@ public:
 
 	virtual RGBSpectrum SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) override;
 
-	virtual RGBSpectrum* RenderImage() override;
+	virtual RGBSpectrum* RenderImage(const PostProcessing& post) override;
 
 private:
 	int maxBounce;
