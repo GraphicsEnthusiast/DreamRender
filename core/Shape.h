@@ -93,7 +93,7 @@ public:
 	}
 
 	// compute position of specified face, barycentric
-	inline virtual Vector3f GetGeometryNormal(uint32_t faceID, const Point2f& barycentric) const {
+	inline virtual Vector3f GetGeometryNormal(uint32_t faceID, const Point2f& barycentric) const override {
 		const VertexIndices vidx = GetIndices(faceID);
 		const Point3f A = GetVertex(vidx.v1idx);
 		const Point3f B = GetVertex(vidx.v2idx);
@@ -159,7 +159,7 @@ class Quad : public Shape {
 	friend QuadArea;
 
 public:
-	Quad(std::shared_ptr<Material> m, const Point3f& pos, const Vector3f& _u, const Vector3f& _v) : Shape(ShapeType::QuadShape, m, Transform()), position(pos), u(_u), v(_v) {}
+	Quad(std::shared_ptr<Material> m, const Point3f& pos, const Vector3f& uu, const Vector3f& vv) : Shape(ShapeType::QuadShape, m, Transform()), position(pos), u(uu), v(vv) {}
 
 	// Creating and commiting the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) override;

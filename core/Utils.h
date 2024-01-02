@@ -122,10 +122,10 @@ struct IntersectionInfo {
 	bool frontFace;
 	std::shared_ptr<Material> material;
 
-	inline void SetNormal(const Vector3f& V, const Vector3f& _Ng, const Vector3f& _Ns) {
-		frontFace = glm::dot(V, Ng) > 0.0f;
-		Ng = frontFace ? _Ng : -_Ng;
-		Ns = frontFace ? _Ns : -_Ns;
+	inline void SetNormal(const Vector3f& dir, const Vector3f& ng, const Vector3f& ns) {
+		frontFace = glm::dot(dir, ng) < 0.0f;
+		Ng = frontFace ? ng : -ng;
+		Ns = frontFace ? ns : -ns;
 		if (glm::dot(Ng, Ns) < 0.0f) {
 			Ns = glm::reflect(Ns, Ng);
 		}

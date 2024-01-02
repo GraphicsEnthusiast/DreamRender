@@ -33,6 +33,8 @@ RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	float VdotH = glm::dot(V, H);
 
 	if (NdotL <= 0.0f || NdotV <= 0.0f) {
+		pdf = 0.0f;
+
 		return RGBSpectrum(0.0f);
 	}
 
@@ -64,6 +66,8 @@ RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	float VdotH = glm::dot(V, H);
 
 	if (NdotL <= 0.0f || NdotV <= 0.0f) {
+		pdf = 0.0f;
+
 		return RGBSpectrum(0.0f);
 	}
 
@@ -78,6 +82,6 @@ RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	RGBSpectrum brdf = albedo * INV_PI * (C1 + C2) * (1.0f + roughness * 0.5f);
 
 	pdf = CosinePdfHemisphere(NdotL);
-
+	
 	return brdf;
 }

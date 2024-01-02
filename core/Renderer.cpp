@@ -114,6 +114,6 @@ void Renderer::Run() {
 
 	if (nowTexture != NULL) {
 		delete[] nowTexture;
-		nowTexture == NULL;
+		nowTexture = NULL;
 	}
 }

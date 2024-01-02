@@ -12,6 +12,8 @@ public:
 
 	void AddShape(Shape* shape);
 
+	void AddLight(std::shared_ptr<Light> light);
+
 	void SetCamera(std::shared_ptr<Camera> c);
 
 	std::shared_ptr<Camera> GetCamera() const;
@@ -32,5 +34,6 @@ private:
 	RTCScene rtc_scene;
 	RTCIntersectContext context;
 	std::vector<Shape*> shapes;
+	std::vector<std::shared_ptr<Light>> lights;
 	std::shared_ptr<Camera> camera;
 };

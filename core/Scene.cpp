@@ -20,6 +20,10 @@ void Scene::AddShape(Shape* shape) {
 	shapes.push_back(shape);
 }
 
+void Scene::AddLight(std::shared_ptr<Light> light) {
+	lights.push_back(light);
+}
+
 void Scene::SetCamera(std::shared_ptr<Camera> c) {
 	camera = c;
 }
@@ -44,19 +48,19 @@ void Scene::Intersect(RTCRayHit& rayhit) {
 
 void Scene::ClosestHit(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	int id = rayhit.hit.geomID;
-	Vector3f V = -GetRayDir(rayhit);
+	Vector3f dir = GetRayDir(rayhit);
 
 	if (shapes[id]->GetType() == ShapeType::TriangleMeshShape) {
 		Shape* shape = shapes[id];
 		info.uv = shape->GetTexcoords(rayhit.hit.primID, Point2f(rayhit.hit.u, rayhit.hit.v));
 		Vector3f Ns = shape->GetShadeNormal(rayhit.hit.primID, Point2f(rayhit.hit.u, rayhit.hit.v));
 		Vector3f Ng = shape->GetGeometryNormal(rayhit.hit.primID, Point2f(rayhit.hit.u, rayhit.hit.v));
-		info.SetNormal(V, Ng, Ns);
+		info.SetNormal(dir, Ng, Ns);
 	}
 	else {
 		info.uv = Point2f(rayhit.hit.u, rayhit.hit.v);
 		Vector3f N = glm::normalize(Vector3f(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z));
-		info.SetNormal(V, N, N);
+		info.SetNormal(dir, N, N);
 	}
 
 	info.t = rayhit.ray.tfar;

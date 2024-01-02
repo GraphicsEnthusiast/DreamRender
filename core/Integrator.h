@@ -24,7 +24,7 @@ public:
 
 	float PowerHeuristic(float pdf1, float pdf2, int beta);
 
-	virtual RGBSpectrum SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) = 0;
+	virtual RGBSpectrum SolvingIntegrator(Ray& ray, IntersectionInfo& info) = 0;
 
 	virtual RGBSpectrum* RenderImage(const PostProcessing& post, RGBSpectrum* image) = 0;
 
@@ -41,7 +41,7 @@ public:
 	VolumetricPathTracing(std::shared_ptr<Scene> s, std::shared_ptr<Sampler> sa, std::shared_ptr<Filter> f, int w, int h, int bounce) :
 		Integrator(IntegratorType::VolumetricPathTracingIntegrator, s, sa, f, w, h), maxBounce(bounce) {}
 
-	virtual RGBSpectrum SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) override;
+	virtual RGBSpectrum SolvingIntegrator(Ray& ray, IntersectionInfo& info) override;
 
 	virtual RGBSpectrum* RenderImage(const PostProcessing& post, RGBSpectrum* image) override;
 
