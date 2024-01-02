@@ -11,9 +11,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(RTCRayHit& rayhit, Intersec
 	return RGBSpectrum();
 }
 
-RGBSpectrum* VolumetricPathTracing::RenderImage(const PostProcessing& post) {
-	image = new RGBSpectrum[width * height];
-
+RGBSpectrum* VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBSpectrum* image) {
 	omp_set_num_threads(32);
 #pragma omp parallel for
 	for (int j = 0; j < height; j++) {

@@ -14,7 +14,7 @@ RGBSpectrum DiffuseLight::Evaluate(const Vector3f& V, const Vector3f& L, float& 
 	return RGBSpectrum(0.0f);
 }
 
-RGBSpectrum DiffuseLight::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, Sampler* sampler) {
+RGBSpectrum DiffuseLight::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	L = Vector3f(0.0f);
 	pdf = 0.0f;
 
@@ -51,7 +51,7 @@ RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	return brdf;
 }
 
-RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, Sampler* sampler) {
+RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
 	float roughness = roughnessTexture->GetColor(info.uv)[0];
 

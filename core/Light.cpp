@@ -34,7 +34,7 @@ RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const Intersection
 	return quad->material->Emit(info.uv);// info record a point on a light source
 }
 
-RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, Sampler* sampler) {
+RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
 	Point3f pos = quad->position + quad->u * sampler->Get1() + quad->v * sampler->Get1();

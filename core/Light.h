@@ -23,7 +23,7 @@ public:
 
 	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info, float distance) = 0;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, Sampler* sampler) = 0;
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
 
 protected:
 	LightType m_type;
@@ -36,7 +36,7 @@ public:
 
 	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info, float distance) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, Sampler* sampler) override;
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	bool doubleSide;

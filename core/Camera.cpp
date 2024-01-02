@@ -18,7 +18,7 @@ Pinhole::Pinhole(const Point3f& lookfrom, const Point3f& lookat, const Vector3f&
 	vertical = 2.0f * half_height * v;
 }
 
-Ray Pinhole::GenerateRay(Sampler* sampler, float x, float y) {
+Ray Pinhole::GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) {
 	Vector3f direction = glm::normalize(lower_left_corner + x * horizontal + y * vertical - origin);
 
 	return Ray(origin, direction);
@@ -44,7 +44,7 @@ Thinlens::Thinlens(const Point3f& lookfrom, const Point3f& lookat, const Vector3
 	vertical = 2.0f * half_height * v * focus_dist;
 }
 
-Ray Thinlens::GenerateRay(Sampler* sampler, float x, float y) {
+Ray Thinlens::GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) {
 	Point2f rd = UniformSampleDisk(sampler->Get2(), lens_radius);
 	Point3f offset = u * rd.x + v * rd.y;
 	offset.z = 0.0f;

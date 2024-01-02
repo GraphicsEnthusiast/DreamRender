@@ -76,7 +76,7 @@ Renderer::~Renderer() {
 }
 
 void Renderer::Run() {
-	RGBSpectrum* nowTexture = NULL;
+	RGBSpectrum* nowTexture = new RGBSpectrum[width * height];
 	nowFrame = GetTextureRGB32F(width, height);
 
 	while (!glfwWindowShouldClose(window)) {
@@ -87,7 +87,7 @@ void Renderer::Run() {
 		std::cout << std::fixed << std::setprecision(2) << "FPS : " << fps << "    FrameCounter: " << frameCounter;
 		t1 = t2;
 
-		nowTexture = integrator->RenderImage(post);
+		nowTexture = integrator->RenderImage(post, nowTexture);
 
 		glBindTexture(GL_TEXTURE_2D, nowFrame);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, nowTexture);
@@ -115,10 +115,5 @@ void Renderer::Run() {
 	if (nowTexture != NULL) {
 		delete[] nowTexture;
 		nowTexture == NULL;
-	}
-
-	if (integrator->sampler != NULL) {
-		delete integrator->sampler;
-		integrator->sampler = NULL;
 	}
 }

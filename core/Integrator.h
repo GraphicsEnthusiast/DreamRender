@@ -15,8 +15,8 @@ class Integrator {
 	friend Renderer;
 
 public:
-	Integrator(IntegratorType type, std::shared_ptr<Scene> s, Sampler* sa, std::shared_ptr<Filter> f, int w, int h) :
-		m_type(type), scene(s), sampler(sa), filter(f), width(w), height(h), image(NULL) {}
+	Integrator(IntegratorType type, std::shared_ptr<Scene> s, std::shared_ptr<Sampler> sa, std::shared_ptr<Filter> f, int w, int h) :
+		m_type(type), scene(s), sampler(sa), filter(f), width(w), height(h) {}
 
 	inline IntegratorType GetType() const {
 		return m_type;
@@ -26,25 +26,24 @@ public:
 
 	virtual RGBSpectrum SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) = 0;
 
-	virtual RGBSpectrum* RenderImage(const PostProcessing& post) = 0;
+	virtual RGBSpectrum* RenderImage(const PostProcessing& post, RGBSpectrum* image) = 0;
 
 protected:
 	IntegratorType m_type;
 	int width, height;
 	std::shared_ptr<Scene> scene;
 	std::shared_ptr<Filter> filter;
-	Sampler* sampler;
-	RGBSpectrum* image;
+	std::shared_ptr<Sampler> sampler;
 };
 
 class VolumetricPathTracing : public Integrator {
 public:
-	VolumetricPathTracing(std::shared_ptr<Scene> s, Sampler* sa, std::shared_ptr<Filter> f, int w, int h, int bounce) : 
+	VolumetricPathTracing(std::shared_ptr<Scene> s, std::shared_ptr<Sampler> sa, std::shared_ptr<Filter> f, int w, int h, int bounce) :
 		Integrator(IntegratorType::VolumetricPathTracingIntegrator, s, sa, f, w, h), maxBounce(bounce) {}
 
 	virtual RGBSpectrum SolvingIntegrator(RTCRayHit& rayhit, IntersectionInfo& info) override;
 
-	virtual RGBSpectrum* RenderImage(const PostProcessing& post) override;
+	virtual RGBSpectrum* RenderImage(const PostProcessing& post, RGBSpectrum* image) override;
 
 private:
 	int maxBounce;

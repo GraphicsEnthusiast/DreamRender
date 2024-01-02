@@ -15,7 +15,7 @@ class Camera {
 public:
 	Camera(CameraType type) : m_type(type) {}
 
-	virtual Ray GenerateRay(Sampler* sampler, float x, float y) = 0;
+	virtual Ray GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) = 0;
 
 	inline CameraType GetType() const {
 		return m_type;
@@ -34,14 +34,14 @@ class Pinhole : public Camera {
 public:
 	Pinhole(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect);
 
-	virtual Ray GenerateRay(Sampler* sampler, float x, float y) override;
+	virtual Ray GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) override;
 };
 
 class Thinlens : public Camera {
 public:
 	Thinlens(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, float aperture);
 
-	virtual Ray GenerateRay(Sampler* sampler, float x, float y) override;
+	virtual Ray GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) override;
 
 private:
 	float lens_radius;
