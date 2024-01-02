@@ -87,7 +87,7 @@ void Renderer::Run() {
 		std::cout << std::fixed << std::setprecision(2) << "FPS : " << fps << "    FrameCounter: " << frameCounter;
 		t1 = t2;
 
-		nowTexture = integrator->RenderImage(post, nowTexture);
+		integrator->RenderImage(post, nowTexture);
 
 		glBindTexture(GL_TEXTURE_2D, nowFrame);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, nowTexture);
