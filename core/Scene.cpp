@@ -137,8 +137,8 @@ RGBSpectrum Scene::EvaluateLightByPower(int geomID, const Vector3f& L, float& pd
 
 	int index = shapeToLight[geomID];
 	auto light = lights[index];
-	RGBSpectrum light_radiance = light->Evaluate(L, pdf, info);
-	pdf *= (Luminance(light_radiance) / lightTable.Sum());
+	RGBSpectrum radiance = light->Evaluate(L, pdf, info);
+	pdf *= (Luminance(radiance) / lightTable.Sum());
 
-	return light_radiance;
+	return radiance;
 }
