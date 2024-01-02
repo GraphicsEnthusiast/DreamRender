@@ -13,11 +13,11 @@ RGBSpectrum Light::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	return RGBSpectrum(0.0f);
 }
 
-RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info, float distance) {
+RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
 	float cos_theta = glm::dot(L, Nl);
-	if (!doubleSide && cos_theta > 0.0f) {
+	if (!twoSide && cos_theta > 0.0f) {
 		pdf = 0.0f;
 
 		return RGBSpectrum(0.0f);
@@ -29,9 +29,10 @@ RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const Intersection
 	pdf = 1.0f / area;
 
 	// solid angel pdf
+	float distance = info.t;
 	pdf *= glm::pow2(distance) / std::abs(cos_theta);
 
-	return quad->material->Emit(info.uv);// info record a point on a light source
+	return Radiance();// info record a point on a light source
 }
 
 RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
@@ -45,7 +46,7 @@ RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& in
 
 	float cos_theta = glm::dot(L, Nl);
 
-	if (!doubleSide && cos_theta > 0.0f) {
+	if (!twoSide && cos_theta > 0.0f) {
 		pdf = 0.0f;
 
 		return RGBSpectrum(0.0f);
@@ -55,7 +56,40 @@ RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& in
 	pdf = 1.0f / area;
 	pdf *= dist_sq / abs(cos_theta);
 
-	Point2f uv = Quad::GetQuadUV(pos, quad->position, quad->u, quad->v);
+	return Radiance();// info record a point on a common shape
+}
 
-	return quad->material->Emit(uv);// info record a point on a common shape
+RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Sphere* sphere = (Sphere*)shape;
+	Vector3f dir = sphere->center - info.position;
+	float dist_sq = glm::dot(dir, dir);
+	float sin_theta_sq = sphere->radius * sphere->radius / dist_sq;
+	float cos_theta = std::sqrt(1.0f - sin_theta_sq);
+	pdf = UniformPdfCone(cos_theta);
+
+	return Radiance();
+}
+
+RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Sphere* sphere = (Sphere*)shape;
+	Vector3f dir = sphere->center - info.position;
+	float dist_sq = dot(dir, dir);
+	float inv_dist = 1.0f / sqrt(dist_sq);
+	dir *= inv_dist;
+	float distance = dist_sq * inv_dist;
+
+	float sin_theta = sphere->radius * inv_dist;
+	if (sin_theta < 1.0f) {
+		float cos_theta = sqrt(1.0f - sin_theta * sin_theta);
+		Vector3f local_L = UniformSampleCone(sampler->Get2(), cos_theta);
+		float cos_i = local_L.z;
+		L = ToWorld(local_L, dir);
+		pdf = UniformPdfCone(cos_theta);
+
+		return Radiance();
+	}
+
+	pdf = 0.0f;
+
+	return RGBSpectrum(0.0f);
 }

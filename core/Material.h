@@ -24,7 +24,7 @@ public:
 		return m_type;
 	}
 
-	virtual RGBSpectrum Emit(const Point2f& uv);
+	virtual RGBSpectrum Emit();
 
 	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
 
@@ -36,23 +36,21 @@ protected:
 
 class DiffuseLight : public Material {
 public:
-	DiffuseLight(std::shared_ptr<Texture> emitted) :
-		Material(MaterialType::DiffuseLightMaterial), emittedTexture(emitted) {}
+	DiffuseLight(const RGBSpectrum& rad) : Material(MaterialType::DiffuseLightMaterial), radiance(rad) {}
 
-	virtual RGBSpectrum Emit(const Point2f& uv) override;
+	virtual RGBSpectrum Emit() override;
 
 	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
 	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
-	std::shared_ptr<Texture> emittedTexture;
+	const RGBSpectrum radiance;
 };
 
 class Diffuse : public Material {
 public:
-	Diffuse(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness) :
-		Material(MaterialType::DiffuseMaterial), albedoTexture(albedo), roughnessTexture(roughness) {}
+	Diffuse(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness) : Material(MaterialType::DiffuseMaterial), albedoTexture(albedo), roughnessTexture(roughness) {}
 
 	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 

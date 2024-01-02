@@ -12,40 +12,61 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 	RGBSpectrum history(1.0f);
 	Vector3f V = -ray.GetDir();
 	Vector3f L = ray.GetDir();
+	float bp_pdf = 0.0f;// bsdf or phase pdf
 
 	for (int bounce = 0; bounce < maxBounce; bounce++) {
 		RTCRay rtc_ray = RayToRTCRay(ray);
 		RTCRayHit rtc_rayhit = MakeRayHit(rtc_ray);
 		scene->TraceRay(rtc_rayhit, info);
 
+		// Hit nothing
 		if (info.t == Infinity) {
-			float t = 0.5f * (ray.GetDir().y + 1.0f);
-			float a[3] = { 0.5f, 0.7f, 1.0f };
-			float b[3] = { 1.0f, 1.0f, 1.0f };
-			RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
-			RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
-			RGBSpectrum color = Lerp(t, color1, color2);
-
-			radiance += color * history;
+// 			float t = 0.5f * (ray.GetDir().y + 1.0f);
+// 			float a[3] = { 0.5f, 0.7f, 1.0f };
+// 			float b[3] = { 1.0f, 1.0f, 1.0f };
+// 			RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
+// 			RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
+// 			RGBSpectrum color = Lerp(t, color1, color2);
+// 
+// 			radiance += color * history;
 
 			break;
 		}
 
-// 		if (info.material->GetType() == MaterialType::DiffuseLightMaterial) {
-// 			float misWeight = 1.0f;
-// 			RGBSpectrum light_radiance = info.material->Emit(info.uv);
-// 			if (bounce != 0) {
-// 
-// 			}
-// 			radiance += misWeight * history * light_radiance;
-// 
-// 			break;
-// 		}
+		// Hit light
+		if (info.material->GetType() == MaterialType::DiffuseLightMaterial) {
+			float misWeight = 1.0f;
+			RGBSpectrum light_radiance = info.material->Emit();
+			if (bounce != 0) {
+				float light_pdf = 0.0f;
+				light_radiance = scene->EvaluateLightByPower(info.geomID, L, light_pdf, info);
+				if (std::isnan(light_pdf) || light_pdf == 0.0f) {
+					break;
+				}
+				misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
+			}
+			radiance += misWeight * history * light_radiance;
 
-		float bsdf_pdf = 0.0f;
-		RGBSpectrum bsdf = info.material->Sample(V, L, bsdf_pdf, info, sampler);
-		float costheta = std::abs(glm::dot(info.Ns, L));
-		if (std::isnan(bsdf_pdf) || bsdf_pdf == 0.0f || bsdf.IsBlack()) {
+			break;
+		}
+
+		float light_pdf = 0.0f, bsdf_pdf = 0.0f;
+		// Sample light
+		Vector3f lightL;
+		RGBSpectrum light_radiance = scene->SampleLightByPower(lightL, light_pdf, info, sampler);
+		RGBSpectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
+		float costheta = std::abs(glm::dot(info.Ns, lightL));
+		float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);
+		if (std::isnan(bsdf_pdf) || std::isnan(light_pdf) || bsdf_pdf == 0.0f || light_pdf == 0.0f) {
+			break;
+		}
+		radiance += misWeight * history * bsdf * costheta * light_radiance / light_pdf;
+
+		// Sample surface
+		bsdf = info.material->Sample(V, L, bsdf_pdf, info, sampler);
+		bp_pdf = bsdf_pdf;
+		costheta = std::abs(glm::dot(info.Ns, L));
+		if (std::isnan(bsdf_pdf) || bsdf_pdf == 0.0f) {
 			break;
 		}
 		history *= (bsdf * costheta / bsdf_pdf);
@@ -87,7 +108,6 @@ RGBSpectrum* VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBS
 			}
 
 			image[j * width + i] = const_cast<PostProcessing&>(post).GetScreenColor(radiance);
-			image[j * width + i] = radiance;
 		}
 	}
 	sampler->NextSample();

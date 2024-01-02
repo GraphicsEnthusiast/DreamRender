@@ -1,11 +1,11 @@
 #include "Material.h"
 
-RGBSpectrum Material::Emit(const Point2f& uv) {
+RGBSpectrum Material::Emit() {
 	return RGBSpectrum(0.0f);
 }
 
-RGBSpectrum DiffuseLight::Emit(const Point2f& uv) {
-	return emittedTexture->GetColor(uv);
+RGBSpectrum DiffuseLight::Emit() {
+	return radiance;
 }
 
 RGBSpectrum DiffuseLight::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {

@@ -42,8 +42,6 @@ public:
 
 	static Ray SpawnRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng);
 
-	static Ray SpawnOcclusRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng);
-
 private:
 	Point3f origin;
 	Vector3f direction;

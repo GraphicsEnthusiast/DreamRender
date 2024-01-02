@@ -13,10 +13,15 @@ int main() {
 
 	float albedo[3] = { 0.9f, 0.9f, 0.9f };
 	float roughness[3] = { 0.1f, 0.1f, 0.1f };
+	float radiance[3] = { 5.0f, 5.0f, 5.0f };
+	float radiance2[3] = { 5.0f, 0.0f, 0.0f };
 	auto material = std::make_shared<Diffuse>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)));
-
+	auto material2 = std::make_shared<DiffuseLight>(RGBSpectrum::FromRGB(radiance));
+	auto material3 = std::make_shared<DiffuseLight>(RGBSpectrum::FromRGB(radiance2));
 	//scene.AddShape(new Sphere(material, Point3f(0.0f, 0.0f, 0.0f), 3.0f));
 	scene.AddShape(new TriangleMesh(material, "teapot.obj", tran));
+	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material2, Point3f(0.0f, 10.0f, 10.0f), 2.0f)));
+	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material3, Point3f(10.0f, 10.0f, 0.0f), 1.0f)));
 	scene.SetCamera(std::make_shared<Pinhole>(camera));
 	scene.Commit();
 

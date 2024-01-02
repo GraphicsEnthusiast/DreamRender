@@ -21,6 +21,10 @@ public:
 		return m_type;
 	}
 
+	inline int GetGeometryID() const {
+		return geometry_id;
+	}
+
 	inline std::shared_ptr<Material> GetMaterial() const {
 		return material;
 	}
@@ -135,6 +139,8 @@ private:
 };
 
 class Sphere : public Shape {
+	friend SphereArea;
+
 public:
 	Sphere(std::shared_ptr<Material> m, Point3f cen, float rad) : Shape(ShapeType::SphereShape, m, Transform()), center(cen), radius(rad) {}
 

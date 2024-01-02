@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <queue>
+#include <map>
 #include <vector>
 #include <time.h>
 #include <glad/glad.h>
@@ -69,6 +70,7 @@ class Scene;
 
 class Light;
 class QuadArea;
+class SphereArea;
 
 class Filter;
 class Bos;
@@ -120,6 +122,7 @@ struct IntersectionInfo {
 	Vector3f Ng;
 	Vector3f Ns;
 	bool frontFace;
+	int geomID;
 	std::shared_ptr<Material> material;
 
 	inline void SetNormal(const Vector3f& dir, const Vector3f& ng, const Vector3f& ns) {

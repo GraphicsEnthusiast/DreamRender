@@ -19,9 +19,17 @@ public:
 		return m_type;
 	}
 
+	inline Shape* GetShape() const {
+		return shape;
+	}
+
+	inline RGBSpectrum Radiance() {
+		return shape->GetMaterial()->Emit();
+	}
+
 	virtual RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf);
 
-	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info, float distance) = 0;
+	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
 
 	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
 
@@ -30,14 +38,23 @@ protected:
 	Shape* shape;
 };
 
-class QuadArea : Light {
+class QuadArea : public Light {
 public:
-	QuadArea(Shape* s, bool doubleside) : Light(LightType::QuadAreaLight, s), doubleSide(doubleside) {}
+	QuadArea(Shape* s, bool twoside) : Light(LightType::QuadAreaLight, s), twoSide(twoside) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info, float distance) override;
+	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
 	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
-	bool doubleSide;
+	bool twoSide;
+};
+
+class SphereArea : public Light {
+public:
+	SphereArea(Shape* s) : Light(LightType::SphereAreaLight, s) {}
+
+	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 };

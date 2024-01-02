@@ -21,6 +21,13 @@ void Scene::AddShape(Shape* shape) {
 }
 
 void Scene::AddLight(std::shared_ptr<Light> light) {
+	if (light->GetShape() != NULL) {
+		shapes.push_back(light->GetShape());
+		shapeToLight.insert({ light->GetShape()->GetGeometryID(), lights.size() });
+	}
+	if (light->GetType() == LightType::InfiniteAreaLight) {
+		infinityLights.push_back(light);
+	}
 	lights.push_back(light);
 }
 
@@ -33,6 +40,13 @@ std::shared_ptr<Camera> Scene::GetCamera() const {
 }
 
 void Scene::Commit() {
+	std::vector<float> power(lights.size());
+	for (int i = 0; i < lights.size(); i++) {
+		float pdf = Luminance(lights[i]->Radiance());
+		power[i] = pdf;
+	}
+	lightTable = AliasTable1D(power);
+
 	// Constructing Embree objects, setting VBOs/IBOs
 	for (int i = 0; i < shapes.size(); i++) {
 		shapes[i]->ConstructEmbreeObject(rtc_device, rtc_scene);
@@ -66,6 +80,7 @@ void Scene::ClosestHit(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.t = rayhit.ray.tfar;
 	info.position = GetHitPos(rayhit);
 	info.material = shapes[id]->GetMaterial();
+	info.geomID = id;
 }
 
 void Scene::Miss(const RTCRayHit& rayhit, IntersectionInfo& info) {
@@ -76,6 +91,7 @@ void Scene::Miss(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.position = Point3f(Infinity);
 	info.uv = Point2f(0.0f);
 	info.material = NULL;
+	info.geomID = -1;
 }
 
 void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
@@ -86,4 +102,43 @@ void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	else {
 		Miss(rayhit, info);
 	}
+}
+
+RGBSpectrum Scene::SampleLightByPower(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	if (lights.size() == 0) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	int index = lightTable.Sample(sampler->Get2());
+	auto light = lights[index];
+	RGBSpectrum radiance = light->Sample(L, pdf, info, sampler);
+	pdf *= (Luminance(radiance) / lightTable.Sum());
+
+	Ray ray = Ray::SpawnRay(info.position, L, info.Ng);
+	RTCRay rtc_ray = RayToRTCRay(ray);
+	RTCRayHit rtc_rayhit = MakeRayHit(rtc_ray);
+
+	Intersect(rtc_rayhit);
+	if (rtc_rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+		return RGBSpectrum(0.0f);
+	}
+
+	return radiance;
+}
+
+RGBSpectrum Scene::EvaluateLightByPower(int geomID, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	if (lights.size() == 0) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	int index = shapeToLight[geomID];
+	auto light = lights[index];
+	RGBSpectrum light_radiance = light->Evaluate(L, pdf, info);
+	pdf *= (Luminance(light_radiance) / lightTable.Sum());
+
+	return light_radiance;
 }
