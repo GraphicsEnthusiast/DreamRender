@@ -24,7 +24,7 @@ public:
 		return shape;
 	}
 
-	inline virtual RGBSpectrum Radiance(const Vector3f L) {
+	inline virtual RGBSpectrum Radiance(const Vector3f& L) {
 		return shape->GetMaterial()->Emit();
 	}
 
@@ -45,7 +45,7 @@ protected:
 
 class QuadArea : public Light {
 public:
-	QuadArea(Shape* s, bool twoside) : Light(LightType::QuadAreaLight, s), twoSide(twoside) {}
+	QuadArea(Shape* s, bool twoside = false) : Light(LightType::QuadAreaLight, s), twoSide(twoside) {}
 
 	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
@@ -68,7 +68,7 @@ class InfiniteArea : public Light {
 public:
 	InfiniteArea(std::shared_ptr<Hdr> h, float sca = 1.0f);
 
-	inline virtual RGBSpectrum Radiance(const Vector3f L) override {
+	inline virtual RGBSpectrum Radiance(const Vector3f& L) override {
 		Point2f planeUV = SphereToPlane(L);
 
 		return hdr->GetColor(planeUV);
