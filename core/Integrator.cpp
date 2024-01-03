@@ -59,10 +59,9 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		RGBSpectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
 		float costheta = std::max(glm::dot(info.Ns, lightL), 0.0f);
 		float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);
-		if (std::isnan(bsdf_pdf) || std::isnan(light_pdf) || bsdf_pdf == 0.0f || light_pdf == 0.0f) {
-			break;
+		if (!(std::isnan(bsdf_pdf) || std::isnan(light_pdf) || bsdf_pdf == 0.0f || light_pdf == 0.0f)) {
+			radiance += misWeight * history * bsdf * costheta * light_radiance / light_pdf;
 		}
-		radiance += misWeight * history * bsdf * costheta * light_radiance / light_pdf;
 
 		// Sample surface
 		bsdf = info.material->Sample(V, L, bsdf_pdf, info, sampler);

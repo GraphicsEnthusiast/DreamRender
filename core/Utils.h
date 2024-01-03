@@ -109,7 +109,6 @@ using Point4u = Vector4u;
 constexpr float FloatOneMinusEpsilon = 0x1.fffffep-1f;
 constexpr float MaxFloat = std::numeric_limits<float>::max();
 constexpr float Infinity = std::numeric_limits<float>::infinity();
-constexpr float Epsilon = std::numeric_limits<float>::epsilon() * 0.5f;
 constexpr float ShadowEpsilon = 1e-4f;
 constexpr float PI = 3.1415926535897932385f;
 constexpr float INV_PI = 1.0f / PI;
