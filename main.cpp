@@ -13,15 +13,19 @@ int main() {
 
 	float albedo[3] = { 1.0f, 1.0f, 1.0f };
 	float albedo2[3] = { 0.1f, 0.8f, 1.0f };
-	float roughness[3] = { 0.0f, 0.0f, 0.0f };
+	float roughness[3] = { 0.1f, 0.1f, 0.1f };
 	float radiance[3] = { 5.0f, 5.0f, 5.0f };
 	float radiance2[3] = { 5.0f, 0.0f, 0.0f };
+	float eta[3] = { 2.76404, 1.95417, 1.62766 };
+	float k[3] = { 3.83077, 2.73841, 2.31812 };
 	auto material = std::make_shared<Diffuse>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)));
-	auto material4 = std::make_shared<Diffuse>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo2)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)));
 	auto material2 = std::make_shared<DiffuseLight>(RGBSpectrum::FromRGB(radiance));
 	auto material3 = std::make_shared<DiffuseLight>(RGBSpectrum::FromRGB(radiance2));
+	auto material4 = std::make_shared<Diffuse>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo2)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)));
+	auto material5 = std::make_shared<Conductor>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
+		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), RGBSpectrum::FromRGB(eta), RGBSpectrum::FromRGB(k));
 	scene.AddShape(new Quad(material4, Point3f(-10.0f, -0.05f, -10.0f), Vector3f(20.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 20.0f)));
-	scene.AddShape(new TriangleMesh(material, "teapot.obj", tran));
+	scene.AddShape(new TriangleMesh(material5, "teapot.obj", tran));
 //	scene.AddLight(std::make_shared<QuadArea>(new Quad(material2, Point3f(0.0f, 7.0f, 0.0f), Vector3f(3.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 3.0f))));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material2, Point3f(14.0f, 8.0f, 14.0f), 3.0f)));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material3, Point3f(14.0f, 8.0f, -14.0f), 3.0f)));

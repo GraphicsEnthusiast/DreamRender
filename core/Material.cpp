@@ -136,7 +136,7 @@ float GGX::GeometrySmith1(const Vector3f& V, const Vector3f& H, const Vector3f& 
 	}
 }
 
-float GGX::DistributionGGX(const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v) {
+float GGX::Distribution(const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v) {
 	float cos_theta = dot(H, N);
 	if (cos_theta <= 0.0f) {
 		return 0.0f;
@@ -154,11 +154,11 @@ float GGX::DistributionGGX(const Vector3f& H, const Vector3f& N, float alpha_u, 
 	}
 }
 
-float GGX::DistributionVisibleGGX(const Vector3f& V, const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v) {
-	return GeometrySmith1(V, H, N, alpha_u, alpha_v) * glm::dot(V, H) * DistributionGGX(H, N, alpha_u, alpha_v) / glm::dot(N, V);
+float GGX::DistributionVisible(const Vector3f& V, const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v) {
+	return GeometrySmith1(V, H, N, alpha_u, alpha_v) * glm::dot(V, H) * Distribution(H, N, alpha_u, alpha_v) / glm::dot(N, V);
 }
 
-Vector3f GGX::SampleVisibleGGX(const Vector3f& N, const Vector3f& Ve, float alpha_u, float alpha_v, const Point2f& sample) {
+Vector3f GGX::SampleVisible(const Vector3f& N, const Vector3f& Ve, float alpha_u, float alpha_v, const Point2f& sample) {
 	Vector3f V = ToLocal(Ve, N);
 	Vector3f Vh = glm::normalize(Vector3f(alpha_u * V.x, alpha_v * V.y, V.z));
 
@@ -269,5 +269,65 @@ RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 
 	pdf = CosinePdfHemisphere(NdotL);
 	
+	return brdf;
+}
+
+RGBSpectrum Conductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+
+	Vector3f N = info.Ns;
+	Vector3f H = glm::normalize(V + L);
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
+
+	float NdotV = glm::dot(N, V);
+	float NdotL = glm::dot(N, L);
+
+	if (NdotV <= 0.0f || NdotL <= 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	RGBSpectrum F = Fresnel::FresnelConductor(V, H, eta, k);
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+
+	RGBSpectrum brdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+
+	return brdf;
+}
+
+RGBSpectrum Conductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+
+	Vector3f N = info.Ns;
+	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
+	H = ToWorld(H, N);
+	L = glm::reflect(-V, H);
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
+
+	float NdotV = glm::dot(N, V);
+	float NdotL = glm::dot(N, L);
+
+	if (NdotV <= 0.0f || NdotL <= 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	RGBSpectrum F = Fresnel::FresnelConductor(V, H, eta, k);
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+
+	RGBSpectrum brdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+
 	return brdf;
 }
