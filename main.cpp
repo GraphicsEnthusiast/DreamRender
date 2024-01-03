@@ -4,7 +4,7 @@ int main() {
 	int Width = 800;
 	int Height = 800;
 
-	Transform tran;
+	Transform tran = Transform::Rotate(0.0f, 45.0f, 0.0f);
 	Pinhole camera(Point3f(10.0f, 7.0f, -10.0f), Point3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 60.0f, (float)Width / (float)Height);
 	//Thinlens camera2(Point3f(10.0f, 8.0f, 10.0f), Point3f(0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 60.0f, (float)Width / (float)Height, 2.0f);
 	PostProcessing post(std::make_shared<Reinhard>());
