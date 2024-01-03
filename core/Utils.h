@@ -74,7 +74,7 @@ class SphereArea;
 class InfiniteArea;
 
 class Filter;
-class Bos;
+class Box;
 class Tent;
 class Triangle;
 class Gaussian;
