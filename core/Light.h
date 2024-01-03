@@ -69,7 +69,9 @@ public:
 	InfiniteArea(std::shared_ptr<Hdr> h, float sca = 1.0f);
 
 	inline virtual RGBSpectrum Radiance(const Vector3f L) override {
-		return shape->GetMaterial()->Emit();
+		Point2f planeUV = SphereToPlane(L);
+
+		return hdr->GetColor(planeUV);
 	}
 
 	inline virtual float LightLuminance() override {

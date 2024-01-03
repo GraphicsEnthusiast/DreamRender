@@ -23,12 +23,12 @@ void Scene::AddShape(Shape* shape) {
 }
 
 void Scene::AddLight(std::shared_ptr<Light> light) {
-	if (light->GetShape() != NULL) {
-		shapes.push_back(light->GetShape());
-		shapeToLight.insert({ light->GetShape()->GetGeometryID(), lights.size() });
-	}
 	if (light->GetType() == LightType::InfiniteAreaLight) {
 		infiniteLight = light;
+	}
+	else {
+		shapes.push_back(light->GetShape());
+		shapeToLight.insert({ light->GetShape()->GetGeometryID(), lights.size() });
 	}
 	lights.push_back(light);
 }
@@ -118,7 +118,11 @@ RGBSpectrum Scene::SampleLightByPower(Vector3f& L, float& pdf, const Intersectio
 	auto light = lights[index];
 	float dist = 0.0f;
 	RGBSpectrum radiance = light->Sample(L, pdf, dist, info, sampler);
-	pdf *= (Luminance(radiance) / lightTable.Sum());
+	pdf *= (light->LightLuminance() / lightTable.Sum());
+
+	if (glm::dot(info.Ns, L) < 0.0f) {
+		return RGBSpectrum(0.0f);
+	}
 
 	Ray ray = Ray::SpawnRay(info.position, L, info.Ng);
 	RTCRayHit rtc_rayhit = MakeRayHit(ray.GetOrg(), ray.GetDir(), 0.0f, dist - ShadowEpsilon);
@@ -132,7 +136,8 @@ RGBSpectrum Scene::SampleLightByPower(Vector3f& L, float& pdf, const Intersectio
 }
 
 RGBSpectrum Scene::EvaluateLight(int geomID, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	if (lights.size() == 0) {
+	int lightSize = infiniteLight == NULL ? lights.size() : lights.size() - 1;
+	if (lightSize == 0) {
 		pdf = 0.0f;
 
 		return RGBSpectrum(0.0f);
@@ -141,7 +146,7 @@ RGBSpectrum Scene::EvaluateLight(int geomID, const Vector3f& L, float& pdf, cons
 	int index = shapeToLight[geomID];
 	auto light = lights[index];
 	RGBSpectrum radiance = light->Evaluate(L, pdf, info);
-	pdf *= (Luminance(radiance) / lightTable.Sum());
+	pdf *= (light->LightLuminance() / lightTable.Sum());
 
 	return radiance;
 }
@@ -154,6 +159,7 @@ RGBSpectrum Scene::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	}
 
 	RGBSpectrum radiance = infiniteLight->EvaluateEnvironment(L, pdf);
+	pdf *= (infiniteLight->LightLuminance() / lightTable.Sum());
 
 	return radiance;
 }

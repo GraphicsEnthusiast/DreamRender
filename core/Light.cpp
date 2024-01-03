@@ -109,13 +109,11 @@ InfiniteArea::InfiniteArea(std::shared_ptr<Hdr> h, float sca) : Light(LightType:
 	float* data = hdr->data;
 
 	std::vector<float> pdf(mWidth * mHeight);
-	float sum = 0.0f;
 	for (int j = 0; j < mHeight; j++) {
 		for (int i = 0; i < mWidth; i++) {
 			float a[3] = { data[mBits * (j * mWidth + i)], data[mBits * (j * mWidth + i) + 1], data[mBits * (j * mWidth + i) + 2] };
 			RGBSpectrum l = RGBSpectrum::FromRGB(a);
-			pdf[j * mWidth + i] = Luminance(l) * sin(((float)j + 0.5f) / mHeight * PI);
-			sum += pdf[j * mWidth + i];
+			pdf[j * mWidth + i] = Luminance(l) * sin(((float)j + 0.5f) / (float)mHeight * PI);
 		}
 	}
 
@@ -126,9 +124,7 @@ RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	int mWidth = hdr->nx;
 	int mHeight = hdr->ny;
 
-	Point2f planeUV = SphereToPlane(L);
-
-	RGBSpectrum radiance = hdr->GetColor(planeUV);
+	RGBSpectrum radiance = Radiance(L);
 
 	pdf = Luminance(radiance) / table.Sum() * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
 
@@ -143,8 +139,8 @@ RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const Int
 	int mWidth = hdr->nx;
 	int mHeight = hdr->ny;
 
-	L = PlaneToSphere(Point2f((col + 0.5f) / mWidth, (row + 0.5f) / mHeight));
-	Point2f planeUV = SphereToPlane(L);
+	Point2f planeUV((col + 0.5f) / mWidth, (row + 0.5f) / mHeight);
+	L = PlaneToSphere(planeUV);
 
 	RGBSpectrum radiance = hdr->GetColor(planeUV);
 
