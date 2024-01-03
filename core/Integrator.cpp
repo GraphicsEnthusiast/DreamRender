@@ -55,7 +55,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		float light_pdf = 0.0f, bsdf_pdf = 0.0f;
 		// Sample light
 		Vector3f lightL;
-		RGBSpectrum light_radiance = scene->SampleLightByPower(lightL, light_pdf, info, sampler);
+		RGBSpectrum light_radiance = scene->SampleLightEnvironment(lightL, light_pdf, info, sampler);
 		RGBSpectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
 		float costheta = std::max(glm::dot(info.Ns, lightL), 0.0f);
 		float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);

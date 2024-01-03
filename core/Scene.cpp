@@ -107,7 +107,7 @@ void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	}
 }
 
-RGBSpectrum Scene::SampleLightByPower(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+RGBSpectrum Scene::SampleLightEnvironment(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	if (lights.size() == 0) {
 		pdf = 0.0f;
 
