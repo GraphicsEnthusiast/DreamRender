@@ -13,6 +13,12 @@ RGBSpectrum Light::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	return RGBSpectrum(0.0f);
 }
 
+RGBSpectrum Light::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	pdf = 0.0f;
+
+	return RGBSpectrum(0.0f);
+}
+
 RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
@@ -32,7 +38,7 @@ RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const Intersection
 	float distance = info.t;
 	pdf *= glm::pow2(distance) / std::abs(cos_theta);
 
-	return Radiance();// info record a point on a light source
+	return Radiance(L);// info record a point on a light source
 }
 
 RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
@@ -56,7 +62,7 @@ RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& in
 	pdf = 1.0f / area;
 	pdf *= dist_sq / abs(cos_theta);
 
-	return Radiance();// info record a point on a common shape
+	return Radiance(L);// info record a point on a common shape
 }
 
 RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
@@ -67,7 +73,7 @@ RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const Intersecti
 	float cos_theta = std::sqrt(1.0f - sin_theta_sq);
 	pdf = UniformPdfCone(cos_theta);
 
-	return Radiance();
+	return Radiance(L);
 }
 
 RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
@@ -86,10 +92,59 @@ RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& 
 		L = ToWorld(local_L, dir);
 		pdf = UniformPdfCone(cos_theta);
 
-		return Radiance();
+		return Radiance(L);
 	}
 
 	pdf = 0.0f;
 
 	return RGBSpectrum(0.0f);
+}
+
+InfiniteArea::InfiniteArea(std::shared_ptr<Hdr> h, float sca) : Light(LightType::InfiniteAreaLight, NULL), hdr(h), scale(sca) {
+	int mWidth = hdr->nx;
+	int mHeight = hdr->ny;
+	int mBits = hdr->nn;
+	float* data = hdr->data;
+
+	std::vector<float> pdf(mWidth * mHeight);
+	float sum = 0.0f;
+	for (int j = 0; j < mHeight; j++) {
+		for (int i = 0; i < mWidth; i++) {
+			float a[3] = { data[mBits * (j * mWidth + i)], data[mBits * (j * mWidth + i) + 1], data[mBits * (j * mWidth + i) + 2] };
+			RGBSpectrum l = RGBSpectrum::FromRGB(a);
+			pdf[j * mWidth + i] = Luminance(l) * sin(((float)j + 0.5f) / mHeight * PI);
+			sum += pdf[j * mWidth + i];
+		}
+	}
+
+	table = AliasTable2D(pdf, mWidth, mHeight);
+}
+
+RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
+	int mWidth = hdr->nx;
+	int mHeight = hdr->ny;
+
+	Point2f planeUV = SphereToPlane(L);
+
+	RGBSpectrum radiance = hdr->GetColor(planeUV);
+
+	pdf = Luminance(radiance) / table.Sum() * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
+
+	return radiance * scale;
+}
+
+RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	auto [col, row] = table.Sample(sampler->Get2(), sampler->Get2());
+
+	int mWidth = hdr->nx;
+	int mHeight = hdr->ny;
+
+	L = PlaneToSphere(Point2f((col + 0.5f) / mWidth, (row + 0.5f) / mHeight));
+	Point2f planeUV = SphereToPlane(L);
+
+	RGBSpectrum radiance = hdr->GetColor(planeUV);
+
+	pdf = Luminance(radiance) / table.Sum() * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
+
+	return radiance * scale;
 }

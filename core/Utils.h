@@ -71,6 +71,7 @@ class Scene;
 class Light;
 class QuadArea;
 class SphereArea;
+class InfiniteArea;
 
 class Filter;
 class Bos;

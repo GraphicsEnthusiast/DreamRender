@@ -15,14 +15,6 @@ public:
 
 	virtual RGBSpectrum GetColor(const Point2f& uv) = 0;
 
-	inline virtual int GetWidth() const {
-		return 0;
-	}
-
-	inline virtual int GetHeight() const {
-		return 0;
-	}
-
 	virtual TextureType GetType() const {
 		return m_type;
 	}
@@ -49,34 +41,20 @@ public:
 
 	virtual RGBSpectrum GetColor(const Point2f& uv) override;
 
-	inline virtual int GetWidth() const override {
-		return nx;
-	}
-
-	inline virtual int GetHeight() const override {
-		return ny;
-	}
-
 private:
 	unsigned char* data;
 	int nx, ny, nn;
 };
 
 class Hdr : public Texture {
+	friend InfiniteArea;
+
 public:
 	Hdr(const std::string& filepath);
 
 	~Hdr();
 
 	virtual RGBSpectrum GetColor(const Point2f& uv) override;
-
-	inline virtual int GetWidth() const override {
-		return nx;
-	}
-
-	inline virtual int GetHeight() const override {
-		return ny;
-	}
 
 private:
 	float* data;

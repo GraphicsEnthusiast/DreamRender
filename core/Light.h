@@ -2,6 +2,7 @@
 
 #include "Utils.h"
 #include "Shape.h"
+#include "Texture.h"
 
 enum LightType {
 	QuadAreaLight,
@@ -23,13 +24,17 @@ public:
 		return shape;
 	}
 
-	inline RGBSpectrum Radiance() {
+	inline virtual RGBSpectrum Radiance(const Vector3f L) {
 		return shape->GetMaterial()->Emit();
+	}
+
+	inline virtual float LightLuminance() {
+		return Luminance(shape->GetMaterial()->Emit());
 	}
 
 	virtual RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf);
 
-	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
+	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info);
 
 	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
 
@@ -57,4 +62,26 @@ public:
 	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
 	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+};
+
+class InfiniteArea : public Light {
+public:
+	InfiniteArea(std::shared_ptr<Hdr> h, float sca = 1.0f);
+
+	inline virtual RGBSpectrum Radiance(const Vector3f L) override {
+		return shape->GetMaterial()->Emit();
+	}
+
+	inline virtual float LightLuminance() override {
+		return table.Sum();
+	}
+
+	virtual RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf) override;
+
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+
+private:
+	std::shared_ptr<Hdr> hdr;
+	AliasTable2D table;
+	float scale;
 };

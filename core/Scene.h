@@ -25,7 +25,9 @@ public:
 
 	RGBSpectrum SampleLightByPower(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler);
 
-	RGBSpectrum EvaluateLightByPower(int geomID, const Vector3f&L, float& pdf, const IntersectionInfo& info);
+	RGBSpectrum EvaluateLight(int geomID, const Vector3f&L, float& pdf, const IntersectionInfo& info);
+
+	RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf);
 
 private:
 	void Intersect(RTCRayHit& rayhit);
@@ -40,7 +42,7 @@ private:
 	RTCIntersectContext context;
 	std::vector<Shape*> shapes;
 	std::vector<std::shared_ptr<Light>> lights;
-	std::vector<std::shared_ptr<Light>> infinityLights;
+	std::shared_ptr<Light> infiniteLight;
 	std::shared_ptr<Camera> camera;
 	std::map<int, int> shapeToLight;
 	AliasTable1D lightTable;

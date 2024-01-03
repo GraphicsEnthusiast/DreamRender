@@ -21,14 +21,17 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 
 		// Hit nothing
 		if (info.t == Infinity) {
-// 			float t = 0.5f * (ray.GetDir().y + 1.0f);
-// 			float a[3] = { 0.5f, 0.7f, 1.0f };
-// 			float b[3] = { 1.0f, 1.0f, 1.0f };
-// 			RGBSpectrum color1 = RGBSpectrum::FromRGB(b);
-// 			RGBSpectrum color2 = RGBSpectrum::FromRGB(a);
-// 			RGBSpectrum color = Lerp(t, color1, color2);
-// 
-// 			radiance += color * history;
+			float misWeight = 1.0f;
+			float light_pdf = 0.0f;
+			RGBSpectrum back_radiance = scene->EvaluateEnvironment(L, light_pdf);
+			if (bounce != 0) {
+				if (std::isnan(light_pdf) || light_pdf == 0.0f) {
+					break;
+				}
+				misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
+			}
+
+			radiance += misWeight * history * back_radiance;
 
 			break;
 		}
@@ -36,10 +39,9 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		// Hit light
 		if (info.material->GetType() == MaterialType::DiffuseLightMaterial) {
 			float misWeight = 1.0f;
-			RGBSpectrum light_radiance = info.material->Emit();
+			float light_pdf = 0.0f;
+			RGBSpectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
 			if (bounce != 0) {
-				float light_pdf = 0.0f;
-				light_radiance = scene->EvaluateLightByPower(info.geomID, L, light_pdf, info);
 				if (std::isnan(light_pdf) || light_pdf == 0.0f) {
 					break;
 				}

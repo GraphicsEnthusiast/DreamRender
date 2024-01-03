@@ -1,6 +1,8 @@
 #include "Scene.h"
 
 Scene::Scene(const RTCDevice& device) {
+	infiniteLight = NULL;
+
 	// Creating a new device
 	rtc_device = device;
 
@@ -26,7 +28,7 @@ void Scene::AddLight(std::shared_ptr<Light> light) {
 		shapeToLight.insert({ light->GetShape()->GetGeometryID(), lights.size() });
 	}
 	if (light->GetType() == LightType::InfiniteAreaLight) {
-		infinityLights.push_back(light);
+		infiniteLight = light;
 	}
 	lights.push_back(light);
 }
@@ -42,7 +44,8 @@ std::shared_ptr<Camera> Scene::GetCamera() const {
 void Scene::Commit() {
 	std::vector<float> power(lights.size());
 	for (int i = 0; i < lights.size(); i++) {
-		float pdf = Luminance(lights[i]->Radiance());
+		auto light = lights[i];
+		float pdf = light->LightLuminance();
 		power[i] = pdf;
 	}
 	lightTable = AliasTable1D(power);
@@ -128,7 +131,7 @@ RGBSpectrum Scene::SampleLightByPower(Vector3f& L, float& pdf, const Intersectio
 	return radiance;
 }
 
-RGBSpectrum Scene::EvaluateLightByPower(int geomID, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+RGBSpectrum Scene::EvaluateLight(int geomID, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	if (lights.size() == 0) {
 		pdf = 0.0f;
 
@@ -139,6 +142,18 @@ RGBSpectrum Scene::EvaluateLightByPower(int geomID, const Vector3f& L, float& pd
 	auto light = lights[index];
 	RGBSpectrum radiance = light->Evaluate(L, pdf, info);
 	pdf *= (Luminance(radiance) / lightTable.Sum());
+
+	return radiance;
+}
+
+RGBSpectrum Scene::EvaluateEnvironment(const Vector3f& L, float& pdf) {
+	if (infiniteLight == NULL) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	RGBSpectrum radiance = infiniteLight->EvaluateEnvironment(L, pdf);
 
 	return radiance;
 }
