@@ -4,6 +4,30 @@
 #include "Sampling.h"
 #include "Sampler.h"
 
+namespace Fresnel {
+	float FresnelSchlick(float f0, float VdotH);
+
+	Vector3f FresnelSchlick(Vector3f f0, float VdotH);
+
+	Vector3f FresnelConductor(const Vector3f& V, const Vector3f& H, const Vector3f& eta_r, const Vector3f& eta_i);
+
+	Vector3f AverageFresnelConductor(Vector3f eta, Vector3f k);
+
+	float FresnelDielectric(const Vector3f& V, const Vector3f& H, float eta_inv);
+
+	float AverageFresnelDielectric(float eta);
+}
+
+namespace GGX {
+	float GeometrySmith1(const Vector3f& V, const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v);
+
+	float DistributionGGX(const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v);
+
+	float DistributionVisibleGGX(const Vector3f& V, const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v);
+
+	Vector3f SampleVisibleGGX(const Vector3f& N, const Vector3f& V, float alpha_u, float alpha_v, const Point2f& sample);
+}
+
 enum MaterialType {
 	DiffuseLightMaterial,
 	DiffuseMaterial,
@@ -12,8 +36,7 @@ enum MaterialType {
 	PlasticMaterial,
 	MetalWorkflowMaterial,
 	ThinDielectricMaterial,
-	ClearCoatedConductorMaterial,
-	DiffuseTransmitterMaterial
+	ClearCoatedConductorMaterial
 };
 
 class Material {
