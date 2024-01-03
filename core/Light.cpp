@@ -41,13 +41,14 @@ RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const Intersection
 	return Radiance(L);// info record a point on a light source
 }
 
-RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
 	Point3f pos = quad->position + quad->u * sampler->Get1() + quad->v * sampler->Get1();
 	L = pos - info.position;
 	float dist_sq = glm::dot(L, L);
 	float distance = std::sqrt(dist_sq);
+	dist = distance;
 	L /= distance;
 
 	float cos_theta = glm::dot(L, Nl);
@@ -76,7 +77,7 @@ RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const Intersecti
 	return Radiance(L);
 }
 
-RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	Sphere* sphere = (Sphere*)shape;
 	Vector3f dir = sphere->center - info.position;
 	float dist_sq = dot(dir, dir);
@@ -91,6 +92,7 @@ RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& 
 		float cos_i = local_L.z;
 		L = ToWorld(local_L, dir);
 		pdf = UniformPdfCone(cos_theta);
+		dist = cos_i * distance - std::sqrt(std::max(0.0f, sphere->radius * sphere->radius - (1.0f - cos_i * cos_i) * dist_sq));
 
 		return Radiance(L);
 	}
@@ -133,7 +135,9 @@ RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	return radiance * scale;
 }
 
-RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	dist = Infinity;
+
 	auto [col, row] = table.Sample(sampler->Get2(), sampler->Get2());
 
 	int mWidth = hdr->nx;

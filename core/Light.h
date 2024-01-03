@@ -36,7 +36,7 @@ public:
 
 	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info);
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
 
 protected:
 	LightType m_type;
@@ -49,7 +49,7 @@ public:
 
 	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	bool twoSide;
@@ -61,7 +61,7 @@ public:
 
 	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 };
 
 class InfiniteArea : public Light {
@@ -78,7 +78,7 @@ public:
 
 	virtual RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Hdr> hdr;

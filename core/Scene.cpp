@@ -116,12 +116,12 @@ RGBSpectrum Scene::SampleLightByPower(Vector3f& L, float& pdf, const Intersectio
 
 	int index = lightTable.Sample(sampler->Get2());
 	auto light = lights[index];
-	RGBSpectrum radiance = light->Sample(L, pdf, info, sampler);
+	float dist = 0.0f;
+	RGBSpectrum radiance = light->Sample(L, pdf, dist, info, sampler);
 	pdf *= (Luminance(radiance) / lightTable.Sum());
 
 	Ray ray = Ray::SpawnRay(info.position, L, info.Ng);
-	RTCRay rtc_ray = RayToRTCRay(ray);
-	RTCRayHit rtc_rayhit = MakeRayHit(rtc_ray);
+	RTCRayHit rtc_rayhit = MakeRayHit(ray.GetOrg(), ray.GetDir(), 0.0f, dist - ShadowEpsilon);
 
 	Intersect(rtc_rayhit);
 	if (rtc_rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
