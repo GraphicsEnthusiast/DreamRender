@@ -8,31 +8,31 @@ float Fresnel::FresnelSchlick(float f0, float VdotH) {
 	return f0 + (1.0f - f0) * Fc;
 }
 
-Vector3f Fresnel::FresnelSchlick(Vector3f f0, float VdotH) {
+RGBSpectrum Fresnel::FresnelSchlick(const RGBSpectrum& f0, float VdotH) {
 	float tmp = 1.0f - glm::clamp(VdotH, 0.0f, 1.0f);
 	float tmp2 = tmp * tmp;
 	float Fc = tmp2 * tmp2 * tmp;
 
-	return f0 + (1.0f - f0) * Fc;
+	return f0 + (RGBSpectrum(1.0f) - f0) * Fc;
 }
 
-Vector3f Fresnel::FresnelConductor(const Vector3f& V, const Vector3f& H, const Vector3f& eta_r, const Vector3f& eta_i) {
+RGBSpectrum Fresnel::FresnelConductor(const Vector3f& V, const Vector3f& H, const RGBSpectrum& eta_r, const RGBSpectrum& eta_i) {
 	Vector3f N = H;
 	float cos_v_n = glm::dot(V, N),
 		cos_v_n_2 = cos_v_n * cos_v_n,
 		sin_v_n_2 = 1.0f - cos_v_n_2,
 		sin_v_n_4 = sin_v_n_2 * sin_v_n_2;
 
-	Vector3f temp_1 = eta_r * eta_r - eta_i * eta_i - sin_v_n_2,
+	RGBSpectrum temp_1 = eta_r * eta_r - eta_i * eta_i - sin_v_n_2,
 		a_2_pb_2 = temp_1 * temp_1 + 4.0f * eta_i * eta_i * eta_r * eta_r;
 	for (int i = 0; i < 3; i++) {
 		a_2_pb_2[i] = std::sqrt(std::max(0.0f, a_2_pb_2[i]));
 	}
-	Vector3f a = 0.5f * (a_2_pb_2 + temp_1);
+	RGBSpectrum a = 0.5f * (a_2_pb_2 + temp_1);
 	for (int i = 0; i < 3; i++) {
 		a[i] = std::sqrt(std::max(0.0f, a[i]));
 	}
-	Vector3f term_1 = a_2_pb_2 + sin_v_n_2,
+	RGBSpectrum term_1 = a_2_pb_2 + sin_v_n_2,
 		term_2 = 2.0f * cos_v_n * a,
 		term_3 = a_2_pb_2 * cos_v_n_2 + sin_v_n_4,
 		term_4 = term_2 * sin_v_n_2,
@@ -42,9 +42,9 @@ Vector3f Fresnel::FresnelConductor(const Vector3f& V, const Vector3f& H, const V
 	return 0.5f * (r_s + r_p);
 }
 
-Vector3f Fresnel::AverageFresnelConductor(Vector3f eta, Vector3f k) {
-	auto reflectivity = Vector3f(0.0f),
-		edgetint = Vector3f(0.0f);
+RGBSpectrum Fresnel::AverageFresnelConductor(const RGBSpectrum& eta, const RGBSpectrum& k) {
+	auto reflectivity = RGBSpectrum(0.0f),
+		edgetint = RGBSpectrum(0.0f);
 	float temp1 = 0.0f, temp2 = 0.0f, temp3 = 0.0f;
 	for (int i = 0; i < 3; i++) {
 		reflectivity[i] = (glm::pow2(eta[i] - 1.0f) + glm::pow2(k[i])) / (glm::pow2(eta[i] + 1.0f) + glm::pow2(k[i]));
@@ -54,7 +54,7 @@ Vector3f Fresnel::AverageFresnelConductor(Vector3f eta, Vector3f k) {
 		edgetint[i] = (temp1 - eta[i] * temp2) / (temp1 - temp3 * temp2);
 	}
 
-	return Vector3f(0.087237f) +
+	return RGBSpectrum(0.087237f) +
 		0.0230685f * edgetint -
 		0.0864902f * edgetint * edgetint +
 		0.0774594f * edgetint * edgetint * edgetint +

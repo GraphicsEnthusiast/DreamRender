@@ -7,11 +7,11 @@
 namespace Fresnel {
 	float FresnelSchlick(float f0, float VdotH);
 
-	Vector3f FresnelSchlick(Vector3f f0, float VdotH);
+	RGBSpectrum FresnelSchlick(const RGBSpectrum& f0, float VdotH);
 
-	Vector3f FresnelConductor(const Vector3f& V, const Vector3f& H, const Vector3f& eta_r, const Vector3f& eta_i);
+	RGBSpectrum FresnelConductor(const Vector3f& V, const Vector3f& H, const RGBSpectrum& eta_r, const RGBSpectrum& eta_i);
 
-	Vector3f AverageFresnelConductor(Vector3f eta, Vector3f k);
+	RGBSpectrum AverageFresnelConductor(const RGBSpectrum& eta, const RGBSpectrum& k);
 
 	float FresnelDielectric(const Vector3f& V, const Vector3f& H, float eta_inv);
 
