@@ -34,8 +34,8 @@ enum MaterialType {
 	ConductorMaterial,
 	DielectricMaterial,
 	PlasticMaterial,
-	MetalWorkflowMaterial,
 	ThinDielectricMaterial,
+	MetalWorkflowMaterial,
 	ClearCoatedConductorMaterial
 };
 
@@ -156,4 +156,22 @@ private:
 	std::shared_ptr<Texture> roughnessTexture_u;
 	std::shared_ptr<Texture> roughnessTexture_v;
 	float eta;
+};
+
+class MetalWorkflow : public Material {
+public:
+	MetalWorkflow(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, std::shared_ptr<Texture> metallic,
+		std::shared_ptr<Texture> normal = NULL) :
+		Material(MaterialType::MetalWorkflowMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v),
+		metallicTexture(metallic) {}
+
+	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+
+private:
+	std::shared_ptr<Texture> albedoTexture;
+	std::shared_ptr<Texture> roughnessTexture_u;
+	std::shared_ptr<Texture> roughnessTexture_v;
+	std::shared_ptr<Texture> metallicTexture;
 };

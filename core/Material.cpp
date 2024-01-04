@@ -386,8 +386,8 @@ RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pd
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
 
-	float NdotV = dot(N, V);
-	float NdotL = dot(N, L);
+	float NdotV = glm::dot(N, V);
+	float NdotL = glm::dot(N, L);
 
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
@@ -643,7 +643,7 @@ RGBSpectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float
 	}
 	Vector3f H;
 
-	bool isReflect = glm::dot(N, L) * glm::dot(N, V) > 0.0f;
+	bool isReflect = glm::dot(N, L) * glm::dot(N, V) >= 0.0f;
 	if (isReflect) {
 		H = glm::normalize(V + L);
 	}
@@ -658,8 +658,8 @@ RGBSpectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
 
-	float NdotV = dot(N, V);
-	float NdotL = dot(N, L);
+	float NdotV = glm::dot(N, V);
+	float NdotL = glm::dot(N, L);
 
 	float F = Fresnel::FresnelDielectric(V, H, 1.0f / eta);
 	if (F < 1.0f) {
@@ -766,4 +766,114 @@ RGBSpectrum ThinDielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, c
 	}
 
 	return bsdf;
+}
+
+RGBSpectrum MetalWorkflow::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+	float metallic = metallicTexture->GetColor(info.uv)[0];
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+	Vector3f H = glm::normalize(V + L);
+
+	float NdotV = glm::dot(N, V);
+	float NdotL = glm::dot(N, L);
+
+	if (NdotL <= 0.0f || NdotV <= 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	float metallic_brdf = metallic;
+	float dieletric_brdf = (1.0f - metallic);
+	float diffuse = dieletric_brdf;
+	float specular = metallic_brdf + dieletric_brdf;
+	float deom = diffuse + specular;
+	float p_diffuse = diffuse / deom;
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	RGBSpectrum F0 = Lerp(metallic, RGBSpectrum(0.04f), albedo);
+	RGBSpectrum F = Fresnel::FresnelSchlick(F0, glm::dot(V, H));
+
+	RGBSpectrum specular_brdf = D * F * G / (4.0f * NdotL * NdotV);
+	RGBSpectrum diffuse_brdf = albedo * INV_PI;
+	RGBSpectrum brdf = p_diffuse * diffuse_brdf + (1.0f - p_diffuse) * specular_brdf;
+
+	pdf = (1.0f - p_diffuse) * Dv * std::abs(1.0f / (4.0f * glm::dot(V, H))) + p_diffuse * CosinePdfHemisphere(NdotL);
+
+	return brdf;
+}
+
+RGBSpectrum MetalWorkflow::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+	float metallic = metallicTexture->GetColor(info.uv)[0];
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+
+	float NdotV = glm::dot(N, V);
+
+	float metallic_brdf = metallic;
+	float dieletric_brdf = (1.0f - metallic);
+	float diffuse = dieletric_brdf;
+	float specular = metallic_brdf + dieletric_brdf;
+	float deom = diffuse + specular;
+	float p_diffuse = diffuse / deom;
+
+	Vector3f H;
+	float NdotL = 0.0f;
+	if (sampler->Get1() < p_diffuse) {
+		Vector3f local_L = CosineSampleHemisphere(sampler->Get2());
+		L = ToWorld(local_L, N);
+		H = glm::normalize(V + L);
+
+		NdotL = glm::dot(N, L);
+
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+	}
+	else {
+		H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
+		H = ToWorld(H, N);
+
+		L = glm::reflect(-V, H);
+
+		NdotL = glm::dot(N, L);
+
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+	}
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	RGBSpectrum F0 = Lerp(metallic, RGBSpectrum(0.04f), albedo);
+	RGBSpectrum F = Fresnel::FresnelSchlick(F0, glm::dot(V, H));
+
+	RGBSpectrum specular_brdf = D * F * G / (4.0f * NdotL * NdotV);
+	RGBSpectrum diffuse_brdf = albedo * INV_PI;
+	RGBSpectrum brdf = p_diffuse * diffuse_brdf + (1.0f - p_diffuse) * specular_brdf;
+
+	pdf = (1.0f - p_diffuse) * Dv * std::abs(1.0f / (4.0f * glm::dot(V, H))) + p_diffuse * CosinePdfHemisphere(NdotL);
+
+	return brdf;
 }

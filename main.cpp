@@ -16,6 +16,7 @@ int main() {
 	float albedo2[3] = { 0.1f, 0.5f, 0.6f };
 	float roughness[3] = { 0.1f };
 	float roughness2[3] = { 0.4f };
+	float metallic[3] = { 0.8f };
 	float radiance[3] = { 5.0f, 5.0f, 5.0f };
 	float radiance2[3] = { 5.0f, 0.0f, 0.0f };
 	float eta[3] = { 2.76404, 1.95417, 1.62766 };
@@ -32,9 +33,11 @@ int main() {
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 1.5f, 1.0f, true);
 	auto material8 = std::make_shared<ThinDielectric>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 1.5f, 1.0f);
+	auto material9 = std::make_shared<MetalWorkflow>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
+		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), std::make_shared<Constant>(RGBSpectrum::FromRGB(metallic)));
 	scene.AddShape(new Quad(material, Point3f(-10.0f, -0.05f, -10.0f), Vector3f(20.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 20.0f)));
 //	scene.AddShape(new Sphere(material8, Point3f(0.0f, 3.0f, 0.0f), 3.0f));
-	scene.AddShape(new TriangleMesh(material8, "teapot.obj", tran));
+	scene.AddShape(new TriangleMesh(material9, "teapot.obj", tran));
 //	scene.AddLight(std::make_shared<QuadArea>(new Quad(material2, Point3f(3.0f, 7.0f, 3.0f), Vector3f(-3.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, -3.0f))));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material2, Point3f(4.0f, 10.0f, 4.0f), 3.0f)));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material3, Point3f(14.0f, 8.0f, -14.0f), 3.0f)));
