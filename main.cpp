@@ -30,9 +30,11 @@ int main() {
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 1.5f, 1.0f);
 	auto material7 = std::make_shared<Plastic>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo2)), std::make_shared<Constant>(RGBSpectrum::FromRGB(specular)), 
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 1.5f, 1.0f, true);
+	auto material8 = std::make_shared<ThinDielectric>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
+		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 1.5f, 1.0f);
 	scene.AddShape(new Quad(material, Point3f(-10.0f, -0.05f, -10.0f), Vector3f(20.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 20.0f)));
-//	scene.AddShape(new Sphere(material6, Point3f(0.0f, 3.0f, 0.0f), 3.0f));
-	scene.AddShape(new TriangleMesh(material7, "teapot.obj", tran));
+//	scene.AddShape(new Sphere(material8, Point3f(0.0f, 3.0f, 0.0f), 3.0f));
+	scene.AddShape(new TriangleMesh(material8, "teapot.obj", tran));
 //	scene.AddLight(std::make_shared<QuadArea>(new Quad(material2, Point3f(3.0f, 7.0f, 3.0f), Vector3f(-3.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, -3.0f))));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material2, Point3f(4.0f, 10.0f, 4.0f), 3.0f)));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material3, Point3f(14.0f, 8.0f, -14.0f), 3.0f)));

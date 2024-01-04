@@ -372,7 +372,7 @@ RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pd
 	}
 	Vector3f H;
 
-	bool isReflect = glm::dot(N, L) * glm::dot(N, V) > 0.0f;
+	bool isReflect = glm::dot(N, L) * glm::dot(N, V) >= 0.0f;
 	if (isReflect) {
 		H = glm::normalize(V + L);
 	}
@@ -386,20 +386,38 @@ RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pd
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
 
-	float NdotV = abs(dot(N, V));
-	float NdotL = abs(dot(N, L));
+	float NdotV = dot(N, V);
+	float NdotL = dot(N, L);
 
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
 	RGBSpectrum bsdf;
 	if (isReflect) {
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+
 		float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
 		pdf = F * Dv * dwh_dwi;
 
 		bsdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
 	}
 	else {
+		if (NdotL * NdotV >= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+
 		float HdotV = glm::dot(H, V);
 		float HdotL = glm::dot(H, L);
 		float sqrtDenom = etai_over_etat * HdotV + HdotL;
@@ -436,17 +454,21 @@ RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 	if (sampler->Get1() < F) {
 		L = glm::reflect(-V, H);
 
-		if (glm::dot(N, L) <= 0.0f) {
+		float NdotV = glm::dot(N, V);
+		float NdotL = glm::dot(N, L);
+
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
 			return RGBSpectrum(0.0f);
 		}
 
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+
 		float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
 		pdf = F * Dv * dwh_dwi;
 
-		float NdotV = std::abs(glm::dot(N, V));
-		float NdotL = std::abs(glm::dot(N, L));
 		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 
 		bsdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
@@ -454,14 +476,18 @@ RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 	else {
 		L = glm::refract(-V, H, etai_over_etat);
 
-		if (glm::dot(N, L) * glm::dot(N, V) >= 0.0f) {
+		float NdotV = glm::dot(N, V);
+		float NdotL = glm::dot(N, L);
+
+		if (NdotL * NdotV >= 0.0f) {
 			pdf = 0.0f;
 
 			return RGBSpectrum(0.0f);
 		}
 
-		float NdotV = std::abs(glm::dot(N, V));
-		float NdotL = std::abs(glm::dot(N, L));
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+
 		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 
 		float HdotV = glm::dot(H, V);
@@ -603,4 +629,141 @@ RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	pdf = pdf_specular * Dv * std::abs(1.0f / (4.0f * glm::dot(V, H))) + (1.0f - pdf_specular) * CosinePdfHemisphere(NdotL);
 
 	return brdf;
+}
+
+RGBSpectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+	Vector3f H;
+
+	bool isReflect = glm::dot(N, L) * glm::dot(N, V) > 0.0f;
+	if (isReflect) {
+		H = glm::normalize(V + L);
+	}
+	else {
+		Vector3f Vr = ToWorld(ToLocal(V, -N), N);
+		H = glm::normalize(Vr + L);
+		if (glm::dot(N, H) < 0.0f) {
+			H = -H;
+		}
+	}
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
+
+	float NdotV = dot(N, V);
+	float NdotL = dot(N, L);
+
+	float F = Fresnel::FresnelDielectric(V, H, 1.0f / eta);
+	if (F < 1.0f) {
+		F *= 2.0f / (1.0f + F);
+	}
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	RGBSpectrum bsdf(0.0f);
+	float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
+	if (isReflect) {
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+
+		pdf = F * Dv * dwh_dwi;
+
+		bsdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+	}
+	else {
+		if (NdotL * NdotV >= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+
+		pdf = (1.0f - F) * Dv * dwh_dwi;
+
+		bsdf = albedo * (1.0f - F) * D * G / (4.0f * NdotV * NdotL);
+	}
+
+	return bsdf;
+}
+
+RGBSpectrum ThinDielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
+	H = ToWorld(H, N);
+
+	RGBSpectrum bsdf;
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	float F = Fresnel::FresnelDielectric(V, H, 1.0f / eta);
+	if (F < 1.0f) {
+		F *= 2.0f / (1.0f + F);
+	}
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	if (sampler->Get1() < F) {
+		L = glm::reflect(-V, H);
+
+		float NdotV = glm::dot(N, V);
+		float NdotL = glm::dot(N, L);
+
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+
+		float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
+		pdf = F * Dv * dwh_dwi;
+
+		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+
+		bsdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+	}
+	else {
+		L = -V;
+
+		float NdotV = glm::dot(N, V);
+		float NdotL = glm::dot(N, L);
+
+		if (NdotL * NdotV >= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		NdotV = std::abs(NdotV);
+		NdotL = std::abs(NdotL);
+		
+		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+		float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
+		pdf = (1.0f - F) * Dv * dwh_dwi;
+
+		bsdf = albedo * (1.0f - F) * D * G / (4.0f * NdotV * NdotL);
+	}
+
+	return bsdf;
 }

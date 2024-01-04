@@ -140,3 +140,20 @@ private:
 	float eta;
 	bool nonlinear;
 };
+
+class ThinDielectric : public Material {
+public:
+	ThinDielectric(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, float int_ior, float ext_ior,
+		std::shared_ptr<Texture> normal = NULL) :
+		Material(MaterialType::ThinDielectricMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(int_ior / ext_ior) {}
+
+	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+
+private:
+	std::shared_ptr<Texture> albedoTexture;
+	std::shared_ptr<Texture> roughnessTexture_u;
+	std::shared_ptr<Texture> roughnessTexture_v;
+	float eta;
+};
