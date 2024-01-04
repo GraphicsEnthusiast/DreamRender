@@ -36,7 +36,8 @@ enum MaterialType {
 	PlasticMaterial,
 	ThinDielectricMaterial,
 	MetalWorkflowMaterial,
-	ClearCoatedConductorMaterial
+	ClearCoatedConductorMaterial,
+	DiffuseTransmitterMaterial
 };
 
 class Material {
@@ -191,4 +192,17 @@ private:
 	std::shared_ptr<Texture> roughnessTexture_u;
 	std::shared_ptr<Texture> roughnessTexture_v;
 	float coatWeight;
+};
+
+class DiffuseTransmitter : public Material {
+public:
+	DiffuseTransmitter(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> normal = NULL) :
+		Material(MaterialType::DiffuseTransmitterMaterial, normal), albedoTexture(albedo) {}
+
+	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+
+private:
+	std::shared_ptr<Texture> albedoTexture;
 };

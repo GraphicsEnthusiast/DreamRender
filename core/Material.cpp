@@ -988,3 +988,53 @@ RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& 
 		return brdf;
 	}
 }
+
+RGBSpectrum DiffuseTransmitter::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+
+	float NdotL = glm::dot(N, L);
+	float NdotV = glm::dot(N, V);
+
+	if (NdotL * NdotV >= 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	pdf = CosinePdfHemisphere(std::abs(NdotL));
+
+	return albedo * INV_PI;
+}
+
+RGBSpectrum DiffuseTransmitter::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+	Vector3f local_L = CosineSampleHemisphere(sampler->Get2());
+	N = -N;
+	L = ToWorld(local_L, N);
+	float NdotL = local_L.z;
+	float NdotV = glm::dot(N, V);
+
+	if (NdotL * NdotV >= 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	RGBSpectrum btdf = albedo * INV_PI;
+
+	pdf = CosinePdfHemisphere(std::abs(NdotL));
+
+	return btdf;
+}
