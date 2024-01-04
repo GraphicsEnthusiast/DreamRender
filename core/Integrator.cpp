@@ -14,12 +14,40 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 	Vector3f L = ray.GetDir();
 	float bp_pdf = 0.0f;// bsdf or phase pdf
 
+	auto HitNothing = [](const IntersectionInfo& info) ->bool {
+		return info.t == Infinity;
+	};
+
+	auto HitLight = [](const IntersectionInfo& info) ->bool {
+		if (info.material == NULL) {
+			return false;
+		}
+
+		return info.material->GetType() == MaterialType::DiffuseLightMaterial;
+	};
+
 	for (int bounce = 0; bounce < maxBounce; bounce++) {
 		RTCRayHit rtc_rayhit = MakeRayHit(ray.GetOrg(), ray.GetDir());
 		scene->TraceRay(rtc_rayhit, info);
 
+		// Hit light
+		if (HitLight(info)) {
+			float misWeight = 1.0f;
+			float light_pdf = 0.0f;
+			RGBSpectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
+			if (bounce != 0) {
+				if (std::isnan(light_pdf) || light_pdf == 0.0f) {
+					break;
+				}
+				misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
+			}
+			radiance += misWeight * history * light_radiance;
+
+			break;
+		}
+
 		// Hit nothing
-		if (info.t == Infinity) {
+		if (HitNothing(info)) {
 			float misWeight = 1.0f;
 			float light_pdf = 0.0f;
 			RGBSpectrum back_radiance = scene->EvaluateEnvironment(L, light_pdf);
@@ -31,22 +59,6 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 			}
 
 			radiance += misWeight * history * back_radiance;
-
-			break;
-		}
-
-		// Hit light
-		if (info.material->GetType() == MaterialType::DiffuseLightMaterial) {
-			float misWeight = 1.0f;
-			float light_pdf = 0.0f;
-			RGBSpectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
-			if (bounce != 0) {
-				if (std::isnan(light_pdf) || light_pdf == 0.0f) {
-					break;
-				}
-				misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
-			}
-			radiance += misWeight * history * light_radiance;
 
 			break;
 		}
