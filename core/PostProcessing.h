@@ -85,10 +85,11 @@ class PostProcessing {
 public:
 	PostProcessing() = default;
 
-	PostProcessing(std::shared_ptr<ToneMapper> t) : toneMapper(t) {}
+	PostProcessing(std::shared_ptr<ToneMapper> t, float e = 0.0f) : toneMapper(t), exposure(e) {}
 
 	RGBSpectrum GetScreenColor(const RGBSpectrum& color);
 
 private:
 	std::shared_ptr<ToneMapper> toneMapper;
+	float exposure;
 };

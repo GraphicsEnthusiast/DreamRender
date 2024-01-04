@@ -19,7 +19,7 @@ RGBSpectrum ACES::ToneMapping(const RGBSpectrum& color) {
 }
 
 RGBSpectrum PostProcessing::GetScreenColor(const RGBSpectrum& color) {
-	RGBSpectrum screenColor = LinearToSRGB(toneMapper->ToneMapping(color));
+	RGBSpectrum screenColor = LinearToSRGB(toneMapper->ToneMapping(color * std::exp2(exposure)));
 
 	return screenColor;
 }
