@@ -877,3 +877,114 @@ RGBSpectrum MetalWorkflow::Sample(const Vector3f& V, Vector3f& L, float& pdf, co
 
 	return brdf;
 }
+
+RGBSpectrum ClearCoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+	Vector3f H = glm::normalize(V + L);
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+
+	float NdotV = glm::dot(N, V);
+	float NdotL = glm::dot(N, L);
+
+	if (NdotL <= 0.0f || NdotV <= 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	float F = Fresnel::FresnelDielectric(V, H, 1.0f / 1.5f);
+	float coat_weight = coatWeight * F;
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+
+	float cond_pdf = 0.0f;
+	float coat_pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
+
+	RGBSpectrum cond_brdf = conductor->Evaluate(V, L, cond_pdf, info);
+	RGBSpectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
+	RGBSpectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
+
+	pdf = coat_weight * coat_pdf + (1.0f - coat_weight) * cond_pdf;
+
+	return brdf;
+}
+
+RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+
+	Vector3f H;
+	float F = Fresnel::FresnelDielectric(V, N, 1.0f / 1.5f);
+	float coat_weight = coatWeight * F;
+	if (sampler->Get1() < coat_weight) {
+		H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
+		H = ToWorld(H, N);
+		L = glm::reflect(-V, H);
+
+		float NdotV = glm::dot(N, V);
+		float NdotL = glm::dot(N, L);
+
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+		F = Fresnel::FresnelDielectric(V, H, 1.0f / 1.5f);
+		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+		float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+		float coat_pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
+		float cond_pdf = 0.0f;
+
+		RGBSpectrum cond_brdf = conductor->Evaluate(V, L, cond_pdf, info);
+		RGBSpectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
+		RGBSpectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
+
+		pdf = coat_weight * coat_pdf + (1.0f - coat_weight) * cond_pdf;
+
+		return brdf;
+	}
+	else {
+		float cond_pdf = 0.0f;
+		RGBSpectrum cond_brdf = conductor->Sample(V, L, cond_pdf, info, sampler);
+		
+		H = glm::normalize(V + L);
+
+		float NdotV = glm::dot(N, V);
+		float NdotL = glm::dot(N, L);
+
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+		F = Fresnel::FresnelDielectric(V, H, 1.0f / 1.5f);
+		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+		float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+		float coat_pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
+
+		RGBSpectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
+		RGBSpectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
+
+		pdf = coat_weight * coat_pdf + (1.0f - coat_weight) * cond_pdf;
+
+		return brdf;
+	}
+}

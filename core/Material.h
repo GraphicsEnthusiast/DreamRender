@@ -175,3 +175,20 @@ private:
 	std::shared_ptr<Texture> roughnessTexture_v;
 	std::shared_ptr<Texture> metallicTexture;
 };
+
+class ClearCoatedConductor : public Material {
+public:
+	ClearCoatedConductor(std::shared_ptr<Conductor> con, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, float coatweight, 
+		std::shared_ptr<Texture> normal = NULL) :
+		Material(MaterialType::ClearCoatedConductorMaterial, normal), conductor(con), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), coatWeight(coatweight) {}
+
+	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+
+private:
+	std::shared_ptr<Conductor> conductor;
+	std::shared_ptr<Texture> roughnessTexture_u;
+	std::shared_ptr<Texture> roughnessTexture_v;
+	float coatWeight;
+};
