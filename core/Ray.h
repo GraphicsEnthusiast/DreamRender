@@ -40,8 +40,10 @@ public:
 		return direction;
 	}
 
+private:
 	static Point3f OffsetRayOrigin(const Point3f& p, const Vector3f& pError, const Vector3f& N, const Vector3f& L);
 
+public:
 	static Ray SpawnRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng);
 
 private:
