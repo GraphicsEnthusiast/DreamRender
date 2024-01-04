@@ -15,8 +15,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 	float bp_pdf = 0.0f;// bsdf or phase pdf
 
 	for (int bounce = 0; bounce < maxBounce; bounce++) {
-		RTCRay rtc_ray = RayToRTCRay(ray);
-		RTCRayHit rtc_rayhit = MakeRayHit(rtc_ray);
+		RTCRayHit rtc_rayhit = MakeRayHit(ray.GetOrg(), ray.GetDir());
 		scene->TraceRay(rtc_rayhit, info);
 
 		// Hit nothing
@@ -109,6 +108,7 @@ void VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBSpectrum*
 			}
 
 			image[j * width + i] = const_cast<PostProcessing&>(post).GetScreenColor(radiance);
+			//image[j * width + i] = radiance;
 		}
 	}
 	sampler->NextSample();

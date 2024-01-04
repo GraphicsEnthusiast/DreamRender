@@ -116,7 +116,7 @@ float GGX::GeometrySmith1(const Vector3f& V, const Vector3f& H, const Vector3f& 
 		return 0.0f;
 	}
 
-	if (std::abs(cos_v_n - 1.0f) < 1e-4f) {
+	if (std::abs(cos_v_n - 1.0f) < Epsilon) {
 		return 1.0f;
 	}
 
@@ -330,4 +330,116 @@ RGBSpectrum Conductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const 
 	RGBSpectrum brdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
 
 	return brdf;
+}
+
+RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
+
+	Vector3f N = info.Ns;
+	Vector3f H;
+
+	bool isReflect = glm::dot(N, L) * glm::dot(N, V) > 0.0f;
+	if (isReflect) {
+		H = glm::normalize(V + L);
+	}
+	else {
+		H = -glm::normalize(etai_over_etat * V + L);
+		if (glm::dot(N, H) < 0.0f) {
+			H = -H;
+		}
+	}
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
+
+	float NdotV = abs(dot(N, V));
+	float NdotL = abs(dot(N, L));
+
+	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	RGBSpectrum bsdf;
+	if (isReflect) {
+		float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
+		pdf = F * Dv * dwh_dwi;
+
+		bsdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+	}
+	else {
+		float HdotV = glm::dot(H, V);
+		float HdotL = glm::dot(H, L);
+		float sqrtDenom = etai_over_etat * HdotV + HdotL;
+		float factor = std::abs(HdotL * HdotV / (NdotL * NdotV));
+
+		float dwh_dwi = std::abs(HdotL) / glm::pow2(sqrtDenom);
+		pdf = (1.0f - F) * Dv * dwh_dwi;
+
+		bsdf = albedo * (1.0f - F) * D * G * factor / glm::pow2(sqrtDenom);
+		bsdf *= glm::pow2(1.0f / etai_over_etat);
+	}
+
+	return bsdf;
+}
+
+RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
+
+	Vector3f N = info.Ns;
+	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
+	H = ToWorld(H, N);
+
+	RGBSpectrum bsdf;
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	if (sampler->Get1() < F) {
+		L = glm::reflect(-V, H);
+
+		if (glm::dot(N, L) <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
+		pdf = F * Dv * dwh_dwi;
+
+		float NdotV = std::abs(glm::dot(N, V));
+		float NdotL = std::abs(glm::dot(N, L));
+		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+
+		bsdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+	}
+	else {
+		L = glm::refract(-V, H, etai_over_etat);
+
+		if (glm::dot(N, L) * glm::dot(N, V) >= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+
+		float NdotV = std::abs(glm::dot(N, V));
+		float NdotL = std::abs(glm::dot(N, L));
+		float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+
+		float HdotV = glm::dot(H, V);
+		float HdotL = glm::dot(H, L);
+		float sqrtDenom = etai_over_etat * HdotV + HdotL;
+		float factor = std::abs(HdotL * HdotV / (NdotL * NdotV));
+
+		float dwh_dwi = std::abs(HdotL) / glm::pow2(sqrtDenom);
+		pdf = (1.0f - F) * Dv * dwh_dwi;
+
+		bsdf = albedo * (1.0f - F) * D * G * factor / glm::pow2(sqrtDenom);
+		bsdf *= glm::pow2(1.0f / etai_over_etat);
+	}
+
+	return bsdf;
 }

@@ -109,7 +109,7 @@ using Point4u = Vector4u;
 constexpr float FloatOneMinusEpsilon = 0x1.fffffep-1f;
 constexpr float MaxFloat = std::numeric_limits<float>::max();
 constexpr float Infinity = std::numeric_limits<float>::infinity();
-constexpr float ShadowEpsilon = 1e-4f;
+constexpr float Epsilon = 1e-4f;
 constexpr float PI = 3.1415926535897932385f;
 constexpr float INV_PI = 1.0f / PI;
 constexpr float INV_2PI = 1.0f / (2.0f * PI);
@@ -245,4 +245,58 @@ inline void SetRayOrg(RTCRayHit& rayhit, const Point3f& org) {
 	rayhit.ray.org_x = org.x;
 	rayhit.ray.org_y = org.y;
 	rayhit.ray.org_z = org.z;
+}
+
+inline uint32_t FloatToBits(float f) {
+	uint32_t ui;
+	memcpy(&ui, &f, sizeof(float));
+
+	return ui;
+}
+
+inline float BitsToFloat(uint32_t ui) {
+	float f;
+	memcpy(&f, &ui, sizeof(uint32_t));
+
+	return f;
+}
+
+inline float NextFloatUp(float v) {
+	// Handle infinity and negative zero for _NextFloatUp()_
+	if (std::isinf(v) && v > 0.0f) {
+		return v;
+	}
+	if (v == -0.0f) {
+		v = 0.0f;
+	}
+
+	// Advance _v_ to next higher float
+	uint32_t ui = FloatToBits(v);
+	if (v >= 0) {
+		++ui;
+	}
+	else {
+		--ui;
+	}
+
+	return BitsToFloat(ui);
+}
+
+inline float NextFloatDown(float v) {
+	// Handle infinity and positive zero for _NextFloatDown()_
+	if (std::isinf(v) && v < 0.0f) {
+		return v;
+	}
+	if (v == 0.0f) {
+		v = -0.0f;
+	}
+	uint32_t ui = FloatToBits(v);
+	if (v > 0) {
+		--ui;
+	}
+	else {
+		++ui;
+	}
+
+	return BitsToFloat(ui);
 }
