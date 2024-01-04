@@ -21,12 +21,7 @@ Point3f Ray::OffsetRayOrigin(const Point3f& p, const Vector3f& pError, const Vec
 }
 
 Ray Ray::SpawnRay(const Point3f& pos, const Vector3f& L, const Vector3f& Ng) {
-	Vector3f N = Ng;
-	if (glm::dot(L, Ng) < 0.0f) {
-		N = -Ng;
-	}
-
-	Ray ray(OffsetRayOrigin(pos, Vector3f(Epsilon), N, L), L);
+	Ray ray(OffsetRayOrigin(pos, Vector3f(Epsilon), Ng, L), L);
 
 	return ray;
 }

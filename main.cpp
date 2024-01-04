@@ -13,7 +13,8 @@ int main() {
 
 	float albedo[3] = { 1.0f, 1.0f, 1.0f };
 	float albedo2[3] = { 0.1f, 0.8f, 1.0f };
-	float roughness[3] = { 0.1f, 0.1f, 0.1f };
+	float roughness[3] = { 0.1f };
+	float roughness2[3] = { 0.4f };
 	float radiance[3] = { 5.0f, 5.0f, 5.0f };
 	float radiance2[3] = { 5.0f, 0.0f, 0.0f };
 	float eta[3] = { 2.76404, 1.95417, 1.62766 };
@@ -22,7 +23,7 @@ int main() {
 	auto material2 = std::make_shared<DiffuseLight>(RGBSpectrum::FromRGB(radiance));
 	auto material3 = std::make_shared<DiffuseLight>(RGBSpectrum::FromRGB(radiance2));
 	auto material4 = std::make_shared<Diffuse>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo2)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)));
-	auto material5 = std::make_shared<Conductor>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
+	auto material5 = std::make_shared<Conductor>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness2)),
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), RGBSpectrum::FromRGB(eta), RGBSpectrum::FromRGB(k));
 	auto material6 = std::make_shared<Dielectric>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 1.5f, 1.0f);
