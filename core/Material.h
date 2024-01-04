@@ -41,7 +41,7 @@ enum MaterialType {
 
 class Material {
 public:
-	Material(MaterialType type) : m_type(type) {}
+	Material(MaterialType type, std::shared_ptr<Texture> normal = NULL) : m_type(type), normalTexture(normal) {}
 
 	inline MaterialType GetType() const {
 		return m_type;
@@ -55,6 +55,7 @@ public:
 
 protected:
 	MaterialType m_type;
+	std::shared_ptr<Texture> normalTexture;
 };
 
 class DiffuseLight : public Material {
@@ -73,8 +74,8 @@ private:
 
 class Diffuse : public Material {
 public:
-	Diffuse(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness) : 
-		Material(MaterialType::DiffuseMaterial), albedoTexture(albedo), roughnessTexture(roughness) {}
+	Diffuse(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness, std::shared_ptr<Texture> normal = NULL) :
+		Material(MaterialType::DiffuseMaterial, normal), albedoTexture(albedo), roughnessTexture(roughness) {}
 
 	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
@@ -87,8 +88,9 @@ private:
 
 class Conductor : public Material {
 public:
-	Conductor(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, const RGBSpectrum& et, const RGBSpectrum& kk) :
-		Material(MaterialType::ConductorMaterial), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(et), k(kk) {}
+	Conductor(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, const RGBSpectrum& et, const RGBSpectrum& kk, 
+		std::shared_ptr<Texture> normal = NULL) :
+		Material(MaterialType::ConductorMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(et), k(kk) {}
 
 	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
@@ -104,8 +106,9 @@ private:
 
 class Dielectric : public Material {
 public:
-	Dielectric(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, float int_ior, float ext_ior) :
-		Material(MaterialType::DielectricMaterial), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(int_ior / ext_ior) {}
+	Dielectric(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, float int_ior, float ext_ior, 
+		std::shared_ptr<Texture> normal = NULL) :
+		Material(MaterialType::DielectricMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(int_ior / ext_ior) {}
 
 	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 

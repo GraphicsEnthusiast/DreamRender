@@ -1,5 +1,16 @@
 #include "Material.h"
 
+Vector3f NormalFromTangentToWorld(const Vector3f& n, Vector3f tangentNormal) {
+	tangentNormal = glm::normalize(tangentNormal * 2.0f - 1.0f);
+
+	// Orthonormal Basis
+	Vector3f UpVector = std::abs(n.z) < 0.9f ? Vector3f(0.0f, 0.0f, 1.0f) : Vector3f(1.0f, 0.0f, 0.0f);
+	Vector3f TangentX = glm::normalize(glm::cross(UpVector, n));
+	Vector3f TangentY = glm::normalize(glm::cross(n, TangentX));
+
+	return glm::normalize(TangentX * tangentNormal.x + TangentY * tangentNormal.y + n * tangentNormal.z);
+}
+
 float Fresnel::FresnelSchlick(float f0, float VdotH) {
 	float tmp = 1.0f - glm::clamp(VdotH, 0.0f, 1.0f);
 	float tmp2 = tmp * tmp;
@@ -212,6 +223,10 @@ RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	float roughness = roughnessTexture->GetColor(info.uv)[0];
 
 	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
 	Vector3f local_L = ToLocal(L, N);
 	Vector3f H = glm::normalize(V + L);
 	float NdotL = local_L.z;
@@ -244,6 +259,10 @@ RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	float roughness = roughnessTexture->GetColor(info.uv)[0];
 
 	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
 	Vector3f local_L = CosineSampleHemisphere(sampler->Get2());
 	L = ToWorld(local_L, N);
 	Vector3f H = glm::normalize(V + L);
@@ -278,6 +297,10 @@ RGBSpectrum Conductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
 	Vector3f H = glm::normalize(V + L);
 
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
@@ -307,6 +330,10 @@ RGBSpectrum Conductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const 
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
 	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 	H = ToWorld(H, N);
 	L = glm::reflect(-V, H);
@@ -339,6 +366,10 @@ RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pd
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
 
 	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
 	Vector3f H;
 
 	bool isReflect = glm::dot(N, L) * glm::dot(N, V) > 0.0f;
@@ -391,6 +422,10 @@ RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
 
 	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
 	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 	H = ToWorld(H, N);
 
