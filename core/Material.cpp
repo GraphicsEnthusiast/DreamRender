@@ -478,3 +478,129 @@ RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 
 	return bsdf;
 }
+
+RGBSpectrum Plastic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	RGBSpectrum kd = albedoTexture->GetColor(info.uv);
+	RGBSpectrum ks = specularTexture->GetColor(info.uv);
+	float d_sum = kd[0] + kd[1] + kd[2];
+	float s_sum = ks[0] + ks[1] + ks[2];
+
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
+	float F_avg = Fresnel::AverageFresnelDielectric(eta);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+	Vector3f H = glm::normalize(V + L);
+
+	float NdotV = glm::dot(N, V);
+	float NdotL = glm::dot(N, L);
+	if (NdotV <= 0.0f || NdotL <= 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	float Fo = Fresnel::FresnelDielectric(V, N, 1.0f / eta);
+	float Fi = Fresnel::FresnelDielectric(L, N, 1.0f / eta);
+	float specular_sampling_weight = s_sum / (s_sum + d_sum);
+	float pdf_specular = Fi * specular_sampling_weight;
+	float pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);
+	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
+
+	RGBSpectrum F = Fresnel::FresnelDielectric(L, H, 1.0f / eta);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+
+	RGBSpectrum brdf = 0.0f;
+	RGBSpectrum diffuse = kd, specular = ks;
+	if (nonlinear) {
+		brdf = diffuse / (RGBSpectrum(1.0f) - diffuse * F_avg);
+	}
+	else {
+		brdf = diffuse / (RGBSpectrum(1.0f) - F_avg);
+	}
+	brdf *= (1.0f - Fi) * (1.0f - Fo) * INV_PI;
+	brdf += specular * F * D * G / (4.0f * NdotL * NdotV);
+
+	pdf = pdf_specular * Dv * std::abs(1.0f / (4.0f * glm::dot(V, H))) + (1.0f - pdf_specular) * CosinePdfHemisphere(NdotL);
+
+	return brdf;
+}
+
+RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	RGBSpectrum kd = albedoTexture->GetColor(info.uv);
+	RGBSpectrum ks = specularTexture->GetColor(info.uv);
+	float d_sum = kd[0] + kd[1] + kd[2];
+	float s_sum = ks[0] + ks[1] + ks[2];
+
+	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
+	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
+	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
+	float F_avg = Fresnel::AverageFresnelDielectric(eta);
+
+	Vector3f N = info.Ns;
+	if (normalTexture != NULL) {
+		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
+	}
+	float Fo = Fresnel::FresnelDielectric(V, N, 1.0f / eta);
+	float Fi = Fo;
+	float specular_sampling_weight = s_sum / (s_sum + d_sum);
+	float pdf_specular = Fi * specular_sampling_weight;
+	float pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);
+	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
+
+	RGBSpectrum brdf(0.0f);
+	Vector3f H;
+	float NdotL = 0.0f;
+	float NdotV = glm::dot(N, V);
+	if (sampler->Get1() < pdf_specular) {
+		H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
+		H = ToWorld(H, N);
+		L = glm::reflect(-V, H);
+
+		NdotL = glm::dot(N, L);
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+	}
+	else {
+		Vector3f local_L = CosineSampleHemisphere(sampler->Get2());
+		L = ToWorld(local_L, N);
+		H = glm::normalize(V + L);
+		Fi = Fresnel::FresnelDielectric(L, N, 1.0f / eta);
+
+		NdotL = dot(N, L);
+		if (NdotL <= 0.0f || NdotV <= 0.0f) {
+			pdf = 0.0f;
+
+			return RGBSpectrum(0.0f);
+		}
+	}
+	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
+	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
+	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
+	RGBSpectrum F = Fresnel::FresnelDielectric(L, H, 1.0f / eta);
+
+	RGBSpectrum diffuse = kd, specular = ks;
+	if (nonlinear) {
+		brdf = diffuse / (RGBSpectrum(1.0f) - diffuse * F_avg);
+	}
+	else {
+		brdf = diffuse / (RGBSpectrum(1.0f) - F_avg);
+	}
+	brdf *= (1.0f - Fi) * (1.0f - Fo) * INV_PI;
+	brdf += specular * F * D * G / (4.0f * NdotL * NdotV);
+
+	pdf = pdf_specular * Dv * std::abs(1.0f / (4.0f * glm::dot(V, H))) + (1.0f - pdf_specular) * CosinePdfHemisphere(NdotL);
+
+	return brdf;
+}
