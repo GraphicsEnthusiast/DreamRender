@@ -37,7 +37,8 @@ enum MaterialType {
 	ThinDielectricMaterial,
 	MetalWorkflowMaterial,
 	ClearCoatedConductorMaterial,
-	DiffuseTransmitterMaterial
+	DiffuseTransmitterMaterial,
+	MixtureMaterial
 };
 
 class Material {
@@ -205,4 +206,19 @@ public:
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
+};
+
+class Mixture : public Material {
+public:
+	Mixture(std::shared_ptr<Material> m1, std::shared_ptr<Material> m2, float w) :
+		Material(MaterialType::MixtureMaterial, NULL), material1(m1), material2(m2), weight(glm::clamp(w, 0.0f, 1.0f)) {}
+
+	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+
+private:
+	std::shared_ptr<Material> material1;
+	std::shared_ptr<Material> material2;
+	float weight;
 };

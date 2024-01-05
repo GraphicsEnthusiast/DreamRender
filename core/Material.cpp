@@ -1038,3 +1038,36 @@ RGBSpectrum DiffuseTransmitter::Sample(const Vector3f& V, Vector3f& L, float& pd
 
 	return btdf;
 }
+
+RGBSpectrum Mixture::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	float pdf1 = 0.0f;
+	RGBSpectrum bsdf1 = material1->Evaluate(V, L, pdf1, info);
+	float pdf2 = 0.0f;
+	RGBSpectrum bsdf2 = material1->Evaluate(V, L, pdf2, info);
+
+	pdf = weight * pdf1 + (1.0f - weight) * pdf2;
+	RGBSpectrum bsdf = weight * bsdf1 + (1.0f - weight) * bsdf2;
+
+	return bsdf;
+}
+
+RGBSpectrum Mixture::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	float pdf1 = 0.0f;
+	Vector3f L1;
+	RGBSpectrum bsdf1 = material1->Sample(V, L1, pdf1, info, sampler);
+	float pdf2 = 0.0f;
+	Vector3f L2;
+	RGBSpectrum bsdf2 = material1->Sample(V, L2, pdf2, info, sampler);
+
+	if (sampler->Get1() < weight) {
+		L = L1;
+	}
+	else {
+		L = L2;
+	}
+
+	pdf = weight * pdf1 + (1.0f - weight) * pdf2;
+	RGBSpectrum bsdf = weight * bsdf1 + (1.0f - weight) * bsdf2;
+
+	return bsdf;
+}
