@@ -1,7 +1,7 @@
 #include "Camera.h"
 
-Pinhole::Pinhole(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect) 
-	: Camera(CameraType::PinholeCamera) {
+Pinhole::Pinhole(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, std::shared_ptr<Medium> med)
+	: Camera(CameraType::PinholeCamera, med) {
 	origin = lookfrom;
 
 	float theta = glm::radians(vfov);
@@ -24,8 +24,8 @@ Ray Pinhole::GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) {
 	return Ray(origin, direction);
 }
 
-Thinlens::Thinlens(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, float aperture)
-	: Camera(CameraType::ThinlensCamera) {
+Thinlens::Thinlens(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, float aperture, std::shared_ptr<Medium> med)
+	: Camera(CameraType::ThinlensCamera, med) {
 	origin = lookfrom;
 	float focus_dist = glm::length(lookfrom - lookat);
 

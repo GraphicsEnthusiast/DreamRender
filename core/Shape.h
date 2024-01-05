@@ -14,8 +14,8 @@ class Shape {
 	friend Light;
 
 public:
-	Shape(ShapeType type, std::shared_ptr<Material> m, const Transform& trans, int geom_id = 0) :
-	    m_type(type), material(m), transform(trans), geometry_id(geom_id) {}
+	Shape(ShapeType type, std::shared_ptr<Material> m, const Transform& trans, std::shared_ptr<Medium> out = NULL , std::shared_ptr<Medium> in = NULL, int geom_id = 0) :
+	    m_type(type), material(m), transform(trans), out_medium(out), in_medium(in), geometry_id(geom_id) {}
 
 	inline ShapeType GetType() const {
 		return m_type;
@@ -27,6 +27,14 @@ public:
 
 	inline std::shared_ptr<Material> GetMaterial() const {
 		return material;
+	}
+
+	inline std::shared_ptr<Medium> GetOutMedium() const {
+		return out_medium;
+	}
+
+	inline std::shared_ptr<Medium> GetInMedium() const {
+		return in_medium;
 	}
 
 	inline virtual Vector3f GetGeometryNormal(uint32_t faceID, const Point2f& barycentric) const {
@@ -50,11 +58,13 @@ protected:
 	Transform transform;
 	int geometry_id;
 	std::shared_ptr<Material> material;
+	std::shared_ptr<Medium> out_medium;
+	std::shared_ptr<Medium> in_medium;
 };
 
 class TriangleMesh : public Shape {
 public:
-	TriangleMesh(std::shared_ptr<Material> m, const std::string& file, const Transform& trans);
+	TriangleMesh(std::shared_ptr<Material> m, const std::string& file, const Transform& trans, std::shared_ptr<Medium> out = NULL, std::shared_ptr<Medium> in = NULL);
 
 	inline uint32_t Vertices() const { 
 		return vertices.size() / 3; 
@@ -142,7 +152,8 @@ class Sphere : public Shape {
 	friend SphereArea;
 
 public:
-	Sphere(std::shared_ptr<Material> m, Point3f cen, float rad) : Shape(ShapeType::SphereShape, m, Transform()), center(cen), radius(rad) {}
+	Sphere(std::shared_ptr<Material> m, Point3f cen, float rad, std::shared_ptr<Medium> out = NULL, std::shared_ptr<Medium> in = NULL) : 
+		Shape(ShapeType::SphereShape, m, Transform(), out, in), center(cen), radius(rad) {}
 
 	// User defined intersection functions for the Sphere primitive
 	static void SphereBoundsFunc(const struct RTCBoundsFunctionArguments* args);
@@ -165,7 +176,8 @@ class Quad : public Shape {
 	friend QuadArea;
 
 public:
-	Quad(std::shared_ptr<Material> m, const Point3f& pos, const Vector3f& uu, const Vector3f& vv) : Shape(ShapeType::QuadShape, m, Transform()), position(pos), u(uu), v(vv) {}
+	Quad(std::shared_ptr<Material> m, const Point3f& pos, const Vector3f& uu, const Vector3f& vv, std::shared_ptr<Medium> out = NULL, std::shared_ptr<Medium> in = NULL) :
+		Shape(ShapeType::QuadShape, m, Transform(), out, in), position(pos), u(uu), v(vv) {}
 
 	// Creating and commiting the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) override;

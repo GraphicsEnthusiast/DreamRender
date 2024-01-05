@@ -13,12 +13,16 @@ enum CameraType {
 
 class Camera {
 public:
-	Camera(CameraType type) : m_type(type) {}
+	Camera(CameraType type, std::shared_ptr<Medium> med = NULL) : m_type(type), medium(med) {}
 
 	virtual Ray GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) = 0;
 
 	inline CameraType GetType() const {
 		return m_type;
+	}
+	
+	inline std::shared_ptr<Medium> GetMedium() const {
+		return medium;
 	}
 
 protected:
@@ -28,18 +32,19 @@ protected:
 	Vector3f horizontal;
 	Vector3f vertical;
 	Vector3f u, v, w;
+	std::shared_ptr<Medium> medium;
 };
 
 class Pinhole : public Camera {
 public:
-	Pinhole(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect);
+	Pinhole(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, std::shared_ptr<Medium> med = NULL);
 
 	virtual Ray GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) override;
 };
 
 class Thinlens : public Camera {
 public:
-	Thinlens(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, float aperture);
+	Thinlens(const Point3f& lookfrom, const Point3f& lookat, const Vector3f& vup, float znear, float vfov, float aspect, float aperture, std::shared_ptr<Medium> med = NULL);
 
 	virtual Ray GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) override;
 

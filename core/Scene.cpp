@@ -84,6 +84,7 @@ void Scene::ClosestHit(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.position = GetHitPos(rayhit);
 	info.material = shapes[id]->GetMaterial();
 	info.geomID = id;
+	info.mi = MediumInterface(shapes[id]->GetInMedium(), shapes[id]->GetOutMedium());
 }
 
 void Scene::Miss(const RTCRayHit& rayhit, IntersectionInfo& info) {
@@ -95,6 +96,7 @@ void Scene::Miss(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.uv = Point2f(0.0f);
 	info.material = NULL;
 	info.geomID = -1;
+	info.mi = MediumInterface(camera->GetMedium());
 }
 
 void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {

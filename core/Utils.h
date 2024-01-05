@@ -131,6 +131,25 @@ constexpr float INV_PI = 1.0f / PI;
 constexpr float INV_2PI = 1.0f / (2.0f * PI);
 constexpr float INV_4PI = 1.0f / (4.0f * PI);
 
+struct MediumInterface {
+	MediumInterface() : in_medium(NULL), out_medium(NULL) {}
+
+	MediumInterface(std::shared_ptr<Medium> medium) : in_medium(medium), out_medium(medium) {}
+
+	MediumInterface(std::shared_ptr<Medium> inside, std::shared_ptr<Medium> outside) : in_medium(inside), out_medium(outside) {}
+
+	inline std::shared_ptr<Medium> GetMedium(bool frontFace) const {
+		if (frontFace) {
+			return out_medium;
+		}
+		else {
+			return in_medium;
+		}
+	}
+
+	std::shared_ptr<Medium> in_medium, out_medium;
+};
+
 struct IntersectionInfo {
 	float t;
 	Point2f uv;
@@ -140,6 +159,7 @@ struct IntersectionInfo {
 	bool frontFace;
 	int geomID;
 	std::shared_ptr<Material> material;
+	MediumInterface mi;
 
 	inline void SetNormal(const Vector3f& dir, const Vector3f& ng, const Vector3f& ns) {
 		frontFace = glm::dot(dir, ng) < 0.0f;
