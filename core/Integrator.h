@@ -4,6 +4,7 @@
 #include "Scene.h"
 #include "Sampler.h"
 #include "Filter.h"
+#include "Medium.h"
 #include "Spectrum.h"
 #include "PostProcessing.h"
 
