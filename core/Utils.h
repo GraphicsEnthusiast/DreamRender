@@ -72,6 +72,7 @@ class ThinDielectric;
 class MetalWorkflow;
 class ClearCoatedConductor;
 class DiffuseTransmitter;
+class Mixture;
 
 class Scene;
 

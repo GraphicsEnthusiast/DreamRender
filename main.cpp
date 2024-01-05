@@ -28,8 +28,8 @@ int main() {
 	auto material4 = std::make_shared<Diffuse>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo2)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)));
 	auto material5 = std::make_shared<Conductor>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness3)),
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness3)), RGBSpectrum::FromRGB(eta), RGBSpectrum::FromRGB(k));
-	auto material6 = std::make_shared<Dielectric>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness2)),
-		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness2)), 1.5f, 1.0f);
+	auto material6 = std::make_shared<Dielectric>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness3)),
+		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness3)), 1.5f, 1.0f);
 	auto material7 = std::make_shared<Plastic>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo2)), std::make_shared<Constant>(RGBSpectrum::FromRGB(specular)), 
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 1.5f, 1.0f, true);
 	auto material8 = std::make_shared<ThinDielectric>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)), std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
@@ -39,7 +39,7 @@ int main() {
 	auto material10 = std::make_shared<ClearCoatedConductor>(material5, std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 2.0f);
 	auto material11 = std::make_shared<DiffuseTransmitter>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)));
-	auto material12 = std::make_shared<Mixture>(material8, material6, 0.4f);
+	auto material12 = std::make_shared<Mixture>(material8, material6, 0.5f);
 	scene.AddShape(new Quad(material4, Point3f(-10.0f, -0.05f, -10.0f), Vector3f(20.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 20.0f)));
 //	scene.AddShape(new Sphere(material8, Point3f(0.0f, 3.0f, 0.0f), 3.0f));
 	scene.AddShape(new TriangleMesh(material12, "teapot.obj", tran));
