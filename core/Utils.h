@@ -36,6 +36,7 @@ class ToneMapper;
 class Reinhard;
 class Uncharted2;
 class ACES;
+class PostProcessing;
 
 class Transform;
 
@@ -95,6 +96,9 @@ class Renderer;
 class PhaseFunction;
 class Isotropic;
 class HenyeyGreenstein;
+
+class Medium;
+class Homogeneous;
 
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;
