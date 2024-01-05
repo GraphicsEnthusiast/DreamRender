@@ -65,6 +65,13 @@ class Hdr;
 class Material;
 class DiffuseLight;
 class Diffuse;
+class Conductor;
+class Dielectric;
+class Plastic;
+class ThinDielectric;
+class MetalWorkflow;
+class ClearCoatedConductor;
+class DiffuseTransmitter;
 
 class Scene;
 

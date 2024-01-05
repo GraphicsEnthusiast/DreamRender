@@ -14,7 +14,7 @@ int main() {
 	float specular[3] = { 1.0f, 1.0f, 1.0f };
 	float albedo[3] = { 1.0f, 1.0f, 1.0f };
 	float albedo2[3] = { 0.1f, 0.5f, 0.6f };
-	float roughness[3] = { 0.1f };
+	float roughness[3] = { 0.2f };
 	float roughness2[3] = { 0.4f };
 	float roughness3[3] = { 0.6f };
 	float metallic[3] = { 0.8f };
@@ -39,9 +39,9 @@ int main() {
 	auto material10 = std::make_shared<ClearCoatedConductor>(material5, std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)),
 		std::make_shared<Constant>(RGBSpectrum::FromRGB(roughness)), 2.0f);
 	auto material11 = std::make_shared<DiffuseTransmitter>(std::make_shared<Constant>(RGBSpectrum::FromRGB(albedo)));
-	scene.AddShape(new Quad(material, Point3f(-10.0f, -0.05f, -10.0f), Vector3f(20.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 20.0f)));
+	scene.AddShape(new Quad(material4, Point3f(-10.0f, -0.05f, -10.0f), Vector3f(20.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 20.0f)));
 //	scene.AddShape(new Sphere(material8, Point3f(0.0f, 3.0f, 0.0f), 3.0f));
-	scene.AddShape(new TriangleMesh(material11, "teapot.obj", tran));
+	scene.AddShape(new TriangleMesh(material6, "teapot.obj", tran));
 //	scene.AddLight(std::make_shared<QuadArea>(new Quad(material2, Point3f(3.0f, 7.0f, 3.0f), Vector3f(-3.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, -3.0f))));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material2, Point3f(8.0f, 10.0f, 8.0f), 3.0f)));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material3, Point3f(14.0f, 8.0f, -14.0f), 3.0f)));
