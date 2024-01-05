@@ -2,7 +2,7 @@
 
 Point3f Ray::OffsetRayOrigin(const Point3f& p, const Vector3f& pError, const Vector3f& N, const Vector3f& L) {
 	float d = glm::dot(glm::abs(N), pError);
-	Vector3f offset = d * Vector3f(N);
+	Vector3f offset = d * N;
 	if (glm::dot(L, N) < 0.0f) {
 		offset = -offset;
 	}
