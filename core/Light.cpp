@@ -198,7 +198,7 @@ RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const
 	Vector3f e1 = v1 - v0;
 	Vector3f e2 = v2 - v0;
 
-	float a = std::sqrt(std::clamp(sampler->Get1(), 0.0f, 1.0f));
+	float a = std::sqrt(sampler->Get1());
 	float b1 = 1.0f - a;
 	float b2 = a * sampler->Get1();
 
