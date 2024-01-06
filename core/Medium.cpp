@@ -87,6 +87,7 @@ Homogeneous::Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum
 }
 
 RGBSpectrum Homogeneous::EvaluateDistance(bool scattered, float distance, float& trans_pdf) {
+	distance = std::min(MaxFloat, distance);
 	RGBSpectrum transmittance(0.0f);
 	trans_pdf = 0.0f;
 	bool valid = false;
@@ -119,6 +120,7 @@ RGBSpectrum Homogeneous::EvaluateDistance(bool scattered, float distance, float&
 }
 
 RGBSpectrum Homogeneous::SampleDistance(float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) {
+	distance = std::min(MaxFloat, distance);
 	scattered = false;
 	float xi_1 = sampler->Get1();
 	RGBSpectrum transmittance(0.0f);
