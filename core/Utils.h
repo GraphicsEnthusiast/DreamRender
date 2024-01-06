@@ -82,6 +82,7 @@ class Light;
 class QuadArea;
 class SphereArea;
 class InfiniteArea;
+class TriangleMeshArea;
 
 class Filter;
 class Box;
@@ -159,6 +160,7 @@ struct IntersectionInfo {
 	Vector3f Ns;
 	bool frontFace;
 	int geomID;
+	int primID;
 	std::shared_ptr<Material> material;
 	MediumInterface mi;
 

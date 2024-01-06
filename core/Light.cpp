@@ -61,7 +61,7 @@ RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const Interse
 
 	float area = glm::length(quad->u) * glm::length(quad->v);
 	pdf = 1.0f / area;
-	pdf *= dist_sq / abs(cos_theta);
+	pdf *= dist_sq / std::abs(cos_theta);
 
 	return Radiance(L);// info record a point on a common shape
 }
@@ -147,4 +147,76 @@ RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const Int
 	pdf = Luminance(radiance) / table.Sum() * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
 
 	return radiance * scale;
+}
+
+TriangleMeshArea::TriangleMeshArea(Shape* s) : Light(LightType::TriangleMeshAreaLight, s) {
+	TriangleMesh* mesh = (TriangleMesh*)shape;
+	areas.resize(mesh->Faces());
+	for (int i = 0; i < mesh->Faces(); i++) {
+		Point3u index = mesh->GetIndices(i);
+		Point3f v0 = mesh->GetVertex(index[0]);
+		Point3f v1 = mesh->GetVertex(index[1]);
+		Point3f v2 = mesh->GetVertex(index[2]);
+		Vector3f e1 = v1 - v0;
+		Vector3f e2 = v2 - v0;
+		areas[i] = glm::length(glm::cross(e1, e2)) / 2.0f;
+	}
+
+	table = AliasTable1D(areas);
+}
+
+RGBSpectrum TriangleMeshArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	TriangleMesh* mesh = (TriangleMesh*)shape;
+	int id = info.primID;
+	float dist = info.t;
+	float cos_theta = glm::dot(L, info.Ng);
+
+	if (cos_theta > 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	float area = areas[id];
+	pdf = 1.0f / area;
+	pdf *= dist * dist / std::abs(cos_theta);
+	pdf *= areas[id] / table.Sum();
+
+	return Radiance(L);
+}
+
+RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	TriangleMesh* mesh = (TriangleMesh*)shape;
+	int id = table.Sample(sampler->Get2());
+	Point3u index = mesh->GetIndices(id);
+	Point3f v0 = mesh->GetVertex(index[0]);
+	Point3f v1 = mesh->GetVertex(index[1]);
+	Point3f v2 = mesh->GetVertex(index[2]);
+	Vector3f e1 = v1 - v0;
+	Vector3f e2 = v2 - v0;
+
+	float a = std::sqrt(std::clamp(sampler->Get1(), 0.0f, 1.0f));
+	float b1 = 1.0f - a;
+	float b2 = a * sampler->Get1();
+
+	Point3f p = v0 + (e1 * b1) + (e2 * b2);
+	L = p - info.position;
+	dist = glm::length(L);
+	L /= dist;
+
+	Vector3f Nl = mesh->GetGeometryNormal(id);
+	float cos_theta = glm::dot(L, Nl);
+
+	if (cos_theta > 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	float area = areas[id];
+	pdf = 1.0f / area;
+	pdf *= dist * dist / std::abs(cos_theta);
+	pdf *= area / table.Sum();
+
+	return Radiance(L);
 }

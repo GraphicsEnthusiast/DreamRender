@@ -7,7 +7,8 @@
 enum LightType {
 	QuadAreaLight,
 	SphereAreaLight,
-	InfiniteAreaLight
+	InfiniteAreaLight,
+	TriangleMeshAreaLight
 };
 
 class Light {
@@ -86,4 +87,17 @@ private:
 	std::shared_ptr<Hdr> hdr;
 	AliasTable2D table;
 	float scale;
+};
+
+class TriangleMeshArea : public Light {
+public:
+	TriangleMeshArea(Shape* s);
+
+	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+
+private:
+	std::vector<float> areas;
+	AliasTable1D table;
 };

@@ -71,7 +71,7 @@ void Scene::ClosestHit(const RTCRayHit& rayhit, IntersectionInfo& info) {
 		Shape* shape = shapes[id];
 		info.uv = shape->GetTexcoords(rayhit.hit.primID, Point2f(rayhit.hit.u, rayhit.hit.v));
 		Vector3f Ns = shape->GetShadeNormal(rayhit.hit.primID, Point2f(rayhit.hit.u, rayhit.hit.v));
-		Vector3f Ng = shape->GetGeometryNormal(rayhit.hit.primID, Point2f(rayhit.hit.u, rayhit.hit.v));
+		Vector3f Ng = shape->GetGeometryNormal(rayhit.hit.primID);
 		info.SetNormal(dir, Ng, Ns);
 	}
 	else {
@@ -84,6 +84,7 @@ void Scene::ClosestHit(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.position = GetHitPos(rayhit);
 	info.material = shapes[id]->GetMaterial();
 	info.geomID = id;
+	info.primID = rayhit.hit.primID;
 	info.mi = MediumInterface(shapes[id]->GetInMedium(), shapes[id]->GetOutMedium());
 }
 
@@ -96,6 +97,7 @@ void Scene::Miss(const RTCRayHit& rayhit, IntersectionInfo& info) {
 	info.uv = Point2f(0.0f);
 	info.material = NULL;
 	info.geomID = -1;
+	info.primID = -1;
 	info.mi = MediumInterface(camera->GetMedium());
 }
 
