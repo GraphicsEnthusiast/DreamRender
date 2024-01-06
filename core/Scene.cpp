@@ -140,7 +140,7 @@ RGBSpectrum Scene::SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_t
 				RGBSpectrum transmittance = medium->EvaluateDistance(false, shadowInfo.t, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
-					break;
+					return RGBSpectrum(0.0f);
 				}
 	
 				history *= (transmittance / trans_pdf);
@@ -156,7 +156,7 @@ RGBSpectrum Scene::SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_t
 				RGBSpectrum transmittance = medium->EvaluateDistance(false, dist, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
-					break;
+					return RGBSpectrum(0.0f);
 				}
 
 				history *= (transmittance / trans_pdf);
