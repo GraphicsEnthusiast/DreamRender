@@ -80,19 +80,20 @@ RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const Intersecti
 RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	Sphere* sphere = (Sphere*)shape;
 	Vector3f dir = sphere->center - info.position;
-	float dist_sq = dot(dir, dir);
-	float inv_dist = 1.0f / sqrt(dist_sq);
+	float dist_sq = glm::dot(dir, dir);
+	float inv_dist = 1.0f / std::sqrt(dist_sq);
 	dir *= inv_dist;
 	float distance = dist_sq * inv_dist;
 
 	float sin_theta = sphere->radius * inv_dist;
 	if (sin_theta < 1.0f) {
-		float cos_theta = sqrt(1.0f - sin_theta * sin_theta);
+		float cos_theta = std::sqrt(1.0f - sin_theta * sin_theta);
 		Vector3f local_L = UniformSampleCone(sampler->Get2(), cos_theta);
 		float cos_i = local_L.z;
 		L = ToWorld(local_L, dir);
 		pdf = UniformPdfCone(cos_theta);
 		dist = cos_i * distance - std::sqrt(std::max(0.0f, sphere->radius * sphere->radius - (1.0f - cos_i * cos_i) * dist_sq));
+		//dist = distance - sphere->radius;
 
 		return shape->GetMaterial()->Emit();
 	}
