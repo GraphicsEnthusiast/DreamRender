@@ -38,7 +38,7 @@ RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const Intersection
 	float distance = info.t;
 	pdf *= glm::pow2(distance) / std::abs(cos_theta);
 
-	return Radiance(L);// info record a point on a light source
+	return shape->GetMaterial()->Emit();// info record a point on a light source
 }
 
 RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
@@ -63,7 +63,7 @@ RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const Interse
 	pdf = 1.0f / area;
 	pdf *= dist_sq / std::abs(cos_theta);
 
-	return Radiance(L);// info record a point on a common shape
+	return shape->GetMaterial()->Emit();// info record a point on a common shape
 }
 
 RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
@@ -74,7 +74,7 @@ RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const Intersecti
 	float cos_theta = std::sqrt(1.0f - sin_theta_sq);
 	pdf = UniformPdfCone(cos_theta);
 
-	return Radiance(L);
+	return shape->GetMaterial()->Emit();
 }
 
 RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
@@ -94,7 +94,7 @@ RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const Inter
 		pdf = UniformPdfCone(cos_theta);
 		dist = cos_i * distance - std::sqrt(std::max(0.0f, sphere->radius * sphere->radius - (1.0f - cos_i * cos_i) * dist_sq));
 
-		return Radiance(L);
+		return shape->GetMaterial()->Emit();
 	}
 
 	pdf = 0.0f;
@@ -124,7 +124,9 @@ RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	int mWidth = hdr->nx;
 	int mHeight = hdr->ny;
 
-	RGBSpectrum radiance = Radiance(L);
+	Point2f planeUV = SphereToPlane(L);
+
+	RGBSpectrum radiance = hdr->GetColor(planeUV);
 
 	pdf = Luminance(radiance) / table.Sum() * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
 
@@ -182,7 +184,7 @@ RGBSpectrum TriangleMeshArea::Evaluate(const Vector3f& L, float& pdf, const Inte
 	pdf *= dist * dist / std::abs(cos_theta);
 	pdf *= areas[id] / table.Sum();
 
-	return Radiance(L);
+	return shape->GetMaterial()->Emit();
 }
 
 RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
@@ -218,5 +220,5 @@ RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const
 	pdf *= dist * dist / std::abs(cos_theta);
 	pdf *= area / table.Sum();
 
-	return Radiance(L);
+	return shape->GetMaterial()->Emit();
 }
