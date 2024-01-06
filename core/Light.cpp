@@ -182,7 +182,7 @@ RGBSpectrum TriangleMeshArea::Evaluate(const Vector3f& L, float& pdf, const Inte
 	float area = areas[id];
 	pdf = 1.0f / area;
 	pdf *= dist * dist / std::abs(cos_theta);
-	pdf *= areas[id] / table.Sum();
+	pdf *= area / table.Sum();
 
 	return shape->GetMaterial()->Emit();
 }
