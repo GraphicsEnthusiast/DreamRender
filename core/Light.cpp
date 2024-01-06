@@ -202,7 +202,7 @@ RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const
 	float b1 = 1.0f - a;
 	float b2 = a * sampler->Get1();
 
-	Point3f p = v0 + (e1 * b1) + (e2 * b2);
+	Point3f p = v0 + e1 * b1 + e2 * b2;
 	L = p - info.position;
 	dist = glm::length(L);
 	L /= dist;
