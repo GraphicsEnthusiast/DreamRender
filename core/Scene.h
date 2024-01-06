@@ -4,6 +4,7 @@
 #include "Shape.h"
 #include "Camera.h"
 #include "Light.h"
+#include "Medium.h"
 
 class Scene {
 public:
@@ -23,7 +24,7 @@ public:
 
 	void TraceRay(RTCRayHit& rayhit, IntersectionInfo& info);
 
-	RGBSpectrum SampleLightEnvironment(Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler);
+	RGBSpectrum SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_trans_pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler);
 
 	RGBSpectrum EvaluateLight(int geomID, const Vector3f&L, float& pdf, const IntersectionInfo& info);
 

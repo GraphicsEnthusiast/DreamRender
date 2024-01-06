@@ -12,7 +12,9 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 	RGBSpectrum history(1.0f);
 	Vector3f V = -ray.GetDir();
 	Vector3f L = ray.GetDir();
+	Point3f pre_position = ray.GetOrg();
 	float bp_pdf = 0.0f;// bsdf or phase pdf
+	float mult_trans_pdf = 1.0f;
 
 	auto HitNothing = [](const IntersectionInfo& info) ->bool {
 		return info.t == Infinity;
@@ -26,62 +28,150 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		return info.material->GetType() == MaterialType::DiffuseLightMaterial;
 	};
 
+	auto HitMediumBoundary = [](const IntersectionInfo& info) -> bool {
+		if (info.material == NULL) {
+			return false;
+		}
+
+		return info.material->GetType() == MaterialType::MediumBoundaryMaterial;
+	};
+
+	auto UpdateMediumInfo = [](IntersectionInfo& info, float actual_distance, const Point3f& pre_position, const Vector3f& L) -> void {
+		info.position = pre_position + actual_distance * L;
+		info.t = actual_distance;
+		info.frontFace = true;
+		info.Ng = Vector3f(0.0f);
+		info.Ns = Vector3f(0.0f);
+		info.uv = Point2f(0.0f);
+		info.material = NULL;
+		info.geomID = -1;
+	};
+
 	for (int bounce = 0; bounce < maxBounce; bounce++) {
 		RTCRayHit rtc_rayhit = MakeRayHit(ray.GetOrg(), ray.GetDir());
 		scene->TraceRay(rtc_rayhit, info);
 
-		// Hit light
-		if (HitLight(info)) {
-			float misWeight = 1.0f;
-			float light_pdf = 0.0f;
-			RGBSpectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
-			if (bounce != 0) {
-				if (std::isnan(light_pdf) || light_pdf == 0.0f) {
-					break;
-				}
-				misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
-			}
-			radiance += misWeight * history * light_radiance;
+		auto medium = info.mi.GetMedium(HitLight(info) ? true : info.frontFace);
+		bool scattered = false;
+		float trans_pdf = 0.0f;
+		float actual_distance = 0.0f;
+		RGBSpectrum transmittance(0.0f);
 
-			break;
-		}
+		if (medium != NULL) {
+			// Sample medium distance
+			transmittance = medium->SampleDistance(info.t, actual_distance, trans_pdf, scattered, sampler);
 
-		// Hit nothing
-		if (HitNothing(info)) {
-			float misWeight = 1.0f;
-			float light_pdf = 0.0f;
-			RGBSpectrum back_radiance = scene->EvaluateEnvironment(L, light_pdf);
-			if (bounce != 0) {
-				if (std::isnan(light_pdf) || light_pdf == 0.0f) {
-					break;
-				}
-				misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
+			if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
+				break;
 			}
 
-			radiance += misWeight * history * back_radiance;
+			history *= (transmittance / trans_pdf);
+			mult_trans_pdf *= trans_pdf;
+		
+			if (scattered) {
+				UpdateMediumInfo(info, actual_distance, pre_position, L);
+		
+				// Sample light
+				Vector3f lightL;
+				float light_pdf = 0.0f;
+				float phase_pdf = 0.0f;
+				float mult_trans_pdf_nee = 1.0f;
+				RGBSpectrum light_radiance = scene->SampleLightEnvironment(lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
+				RGBSpectrum attenuation = medium->GetPhaseFunction()->Evaluate(V, lightL, phase_pdf, info);
+				phase_pdf *= mult_trans_pdf_nee;
 
-			break;
+				if (!(std::isnan(phase_pdf) || std::isnan(light_pdf) || phase_pdf == 0.0f || light_pdf == 0.0f)) {
+					float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
+		
+					radiance += misWeight * history * attenuation * light_radiance / light_pdf;
+				}
+		
+				// Sample phase
+				attenuation = medium->GetPhaseFunction()->Sample(V, L, phase_pdf, info, sampler);
+		
+				if (std::isnan(phase_pdf) || phase_pdf == 0.0f) {
+					break;
+				}
+		
+				bp_pdf = phase_pdf;
+				history *= (attenuation / phase_pdf);
+			}
 		}
 
-		float light_pdf = 0.0f, bsdf_pdf = 0.0f;
-		// Sample light
-		Vector3f lightL;
-		RGBSpectrum light_radiance = scene->SampleLightEnvironment(lightL, light_pdf, info, sampler);
-		RGBSpectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
-		float costheta = std::max(glm::dot(info.Ns, lightL), 0.0f);
-		float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);
-		if (!(std::isnan(bsdf_pdf) || std::isnan(light_pdf) || bsdf_pdf == 0.0f || light_pdf == 0.0f)) {
-			radiance += misWeight * history * bsdf * costheta * light_radiance / light_pdf;
-		}
+		if (!scattered) {
+			// Hit light
+			if (HitLight(info)) {
+				float misWeight = 1.0f;
+				float light_pdf = 0.0f;
+				RGBSpectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
+				bp_pdf *= mult_trans_pdf;
+				if (bounce != 0) {
+					if (std::isnan(light_pdf) || light_pdf == 0.0f) {
+						break;
+					}
 
-		// Sample surface
-		bsdf = info.material->Sample(V, L, bsdf_pdf, info, sampler);
-		bp_pdf = bsdf_pdf;
-		costheta = std::abs(glm::dot(info.Ns, L));
-		if (std::isnan(bsdf_pdf) || bsdf_pdf == 0.0f) {
-			break;
+					misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
+				}
+				radiance += misWeight * history * light_radiance;
+
+				break;
+			}
+
+			// Hit nothing
+			if (HitNothing(info)) {
+				float misWeight = 1.0f;
+				float light_pdf = 0.0f;
+				RGBSpectrum back_radiance = scene->EvaluateEnvironment(L, light_pdf);
+				bp_pdf *= mult_trans_pdf;
+				if (bounce != 0) {
+					if (std::isnan(light_pdf) || light_pdf == 0.0f) {
+						break;
+					}
+
+					misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
+				}
+
+				radiance += misWeight * history * back_radiance;
+
+				break;
+			}
+
+			// Hit medium boundary
+			if (HitMediumBoundary(info)) {
+				V = -L;
+				pre_position = info.position;
+				ray = Ray::SpawnRay(pre_position, L, info.Ng);
+				bounce--;
+
+				continue;
+			}
+
+			float light_pdf = 0.0f, bsdf_pdf = 0.0f;
+			// Sample light
+			Vector3f lightL;
+			float mult_trans_pdf_nee = 1.0f;
+			RGBSpectrum light_radiance = scene->SampleLightEnvironment(lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
+			RGBSpectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
+			bsdf_pdf *= mult_trans_pdf_nee;
+			float costheta = std::max(glm::dot(info.Ns, lightL), 0.0f);
+
+			if (!(std::isnan(bsdf_pdf) || std::isnan(light_pdf) || bsdf_pdf == 0.0f || light_pdf == 0.0f)) {
+				float misWeight = PowerHeuristic(light_pdf, bsdf_pdf, 2);
+
+				radiance += misWeight * history * bsdf * costheta * light_radiance / light_pdf;
+			}
+
+			// Sample surface
+			bsdf = info.material->Sample(V, L, bsdf_pdf, info, sampler);
+			bp_pdf = bsdf_pdf;
+			costheta = std::abs(glm::dot(info.Ns, L));
+
+			if (std::isnan(bsdf_pdf) || bsdf_pdf == 0.0f) {
+				break;
+			}
+
+			history *= (bsdf * costheta / bsdf_pdf);
 		}
-		history *= (bsdf * costheta / bsdf_pdf);
 
 		float prr = std::min((history[0] + history[1] + history[2]) / 3.0f, 0.95f);
 		if (sampler->Get1() > prr) {
@@ -94,6 +184,8 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		}
 
 		V = -L;
+		mult_trans_pdf = 1.0f;
+		pre_position = info.position;
 		ray = Ray::SpawnRay(info.position, L, info.Ng);
 	}
 
@@ -120,7 +212,6 @@ void VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBSpectrum*
 			}
 
 			image[j * width + i] = const_cast<PostProcessing&>(post).GetScreenColor(radiance);
-			//image[j * width + i] = radiance;
 		}
 	}
 	sampler->NextSample();

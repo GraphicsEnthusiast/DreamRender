@@ -201,6 +201,19 @@ RGBSpectrum Material::Emit() {
 	return RGBSpectrum(0.0f);
 }
 
+RGBSpectrum MediumBoundary::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	pdf = 0.0f;
+
+	return RGBSpectrum(0.0f);
+}
+
+RGBSpectrum MediumBoundary::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	L = Vector3f(0.0f);
+	pdf = 0.0f;
+
+	return RGBSpectrum(0.0f);
+}
+
 RGBSpectrum DiffuseLight::Emit() {
 	return radiance;
 }

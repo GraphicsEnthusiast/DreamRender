@@ -64,6 +64,7 @@ class Image;
 class Hdr;
 
 class Material;
+class MediumBoundary;
 class DiffuseLight;
 class Diffuse;
 class Conductor;

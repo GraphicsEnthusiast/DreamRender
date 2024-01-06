@@ -29,6 +29,7 @@ namespace GGX {
 }
 
 enum MaterialType {
+	MediumBoundaryMaterial,
 	DiffuseLightMaterial,
 	DiffuseMaterial,
 	ConductorMaterial,
@@ -58,6 +59,15 @@ public:
 protected:
 	MaterialType m_type;
 	std::shared_ptr<Texture> normalTexture;
+};
+
+class MediumBoundary : public Material {
+public:
+	MediumBoundary() : Material(MaterialType::MediumBoundaryMaterial) {}
+
+	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+
+	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 };
 
 class DiffuseLight : public Material {
