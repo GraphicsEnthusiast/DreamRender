@@ -148,7 +148,7 @@ float GGX::GeometrySmith1(const Vector3f& V, const Vector3f& H, const Vector3f& 
 }
 
 float GGX::Distribution(const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v) {
-	float cos_theta = dot(H, N);
+	float cos_theta = glm::dot(H, N);
 	if (cos_theta <= 0.0f) {
 		return 0.0f;
 	}
