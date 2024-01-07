@@ -53,7 +53,7 @@ enum MediumType {
 
 class Medium {
 public:
-	Medium(MediumType type, std::shared_ptr<PhaseFunction> phase) : m_type(type), phaseFunction(phase) {}
+	Medium(MediumType type, std::shared_ptr<PhaseFunction> phase, float sca = 1.0f) : m_type(type), scale(sca), phaseFunction(phase) {}
 
 	inline MediumType GetType() const {
 		return m_type;
@@ -69,12 +69,13 @@ public:
 
 protected:
 	MediumType m_type;
+	float scale;
 	std::shared_ptr<PhaseFunction> phaseFunction;
 };
 
 class Homogeneous : public Medium {
 public:
-	Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum& s, const RGBSpectrum& a);
+	Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum& s, const RGBSpectrum& a, float sca = 1.0f);
 
 	virtual RGBSpectrum EvaluateDistance(bool scattered, float distance, float& trans_pdf) override;
 

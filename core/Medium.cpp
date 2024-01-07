@@ -73,8 +73,8 @@ RGBSpectrum HenyeyGreenstein::Sample(const Vector3f& V, Vector3f& L, float& pdf,
 	return attenuation;
 }
 
-Homogeneous::Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum& s, const RGBSpectrum& a) :
-	Medium(MediumType::HomogeneousMedium, phase), sigma_s(s), sigma_t(a + s), medium_sampling_weight(0.0f) {
+Homogeneous::Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum& s, const RGBSpectrum& a, float sca) :
+	Medium(MediumType::HomogeneousMedium, phase, sca), sigma_s(s * scale), sigma_t((a + s) * scale), medium_sampling_weight(0.0f) {
 	RGBSpectrum albedo = sigma_s / sigma_t;
 	for (int dim = 0; dim < 3; ++dim) {
 		if (albedo[dim] > medium_sampling_weight && sigma_t[dim] != 0.0f) {
