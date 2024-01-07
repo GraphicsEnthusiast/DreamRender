@@ -174,6 +174,17 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 			history *= (bsdf * costheta / bsdf_pdf);
 		}
 
+		// Update information
+		V = -L;
+		mult_trans_pdf = 1.0f;
+		pre_position = info.position;
+		ray = Ray::SpawnRay(info.position, L, info.Ng);
+
+		// Hit subsurface (bssrdf)
+		// To do
+
+
+		// Russian roulette
 		float prr = std::min((history[0] + history[1] + history[2]) / 3.0f, 0.95f);
 		if (sampler->Get1() > prr) {
 			break;
@@ -183,11 +194,6 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		if (history.HasNaNs()) {
 			break;
 		}
-
-		V = -L;
-		mult_trans_pdf = 1.0f;
-		pre_position = info.position;
-		ray = Ray::SpawnRay(info.position, L, info.Ng);
 	}
 
 	return radiance;
