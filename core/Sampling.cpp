@@ -42,6 +42,9 @@ AliasTable1D::AliasTable1D(const std::vector<float>& distrib) {
 
 int AliasTable1D::Sample(const Point2f& sample) {
 	int rx = sample.x * table.size();
+	if (rx == table.size()) {
+		rx--;
+	}
 	float ry = sample.y;
 
 	return (ry <= table[rx].second / sumDistrib) ? rx : table[rx].first;
