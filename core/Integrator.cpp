@@ -121,6 +121,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 
 					misWeight = PowerHeuristic(bp_pdf, light_pdf, 2);
 				}
+
 				radiance += misWeight * history * light_radiance;
 
 				break;
