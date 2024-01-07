@@ -45,6 +45,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		info.uv = Point2f(0.0f);
 		info.material = NULL;
 		info.geomID = -1;
+		info.primID = -1;
 	};
 
 	for (int bounce = 0; bounce < maxBounce; bounce++) {
