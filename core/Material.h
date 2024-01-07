@@ -18,8 +18,7 @@ enum MaterialType {
 	MetalWorkflowMaterial,
 	ClearCoatedConductorMaterial,
 	DiffuseTransmitterMaterial,
-	MixtureMaterial,
-	SubsurfaceMaterial
+	MixtureMaterial
 };
 
 class Material {

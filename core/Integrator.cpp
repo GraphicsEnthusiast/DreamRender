@@ -20,14 +20,6 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		return info.t == Infinity;
 	};
 
-	auto HitSubsurface = [](const IntersectionInfo& info) ->bool {
-		if (info.material == NULL) {
-			return false;
-		}
-
-		return info.material->GetType() == MaterialType::SubsurfaceMaterial;
-	};
-
 	auto HitLight = [](const IntersectionInfo& info) ->bool {
 		if (info.material == NULL) {
 			return false;
@@ -189,11 +181,6 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		mult_trans_pdf = 1.0f;
 		pre_position = info.position;
 		ray = Ray::SpawnRay(info.position, L, info.Ng);
-
-		// Hit subsurface (bssrdf)
-		if (HitSubsurface(info)) {
-			// To do
-		}
 
 		// Russian roulette
 		if (bounce > 3 && history.MaxComponentValue() < 0.1f) {
