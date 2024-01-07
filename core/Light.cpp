@@ -93,7 +93,6 @@ RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const Inter
 		L = ToWorld(local_L, dir);
 		pdf = UniformPdfCone(cos_theta);
 		dist = cos_i * distance - std::sqrt(std::max(0.0f, sphere->radius * sphere->radius - (1.0f - cos_i * cos_i) * dist_sq));
-		//dist = distance - sphere->radius;
 
 		return shape->GetMaterial()->Emit();
 	}
