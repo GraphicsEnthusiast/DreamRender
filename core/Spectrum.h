@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utils.h"
+#include "Sampling.h"
 
 // Spectrum Utility Declarations
 static const int sampledLambdaStart = 400;
