@@ -28,6 +28,14 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		return info.material->GetType() == MaterialType::DiffuseLightMaterial;
 	};
 
+	auto HitSubsurface = [](const IntersectionInfo& info) ->bool {
+		if (info.material == NULL) {
+			return false;
+		}
+
+		return info.material->GetType() == MaterialType::SubsurfaceMaterial;
+	};
+
 	auto HitMediumBoundary = [](const IntersectionInfo& info) -> bool {
 		if (info.material == NULL) {
 			return false;
@@ -142,6 +150,9 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 				bounce--;
 
 				continue;
+			}
+			else if (HitSubsurface(info)) {// Hit subsurface (bssrdf)
+
 			}
 			else {
 				// Sample light
