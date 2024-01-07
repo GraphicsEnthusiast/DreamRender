@@ -56,8 +56,8 @@ int main() {
 // 	auto material12 = std::make_shared<Mixture>(material8, material6, 0.5f);
 
 	scene.AddShape(new Quad(material4, Point3f(-10.0f, -0.51f, -10.0f), Vector3f(20.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 20.0f), medium, medium));
-	scene.AddShape(new Sphere(material, Point3f(-0.7f, 0.0f, 0.0f), 0.5f, medium2));
-	scene.AddShape(new Sphere(boundary, Point3f(-0.7f, 0.5f, 0.0f), 1.0f, medium, medium2));
+	scene.AddShape(new Sphere(material, Point3f(0.0f, 0.0f, 0.0f), 0.5f, medium2));
+	scene.AddShape(new Sphere(boundary, Point3f(0.0f, 0.5f, 0.0f), 1.0f, medium, medium2));
 //	scene.AddShape(new TriangleMesh(material12, "teapot.obj", tran));
 //	scene.AddLight(std::make_shared<QuadArea>(new Quad(material2, Point3f(3.0f, 7.0f, 3.0f), Vector3f(-3.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, -3.0f))));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material2, Point3f(1.0f, 1.0f, -1.0f), 0.25f, medium)));
