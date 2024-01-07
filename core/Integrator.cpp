@@ -114,6 +114,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 				float light_pdf = 0.0f;
 				RGBSpectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
 				bp_pdf *= mult_trans_pdf;
+
 				if (bounce != 0) {
 					if (std::isnan(light_pdf) || light_pdf == 0.0f) {
 						break;
@@ -132,6 +133,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 				float light_pdf = 0.0f;
 				RGBSpectrum back_radiance = scene->EvaluateEnvironment(L, light_pdf);
 				bp_pdf *= mult_trans_pdf;
+
 				if (bounce != 0) {
 					if (std::isnan(light_pdf) || light_pdf == 0.0f) {
 						break;
@@ -194,11 +196,15 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		}
 
 		// Russian roulette
-		float prr = std::min((history[0] + history[1] + history[2]) / 3.0f, 0.95f);
-		if (sampler->Get1() > prr) {
-			break;
+		if (bounce > 3 && history.MaxComponentValue() < 0.1f) {
+			auto continueProperbility = std::max(0.05f, 1.0f - history.MaxComponentValue());
+
+			if (sampler->Get1() < continueProperbility) {
+				break;
+			}
+
+			history /= (1.0f - continueProperbility);
 		}
-		history /= prr;
 
 		if (history.HasNaNs()) {
 			break;
