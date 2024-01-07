@@ -3,30 +3,9 @@
 #include "Texture.h"
 #include "Sampling.h"
 #include "Sampler.h"
-
-namespace Fresnel {
-	float FresnelSchlick(float f0, float VdotH);
-
-	RGBSpectrum FresnelSchlick(const RGBSpectrum& f0, float VdotH);
-
-	RGBSpectrum FresnelConductor(const Vector3f& V, const Vector3f& H, const RGBSpectrum& eta_r, const RGBSpectrum& eta_i);
-
-	RGBSpectrum AverageFresnelConductor(const RGBSpectrum& eta, const RGBSpectrum& k);
-
-	float FresnelDielectric(const Vector3f& V, const Vector3f& H, float eta_inv);
-
-	float AverageFresnelDielectric(float eta);
-}
-
-namespace GGX {
-	float GeometrySmith1(const Vector3f& V, const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v);
-
-	float Distribution(const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v);
-
-	float DistributionVisible(const Vector3f& V, const Vector3f& H, const Vector3f& N, float alpha_u, float alpha_v);
-
-	Vector3f SampleVisible(const Vector3f& N, const Vector3f& V, float alpha_u, float alpha_v, const Point2f& sample);
-}
+#include "Fresnel.h"
+#include "Microfacet.h"
+#include "Subsurface.h"
 
 enum MaterialType {
 	MediumBoundaryMaterial,
@@ -39,7 +18,8 @@ enum MaterialType {
 	MetalWorkflowMaterial,
 	ClearCoatedConductorMaterial,
 	DiffuseTransmitterMaterial,
-	MixtureMaterial
+	MixtureMaterial,
+	SubsurfaceMaterial
 };
 
 class Material {

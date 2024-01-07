@@ -178,7 +178,7 @@ float InterpolateSpectrumSamples(const float* lambda, const float* vals, int n, 
 	if (l >= lambda[n - 1]) {
 		return vals[n - 1];
 	}
-	int offset = FindInterval(n, [&](int index) { return lambda[index] <= l; });
+	int offset = IntervalSearch(n, [&](int index) { return lambda[index] <= l; });
 	assert(l >= lambda[offset] && l <= lambda[offset + 1]);
 	float t = (l - lambda[offset]) / (lambda[offset + 1] - lambda[offset]);
 
@@ -1273,7 +1273,7 @@ void ResampleLinearSpectrum(const float* lambdaIn, const float* vIn, int nIn,
 			// Virtual sample at the start, as described above.
 			start = -1;
 		else {
-			start = FindInterval(
+			start = IntervalSearch(
 				nIn, [&](int i) { return lambdaIn[i] <= lambda - delta; });
 			assert(start >= 0 && start < nIn);
 		}
