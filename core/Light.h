@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include "Shape.h"
 #include "Texture.h"
+#include "Spectrum.h"
 
 enum LightType {
 	QuadAreaLight,
