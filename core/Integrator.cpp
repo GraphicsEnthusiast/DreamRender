@@ -147,8 +147,8 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 				continue;
 			}
 
-			float light_pdf = 0.0f, bsdf_pdf = 0.0f;
 			// Sample light
+			float light_pdf = 0.0f, bsdf_pdf = 0.0f;
 			Vector3f lightL;
 			float mult_trans_pdf_nee = 1.0f;
 			RGBSpectrum light_radiance = scene->SampleLightEnvironment(lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
