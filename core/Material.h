@@ -5,7 +5,6 @@
 #include "Sampler.h"
 #include "Fresnel.h"
 #include "Microfacet.h"
-#include "Subsurface.h"
 
 enum MaterialType {
 	MediumBoundaryMaterial,
