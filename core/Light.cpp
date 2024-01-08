@@ -128,7 +128,7 @@ RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 
 	RGBSpectrum radiance = hdr->GetColor(planeUV);
 
-	float theta = planeUV[1] * PI;
+	float theta = planeUV.y * PI;
 	float sinTheta = std::sin(theta);
 
 	if (sinTheta == 0.0f) {
@@ -155,7 +155,7 @@ RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const Int
 
 	RGBSpectrum radiance = hdr->GetColor(planeUV);
 
-	float theta = planeUV[1] * PI;
+	float theta = planeUV.y * PI;
 	float sinTheta = std::sin(theta);
 
 	if (sinTheta == 0.0f) {
