@@ -128,7 +128,16 @@ RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 
 	RGBSpectrum radiance = hdr->GetColor(planeUV);
 
-	pdf = Luminance(radiance) / table.Sum() * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
+	float theta = planeUV[1] * PI;
+	float sinTheta = std::sin(theta);
+
+	if (sinTheta == 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	pdf = (Luminance(radiance) / table.Sum()) * (float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI / sinTheta);
 
 	return radiance * scale;
 }
@@ -146,7 +155,16 @@ RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const Int
 
 	RGBSpectrum radiance = hdr->GetColor(planeUV);
 
-	pdf = Luminance(radiance) / table.Sum() * float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI;
+	float theta = planeUV[1] * PI;
+	float sinTheta = std::sin(theta);
+
+	if (sinTheta == 0.0f) {
+		pdf = 0.0f;
+
+		return RGBSpectrum(0.0f);
+	}
+
+	pdf = (Luminance(radiance) / table.Sum()) * (float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI / sinTheta);
 
 	return radiance * scale;
 }
@@ -194,14 +212,12 @@ RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const
 	Point3f v0 = mesh->GetVertex(index[0]);
 	Point3f v1 = mesh->GetVertex(index[1]);
 	Point3f v2 = mesh->GetVertex(index[2]);
-	Vector3f e1 = v1 - v0;
-	Vector3f e2 = v2 - v0;
 
 	float a = std::sqrt(sampler->Get1());
 	float b1 = 1.0f - a;
 	float b2 = a * sampler->Get1();
 
-	Point3f p = v0 + e1 * b1 + e2 * b2;
+	Point3f p = (1.0f - b1 - b2) * v0 + v1 * b1 + v2 * b2;
 	L = p - info.position;
 	dist = glm::length(L);
 	L /= dist;

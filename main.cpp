@@ -61,9 +61,9 @@ int main() {
 //	scene.AddShape(new TriangleMesh(material12, "teapot.obj", tran));
 //	scene.AddLight(std::make_shared<QuadArea>(new Quad(material2, Point3f(3.0f, 7.0f, 3.0f), Vector3f(-3.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, -3.0f))));
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material2, Point3f(1.0f, 1.0f, 1.0f), 0.25f, medium)));
-	scene.AddLight(std::make_shared<TriangleMeshArea>(new TriangleMesh(material2, "sphere.obj", tran2, medium)));
+//	scene.AddLight(std::make_shared<TriangleMeshArea>(new TriangleMesh(material2, "sphere.obj", tran2, medium)));//
 // 	scene.AddLight(std::make_shared<SphereArea>(new Sphere(material3, Point3f(14.0f, 8.0f, -14.0f), 3.0f)));
-//	scene.AddLight(std::make_shared<InfiniteArea>(std::make_shared<Hdr>("spruit_sunrise_4k.hdr"), 1.0f));
+	scene.AddLight(std::make_shared<InfiniteArea>(std::make_shared<Hdr>("spruit_sunrise_4k.hdr"), 1.0f));
 	scene.SetCamera(std::make_shared<Pinhole>(camera));
 	scene.Commit();
 
