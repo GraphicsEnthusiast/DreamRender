@@ -33,6 +33,7 @@ public:
 		for (int i = 0; i < N; i++) {
 			ret[i] = Get1();
 		}
+
 		return ret;
 	}
 
