@@ -53,7 +53,6 @@ public:
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) = 0;
 
 protected:
-	// Position before any transformation
 	ShapeType m_type;
 	Transform transform;
 	int geometry_id;
@@ -92,12 +91,12 @@ public:
 			normals[3 * vertexID + 2]);
 	}
 
-	// return vertex texcoords
+	// return vertex texcoords of specified face
 	inline Point2f GetVertexTexcoords(uint32_t vertexID) const {
 		return Point2f(texcoords[2 * vertexID + 0], texcoords[2 * vertexID + 1]);
 	}
 
-	// compute position of specified face, barycentric
+	// compute geometry normal
 	inline virtual Vector3f GetGeometryNormal(uint32_t faceID) const override {
 		const Point3u vidx = GetIndices(faceID);
 		const Point3f A = GetVertex(vidx.x);
@@ -107,7 +106,7 @@ public:
 		return glm::normalize(glm::cross(B - A, C - A));
 	}
 
-	// compute normal of specified face, barycentric
+	// compute shade normal of specified face, barycentric
 	inline Vector3f GetShadeNormal(uint32_t faceID, const Point2f& barycentric) const override {
 		const Point3u vidx = GetIndices(faceID);
 		const Vector3f n1 = GetVertexNormal(vidx.x);
