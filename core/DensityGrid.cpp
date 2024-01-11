@@ -22,8 +22,8 @@ OpenVDBGrid::OpenVDBGrid(const std::filesystem::path& filepath) {
 	file.close();
 }
 
-AABB OpenVDBGrid::GetBounds() {
-	AABB ret;
+MediumBox OpenVDBGrid::GetBounds() {
+	MediumBox ret;
 	const auto bbox = gridPtr->evalActiveVoxelBoundingBox();
 	const auto pMin = gridPtr->indexToWorld(bbox.getStart());
 	const auto pMax = gridPtr->indexToWorld(bbox.getEnd());
