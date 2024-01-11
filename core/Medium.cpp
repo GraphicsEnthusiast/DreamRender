@@ -2,7 +2,7 @@
 
 void Medium::EvaluateWavelength(const Spectrum& history, const Spectrum& albedo, std::vector<float>& pmf) {
 	// Create empirical discrete distribution
-	const Spectrum history_albedo = history * albedo;
+	Spectrum history_albedo = history * albedo;
 	std::vector<float> wave(Spectrum::nSamples);
 	for (int i = 0; i < Spectrum::nSamples; i++) {
 		wave[i] = history_albedo[i];
@@ -17,7 +17,7 @@ void Medium::EvaluateWavelength(const Spectrum& history, const Spectrum& albedo,
 
 int Medium::SampleWavelength(const Spectrum& history, const Spectrum& albedo, std::shared_ptr<Sampler> sampler, std::vector<float>& pmf) {
 	// Create empirical discrete distribution
-	const Spectrum history_albedo = history * albedo;
+	Spectrum history_albedo = history * albedo;
 	std::vector<float> wave(Spectrum::nSamples);
 	for (int i = 0; i < Spectrum::nSamples; i++) {
 		wave[i] = history_albedo[i];
