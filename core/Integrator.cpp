@@ -217,7 +217,7 @@ void VolumetricPathTracing::RenderImage(const PostProcessing& post, Spectrum* im
 				assert(0);
 			}
 
-			image[j * width + i] = const_cast<PostProcessing&>(post).GetScreenColor(radiance);
+			image[j * width + i] = const_cast<PostProcessing&>(post).GetScreenColor(radiance.ToRGBSpectrum());
 		}
 	}
 	sampler->NextSample();
