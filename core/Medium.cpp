@@ -36,7 +36,7 @@ int Medium::SampleWavelength(const RGBSpectrum& history, const RGBSpectrum& albe
 }
 
 Homogeneous::Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum& s, const RGBSpectrum& a, float scale) :
-	Medium(MediumType::HomogeneousMedium, phase), sigma_s(s* scale), sigma_t((a + s)* scale) {}
+	Medium(MediumType::HomogeneousMedium, phase), sigma_s(s * scale), sigma_t((a + s) * scale) {}
 
 RGBSpectrum Homogeneous::EvaluateDistance(const RGBSpectrum& history, bool scattered, float distance, float& trans_pdf) {
 	distance = std::min(MaxFloat, distance);
@@ -64,8 +64,8 @@ RGBSpectrum Homogeneous::EvaluateDistance(const RGBSpectrum& history, bool scatt
 	}
 
 	bool valid = false;
-	for (int dim = 0; dim < RGBSpectrum::nSamples; ++dim) {
-		if (transmittance[dim] > 0.0f) {
+	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+		if (transmittance[i] > 0.0f) {
 			valid = true;
 		}
 	}
@@ -113,8 +113,8 @@ RGBSpectrum Homogeneous::SampleDistance(const RGBSpectrum& history, float max_di
 	}
 
 	bool valid = false;
-	for (int dim = 0; dim < RGBSpectrum::nSamples; ++dim) {
-		if (transmittance[dim] > 0.0f) {
+	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+		if (transmittance[i] > 0.0f) {
 			valid = true;
 		}
 	}
@@ -131,8 +131,7 @@ RGBSpectrum Homogeneous::SampleDistance(const RGBSpectrum& history, float max_di
 }
 
 Heterogeneous::Heterogeneous(std::shared_ptr<PhaseFunction> phase, std::shared_ptr<DensityGrid> grid,
-	const RGBSpectrum& absorption, const RGBSpectrum& scattering,
-	float densityMulti) : Medium(MediumType::HeterogeneousMedium, phase), densityGrid(grid),
+	const RGBSpectrum& absorption, const RGBSpectrum& scattering, float densityMulti) : Medium(MediumType::HeterogeneousMedium, phase), densityGrid(grid),
 	absorptionColor(absorption), scatteringColor(scattering), densityMultiplier(densityMulti) {
 	// Compute wavelength independent majorant
 	float max_density = GetMaxDensity();

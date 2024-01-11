@@ -86,7 +86,7 @@ BinaryTable1D::BinaryTable1D(const float* values, unsigned int N) {
 }
 
 int BinaryTable1D::Sample(float sample) {
-	// inverse cdf
+	// Inverse cdf
 	int x = std::lower_bound(cdf.begin(), cdf.end(), sample) - cdf.begin();
 	if (x == 0) {
 		x++;
