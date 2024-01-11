@@ -111,21 +111,21 @@ void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	}
 }
 
-RGBSpectrum Scene::SampleLightEnvironment(const RGBSpectrum& history, Vector3f& L, float& pdf, float& mult_trans_pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum Scene::SampleLightEnvironment(const Spectrum& history, Vector3f& L, float& pdf, float& mult_trans_pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	if (lights.size() == 0) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	int index = lightTable.Sample(sampler->Get2());
 	auto light = lights[index];
 	float dist = 0.0f;
-	RGBSpectrum radiance = light->Sample(L, pdf, dist, info, sampler);
+	Spectrum radiance = light->Sample(L, pdf, dist, info, sampler);
 	pdf *= (light->LightLuminance() / lightTable.Sum());
 
 	mult_trans_pdf = 1.0f;
-	RGBSpectrum shadow_history(1.0f);
+	Spectrum shadow_history(1.0f);
 	IntersectionInfo shadowInfo = info;
 	while (true) {
 		Ray shadowRay(shadowInfo.position, L);
@@ -133,16 +133,16 @@ RGBSpectrum Scene::SampleLightEnvironment(const RGBSpectrum& history, Vector3f& 
 		TraceRay(rtc_shadowRayHit, shadowInfo);
 		if (rtc_shadowRayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
 			if (shadowInfo.material->GetType() != MaterialType::MediumBoundaryMaterial) {
-				return RGBSpectrum(0.0f);
+				return Spectrum(0.0f);
 			}
 
 			auto medium = info.mi.GetMedium(shadowInfo.frontFace);
 			if (medium != NULL) {
 				float trans_pdf = 0.0f;
-				RGBSpectrum transmittance = medium->EvaluateDistance(history, false, shadowInfo.t, trans_pdf);
+				Spectrum transmittance = medium->EvaluateDistance(history, false, shadowInfo.t, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
-					return RGBSpectrum(0.0f);
+					return Spectrum(0.0f);
 				}
 
 				shadow_history *= (transmittance / trans_pdf);
@@ -155,10 +155,10 @@ RGBSpectrum Scene::SampleLightEnvironment(const RGBSpectrum& history, Vector3f& 
 			auto medium = isEnv ? camera->GetMedium() : light->GetShape()->GetOutMedium();
 			if (medium != NULL) {
 				float trans_pdf = 0.0f;
-				RGBSpectrum transmittance = medium->EvaluateDistance(history, false, dist, trans_pdf);
+				Spectrum transmittance = medium->EvaluateDistance(history, false, dist, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
-					return RGBSpectrum(0.0f);
+					return Spectrum(0.0f);
 				}
 
 				shadow_history *= (transmittance / trans_pdf);
@@ -166,7 +166,7 @@ RGBSpectrum Scene::SampleLightEnvironment(const RGBSpectrum& history, Vector3f& 
 			}
 
 			if (shadow_history.HasNaNs()) {
-				return RGBSpectrum(0.0f);
+				return Spectrum(0.0f);
 			}
 
 			radiance *= history;
@@ -178,30 +178,30 @@ RGBSpectrum Scene::SampleLightEnvironment(const RGBSpectrum& history, Vector3f& 
 	return radiance;
 }
 
-RGBSpectrum Scene::EvaluateLight(int geomID, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum Scene::EvaluateLight(int geomID, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	int lightSize = infiniteLight == NULL ? lights.size() : lights.size() - 1;
 	if (lightSize == 0) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	int index = shapeToLight[geomID];
 	auto light = lights[index];
-	RGBSpectrum radiance = light->Evaluate(L, pdf, info);
+	Spectrum radiance = light->Evaluate(L, pdf, info);
 	pdf *= (light->LightLuminance() / lightTable.Sum());
 
 	return radiance;
 }
 
-RGBSpectrum Scene::EvaluateEnvironment(const Vector3f& L, float& pdf) {
+Spectrum Scene::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	if (infiniteLight == NULL) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
-	RGBSpectrum radiance = infiniteLight->EvaluateEnvironment(L, pdf);
+	Spectrum radiance = infiniteLight->EvaluateEnvironment(L, pdf);
 	pdf *= (infiniteLight->LightLuminance() / lightTable.Sum());
 
 	return radiance;

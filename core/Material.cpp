@@ -11,47 +11,47 @@ Vector3f NormalFromTangentToWorld(const Vector3f& n, Vector3f tangentNormal) {
 	return glm::normalize(TangentX * tangentNormal.x + TangentY * tangentNormal.y + n * tangentNormal.z);
 }
 
-RGBSpectrum Material::Emit() {
-	return RGBSpectrum(0.0f);
+Spectrum Material::Emit() {
+	return Spectrum(0.0f);
 }
 
-RGBSpectrum MediumBoundary::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum MediumBoundary::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	pdf = 0.0f;
 
-	return RGBSpectrum(0.0f);
+	return Spectrum(0.0f);
 }
 
-RGBSpectrum MediumBoundary::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum MediumBoundary::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	L = Vector3f(0.0f);
 	pdf = 0.0f;
 
-	return RGBSpectrum(0.0f);
+	return Spectrum(0.0f);
 }
 
-RGBSpectrum DiffuseLight::Emit() {
+Spectrum DiffuseLight::Emit() {
 	return radiance;
 }
 
-RGBSpectrum DiffuseLight::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum DiffuseLight::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	pdf = 0.0f;
 
-	return RGBSpectrum(0.0f);
+	return Spectrum(0.0f);
 }
 
-RGBSpectrum DiffuseLight::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum DiffuseLight::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	L = Vector3f(0.0f);
 	pdf = 0.0f;
 
-	return RGBSpectrum(0.0f);
+	return Spectrum(0.0f);
 }
 
-RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float roughness = roughnessTexture->GetColor(info.uv)[0];
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f local_L = ToLocal(L, N);
@@ -63,7 +63,7 @@ RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	if (NdotL <= 0.0f || NdotV <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float a = roughness * roughness;
@@ -74,20 +74,20 @@ RGBSpectrum Diffuse::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	float C1 = 1.0f - 0.5f * s2 / (s2 + 0.33f);
 	float C2 = 0.45f * s2 / (s2 + 0.09f) * Cosri * (Cosri >= 0.0f ? (std::max(NdotL, NdotV)) : 1.0f);
 
-	RGBSpectrum brdf = albedo * INV_PI * (C1 + C2) * (1.0f + roughness * 0.5f);
+	Spectrum brdf = albedo * INV_PI * (C1 + C2) * (1.0f + roughness * 0.5f);
 
 	pdf = CosinePdfHemisphere(NdotL);
 
 	return brdf;
 }
 
-RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float roughness = roughnessTexture->GetColor(info.uv)[0];
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f local_L = CosineSampleHemisphere(sampler->Get2());
@@ -100,7 +100,7 @@ RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	if (NdotL <= 0.0f || NdotV <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float a = roughness * roughness;
@@ -111,21 +111,21 @@ RGBSpectrum Diffuse::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	float C1 = 1.0f - 0.5f * s2 / (s2 + 0.33f);
 	float C2 = 0.45f * s2 / (s2 + 0.09f) * Cosri * (Cosri >= 0.0f ? (std::max(NdotL, NdotV)) : 1.0f);
 
-	RGBSpectrum brdf = albedo * INV_PI * (C1 + C2) * (1.0f + roughness * 0.5f);
+	Spectrum brdf = albedo * INV_PI * (C1 + C2) * (1.0f + roughness * 0.5f);
 
 	pdf = CosinePdfHemisphere(NdotL);
 	
 	return brdf;
 }
 
-RGBSpectrum Conductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum Conductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H = glm::normalize(V + L);
@@ -139,26 +139,26 @@ RGBSpectrum Conductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf
 	if (NdotV <= 0.0f || NdotL <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
-	RGBSpectrum F = Fresnel::FresnelConductor(V, H, eta, k);
+	Spectrum F = Fresnel::FresnelConductor(V, H, eta, k);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
 
-	RGBSpectrum brdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+	Spectrum brdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
 
 	return brdf;
 }
 
-RGBSpectrum Conductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum Conductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
@@ -174,27 +174,27 @@ RGBSpectrum Conductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const 
 	if (NdotV <= 0.0f || NdotL <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
-	RGBSpectrum F = Fresnel::FresnelConductor(V, H, eta, k);
+	Spectrum F = Fresnel::FresnelConductor(V, H, eta, k);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
 
-	RGBSpectrum brdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
+	Spectrum brdf = albedo * F * D * G / (4.0f * NdotV * NdotL);
 
 	return brdf;
 }
 
-RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H;
@@ -219,12 +219,12 @@ RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pd
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
-	RGBSpectrum bsdf;
+	Spectrum bsdf;
 	if (isReflect) {
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -239,7 +239,7 @@ RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pd
 		if (NdotL * NdotV >= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -260,21 +260,21 @@ RGBSpectrum Dielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pd
 	return bsdf;
 }
 
-RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 	float etai_over_etat = info.frontFace ? (1.0f / eta) : (eta);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 	H = ToWorld(H, N);
 
-	RGBSpectrum bsdf;
+	Spectrum bsdf;
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	float F = Fresnel::FresnelDielectric(V, H, etai_over_etat);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
@@ -287,7 +287,7 @@ RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -309,7 +309,7 @@ RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 		if (NdotL * NdotV >= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -332,9 +332,9 @@ RGBSpectrum Dielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 	return bsdf;
 }
 
-RGBSpectrum Plastic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum kd = albedoTexture->GetColor(info.uv);
-	RGBSpectrum ks = specularTexture->GetColor(info.uv);
+Spectrum Plastic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum kd = albedoTexture->GetColor(info.uv);
+	Spectrum ks = specularTexture->GetColor(info.uv);
 	float d_sum = kd[0] + kd[1] + kd[2];
 	float s_sum = ks[0] + ks[1] + ks[2];
 
@@ -345,7 +345,7 @@ RGBSpectrum Plastic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H = glm::normalize(V + L);
@@ -355,7 +355,7 @@ RGBSpectrum Plastic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	if (NdotV <= 0.0f || NdotL <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
@@ -366,17 +366,17 @@ RGBSpectrum Plastic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	float pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
-	RGBSpectrum F = Fresnel::FresnelDielectric(L, H, 1.0f / eta);
+	Spectrum F = Fresnel::FresnelDielectric(L, H, 1.0f / eta);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 
-	RGBSpectrum brdf = 0.0f;
-	RGBSpectrum diffuse = kd, specular = ks;
+	Spectrum brdf = 0.0f;
+	Spectrum diffuse = kd, specular = ks;
 	if (nonlinear) {
-		brdf = diffuse / (RGBSpectrum(1.0f) - diffuse * F_avg);
+		brdf = diffuse / (Spectrum(1.0f) - diffuse * F_avg);
 	}
 	else {
-		brdf = diffuse / (RGBSpectrum(1.0f) - F_avg);
+		brdf = diffuse / (Spectrum(1.0f) - F_avg);
 	}
 	brdf *= (1.0f - Fi) * (1.0f - Fo) * INV_PI;
 	brdf += specular * F * D * G / (4.0f * NdotL * NdotV);
@@ -386,9 +386,9 @@ RGBSpectrum Plastic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, 
 	return brdf;
 }
 
-RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum kd = albedoTexture->GetColor(info.uv);
-	RGBSpectrum ks = specularTexture->GetColor(info.uv);
+Spectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum kd = albedoTexture->GetColor(info.uv);
+	Spectrum ks = specularTexture->GetColor(info.uv);
 	float d_sum = kd[0] + kd[1] + kd[2];
 	float s_sum = ks[0] + ks[1] + ks[2];
 
@@ -399,7 +399,7 @@ RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	float Fo = Fresnel::FresnelDielectric(V, N, 1.0f / eta);
@@ -409,7 +409,7 @@ RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	float pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);
 	pdf_specular = pdf_specular / (pdf_specular + pdf_diffuse);
 
-	RGBSpectrum brdf(0.0f);
+	Spectrum brdf(0.0f);
 	Vector3f H;
 	float NdotL = 0.0f;
 	float NdotV = glm::dot(N, V);
@@ -422,7 +422,7 @@ RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 	}
 	else {
@@ -435,20 +435,20 @@ RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 	}
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
-	RGBSpectrum F = Fresnel::FresnelDielectric(L, H, 1.0f / eta);
+	Spectrum F = Fresnel::FresnelDielectric(L, H, 1.0f / eta);
 
-	RGBSpectrum diffuse = kd, specular = ks;
+	Spectrum diffuse = kd, specular = ks;
 	if (nonlinear) {
-		brdf = diffuse / (RGBSpectrum(1.0f) - diffuse * F_avg);
+		brdf = diffuse / (Spectrum(1.0f) - diffuse * F_avg);
 	}
 	else {
-		brdf = diffuse / (RGBSpectrum(1.0f) - F_avg);
+		brdf = diffuse / (Spectrum(1.0f) - F_avg);
 	}
 	brdf *= (1.0f - Fi) * (1.0f - Fo) * INV_PI;
 	brdf += specular * F * D * G / (4.0f * NdotL * NdotV);
@@ -458,14 +458,14 @@ RGBSpectrum Plastic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	return brdf;
 }
 
-RGBSpectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H;
@@ -494,13 +494,13 @@ RGBSpectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float
 	}
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
-	RGBSpectrum bsdf(0.0f);
+	Spectrum bsdf(0.0f);
 	float dwh_dwi = std::abs(1.0f / (4.0f * glm::dot(V, H)));
 	if (isReflect) {
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -514,7 +514,7 @@ RGBSpectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float
 		if (NdotL * NdotV >= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -528,20 +528,20 @@ RGBSpectrum ThinDielectric::Evaluate(const Vector3f& V, const Vector3f& L, float
 	return bsdf;
 }
 
-RGBSpectrum ThinDielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum ThinDielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H = GGX::SampleVisible(N, V, alpha_u, alpha_v, sampler->Get2());
 	H = ToWorld(H, N);
 
-	RGBSpectrum bsdf;
+	Spectrum bsdf;
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	float F = Fresnel::FresnelDielectric(V, H, 1.0f / eta);
 	if (F < 1.0f) {
@@ -557,7 +557,7 @@ RGBSpectrum ThinDielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, c
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -579,7 +579,7 @@ RGBSpectrum ThinDielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, c
 		if (NdotL * NdotV >= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		NdotV = std::abs(NdotV);
@@ -595,15 +595,15 @@ RGBSpectrum ThinDielectric::Sample(const Vector3f& V, Vector3f& L, float& pdf, c
 	return bsdf;
 }
 
-RGBSpectrum MetalWorkflow::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum MetalWorkflow::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 	float metallic = metallicTexture->GetColor(info.uv)[0];
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H = glm::normalize(V + L);
@@ -614,7 +614,7 @@ RGBSpectrum MetalWorkflow::Evaluate(const Vector3f& V, const Vector3f& L, float&
 	if (NdotL <= 0.0f || NdotV <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float metallic_brdf = metallic;
@@ -627,27 +627,27 @@ RGBSpectrum MetalWorkflow::Evaluate(const Vector3f& V, const Vector3f& L, float&
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
-	RGBSpectrum F0 = Lerp(metallic, RGBSpectrum(0.04f), albedo);
-	RGBSpectrum F = Fresnel::FresnelSchlick(F0, glm::dot(V, H));
+	Spectrum F0 = Lerp(metallic, Spectrum(0.04f), albedo);
+	Spectrum F = Fresnel::FresnelSchlick(F0, glm::dot(V, H));
 
-	RGBSpectrum specular_brdf = D * F * G / (4.0f * NdotL * NdotV);
-	RGBSpectrum diffuse_brdf = albedo * INV_PI;
-	RGBSpectrum brdf = p_diffuse * diffuse_brdf + (1.0f - p_diffuse) * specular_brdf;
+	Spectrum specular_brdf = D * F * G / (4.0f * NdotL * NdotV);
+	Spectrum diffuse_brdf = albedo * INV_PI;
+	Spectrum brdf = p_diffuse * diffuse_brdf + (1.0f - p_diffuse) * specular_brdf;
 
 	pdf = (1.0f - p_diffuse) * Dv * std::abs(1.0f / (4.0f * glm::dot(V, H))) + p_diffuse * CosinePdfHemisphere(NdotL);
 
 	return brdf;
 }
 
-RGBSpectrum MetalWorkflow::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum MetalWorkflow::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 	float metallic = metallicTexture->GetColor(info.uv)[0];
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 
@@ -672,7 +672,7 @@ RGBSpectrum MetalWorkflow::Sample(const Vector3f& V, Vector3f& L, float& pdf, co
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 	}
 	else {
@@ -686,32 +686,32 @@ RGBSpectrum MetalWorkflow::Sample(const Vector3f& V, Vector3f& L, float& pdf, co
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 	}
 
 	float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
 	float G = GGX::GeometrySmith1(V, H, N, alpha_u, alpha_v) * GGX::GeometrySmith1(L, H, N, alpha_u, alpha_v);
 	float D = GGX::Distribution(H, N, alpha_u, alpha_v);
-	RGBSpectrum F0 = Lerp(metallic, RGBSpectrum(0.04f), albedo);
-	RGBSpectrum F = Fresnel::FresnelSchlick(F0, glm::dot(V, H));
+	Spectrum F0 = Lerp(metallic, Spectrum(0.04f), albedo);
+	Spectrum F = Fresnel::FresnelSchlick(F0, glm::dot(V, H));
 
-	RGBSpectrum specular_brdf = D * F * G / (4.0f * NdotL * NdotV);
-	RGBSpectrum diffuse_brdf = albedo * INV_PI;
-	RGBSpectrum brdf = p_diffuse * diffuse_brdf + (1.0f - p_diffuse) * specular_brdf;
+	Spectrum specular_brdf = D * F * G / (4.0f * NdotL * NdotV);
+	Spectrum diffuse_brdf = albedo * INV_PI;
+	Spectrum brdf = p_diffuse * diffuse_brdf + (1.0f - p_diffuse) * specular_brdf;
 
 	pdf = (1.0f - p_diffuse) * Dv * std::abs(1.0f / (4.0f * glm::dot(V, H))) + p_diffuse * CosinePdfHemisphere(NdotL);
 
 	return brdf;
 }
 
-RGBSpectrum ClearCoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum ClearCoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f H = glm::normalize(V + L);
@@ -724,7 +724,7 @@ RGBSpectrum ClearCoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L,
 	if (NdotL <= 0.0f || NdotV <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float F = Fresnel::FresnelDielectric(V, H, 1.0f / 1.5f);
@@ -735,22 +735,22 @@ RGBSpectrum ClearCoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L,
 	float cond_pdf = 0.0f;
 	float coat_pdf = Dv * abs(1.0f / (4.0f * dot(V, H)));
 
-	RGBSpectrum cond_brdf = conductor->Evaluate(V, L, cond_pdf, info);
-	RGBSpectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
-	RGBSpectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
+	Spectrum cond_brdf = conductor->Evaluate(V, L, cond_pdf, info);
+	Spectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
+	Spectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
 
 	pdf = coat_weight * coat_pdf + (1.0f - coat_weight) * cond_pdf;
 
 	return brdf;
 }
 
-RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 
@@ -768,7 +768,7 @@ RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& 
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
@@ -778,9 +778,9 @@ RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& 
 		float coat_pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
 		float cond_pdf = 0.0f;
 
-		RGBSpectrum cond_brdf = conductor->Evaluate(V, L, cond_pdf, info);
-		RGBSpectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
-		RGBSpectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
+		Spectrum cond_brdf = conductor->Evaluate(V, L, cond_pdf, info);
+		Spectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
+		Spectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
 
 		pdf = coat_weight * coat_pdf + (1.0f - coat_weight) * cond_pdf;
 
@@ -788,7 +788,7 @@ RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& 
 	}
 	else {
 		float cond_pdf = 0.0f;
-		RGBSpectrum cond_brdf = conductor->Sample(V, L, cond_pdf, info, sampler);
+		Spectrum cond_brdf = conductor->Sample(V, L, cond_pdf, info, sampler);
 		
 		H = glm::normalize(V + L);
 
@@ -798,7 +798,7 @@ RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& 
 		if (NdotL <= 0.0f || NdotV <= 0.0f) {
 			pdf = 0.0f;
 
-			return RGBSpectrum(0.0f);
+			return Spectrum(0.0f);
 		}
 
 		float Dv = GGX::DistributionVisible(V, H, N, alpha_u, alpha_v);
@@ -807,8 +807,8 @@ RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& 
 		float D = GGX::Distribution(H, N, alpha_u, alpha_v);
 		float coat_pdf = Dv * std::abs(1.0f / (4.0f * glm::dot(V, H)));
 
-		RGBSpectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
-		RGBSpectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
+		Spectrum coat_brdf = D * G / (4.0f * NdotV * NdotL);
+		Spectrum brdf = coat_weight * coat_brdf + (1.0f - coat_weight) * cond_brdf;
 
 		pdf = coat_weight * coat_pdf + (1.0f - coat_weight) * cond_pdf;
 
@@ -816,12 +816,12 @@ RGBSpectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& 
 	}
 }
 
-RGBSpectrum DiffuseTransmitter::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum DiffuseTransmitter::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 
@@ -831,7 +831,7 @@ RGBSpectrum DiffuseTransmitter::Evaluate(const Vector3f& V, const Vector3f& L, f
 	if (NdotL * NdotV >= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	pdf = CosinePdfHemisphere(std::abs(NdotL));
@@ -839,12 +839,12 @@ RGBSpectrum DiffuseTransmitter::Evaluate(const Vector3f& V, const Vector3f& L, f
 	return albedo * INV_PI;
 }
 
-RGBSpectrum DiffuseTransmitter::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum albedo = albedoTexture->GetColor(info.uv);
+Spectrum DiffuseTransmitter::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum albedo = albedoTexture->GetColor(info.uv);
 
 	Vector3f N = info.Ns;
 	if (normalTexture != NULL) {
-		RGBSpectrum tangentNormal = normalTexture->GetColor(info.uv);
+		Spectrum tangentNormal = normalTexture->GetColor(info.uv);
 		N = NormalFromTangentToWorld(N, Vector3f(tangentNormal[0], tangentNormal[1], tangentNormal[2]));
 	}
 	Vector3f local_L = CosineSampleHemisphere(sampler->Get2());
@@ -856,35 +856,35 @@ RGBSpectrum DiffuseTransmitter::Sample(const Vector3f& V, Vector3f& L, float& pd
 	if (NdotL * NdotV >= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
-	RGBSpectrum btdf = albedo * INV_PI;
+	Spectrum btdf = albedo * INV_PI;
 
 	pdf = CosinePdfHemisphere(std::abs(NdotL));
 
 	return btdf;
 }
 
-RGBSpectrum Mixture::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum Mixture::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	float pdf1 = 0.0f;
-	RGBSpectrum bsdf1 = material1->Evaluate(V, L, pdf1, info);
+	Spectrum bsdf1 = material1->Evaluate(V, L, pdf1, info);
 	float pdf2 = 0.0f;
-	RGBSpectrum bsdf2 = material1->Evaluate(V, L, pdf2, info);
+	Spectrum bsdf2 = material1->Evaluate(V, L, pdf2, info);
 
 	pdf = weight * pdf1 + (1.0f - weight) * pdf2;
-	RGBSpectrum bsdf = weight * bsdf1 + (1.0f - weight) * bsdf2;
+	Spectrum bsdf = weight * bsdf1 + (1.0f - weight) * bsdf2;
 
 	return bsdf;
 }
 
-RGBSpectrum Mixture::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum Mixture::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	float pdf1 = 0.0f;
 	Vector3f L1;
-	RGBSpectrum bsdf1 = material1->Sample(V, L1, pdf1, info, sampler);
+	Spectrum bsdf1 = material1->Sample(V, L1, pdf1, info, sampler);
 	float pdf2 = 0.0f;
 	Vector3f L2;
-	RGBSpectrum bsdf2 = material1->Sample(V, L2, pdf2, info, sampler);
+	Spectrum bsdf2 = material1->Sample(V, L2, pdf2, info, sampler);
 
 	if (sampler->Get1() < weight) {
 		L = L1;
@@ -894,7 +894,7 @@ RGBSpectrum Mixture::Sample(const Vector3f& V, Vector3f& L, float& pdf, const In
 	}
 
 	pdf = weight * pdf1 + (1.0f - weight) * pdf2;
-	RGBSpectrum bsdf = weight * bsdf1 + (1.0f - weight) * bsdf2;
+	Spectrum bsdf = weight * bsdf1 + (1.0f - weight) * bsdf2;
 
 	return bsdf;
 }

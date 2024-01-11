@@ -7,9 +7,9 @@ float Integrator::PowerHeuristic(float pdf1, float pdf2, int beta) {
 	return p1 / (p1 + p2);
 }
 
-RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo& info) {
-	RGBSpectrum radiance(0.0f);
-	RGBSpectrum history(1.0f);
+Spectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo& info) {
+	Spectrum radiance(0.0f);
+	Spectrum history(1.0f);
 	Vector3f V = -ray.GetDir();
 	Vector3f L = ray.GetDir();
 	Point3f pre_position = ray.GetOrg();
@@ -56,7 +56,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 		bool scattered = false;
 		float trans_pdf = 0.0f;
 		float actual_distance = 0.0f;
-		RGBSpectrum transmittance(0.0f);
+		Spectrum transmittance(0.0f);
 
 		if (medium != NULL) {
 			// Sample medium distance
@@ -77,8 +77,8 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 				float light_pdf = 0.0f;
 				float phase_pdf = 0.0f;
 				float mult_trans_pdf_nee = 1.0f;
-				RGBSpectrum light_radiance = scene->SampleLightEnvironment(history, lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
-				RGBSpectrum attenuation = medium->GetPhaseFunction()->Evaluate(V, lightL, phase_pdf, info);
+				Spectrum light_radiance = scene->SampleLightEnvironment(history, lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
+				Spectrum attenuation = medium->GetPhaseFunction()->Evaluate(V, lightL, phase_pdf, info);
 				phase_pdf *= mult_trans_pdf_nee;
 
 				if (!(std::isnan(phase_pdf) || std::isnan(light_pdf) || phase_pdf == 0.0f || light_pdf == 0.0f)) {
@@ -103,7 +103,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 			if (HitLight(info)) {// Hit light
 				float misWeight = 1.0f;
 				float light_pdf = 0.0f;
-				RGBSpectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
+				Spectrum light_radiance = scene->EvaluateLight(info.geomID, L, light_pdf, info);
 				bp_pdf *= mult_trans_pdf;
 
 				if (bounce != 0) {
@@ -121,7 +121,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 			else if (HitNothing(info)) {// Hit nothing
 				float misWeight = 1.0f;
 				float light_pdf = 0.0f;
-				RGBSpectrum back_radiance = scene->EvaluateEnvironment(L, light_pdf);
+				Spectrum back_radiance = scene->EvaluateEnvironment(L, light_pdf);
 				bp_pdf *= mult_trans_pdf;
 
 				if (bounce != 0) {
@@ -149,8 +149,8 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 				float light_pdf = 0.0f, bsdf_pdf = 0.0f;
 				Vector3f lightL;
 				float mult_trans_pdf_nee = 1.0f;
-				RGBSpectrum light_radiance = scene->SampleLightEnvironment(history, lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
-				RGBSpectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
+				Spectrum light_radiance = scene->SampleLightEnvironment(history, lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
+				Spectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
 				bsdf_pdf *= mult_trans_pdf_nee;
 				float costheta = std::max(glm::dot(info.Ns, lightL), 0.0f);
 
@@ -198,7 +198,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 	return radiance;
 }
 
-void VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBSpectrum* image) {
+void VolumetricPathTracing::RenderImage(const PostProcessing& post, Spectrum* image) {
 	omp_set_num_threads(32);
 #pragma omp parallel for
 	for (int j = 0; j < height; j++) {
@@ -211,7 +211,7 @@ void VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBSpectrum*
 
 			IntersectionInfo info;
 			Ray ray = scene->GetCamera()->GenerateRay(sampler, pixelX, pixelY);
-			RGBSpectrum radiance = SolvingIntegrator(ray, info);
+			Spectrum radiance = SolvingIntegrator(ray, info);
 
 			if (radiance.HasNaNs()) {
 				assert(0);

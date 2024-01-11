@@ -7,26 +7,26 @@ Light::~Light() {
 	}
 }
 
-RGBSpectrum Light::EvaluateEnvironment(const Vector3f& L, float& pdf) {
+Spectrum Light::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	pdf = 0.0f;
 
-	return RGBSpectrum(0.0f);
+	return Spectrum(0.0f);
 }
 
-RGBSpectrum Light::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum Light::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	pdf = 0.0f;
 
-	return RGBSpectrum(0.0f);
+	return Spectrum(0.0f);
 }
 
-RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
 	float cos_theta = glm::dot(L, Nl);
 	if (!twoSide && cos_theta > 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float area = glm::length(quad->u) * glm::length(quad->v);
@@ -41,7 +41,7 @@ RGBSpectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const Intersection
 	return shape->GetMaterial()->Emit();// info record a point on a light source
 }
 
-RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
 	Point3f pos = quad->position + quad->u * sampler->Get1() + quad->v * sampler->Get1();
@@ -56,7 +56,7 @@ RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const Interse
 	if (!twoSide && cos_theta > 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float area = glm::length(quad->u) * glm::length(quad->v);
@@ -66,7 +66,7 @@ RGBSpectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const Interse
 	return shape->GetMaterial()->Emit();// info record a point on a common shape
 }
 
-RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	Sphere* sphere = (Sphere*)shape;
 	Vector3f dir = sphere->center - info.position;
 	float dist_sq = glm::dot(dir, dir);
@@ -77,7 +77,7 @@ RGBSpectrum SphereArea::Evaluate(const Vector3f& L, float& pdf, const Intersecti
 	return shape->GetMaterial()->Emit();
 }
 
-RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	Sphere* sphere = (Sphere*)shape;
 	Vector3f dir = sphere->center - info.position;
 	float dist_sq = glm::dot(dir, dir);
@@ -99,7 +99,7 @@ RGBSpectrum SphereArea::Sample(Vector3f& L, float& pdf, float& dist, const Inter
 
 	pdf = 0.0f;
 
-	return RGBSpectrum(0.0f);
+	return Spectrum(0.0f);
 }
 
 InfiniteArea::InfiniteArea(std::shared_ptr<Hdr> h, float sca) : Light(LightType::InfiniteAreaLight, NULL), hdr(h), scale(sca) {
@@ -112,7 +112,7 @@ InfiniteArea::InfiniteArea(std::shared_ptr<Hdr> h, float sca) : Light(LightType:
 	for (int j = 0; j < mHeight; j++) {
 		for (int i = 0; i < mWidth; i++) {
 			float a[3] = { data[mBits * (j * mWidth + i)], data[mBits * (j * mWidth + i) + 1], data[mBits * (j * mWidth + i) + 2] };
-			RGBSpectrum l = RGBSpectrum::FromRGB(a);
+			Spectrum l = Spectrum::FromRGB(a);
 			pdf[j * mWidth + i] = Luminance(l) * sin(((float)j + 0.5f) / (float)mHeight * PI);
 		}
 	}
@@ -120,13 +120,13 @@ InfiniteArea::InfiniteArea(std::shared_ptr<Hdr> h, float sca) : Light(LightType:
 	table = AliasTable2D(pdf, mWidth, mHeight);
 }
 
-RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
+Spectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	int mWidth = hdr->nx;
 	int mHeight = hdr->ny;
 
 	Point2f planeUV = SphereToPlane(L);
 
-	RGBSpectrum radiance = hdr->GetColor(planeUV);
+	Spectrum radiance = hdr->GetColor(planeUV);
 
 	float theta = planeUV.y * PI;
 	float sinTheta = std::sin(theta);
@@ -134,7 +134,7 @@ RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	if (sinTheta == 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	pdf = (Luminance(radiance) / table.Sum()) * (float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI / sinTheta);
@@ -142,7 +142,7 @@ RGBSpectrum InfiniteArea::EvaluateEnvironment(const Vector3f& L, float& pdf) {
 	return radiance * scale;
 }
 
-RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	dist = Infinity;
 
 	auto [col, row] = table.Sample(sampler->Get2(), sampler->Get2());
@@ -153,7 +153,7 @@ RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const Int
 	Point2f planeUV((col + 0.5f) / mWidth, (row + 0.5f) / mHeight);
 	L = PlaneToSphere(planeUV);
 
-	RGBSpectrum radiance = hdr->GetColor(planeUV);
+	Spectrum radiance = hdr->GetColor(planeUV);
 
 	float theta = planeUV.y * PI;
 	float sinTheta = std::sin(theta);
@@ -161,7 +161,7 @@ RGBSpectrum InfiniteArea::Sample(Vector3f& L, float& pdf, float& dist, const Int
 	if (sinTheta == 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	pdf = (Luminance(radiance) / table.Sum()) * (float(mWidth * mHeight) * 0.5f * INV_PI * INV_PI / sinTheta);
@@ -185,7 +185,7 @@ TriangleMeshArea::TriangleMeshArea(Shape* s) : Light(LightType::TriangleMeshArea
 	table = AliasTable1D(areas);
 }
 
-RGBSpectrum TriangleMeshArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum TriangleMeshArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	TriangleMesh* mesh = (TriangleMesh*)shape;
 	int id = info.primID;
 	float dist = info.t;
@@ -194,7 +194,7 @@ RGBSpectrum TriangleMeshArea::Evaluate(const Vector3f& L, float& pdf, const Inte
 	if (cos_theta > 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float area = areas[id];
@@ -205,7 +205,7 @@ RGBSpectrum TriangleMeshArea::Evaluate(const Vector3f& L, float& pdf, const Inte
 	return shape->GetMaterial()->Emit();
 }
 
-RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	TriangleMesh* mesh = (TriangleMesh*)shape;
 	int id = table.Sample(sampler->Get2());
 	Point3u index = mesh->GetIndices(id);
@@ -228,7 +228,7 @@ RGBSpectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const
 	if (cos_theta > 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float area = areas[id];

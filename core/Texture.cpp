@@ -2,7 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-RGBSpectrum Constant::GetColor(const Point2f& uv) {
+Spectrum Constant::GetColor(const Point2f& uv) {
 	return color;
 }
 
@@ -22,7 +22,7 @@ Image::~Image() {
 	}
 }
 
-RGBSpectrum Image::GetColor(const Point2f& uv) {
+Spectrum Image::GetColor(const Point2f& uv) {
 	float u = uv.x;
 	float v = uv.y;
 	if (u > 1.0f || u < 0.0f) {
@@ -61,7 +61,7 @@ RGBSpectrum Image::GetColor(const Point2f& uv) {
 	float b = (data[nn * i + nn * nx * j + 2]) / 255.0f;
 	float rgb[3] = { r, g, b };
 
-	return RGBSpectrum::FromRGB(rgb);
+	return Spectrum::FromRGB(rgb);
 }
 
 Hdr::Hdr(const std::string& filepath) : Texture(TextureType::HdrTexture) {
@@ -80,7 +80,7 @@ Hdr::~Hdr() {
 	}
 }
 
-RGBSpectrum Hdr::GetColor(const Point2f& uv) {
+Spectrum Hdr::GetColor(const Point2f& uv) {
 	int i = static_cast<int>(uv.x * nx);
 	int j = static_cast<int>(uv.y * ny);
 
@@ -102,5 +102,5 @@ RGBSpectrum Hdr::GetColor(const Point2f& uv) {
 	float b = data[nn * i + nn * nx * j + 2];
 	float rgb[3] = { r, g, b };
 
-	return RGBSpectrum::FromRGB(rgb);
+	return Spectrum::FromRGB(rgb);
 }

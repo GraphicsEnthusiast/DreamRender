@@ -21,13 +21,13 @@ public:
 		return phaseFunction;
 	}
 
-	virtual RGBSpectrum EvaluateDistance(const RGBSpectrum& history, bool scattered, float distance, float& trans_pdf) = 0;
+	virtual Spectrum EvaluateDistance(const Spectrum& history, bool scattered, float distance, float& trans_pdf) = 0;
 
-	virtual RGBSpectrum SampleDistance(const RGBSpectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) = 0;
+	virtual Spectrum SampleDistance(const Spectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) = 0;
 
-	static void EvaluateWavelength(const RGBSpectrum& history, const RGBSpectrum& albedo, std::vector<float>& pmf);
+	static void EvaluateWavelength(const Spectrum& history, const Spectrum& albedo, std::vector<float>& pmf);
 
-	static int SampleWavelength(const RGBSpectrum& history, const RGBSpectrum& albedo, std::shared_ptr<Sampler> sampler, std::vector<float>& pmf);
+	static int SampleWavelength(const Spectrum& history, const Spectrum& albedo, std::shared_ptr<Sampler> sampler, std::vector<float>& pmf);
 
 protected:
 	MediumType m_type;
@@ -36,22 +36,22 @@ protected:
 
 class Homogeneous : public Medium {
 public:
-	Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum& s, const RGBSpectrum& a, float scale = 1.0f);
+	Homogeneous(std::shared_ptr<PhaseFunction> phase, const Spectrum& s, const Spectrum& a, float scale = 1.0f);
 
-	virtual RGBSpectrum EvaluateDistance(const RGBSpectrum& history, bool scattered, float distance, float& trans_pdf) override;
+	virtual Spectrum EvaluateDistance(const Spectrum& history, bool scattered, float distance, float& trans_pdf) override;
 
-	virtual RGBSpectrum SampleDistance(const RGBSpectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum SampleDistance(const Spectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) override;
 
 private:
-	RGBSpectrum sigma_s;
-	RGBSpectrum sigma_t;
+	Spectrum sigma_s;
+	Spectrum sigma_t;
 };
 
 class Heterogeneous : public Medium {
 public:
 	Heterogeneous(std::shared_ptr<PhaseFunction> phase, std::shared_ptr<DensityGrid> grid,
-		const RGBSpectrum& absorption,
-		const RGBSpectrum& scattering,
+		const Spectrum& absorption,
+		const Spectrum& scattering,
 		float densityMulti = 1.0f);
 
 	inline float GetDensity(const Point3f& p) const {
@@ -62,22 +62,22 @@ public:
 		return densityMultiplier * densityGrid->GetMaxDensity();
 	}
 
-	inline RGBSpectrum GetSigma_a(float density) const {
+	inline Spectrum GetSigma_a(float density) const {
 		return absorptionColor * density;
 	}
 
-	inline RGBSpectrum GetSigma_s(float density) const {
+	inline Spectrum GetSigma_s(float density) const {
 		return scatteringColor * density;
 	}
 
-	virtual RGBSpectrum EvaluateDistance(const RGBSpectrum& history, bool scattered, float distance, float& trans_pdf) override;
+	virtual Spectrum EvaluateDistance(const Spectrum& history, bool scattered, float distance, float& trans_pdf) override;
 
-	virtual RGBSpectrum SampleDistance(const RGBSpectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum SampleDistance(const Spectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<DensityGrid> densityGrid;
-	RGBSpectrum absorptionColor;
-	RGBSpectrum scatteringColor;
+	Spectrum absorptionColor;
+	Spectrum scatteringColor;
 	float densityMultiplier;
 	float majorant;
 	float invMajorant;

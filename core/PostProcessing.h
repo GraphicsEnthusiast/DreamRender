@@ -12,8 +12,8 @@ inline float LinearToSRGB(float linear) {
 	}
 }
 
-inline RGBSpectrum LinearToSRGB(const RGBSpectrum& linear) {
-	RGBSpectrum srgb;
+inline Spectrum LinearToSRGB(const Spectrum& linear) {
+	Spectrum srgb;
 	srgb[0] = LinearToSRGB(linear[0]);
 	srgb[1] = LinearToSRGB(linear[1]);
 	srgb[2] = LinearToSRGB(linear[2]);
@@ -31,7 +31,7 @@ class ToneMapper {
 public:
 	ToneMapper(ToneMapperType type) : m_type(type) {}
 
-	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) = 0;
+	virtual Spectrum ToneMapping(const Spectrum& color) = 0;
 
 	inline ToneMapperType GetType() const {
 		return m_type;
@@ -45,7 +45,7 @@ class Reinhard : public ToneMapper {
 public:
 	Reinhard() : ToneMapper(ToneMapperType::ReinhardToneMapper) {}
 
-	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
+	virtual Spectrum ToneMapping(const Spectrum& color) override;
 
 private:
 	static constexpr float limit = 1.5f;
@@ -55,7 +55,7 @@ class Uncharted2 : public ToneMapper {
 public:
 	Uncharted2() : ToneMapper(ToneMapperType::Uncharted2ToneMapper) {}
 
-	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
+	virtual Spectrum ToneMapping(const Spectrum& color) override;
 
 private:
 	static constexpr float a = 0.15f;
@@ -71,7 +71,7 @@ class ACES : public ToneMapper {
 public:
 	ACES() : ToneMapper(ToneMapperType::ACESToneMapper) {}
 
-	virtual RGBSpectrum ToneMapping(const RGBSpectrum& color) override;
+	virtual Spectrum ToneMapping(const Spectrum& color) override;
 
 private:
 	static constexpr float a = 2.51f;
@@ -87,7 +87,7 @@ public:
 
 	PostProcessing(std::shared_ptr<ToneMapper> t, float e = 0.0f) : toneMapper(t), exposure(e) {}
 
-	RGBSpectrum GetScreenColor(const RGBSpectrum& color);
+	Spectrum GetScreenColor(const Spectrum& color);
 
 private:
 	std::shared_ptr<ToneMapper> toneMapper;

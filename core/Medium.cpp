@@ -1,31 +1,31 @@
 #include "Medium.h"
 
-void Medium::EvaluateWavelength(const RGBSpectrum& history, const RGBSpectrum& albedo, std::vector<float>& pmf) {
+void Medium::EvaluateWavelength(const Spectrum& history, const Spectrum& albedo, std::vector<float>& pmf) {
 	// Create empirical discrete distribution
-	const RGBSpectrum history_albedo = history * albedo;
-	std::vector<float> wave(RGBSpectrum::nSamples);
-	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+	const Spectrum history_albedo = history * albedo;
+	std::vector<float> wave(Spectrum::nSamples);
+	for (int i = 0; i < Spectrum::nSamples; i++) {
 		wave[i] = history_albedo[i];
 	}
 	BinaryTable1D waveTable(wave);
 
-	pmf.resize(RGBSpectrum::nSamples);
-	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+	pmf.resize(Spectrum::nSamples);
+	for (int i = 0; i < Spectrum::nSamples; i++) {
 		pmf[i] = waveTable.GetPDF(i);
 	}
 }
 
-int Medium::SampleWavelength(const RGBSpectrum& history, const RGBSpectrum& albedo, std::shared_ptr<Sampler> sampler, std::vector<float>& pmf) {
+int Medium::SampleWavelength(const Spectrum& history, const Spectrum& albedo, std::shared_ptr<Sampler> sampler, std::vector<float>& pmf) {
 	// Create empirical discrete distribution
-	const RGBSpectrum history_albedo = history * albedo;
-	std::vector<float> wave(RGBSpectrum::nSamples);
-	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+	const Spectrum history_albedo = history * albedo;
+	std::vector<float> wave(Spectrum::nSamples);
+	for (int i = 0; i < Spectrum::nSamples; i++) {
 		wave[i] = history_albedo[i];
 	}
 	BinaryTable1D waveTable(wave);
 
-	pmf.resize(RGBSpectrum::nSamples);
-	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+	pmf.resize(Spectrum::nSamples);
+	for (int i = 0; i < Spectrum::nSamples; i++) {
 		pmf[i] = waveTable.GetPDF(i);
 	}
 
@@ -35,28 +35,28 @@ int Medium::SampleWavelength(const RGBSpectrum& history, const RGBSpectrum& albe
 	return channel;
 }
 
-Homogeneous::Homogeneous(std::shared_ptr<PhaseFunction> phase, const RGBSpectrum& s, const RGBSpectrum& a, float scale) :
+Homogeneous::Homogeneous(std::shared_ptr<PhaseFunction> phase, const Spectrum& s, const Spectrum& a, float scale) :
 	Medium(MediumType::HomogeneousMedium, phase), sigma_s(s * scale), sigma_t((a + s) * scale) {}
 
-RGBSpectrum Homogeneous::EvaluateDistance(const RGBSpectrum& history, bool scattered, float distance, float& trans_pdf) {
+Spectrum Homogeneous::EvaluateDistance(const Spectrum& history, bool scattered, float distance, float& trans_pdf) {
 	distance = std::min(MaxFloat, distance);
 	scattered = false;
 	trans_pdf = 0.0f;
-	RGBSpectrum transmittance(0.0f);
+	Spectrum transmittance(0.0f);
 
 	std::vector<float> pmf_wavelength;
 	EvaluateWavelength(history, (sigma_s / sigma_t), pmf_wavelength);
 
 	if (!scattered) {
 		transmittance = Exp(-sigma_t * distance);
-		for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+		for (int i = 0; i < Spectrum::nSamples; i++) {
 			trans_pdf += pmf_wavelength[i] * transmittance[i];
 		}
 
 	}
 	else {
 		transmittance = Exp(-sigma_t * distance);
-		for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+		for (int i = 0; i < Spectrum::nSamples; i++) {
 			trans_pdf += pmf_wavelength[i] * transmittance[i] * sigma_t[i];
 		}
 
@@ -64,7 +64,7 @@ RGBSpectrum Homogeneous::EvaluateDistance(const RGBSpectrum& history, bool scatt
 	}
 
 	bool valid = false;
-	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+	for (int i = 0; i < Spectrum::nSamples; i++) {
 		if (transmittance[i] > 0.0f) {
 			valid = true;
 		}
@@ -75,17 +75,17 @@ RGBSpectrum Homogeneous::EvaluateDistance(const RGBSpectrum& history, bool scatt
 	}
 
 	if (!valid) {
-		transmittance = RGBSpectrum(0.0f);
+		transmittance = Spectrum(0.0f);
 	}
 
 	return transmittance;
 }
 
-RGBSpectrum Homogeneous::SampleDistance(const RGBSpectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) {
+Spectrum Homogeneous::SampleDistance(const Spectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) {
 	distance = std::min(MaxFloat, distance);
 	scattered = false;
 	trans_pdf = 0.0f;
-	RGBSpectrum transmittance(0.0f);
+	Spectrum transmittance(0.0f);
 
 	std::vector<float> pmf_wavelength;
 	int channel = SampleWavelength(history, (sigma_s / sigma_t), sampler, pmf_wavelength);
@@ -97,7 +97,7 @@ RGBSpectrum Homogeneous::SampleDistance(const RGBSpectrum& history, float max_di
 	if (distance >= max_distance) {
 		distance = max_distance;
 		transmittance = Exp(-sigma_t * max_distance);
-		for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+		for (int i = 0; i < Spectrum::nSamples; i++) {
 			trans_pdf += pmf_wavelength[i] * transmittance[i];
 		}
 
@@ -105,7 +105,7 @@ RGBSpectrum Homogeneous::SampleDistance(const RGBSpectrum& history, float max_di
 	}
 	else {
 		transmittance = Exp(-sigma_t * distance);
-		for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+		for (int i = 0; i < Spectrum::nSamples; i++) {
 			trans_pdf += pmf_wavelength[i] * transmittance[i] * sigma_t[i];
 		}
 
@@ -113,7 +113,7 @@ RGBSpectrum Homogeneous::SampleDistance(const RGBSpectrum& history, float max_di
 	}
 
 	bool valid = false;
-	for (int i = 0; i < RGBSpectrum::nSamples; i++) {
+	for (int i = 0; i < Spectrum::nSamples; i++) {
 		if (transmittance[i] > 0.0f) {
 			valid = true;
 		}
@@ -124,26 +124,26 @@ RGBSpectrum Homogeneous::SampleDistance(const RGBSpectrum& history, float max_di
 	}
 
 	if (!valid) {
-		transmittance = RGBSpectrum(0.0f);
+		transmittance = Spectrum(0.0f);
 	}
 
 	return transmittance;
 }
 
 Heterogeneous::Heterogeneous(std::shared_ptr<PhaseFunction> phase, std::shared_ptr<DensityGrid> grid,
-	const RGBSpectrum& absorption, const RGBSpectrum& scattering, float densityMulti) : Medium(MediumType::HeterogeneousMedium, phase), densityGrid(grid),
+	const Spectrum& absorption, const Spectrum& scattering, float densityMulti) : Medium(MediumType::HeterogeneousMedium, phase), densityGrid(grid),
 	absorptionColor(absorption), scatteringColor(scattering), densityMultiplier(densityMulti) {
 	// Compute wavelength independent majorant
 	float max_density = GetMaxDensity();
-	RGBSpectrum m = absorptionColor * max_density + scatteringColor * max_density;
+	Spectrum m = absorptionColor * max_density + scatteringColor * max_density;
 	majorant = std::max(m[0], std::max(m[1], m[2]));
 	invMajorant = 1.0f / majorant;
 }
 
-RGBSpectrum Heterogeneous::EvaluateDistance(const RGBSpectrum& history, bool scattered, float distance, float& trans_pdf) {
-	return RGBSpectrum();
+Spectrum Heterogeneous::EvaluateDistance(const Spectrum& history, bool scattered, float distance, float& trans_pdf) {
+	return Spectrum();
 }
 
-RGBSpectrum Heterogeneous::SampleDistance(const RGBSpectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) {
-	return RGBSpectrum();
+Spectrum Heterogeneous::SampleDistance(const Spectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) {
+	return Spectrum();
 }

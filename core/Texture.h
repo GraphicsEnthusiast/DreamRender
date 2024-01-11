@@ -13,7 +13,7 @@ class Texture {
 public:
 	Texture(TextureType type) : m_type(type) {}
 
-	virtual RGBSpectrum GetColor(const Point2f& uv) = 0;
+	virtual Spectrum GetColor(const Point2f& uv) = 0;
 
 	virtual TextureType GetType() const {
 		return m_type;
@@ -25,12 +25,12 @@ protected:
 
 class Constant : public Texture {
 public:
-	Constant(const RGBSpectrum& c) : Texture(TextureType::ConstantTexture), color(c) {}
+	Constant(const Spectrum& c) : Texture(TextureType::ConstantTexture), color(c) {}
 
-	virtual RGBSpectrum GetColor(const Point2f& uv) override;
+	virtual Spectrum GetColor(const Point2f& uv) override;
 
 private:
-	RGBSpectrum color;
+	Spectrum color;
 };
 
 class Image : public Texture {
@@ -39,7 +39,7 @@ public:
 
 	~Image();
 
-	virtual RGBSpectrum GetColor(const Point2f& uv) override;
+	virtual Spectrum GetColor(const Point2f& uv) override;
 
 private:
 	unsigned char* data;
@@ -54,7 +54,7 @@ public:
 
 	~Hdr();
 
-	virtual RGBSpectrum GetColor(const Point2f& uv) override;
+	virtual Spectrum GetColor(const Point2f& uv) override;
 
 private:
 	float* data;

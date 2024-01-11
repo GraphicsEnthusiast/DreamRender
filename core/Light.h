@@ -30,11 +30,11 @@ public:
 		return Luminance(shape->GetMaterial()->Emit());
 	}
 
-	virtual RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf);
+	virtual Spectrum EvaluateEnvironment(const Vector3f& L, float& pdf);
 
-	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info);
+	virtual Spectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info);
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
+	virtual Spectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
 
 protected:
 	LightType m_type;
@@ -45,9 +45,9 @@ class QuadArea : public Light {
 public:
 	QuadArea(Shape* s, bool twoside = false) : Light(LightType::QuadAreaLight, s), twoSide(twoside) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	bool twoSide;
@@ -57,9 +57,9 @@ class SphereArea : public Light {
 public:
 	SphereArea(Shape* s) : Light(LightType::SphereAreaLight, s) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 };
 
 class InfiniteArea : public Light {
@@ -70,9 +70,9 @@ public:
 		return table.Sum();
 	}
 
-	virtual RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf) override;
+	virtual Spectrum EvaluateEnvironment(const Vector3f& L, float& pdf) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Hdr> hdr;
@@ -84,9 +84,9 @@ class TriangleMeshArea : public Light {
 public:
 	TriangleMeshArea(Shape* s);
 
-	virtual RGBSpectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::vector<float> areas;

@@ -28,11 +28,11 @@ public:
 		return m_type;
 	}
 
-	virtual RGBSpectrum Emit();
+	virtual Spectrum Emit();
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
 
 protected:
 	MaterialType m_type;
@@ -43,23 +43,23 @@ class MediumBoundary : public Material {
 public:
 	MediumBoundary() : Material(MaterialType::MediumBoundaryMaterial) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 };
 
 class DiffuseLight : public Material {
 public:
-	DiffuseLight(const RGBSpectrum& rad) : Material(MaterialType::DiffuseLightMaterial), radiance(rad) {}
+	DiffuseLight(const Spectrum& rad) : Material(MaterialType::DiffuseLightMaterial), radiance(rad) {}
 
-	virtual RGBSpectrum Emit() override;
+	virtual Spectrum Emit() override;
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
-	RGBSpectrum radiance;
+	Spectrum radiance;
 };
 
 class Diffuse : public Material {
@@ -67,9 +67,9 @@ public:
 	Diffuse(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness, std::shared_ptr<Texture> normal = NULL) :
 		Material(MaterialType::DiffuseMaterial, normal), albedoTexture(albedo), roughnessTexture(roughness) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
@@ -78,20 +78,20 @@ private:
 
 class Conductor : public Material {
 public:
-	Conductor(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, const RGBSpectrum& et, const RGBSpectrum& kk, 
+	Conductor(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, const Spectrum& et, const Spectrum& kk, 
 		std::shared_ptr<Texture> normal = NULL) :
 		Material(MaterialType::ConductorMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(et), k(kk) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
 	std::shared_ptr<Texture> roughnessTexture_u;
 	std::shared_ptr<Texture> roughnessTexture_v;
-	RGBSpectrum eta;
-	RGBSpectrum k;
+	Spectrum eta;
+	Spectrum k;
 };
 
 class Dielectric : public Material {
@@ -100,9 +100,9 @@ public:
 		std::shared_ptr<Texture> normal = NULL) :
 		Material(MaterialType::DielectricMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(int_ior / ext_ior) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
@@ -118,9 +118,9 @@ public:
 		Material(MaterialType::PlasticMaterial, normal), albedoTexture(albedo), specularTexture(specular), roughnessTexture_u(roughness_u), 
 		roughnessTexture_v(roughness_v), eta(int_ior / ext_ior), nonlinear(nonli) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
@@ -137,9 +137,9 @@ public:
 		std::shared_ptr<Texture> normal = NULL) :
 		Material(MaterialType::ThinDielectricMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), eta(int_ior / ext_ior) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
@@ -155,9 +155,9 @@ public:
 		Material(MaterialType::MetalWorkflowMaterial, normal), albedoTexture(albedo), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v),
 		metallicTexture(metallic) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
@@ -172,9 +172,9 @@ public:
 		std::shared_ptr<Texture> normal = NULL) :
 		Material(MaterialType::ClearCoatedConductorMaterial, normal), conductor(con), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), coatWeight(coatweight) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Conductor> conductor;
@@ -188,9 +188,9 @@ public:
 	DiffuseTransmitter(std::shared_ptr<Texture> albedo, std::shared_ptr<Texture> normal = NULL) :
 		Material(MaterialType::DiffuseTransmitterMaterial, normal), albedoTexture(albedo) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Texture> albedoTexture;
@@ -201,9 +201,9 @@ public:
 	Mixture(std::shared_ptr<Material> m1, std::shared_ptr<Material> m2, float w) :
 		Material(MaterialType::MixtureMaterial, NULL), material1(m1), material2(m2), weight(glm::clamp(w, 0.0f, 1.0f)) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
 	std::shared_ptr<Material> material1;

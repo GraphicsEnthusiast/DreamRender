@@ -1,23 +1,23 @@
 #include "PhaseFunction.h"
 
-RGBSpectrum Isotropic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
-	RGBSpectrum attenuation(INV_4PI);
+Spectrum Isotropic::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+	Spectrum attenuation(INV_4PI);
 	pdf = UniformPdfSphere();
 
 	return attenuation;
 }
 
-RGBSpectrum Isotropic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
-	RGBSpectrum attenuation(INV_4PI);
+Spectrum Isotropic::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+	Spectrum attenuation(INV_4PI);
 	L = UniformSampleSphere(sampler->Get2());
 	pdf = UniformPdfSphere();
 
 	return attenuation;
 }
 
-RGBSpectrum HenyeyGreenstein::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum HenyeyGreenstein::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	float cos_theta = glm::dot(L, V);
-	RGBSpectrum attenuation(0.0f);
+	Spectrum attenuation(0.0f);
 	pdf = 0.0f;
 	for (int dim = 0; dim < 3; ++dim) {
 		float temp = 1.0f + g[dim] * g[dim] + 2.0f * g[dim] * cos_theta;
@@ -30,13 +30,13 @@ RGBSpectrum HenyeyGreenstein::Evaluate(const Vector3f& V, const Vector3f& L, flo
 	if (pdf <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	return attenuation;
 }
 
-RGBSpectrum HenyeyGreenstein::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum HenyeyGreenstein::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	int channel = std::min(static_cast<int>(sampler->Get1() * 3), 2);
 	float gc = g[channel];
 
@@ -50,7 +50,7 @@ RGBSpectrum HenyeyGreenstein::Sample(const Vector3f& V, Vector3f& L, float& pdf,
 	}
 
 	pdf = 0.0f;
-	RGBSpectrum attenuation = 0.0f;
+	Spectrum attenuation = 0.0f;
 	for (int dim = 0; dim < 3; ++dim) {
 		float temp = 1.0f + g[dim] * g[dim] + 2.0f * g[dim] * cos_theta;
 		attenuation[dim] = INV_PI * (1.0f - g[dim] * g[dim]) / (temp * std::sqrt(temp));
@@ -61,7 +61,7 @@ RGBSpectrum HenyeyGreenstein::Sample(const Vector3f& V, Vector3f& L, float& pdf,
 	if (pdf <= 0.0f) {
 		pdf = 0.0f;
 
-		return RGBSpectrum(0.0f);
+		return Spectrum(0.0f);
 	}
 
 	float sin_theta = std::sqrt(std::max(0.0f, 1.0f - cos_theta * cos_theta));

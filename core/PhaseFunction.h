@@ -18,9 +18,9 @@ public:
 		return m_type;
 	}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
 
 protected:
 	PhaseFunctionType m_type;
@@ -30,19 +30,19 @@ class Isotropic : public PhaseFunction {
 public:
 	Isotropic() : PhaseFunction(PhaseFunctionType::IsotropicPhaseFunction) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 };
 
 class HenyeyGreenstein : public PhaseFunction {
 public:
-	HenyeyGreenstein(const RGBSpectrum& gg) : PhaseFunction(PhaseFunctionType::HenyeyGreensteinPhaseFunction), g(gg) {}
+	HenyeyGreenstein(const Spectrum& gg) : PhaseFunction(PhaseFunctionType::HenyeyGreensteinPhaseFunction), g(gg) {}
 
-	virtual RGBSpectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
+	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
-	virtual RGBSpectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
+	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
 
 private:
-	RGBSpectrum g;
+	Spectrum g;
 };
