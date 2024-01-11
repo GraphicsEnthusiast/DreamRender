@@ -1,6 +1,8 @@
 #include "Renderer.h"
 
 int main() {
+	SampledSpectrum::Init();
+
 	int Width = 800;
 	int Height = 800;
 
@@ -13,7 +15,7 @@ int main() {
 	float sigma_s2[3] = { 0.5f, 0.75f, 0.25f };
 	float scale2 = 1.0f;
 	auto medium2 = std::make_shared<Homogeneous>(std::make_shared<Isotropic>(), Spectrum::FromRGB(sigma_s2), Spectrum::FromRGB(sigma_a2), scale2);
-
+	//medium2 = NULL;
 	medium = NULL;
 	//std::shared_ptr<Medium> medium = NULL;
 	//Transform tran = Transform::Rotate(0.0f, 45.0f, 0.0f);

@@ -76,7 +76,7 @@ Renderer::~Renderer() {
 }
 
 void Renderer::Run() {
-	Spectrum* nowTexture = new Spectrum[width * height];
+	RGBSpectrum* nowTexture = new RGBSpectrum[width * height];
 	nowFrame = GetTextureRGB32F(width, height);
 
 	while (!glfwWindowShouldClose(window)) {

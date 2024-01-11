@@ -34,7 +34,7 @@ template <int nSpectrumSamples>
 class CoefficientSpectrum;
 class RGBSpectrum;// Now only use rgb
 class SampledSpectrum;
-typedef RGBSpectrum Spectrum;
+typedef SampledSpectrum Spectrum;
 
 class ToneMapper;
 class Reinhard;

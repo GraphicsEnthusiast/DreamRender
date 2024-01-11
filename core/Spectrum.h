@@ -563,6 +563,12 @@ inline CoefficientSpectrum<nSpectrumSamples> Pow(
 	return ret;
 }
 
+inline float Luminance(const SampledSpectrum& color) {
+	RGBSpectrum rgb_color = color.ToRGBSpectrum();
+
+	return 0.299f * rgb_color[0] + 0.587f * rgb_color[1] + 0.114f * rgb_color[2];
+}
+
 inline float Luminance(const RGBSpectrum& color) {
 	return 0.299f * color[0] + 0.587f * color[1] + 0.114f * color[2];
 }

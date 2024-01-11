@@ -27,7 +27,7 @@ public:
 
 	virtual Spectrum SolvingIntegrator(Ray& ray, IntersectionInfo& info) = 0;
 
-	virtual void RenderImage(const PostProcessing& post, Spectrum* image) = 0;
+	virtual void RenderImage(const PostProcessing& post, RGBSpectrum* image) = 0;
 
 protected:
 	IntegratorType m_type;
@@ -44,7 +44,7 @@ public:
 
 	virtual Spectrum SolvingIntegrator(Ray& ray, IntersectionInfo& info) override;
 
-	virtual void RenderImage(const PostProcessing& post, Spectrum* image) override;
+	virtual void RenderImage(const PostProcessing& post, RGBSpectrum* image) override;
 
 private:
 	int maxBounce;
