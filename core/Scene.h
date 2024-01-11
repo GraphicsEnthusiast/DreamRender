@@ -24,9 +24,9 @@ public:
 
 	void TraceRay(RTCRayHit& rayhit, IntersectionInfo& info);
 
-	RGBSpectrum SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_trans_pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler);
+	RGBSpectrum SampleLightEnvironment(const RGBSpectrum& history, Vector3f& L, float& pdf, float& mult_trans_pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler);
 
-	RGBSpectrum EvaluateLight(int geomID, const Vector3f&L, float& pdf, const IntersectionInfo& info);
+	RGBSpectrum EvaluateLight(int geomID, const Vector3f& L, float& pdf, const IntersectionInfo& info);
 
 	RGBSpectrum EvaluateEnvironment(const Vector3f& L, float& pdf);
 

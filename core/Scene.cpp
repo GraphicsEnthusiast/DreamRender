@@ -111,7 +111,7 @@ void Scene::TraceRay(RTCRayHit& rayhit, IntersectionInfo& info) {
 	}
 }
 
-RGBSpectrum Scene::SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_trans_pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+RGBSpectrum Scene::SampleLightEnvironment(const RGBSpectrum& history, Vector3f& L, float& pdf, float& mult_trans_pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	if (lights.size() == 0) {
 		pdf = 0.0f;
 
@@ -125,9 +125,9 @@ RGBSpectrum Scene::SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_t
 	pdf *= (light->LightLuminance() / lightTable.Sum());
 
 	mult_trans_pdf = 1.0f;
-	RGBSpectrum history(1.0f);
+	RGBSpectrum shadow_history(1.0f);
 	IntersectionInfo shadowInfo = info;
-	while(true){
+	while (true) {
 		Ray shadowRay(shadowInfo.position, L);
 		RTCRayHit rtc_shadowRayHit = MakeRayHit(shadowRay.GetOrg(), shadowRay.GetDir(), Epsilon, dist - Epsilon);
 		TraceRay(rtc_shadowRayHit, shadowInfo);
@@ -135,17 +135,17 @@ RGBSpectrum Scene::SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_t
 			if (shadowInfo.material->GetType() != MaterialType::MediumBoundaryMaterial) {
 				return RGBSpectrum(0.0f);
 			}
-			
+
 			auto medium = info.mi.GetMedium(shadowInfo.frontFace);
 			if (medium != NULL) {
 				float trans_pdf = 0.0f;
-				RGBSpectrum transmittance = medium->EvaluateDistance(false, shadowInfo.t, trans_pdf);
+				RGBSpectrum transmittance = medium->EvaluateDistance(history, false, shadowInfo.t, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
 					return RGBSpectrum(0.0f);
 				}
-	
-				history *= (transmittance / trans_pdf);
+
+				shadow_history *= (transmittance / trans_pdf);
 				mult_trans_pdf *= trans_pdf;
 			}
 			dist -= shadowInfo.t;
@@ -155,22 +155,22 @@ RGBSpectrum Scene::SampleLightEnvironment(Vector3f& L, float& pdf, float& mult_t
 			auto medium = isEnv ? camera->GetMedium() : light->GetShape()->GetOutMedium();
 			if (medium != NULL) {
 				float trans_pdf = 0.0f;
-				RGBSpectrum transmittance = medium->EvaluateDistance(false, dist, trans_pdf);
+				RGBSpectrum transmittance = medium->EvaluateDistance(history, false, dist, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
 					return RGBSpectrum(0.0f);
 				}
 
-				history *= (transmittance / trans_pdf);
+				shadow_history *= (transmittance / trans_pdf);
 				mult_trans_pdf *= trans_pdf;
 			}
-	
-			if (history.HasNaNs()) {
+
+			if (shadow_history.HasNaNs()) {
 				return RGBSpectrum(0.0f);
 			}
-	
+
 			radiance *= history;
-	
+
 			break;
 		}
 	}

@@ -43,6 +43,24 @@ private:
 	AliasTable1D colTable;
 };
 
+class BinaryTable1D {
+public:
+	BinaryTable1D(const float* values, unsigned int N);
+
+	BinaryTable1D(const std::vector<float>& values)
+		: BinaryTable1D(values.data(), values.size()) {}
+
+	int Sample(float sample);
+
+	inline float GetPDF(int i) const {
+		return pdf[i];
+	}
+
+private:
+	std::vector<float> cdf;
+	std::vector<float> pdf;
+};
+
 inline Point2f UniformSampleDisk(const Point2f& sample, float radius) {
 	float sampleY = sample.x;
 	float sampleX = sample.y;

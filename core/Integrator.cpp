@@ -60,7 +60,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 
 		if (medium != NULL) {
 			// Sample medium distance
-			transmittance = medium->SampleDistance(info.t, actual_distance, trans_pdf, scattered, sampler);
+			transmittance = medium->SampleDistance(history, info.t, actual_distance, trans_pdf, scattered, sampler);
 
 			if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
 				break;
@@ -68,32 +68,32 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 
 			history *= (transmittance / trans_pdf);
 			mult_trans_pdf *= trans_pdf;
-		
+
 			if (scattered) {
 				UpdateMediumInfo(info, actual_distance, pre_position, L);
-		
+
 				// Sample light
 				Vector3f lightL;
 				float light_pdf = 0.0f;
 				float phase_pdf = 0.0f;
 				float mult_trans_pdf_nee = 1.0f;
-				RGBSpectrum light_radiance = scene->SampleLightEnvironment(lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
+				RGBSpectrum light_radiance = scene->SampleLightEnvironment(history, lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
 				RGBSpectrum attenuation = medium->GetPhaseFunction()->Evaluate(V, lightL, phase_pdf, info);
 				phase_pdf *= mult_trans_pdf_nee;
 
 				if (!(std::isnan(phase_pdf) || std::isnan(light_pdf) || phase_pdf == 0.0f || light_pdf == 0.0f)) {
 					float misWeight = PowerHeuristic(light_pdf, phase_pdf, 2);
-		
+
 					radiance += misWeight * history * attenuation * light_radiance / light_pdf;
 				}
-		
+
 				// Sample phase
 				attenuation = medium->GetPhaseFunction()->Sample(V, L, phase_pdf, info, sampler);
-		
+
 				if (std::isnan(phase_pdf) || phase_pdf == 0.0f) {
 					break;
 				}
-		
+
 				bp_pdf = phase_pdf;
 				history *= (attenuation / phase_pdf);
 			}
@@ -149,7 +149,7 @@ RGBSpectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo&
 				float light_pdf = 0.0f, bsdf_pdf = 0.0f;
 				Vector3f lightL;
 				float mult_trans_pdf_nee = 1.0f;
-				RGBSpectrum light_radiance = scene->SampleLightEnvironment(lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
+				RGBSpectrum light_radiance = scene->SampleLightEnvironment(history, lightL, light_pdf, mult_trans_pdf_nee, info, sampler);
 				RGBSpectrum bsdf = info.material->Evaluate(V, lightL, bsdf_pdf, info);
 				bsdf_pdf *= mult_trans_pdf_nee;
 				float costheta = std::max(glm::dot(info.Ns, lightL), 0.0f);

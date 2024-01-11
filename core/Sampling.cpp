@@ -66,3 +66,32 @@ std::pair<int, int> AliasTable2D::Sample(const Point2f& sample1, const Point2f& 
 
 	return std::pair<int, int>(rowTables[row].Sample(sample2), row);
 }
+
+BinaryTable1D::BinaryTable1D(const float* values, unsigned int N) {
+	float sum = 0.0f;
+	for (std::size_t i = 0; i < N; ++i) {
+		sum += values[i];
+	}
+
+	cdf.resize(N + 1);
+	cdf[0] = 0;
+	for (std::size_t i = 1; i < N + 1; ++i) {
+		cdf[i] = cdf[i - 1] + values[i - 1] / sum;
+	}
+
+	pdf.resize(N);
+	for (std::size_t i = 0; i < N; ++i) {
+		pdf[i] = cdf[i + 1] - cdf[i];
+	}
+}
+
+int BinaryTable1D::Sample(float sample) {
+	// inverse cdf
+	int x = std::lower_bound(cdf.begin(), cdf.end(), sample) - cdf.begin();
+	if (x == 0) {
+		x++;
+	}
+
+	// NOTE: cdf's index is +1 from values
+	return x - 1;
+}

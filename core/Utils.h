@@ -56,6 +56,7 @@ class Ray;
 
 class AliasTable1D;
 class AliasTable2D;
+class BinaryTable1D;
 
 class Sampler;
 class Independent;
@@ -104,6 +105,7 @@ class HenyeyGreenstein;
 
 class Medium;
 class Homogeneous;
+class Heterogeneous;
 
 class DensityGrid;
 class OpenVDBGrid;
