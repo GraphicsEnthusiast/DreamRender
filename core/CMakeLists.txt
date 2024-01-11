@@ -43,6 +43,8 @@ add_library(core STATIC
     Transform.cpp
     Transform.h
     Utils.h
+    DensityGrid.cpp
+    DensityGrid.h
 )
 
 target_include_directories(core PUBLIC 
