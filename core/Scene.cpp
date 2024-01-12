@@ -139,7 +139,7 @@ Spectrum Scene::SampleLightEnvironment(const Spectrum& history, Vector3f& L, flo
 			auto medium = info.mi.GetMedium(shadowInfo.frontFace);
 			if (medium != NULL) {
 				float trans_pdf = 0.0f;
-				Spectrum transmittance = medium->EvaluateDistance(history, false, shadowInfo.t, trans_pdf);
+				Spectrum transmittance = medium->EvaluateDistance(history * shadow_history, false, shadowInfo.t, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
 					return Spectrum(0.0f);
@@ -155,7 +155,7 @@ Spectrum Scene::SampleLightEnvironment(const Spectrum& history, Vector3f& L, flo
 			auto medium = isEnv ? camera->GetMedium() : light->GetShape()->GetOutMedium();
 			if (medium != NULL) {
 				float trans_pdf = 0.0f;
-				Spectrum transmittance = medium->EvaluateDistance(history, false, dist, trans_pdf);
+				Spectrum transmittance = medium->EvaluateDistance(history * shadow_history, false, dist, trans_pdf);
 
 				if (std::isnan(trans_pdf) || trans_pdf == 0.0f) {
 					return Spectrum(0.0f);
@@ -169,7 +169,7 @@ Spectrum Scene::SampleLightEnvironment(const Spectrum& history, Vector3f& L, flo
 				return Spectrum(0.0f);
 			}
 
-			radiance *= history;
+			radiance *= shadow_history;
 
 			break;
 		}
