@@ -43,8 +43,6 @@ add_library(core STATIC
     Transform.cpp
     Transform.h
     Utils.h
-    DensityGrid.cpp
-    DensityGrid.h
 )
 
 target_include_directories(core PUBLIC 
@@ -60,7 +58,6 @@ target_include_directories(core PUBLIC
 
 target_link_libraries(core PUBLIC
     common
-    openvdb
     ../external/embree/lib/embree3
     ../external/embree/lib/tbb
     ../external/glfw3/lib/glfw3dll

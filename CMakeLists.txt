@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory("common")
 add_subdirectory("core")
-add_subdirectory("external/openvdb")
 
 add_executable(DreamRender main.cpp)
 
@@ -25,7 +24,6 @@ target_include_directories(DreamRender PUBLIC
 target_link_libraries(DreamRender PUBLIC
     common
     core
-    openvdb
     ../external/glfw3/lib/glfw3dll
     ../external/glad/lib/glad
     ../external/embree/lib/embree3

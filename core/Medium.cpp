@@ -129,21 +129,3 @@ Spectrum Homogeneous::SampleDistance(const Spectrum& history, float max_distance
 
 	return transmittance;
 }
-
-Heterogeneous::Heterogeneous(std::shared_ptr<PhaseFunction> phase, std::shared_ptr<DensityGrid> grid,
-	const Spectrum& absorption, const Spectrum& scattering, float densityMulti) : Medium(MediumType::HeterogeneousMedium, phase), densityGrid(grid),
-	absorptionColor(absorption), scatteringColor(scattering), densityMultiplier(densityMulti) {
-	// Compute wavelength independent majorant
-	float max_density = GetMaxDensity();
-	Spectrum m = absorptionColor * max_density + scatteringColor * max_density;
-	majorant = std::max(m[0], std::max(m[1], m[2]));
-	invMajorant = 1.0f / majorant;
-}
-
-Spectrum Heterogeneous::EvaluateDistance(const Spectrum& history, bool scattered, float distance, float& trans_pdf) {
-	return Spectrum();
-}
-
-Spectrum Heterogeneous::SampleDistance(const Spectrum& history, float max_distance, float& distance, float& trans_pdf, bool& scattered, std::shared_ptr<Sampler> sampler) {
-	return Spectrum();
-}

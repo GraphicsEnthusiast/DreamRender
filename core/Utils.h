@@ -27,8 +27,6 @@
 #include <glm/gtx/string_cast.hpp>
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_ray.h>
-#include <openvdb/openvdb.h>
-#include <openvdb/tools/Interpolation.h>
 
 template <int nSpectrumSamples>
 class CoefficientSpectrum;
@@ -106,10 +104,6 @@ class HenyeyGreenstein;
 
 class Medium;
 class Homogeneous;
-class Heterogeneous;
-
-class DensityGrid;
-class OpenVDBGrid;
 
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;
