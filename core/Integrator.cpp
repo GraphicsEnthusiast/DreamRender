@@ -181,6 +181,12 @@ Spectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo& in
 			}
 		}
 
+		// Update information
+		V = -L;
+		mult_trans_pdf = 1.0f;
+		pre_position = info.position;
+		ray = Ray::SpawnRay(info.position, L, info.Ng);
+
 		// Russian roulette
 		if (bounce > 3 && history.MaxComponentValue() < 0.1f) {
 			auto continueProperbility = std::max(0.05f, 1.0f - history.MaxComponentValue());
@@ -195,12 +201,6 @@ Spectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo& in
 		if (history.HasNaNs()) {
 			break;
 		}
-
-		// Update information
-		V = -L;
-		mult_trans_pdf = 1.0f;
-		pre_position = info.position;
-		ray = Ray::SpawnRay(info.position, L, info.Ng);
 	}
 
 	return radiance;
