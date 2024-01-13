@@ -1,9 +1,7 @@
 #include "Renderer.h"
 
 int main() {
-#ifdef SAMPLED
 	SampledSpectrum::Init();
-#endif
 
 	int Width = 800;
 	int Height = 800;
