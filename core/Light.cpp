@@ -24,7 +24,7 @@ Spectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInf
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
 	float cos_theta = glm::dot(L, Nl);
-	if (!twoSide && cos_theta > 0.0f) {
+	if (cos_theta >= 0.0f) {
 		pdf = 0.0f;
 
 		return Spectrum(0.0f);
@@ -54,7 +54,7 @@ Spectrum QuadArea::Sample(Vector3f& L, float& pdf, float& dist, const Intersecti
 
 	float cos_theta = glm::dot(L, Nl);
 
-	if (!twoSide && cos_theta > 0.0f) {
+	if (cos_theta >= 0.0f) {
 		pdf = 0.0f;
 
 		return Spectrum(0.0f);
@@ -242,7 +242,7 @@ Spectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const In
 
 std::shared_ptr<Light> Light::Create(const LightParams& params) {
 	if (params.type == LightType::QuadAreaLight) {
-		return std::make_shared<QuadArea>(params.shape, params.twoside);
+		return std::make_shared<QuadArea>(params.shape);
 	}
 	else if (params.type == LightType::SphereAreaLight) {
 		return std::make_shared<SphereArea>(params.shape);

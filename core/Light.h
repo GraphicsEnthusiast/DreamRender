@@ -15,7 +15,6 @@ enum LightType {
 struct LightParams {
 	LightType type;
 	Shape* shape;
-	bool twoside;
 	std::shared_ptr<Hdr> hdr;
 	float scale;
 };
@@ -53,14 +52,11 @@ protected:
 
 class QuadArea : public Light {
 public:
-	QuadArea(Shape* s, bool twoside = false) : Light(LightType::QuadAreaLight, s), twoSide(twoside) {}
+	QuadArea(Shape* s) : Light(LightType::QuadAreaLight, s) {}
 
 	virtual Spectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
 	virtual Spectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) override;
-
-private:
-	bool twoSide;
 };
 
 class SphereArea : public Light {
