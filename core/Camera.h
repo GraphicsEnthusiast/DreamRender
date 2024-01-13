@@ -11,6 +11,18 @@ enum CameraType {
 	ThinlensCamera
 };
 
+struct CameraParams {
+	CameraType type;
+	Point3f lookfrom;
+	Point3f lookat;
+	Vector3f vup;
+	float znear;
+	float vfov;
+	float aspect;
+	float aperture;
+	std::shared_ptr<Medium> medium;
+};
+
 class Camera {
 public:
 	Camera(CameraType type, std::shared_ptr<Medium> med = NULL) : m_type(type), medium(med) {}
@@ -24,6 +36,8 @@ public:
 	inline std::shared_ptr<Medium> GetMedium() const {
 		return medium;
 	}
+
+	static std::shared_ptr<Camera> Create(const CameraParams& params);
 
 protected:
 	CameraType m_type;

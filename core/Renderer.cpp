@@ -12,7 +12,7 @@ unsigned int Renderer::GetTextureRGB32F(int w, int h) {
 	return texture;
 }
 
-Renderer::Renderer(std::shared_ptr<Integrator> inte, const PostProcessing& p) {
+Renderer::Renderer(std::shared_ptr<Integrator> inte, std::shared_ptr<PostProcessing> p) {
 	width = inte->width;
 	height = inte->height;
 	integrator = inte;
@@ -116,4 +116,8 @@ void Renderer::Run() {
 		delete[] nowTexture;
 		nowTexture = NULL;
 	}
+}
+
+std::shared_ptr<Renderer> Renderer::Create(const RendererParams& params) {
+	return std::make_shared<Renderer>(params.integrator, params.post);
 }

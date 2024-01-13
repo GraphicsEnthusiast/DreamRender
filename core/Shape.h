@@ -10,6 +10,20 @@ enum ShapeType {
 	QuadShape,
 };
 
+struct ShapeParams {
+	ShapeType type;
+	Transform transform;
+	std::shared_ptr<Material> material;
+	std::shared_ptr<Medium> out_medium;
+	std::shared_ptr<Medium> in_medium;
+	std::string file;
+	Point3f center;
+	float radius;
+	Point3f position;
+	Vector3f u;
+	Vector3f v;
+};
+
 class Shape {
 	friend Light;
 
@@ -51,6 +65,8 @@ public:
 
 	// Creating and committing the current object to Embree scene
 	virtual int ConstructEmbreeObject(RTCDevice& rtc_device, RTCScene& rtc_scene) = 0;
+
+	static Shape* Create(const ShapeParams& params);
 
 protected:
 	ShapeType m_type;

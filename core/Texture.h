@@ -9,6 +9,12 @@ enum TextureType {
 	HdrTexture
 };
 
+struct TextureParams {
+	TextureType type;
+	Spectrum color;
+	std::string filepath;
+};
+
 class Texture {
 public:
 	Texture(TextureType type) : m_type(type) {}
@@ -18,6 +24,8 @@ public:
 	virtual TextureType GetType() const {
 		return m_type;
 	}
+
+	static std::shared_ptr<Texture> Create(const TextureParams& params);
 
 protected:
 	TextureType m_type;

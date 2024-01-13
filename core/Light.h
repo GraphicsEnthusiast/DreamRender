@@ -12,6 +12,14 @@ enum LightType {
 	TriangleMeshAreaLight
 };
 
+struct LightParams {
+	LightType type;
+	Shape* shape;
+	bool twoside;
+	std::shared_ptr<Hdr> hdr;
+	float scale;
+};
+
 class Light {
 public:
 	Light(LightType type, Shape* s) : m_type(type), shape(s) {}
@@ -35,6 +43,8 @@ public:
 	virtual Spectrum Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info);
 
 	virtual Spectrum Sample(Vector3f& L, float& pdf, float& dist, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
+
+	static std::shared_ptr<Light> Create(const LightParams& params);
 
 protected:
 	LightType m_type;

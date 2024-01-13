@@ -55,3 +55,14 @@ void SimpleSobol::NextSamples(size_t samples) {
 	index += samples;
 	dim = 0;
 }
+
+std::shared_ptr<Sampler> Sampler::Create(const SamplerParams& params) {
+	if (params.type == SamplerType::IndependentSampler) {
+		return std::make_shared<Independent>();
+	}
+	else if (params.type == SamplerType::SimpleSobolSampler) {
+		return std::make_shared<SimpleSobol>(params.seed);
+	}
+
+	return NULL;
+}

@@ -19,6 +19,7 @@ Spectrum Light::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& 
 	return Spectrum(0.0f);
 }
 
+
 Spectrum QuadArea::Evaluate(const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	Quad* quad = (Quad*)shape;
 	Vector3f Nl = glm::cross(quad->u, quad->v);
@@ -237,4 +238,21 @@ Spectrum TriangleMeshArea::Sample(Vector3f& L, float& pdf, float& dist, const In
 	pdf *= area / table.Sum();
 
 	return shape->GetMaterial()->Emit();
+}
+
+std::shared_ptr<Light> Light::Create(const LightParams& params) {
+	if (params.type == LightType::QuadAreaLight) {
+		return std::make_shared<QuadArea>(params.shape, params.twoside);
+	}
+	else if (params.type == LightType::SphereAreaLight) {
+		return std::make_shared<SphereArea>(params.shape);
+	}
+	else if (params.type == LightType::InfiniteAreaLight) {
+		return std::make_shared<InfiniteArea>(params.hdr, params.scale);
+	}
+	else if (params.type == LightType::TriangleMeshAreaLight) {
+		return std::make_shared<TriangleMeshArea>(params.shape);
+	}
+
+	return NULL;
 }

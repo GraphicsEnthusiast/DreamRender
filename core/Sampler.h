@@ -4,9 +4,14 @@
 
 static std::default_random_engine GlobalRandomEngine(time(0));
 
-enum class SamplerType {
+enum SamplerType {
 	IndependentSampler,
 	SimpleSobolSampler
+};
+
+struct SamplerParams {
+	SamplerType type;
+	uint32_t seed;
 };
 
 class Sampler {
@@ -46,6 +51,8 @@ public:
 	inline SamplerType GetType() const {
 		return m_type;
 	}
+
+	static std::shared_ptr<Sampler> Create(const SamplerParams& params);
 
 protected:
 	SamplerType m_type;

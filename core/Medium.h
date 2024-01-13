@@ -7,6 +7,14 @@ enum MediumType {
 	HomogeneousMedium
 };
 
+struct MediumParams {
+	MediumType type;
+	std::shared_ptr<PhaseFunction> phaseFunction;
+	Spectrum sigma_s;
+	Spectrum sigma_a;
+	float scale;
+};
+
 class Medium {
 public:
 	Medium(MediumType type, std::shared_ptr<PhaseFunction> phase) : m_type(type), phaseFunction(phase) {}
@@ -26,6 +34,8 @@ public:
 	static void EvaluateWavelength(const Spectrum& history, const Spectrum& albedo, std::vector<float>& pmf);
 
 	static int SampleWavelength(const Spectrum& history, const Spectrum& albedo, std::shared_ptr<Sampler> sampler, std::vector<float>& pmf);
+
+	static std::shared_ptr<Medium> Create(const MediumParams& params);
 
 protected:
 	MediumType m_type;

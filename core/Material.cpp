@@ -898,3 +898,47 @@ Spectrum Mixture::Sample(const Vector3f& V, Vector3f& L, float& pdf, const Inter
 
 	return bsdf;
 }
+
+std::shared_ptr<Material> Material::Create(const MaterialParams& params) {
+	if (params.type == MaterialType::MediumBoundaryMaterial) {
+		return std::make_shared<MediumBoundary>();
+	}
+	else if (params.type == MaterialType::DiffuseLightMaterial) {
+		return std::make_shared<DiffuseLight>(params.radiance);
+	}
+	else if (params.type == MaterialType::DiffuseMaterial) {
+		return std::make_shared<Diffuse>(params.albedoTexture, params.roughnessTexture, params.normalTexture);
+	}
+	else if (params.type == MaterialType::ConductorMaterial) {
+		return std::make_shared<Conductor>(params.albedoTexture, params.roughnessTexture_u, params.roughnessTexture_v, 
+			params.eta, params.k, params.normalTexture);
+	}
+	else if (params.type == MaterialType::DielectricMaterial) {
+		return std::make_shared<Dielectric>(params.albedoTexture, params.roughnessTexture_u, params.roughnessTexture_v, 
+			params.int_ior, params.ext_ior, params.normalTexture);
+	}
+	else if (params.type == MaterialType::PlasticMaterial) {
+		return std::make_shared<Plastic>(params.albedoTexture, params.specularTexture, params.roughnessTexture_u, params.roughnessTexture_v,
+			params.int_ior, params.ext_ior, params.nonlinear, params.normalTexture);
+	}
+	else if (params.type == MaterialType::ThinDielectricMaterial) {
+		return std::make_shared<ThinDielectric>(params.albedoTexture, params.roughnessTexture_u, params.roughnessTexture_v,
+			params.int_ior, params.ext_ior, params.normalTexture);
+	}
+	else if (params.type == MaterialType::MetalWorkflowMaterial) {
+		return std::make_shared<MetalWorkflow>(params.albedoTexture, params.roughnessTexture_u, params.roughnessTexture_v, 
+			params.metallicTexture, params.normalTexture);
+	}
+	else if (params.type == MaterialType::ClearCoatedConductorMaterial) {
+		return std::make_shared<ClearCoatedConductor>(params.conductor, params.roughnessTexture_u, params.roughnessTexture_v, 
+			params.coatWeight, params.normalTexture);
+	}
+	else if(params.type == MaterialType::DiffuseTransmitterMaterial) {
+		std::make_shared<DiffuseTransmitter>(params.albedoTexture, params.normalTexture);
+	}
+	else if (params.type == MaterialType::MixtureMaterial) {
+		return std::make_shared<Mixture>(params.material1, params.material2, params.weight);
+	}
+
+	return NULL;
+}

@@ -28,11 +28,18 @@
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_ray.h>
 
+#define SAMPLED
+
 template <int nSpectrumSamples>
 class CoefficientSpectrum;
-class RGBSpectrum;// Now only use rgb
+class RGBSpectrum;
 class SampledSpectrum;
+
+#ifdef SAMPLED
 typedef SampledSpectrum Spectrum;
+#else
+typedef RGBSpectrum Spectrum;
+#endif
 
 class ToneMapper;
 class Reinhard;

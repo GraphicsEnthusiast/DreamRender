@@ -23,3 +23,21 @@ RGBSpectrum PostProcessing::GetScreenColor(const RGBSpectrum& color) {
 
 	return screenColor;
 }
+
+std::shared_ptr<ToneMapper> ToneMapper::Create(const ToneMapperParams& params) {
+	if (params.type == ToneMapperType::ReinhardToneMapper) {
+		return std::make_shared<Reinhard>();
+	}
+	else if (params.type == ToneMapperType::Uncharted2ToneMapper) {
+		return std::make_shared<Uncharted2>();
+	}
+	else if (params.type == ToneMapperType::ACESToneMapper) {
+		return std::make_shared<ACES>();
+	}
+
+	return NULL;
+}
+
+std::shared_ptr<PostProcessing> PostProcessing::Create(const PostProcessingParams& params) {
+	return std::make_shared<PostProcessing>(params.toneMapper, params.exposure);
+}

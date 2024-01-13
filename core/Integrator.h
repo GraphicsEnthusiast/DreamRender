@@ -12,6 +12,16 @@ enum IntegratorType {
 	VolumetricPathTracingIntegrator
 };
 
+struct IntegratorParams {
+	IntegratorType type;
+	std::shared_ptr<Scene> scene;
+	std::shared_ptr<Sampler> sampler;
+	std::shared_ptr<Filter> filter;
+	int width;
+	int height;
+	int maxBounce;
+};
+
 class Integrator {
 	friend Renderer;
 
@@ -27,7 +37,9 @@ public:
 
 	virtual Spectrum SolvingIntegrator(Ray& ray, IntersectionInfo& info) = 0;
 
-	virtual void RenderImage(const PostProcessing& post, RGBSpectrum* image) = 0;
+	virtual void RenderImage(std::shared_ptr<PostProcessing> post, RGBSpectrum* image) = 0;
+
+	static std::shared_ptr<Integrator> Create(const IntegratorParams& params);
 
 protected:
 	IntegratorType m_type;
@@ -44,7 +56,7 @@ public:
 
 	virtual Spectrum SolvingIntegrator(Ray& ray, IntersectionInfo& info) override;
 
-	virtual void RenderImage(const PostProcessing& post, RGBSpectrum* image) override;
+	virtual void RenderImage(std::shared_ptr<PostProcessing> post, RGBSpectrum* image) override;
 
 private:
 	int maxBounce;

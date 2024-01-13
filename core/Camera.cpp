@@ -53,3 +53,14 @@ Ray Thinlens::GenerateRay(std::shared_ptr<Sampler> sampler, float x, float y) {
 
 	return Ray(origin + offset, direction);
 }
+
+std::shared_ptr<Camera> Camera::Create(const CameraParams& params) {
+	if (params.type == CameraType::PinholeCamera) {
+		return std::make_shared<Pinhole>(params.lookfrom, params.lookat, params.vup, params.znear, params.vfov, params.aspect, params.medium);
+	}
+	else if (params.type == CameraType::ThinlensCamera) {
+		return std::make_shared<Thinlens>(params.lookfrom, params.lookat, params.vup, params.znear, params.vfov, params.aspect, params.aperture, params.medium);
+	}
+
+	return NULL;
+}

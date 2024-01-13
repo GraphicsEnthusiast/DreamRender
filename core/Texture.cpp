@@ -104,3 +104,17 @@ Spectrum Hdr::GetColor(const Point2f& uv) {
 
 	return Spectrum::FromRGB(rgb);
 }
+
+std::shared_ptr<Texture> Texture::Create(const TextureParams& params) {
+	if (params.type == TextureType::ConstantTexture) {
+		return std::make_shared<Constant>(params.color);
+	}
+	else if (params.type == TextureType::ImageTexture) {
+		return std::make_shared<Image>(params.filepath);
+	}
+	else if (params.type == TextureType::HdrTexture) {
+		return std::make_shared<Hdr>(params.filepath);
+	}
+
+	return NULL;
+}

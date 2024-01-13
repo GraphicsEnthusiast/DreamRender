@@ -129,3 +129,11 @@ Spectrum Homogeneous::SampleDistance(const Spectrum& history, float max_distance
 
 	return transmittance;
 }
+
+std::shared_ptr<Medium> Medium::Create(const MediumParams& params) {
+	if (params.type == MediumType::HomogeneousMedium) {
+		return std::make_shared<Homogeneous>(params.phaseFunction, params.sigma_s, params.sigma_a, params.scale);
+	}
+
+	return NULL;
+}

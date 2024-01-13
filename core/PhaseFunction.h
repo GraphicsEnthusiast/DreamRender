@@ -10,6 +10,11 @@ enum PhaseFunctionType {
 	HenyeyGreensteinPhaseFunction
 };
 
+struct PhaseFunctionParams {
+	PhaseFunctionType type;
+	Spectrum g;
+};
+
 class PhaseFunction {
 public:
 	PhaseFunction(PhaseFunctionType type) : m_type(type) {}
@@ -21,6 +26,8 @@ public:
 	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
 
 	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
+
+	static std::shared_ptr<PhaseFunction> Create(const PhaseFunctionParams& params);
 
 protected:
 	PhaseFunctionType m_type;

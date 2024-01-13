@@ -329,3 +329,17 @@ Point2f Quad::GetQuadUV(const Point3f& p, const Point3f& position, const Vector3
 
 	return uv;
 }
+
+Shape* Shape::Create(const ShapeParams& params) {
+	if (params.type == ShapeType::TriangleMeshShape) {
+		return new TriangleMesh(params.material, params.file, params.transform, params.out_medium, params.in_medium);
+	}
+	else if (params.type == ShapeType::SphereShape) {
+		return new Sphere(params.material, params.center, params.radius, params.out_medium, params.in_medium);
+	}
+	else if (params.type == ShapeType::QuadShape) {
+		return new Quad(params.material, params.position, params.u, params.v, params.out_medium, params.in_medium);
+	}
+
+	return NULL;
+}

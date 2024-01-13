@@ -9,6 +9,10 @@ enum FilterType {
 	GaussianFilter
 };
 
+struct FilterParams {
+	FilterType type;
+};
+
 class Filter {
 public:
 	Filter(FilterType type) : m_type(type) {}
@@ -18,6 +22,8 @@ public:
 	inline FilterType GetType() const {
 		return m_type;
 	}
+
+	static std::shared_ptr<Filter> Create(const FilterParams& params);
 
 protected:
 	FilterType m_type;

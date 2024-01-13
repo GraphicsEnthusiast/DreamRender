@@ -36,3 +36,20 @@ Point2f Gaussian::FilterPoint2f(const Point2f& sample) {
 
 	return Point2f(0.5f, 0.5f) + 0.375f * uv;
 }
+
+std::shared_ptr<Filter> Filter::Create(const FilterParams& params) {
+	if (params.type == FilterType::BoxFilter) {
+		return std::make_shared<Box>();
+	}
+	else if (params.type == FilterType::TentFilter) {
+		return std::make_shared<Tent>();
+	}
+	else if (params.type == FilterType::TriangleFilter) {
+		return std::make_shared<Triangle>();
+	}
+	else if (params.type == FilterType::GaussianFilter) {
+		return std::make_shared<Gaussian>();
+	}
+
+	return NULL;
+}

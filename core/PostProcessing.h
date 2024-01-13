@@ -27,6 +27,10 @@ enum ToneMapperType {
 	ACESToneMapper
 };
 
+struct ToneMapperParams {
+	ToneMapperType type;
+};
+
 class ToneMapper {
 public:
 	ToneMapper(ToneMapperType type) : m_type(type) {}
@@ -36,6 +40,8 @@ public:
 	inline ToneMapperType GetType() const {
 		return m_type;
 	}
+
+	static std::shared_ptr<ToneMapper> Create(const ToneMapperParams& params);
 
 protected:
 	ToneMapperType m_type;
@@ -81,6 +87,11 @@ private:
 	static constexpr float e = 0.14f;
 };
 
+struct PostProcessingParams {
+	std::shared_ptr<ToneMapper> toneMapper;
+	float exposure;
+};
+
 class PostProcessing {
 public:
 	PostProcessing() = default;
@@ -88,6 +99,8 @@ public:
 	PostProcessing(std::shared_ptr<ToneMapper> t, float e = 0.0f) : toneMapper(t), exposure(e) {}
 
 	RGBSpectrum GetScreenColor(const RGBSpectrum& color);
+
+	static std::shared_ptr<PostProcessing> Create(const PostProcessingParams& params);
 
 private:
 	std::shared_ptr<ToneMapper> toneMapper;

@@ -20,6 +20,28 @@ enum MaterialType {
 	MixtureMaterial
 };
 
+struct MaterialParams {
+	MaterialType type;
+	std::shared_ptr<Texture> normalTexture;
+	Spectrum radiance;
+	std::shared_ptr<Texture> albedoTexture;
+	std::shared_ptr<Texture> roughnessTexture;
+	std::shared_ptr<Texture> roughnessTexture_u;
+	std::shared_ptr<Texture> roughnessTexture_v;
+	Spectrum eta;
+	Spectrum k;
+	float int_ior;
+	float ext_ior;
+	std::shared_ptr<Texture> specularTexture;
+	bool nonlinear;
+	std::shared_ptr<Texture> metallicTexture;
+	std::shared_ptr<Conductor> conductor;
+	float coatWeight;
+	std::shared_ptr<Material> material1;
+	std::shared_ptr<Material> material2;
+	float weight;
+};
+
 class Material {
 public:
 	Material(MaterialType type, std::shared_ptr<Texture> normal = NULL) : m_type(type), normalTexture(normal) {}
@@ -33,6 +55,8 @@ public:
 	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) = 0;
 
 	virtual Spectrum Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) = 0;
+
+	static std::shared_ptr<Material> Create(const MaterialParams& params);
 
 protected:
 	MaterialType m_type;

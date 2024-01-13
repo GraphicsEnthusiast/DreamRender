@@ -7,6 +7,14 @@ float Integrator::PowerHeuristic(float pdf1, float pdf2, int beta) {
 	return p1 / (p1 + p2);
 }
 
+std::shared_ptr<Integrator> Integrator::Create(const IntegratorParams& params) {
+	if (params.type == IntegratorType::VolumetricPathTracingIntegrator) {
+		return std::make_shared<VolumetricPathTracing>(params.scene, params.sampler, params.filter, params.width, params.height, params.maxBounce);
+	}
+
+	return NULL;
+}
+
 Spectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo& info) {
 	Spectrum radiance(0.0f);
 	Spectrum history(1.0f);
@@ -198,7 +206,7 @@ Spectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo& in
 	return radiance;
 }
 
-void VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBSpectrum* image) {
+void VolumetricPathTracing::RenderImage(std::shared_ptr<PostProcessing> post, RGBSpectrum* image) {
 	omp_set_num_threads(32);
 #pragma omp parallel for
 	for (int j = 0; j < height; j++) {
@@ -217,7 +225,7 @@ void VolumetricPathTracing::RenderImage(const PostProcessing& post, RGBSpectrum*
 				assert(0);
 			}
 
-			image[j * width + i] = const_cast<PostProcessing&>(post).GetScreenColor(radiance.ToRGBSpectrum());
+			image[j * width + i] = post->GetScreenColor(radiance.ToRGBSpectrum());
 		}
 	}
 	sampler->NextSample();

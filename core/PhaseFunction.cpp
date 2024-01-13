@@ -72,3 +72,14 @@ Spectrum HenyeyGreenstein::Sample(const Vector3f& V, Vector3f& L, float& pdf, co
 
 	return attenuation;
 }
+
+std::shared_ptr<PhaseFunction> PhaseFunction::Create(const PhaseFunctionParams& params) {
+	if (params.type == PhaseFunctionType::IsotropicPhaseFunction) {
+		return std::make_shared<Isotropic>();
+	}
+	else if (params.type == PhaseFunctionType::HenyeyGreensteinPhaseFunction) {
+		return std::make_shared<HenyeyGreenstein>(params.g);
+	}
+
+	return NULL;
+}
