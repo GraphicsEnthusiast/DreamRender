@@ -44,6 +44,8 @@ add_library(core STATIC
     Transform.h
     SceneParser.cpp
     SceneParser.h
+    TestScenes.cpp
+    TestScenes.h
     Utils.h
 )
 

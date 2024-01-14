@@ -37,6 +37,9 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/shader $<TARGET_FILE_DIR:${TARGET_NAME}>/shader
 
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/scenes $<TARGET_FILE_DIR:${TARGET_NAME}>/scenes
+
     COMMAND ${CMAKE_COMMAND} -E copy
     ${CMAKE_CURRENT_SOURCE_DIR}/external/embree/bin/embree3.dll $<TARGET_FILE_DIR:${TARGET_NAME}>/embree3.dll
 

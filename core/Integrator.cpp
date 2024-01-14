@@ -188,7 +188,7 @@ Spectrum VolumetricPathTracing::SolvingIntegrator(Ray& ray, IntersectionInfo& in
 		ray = Ray::SpawnRay(info.position, L, info.Ng);
 
 		// Russian roulette
-		if (bounce > 3 && history.MaxComponentValue() < 0.1f) {
+		if (bounce > 3 && history.MaxComponentValue() < 0.3f) {
 			auto continueProperbility = std::max(0.05f, 1.0f - history.MaxComponentValue());
 
 			if (sampler->Get1() < continueProperbility) {
