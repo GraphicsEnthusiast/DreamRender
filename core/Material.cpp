@@ -929,7 +929,7 @@ std::shared_ptr<Material> Material::Create(const MaterialParams& params) {
 		return std::make_shared<MetalWorkflow>(params.albedoTexture, params.roughnessTexture_u, params.roughnessTexture_v, 
 			params.metallicTexture, params.normalTexture);
 	}
-	else if (params.type == MaterialType::ClearCoatedConductorMaterial) {
+	else if (params.type == MaterialType::ClearcoatedConductorMaterial) {
 		return std::make_shared<ClearCoatedConductor>(params.conductor, params.roughnessTexture_u, params.roughnessTexture_v, 
 			params.coatWeight, params.normalTexture);
 	}

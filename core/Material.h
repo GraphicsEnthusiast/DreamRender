@@ -15,7 +15,7 @@ enum MaterialType {
 	PlasticMaterial,
 	ThinDielectricMaterial,
 	MetalWorkflowMaterial,
-	ClearCoatedConductorMaterial,
+	ClearcoatedConductorMaterial,
 	DiffuseTransmitterMaterial,
 	MixtureMaterial
 };
@@ -194,7 +194,7 @@ class ClearCoatedConductor : public Material {
 public:
 	ClearCoatedConductor(std::shared_ptr<Conductor> con, std::shared_ptr<Texture> roughness_u, std::shared_ptr<Texture> roughness_v, float coatweight, 
 		std::shared_ptr<Texture> normal = NULL) :
-		Material(MaterialType::ClearCoatedConductorMaterial, normal), conductor(con), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), coatWeight(coatweight) {}
+		Material(MaterialType::ClearcoatedConductorMaterial, normal), conductor(con), roughnessTexture_u(roughness_u), roughnessTexture_v(roughness_v), coatWeight(coatweight) {}
 
 	virtual Spectrum Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) override;
 
