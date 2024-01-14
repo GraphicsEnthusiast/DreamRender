@@ -42,6 +42,8 @@ add_library(core STATIC
     Texture.h
     Transform.cpp
     Transform.h
+    SceneParser.cpp
+    SceneParser.h
     Utils.h
 )
 

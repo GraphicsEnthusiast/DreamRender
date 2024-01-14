@@ -10,13 +10,14 @@
 #include <filesystem>
 #include <random>
 #include <cmath>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
 #include <queue>
 #include <map>
+#include <fstream>
 #include <vector>
+#include <sstream>
 #include <time.h>
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
@@ -27,6 +28,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_ray.h>
+#include <nlohmann/json.hpp>
 
 template <int nSpectrumSamples>
 class CoefficientSpectrum;
@@ -104,6 +106,8 @@ class HenyeyGreenstein;
 
 class Medium;
 class Homogeneous;
+
+class SceneParser;
 
 using Vector2u = glm::uvec2;
 using Vector2i = glm::ivec2;
