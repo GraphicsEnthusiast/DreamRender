@@ -16,7 +16,7 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 - Accelerated Structure
   - embree3
 
-- 材质
+- Material
   - Diffuse
   - Conductor
   - Dielectric
