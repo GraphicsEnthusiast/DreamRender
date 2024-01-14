@@ -56,8 +56,8 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
   - Infinite Area
 
 - Gallery
-![Diningroom_MeshLight(spp=512)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6cf3c1ed-993d-4c8e-bbe1-ebef2ac982b5)
+![Diningroom_MeshLight(spp=512)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/64ee949c-06a6-4174-a490-cd74b1ca1232)
 
-![Diningroom_SphereLight(spp=256)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/7a41ee01-aa2b-4fa9-85e5-14d8913a23fa)
+![Diningroom_SphereLight(spp=256)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8744dabe-75ee-4c1d-abb8-5c6cd204214e)
 
 
