@@ -5,4 +5,6 @@
 
 namespace TestScenes{
 	std::shared_ptr<Renderer> Diningroom_MeshLight();
+
+	std::shared_ptr<Renderer> Diningroom_SphereLight();
 }

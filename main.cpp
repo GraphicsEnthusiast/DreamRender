@@ -3,7 +3,8 @@
 int main() {
 	SampledSpectrum::Init();
 
-	auto renderer = TestScenes::Diningroom_MeshLight();
+//	auto renderer = TestScenes::Diningroom_MeshLight();
+	auto renderer = TestScenes::Diningroom_SphereLight();
 	renderer->Run();
 
 	return 0;
