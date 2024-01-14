@@ -30,7 +30,7 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 
 - Phase Function
   - Isotropic
-  - HenyeyGreenstein
+  - Henyey Greenstein
 
 - Medium
   - Homogeneous
@@ -58,5 +58,6 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 - Gallery
 ![Diningroom_MeshLight(spp=512)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/6cf3c1ed-993d-4c8e-bbe1-ebef2ac982b5)
 
-![Uploading Diningroom_SphereLight(spp=256).png…]()
+![Diningroom_SphereLight(spp=256)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/7a41ee01-aa2b-4fa9-85e5-14d8913a23fa)
+
 
