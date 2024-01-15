@@ -4,6 +4,10 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 
 - Build Project
   - Execute build.bat
+ 
+- Spectrum
+  - RGB Spectrum
+  - Sampled Spectrum
 
 - Light Transport Method
   - Volumetric Path Tracing
@@ -56,6 +60,12 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
   - Infinite Area
 
 - Gallery
+
+RGB Spectrum:
+![Diningroom_MeshLight(spp=1307，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8604f2ea-11ff-455a-b383-9b48cf55a722)
+
+  
+Sampled Spectrum Scenes:
 ![Diningroom_MeshLight(spp=512)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/64ee949c-06a6-4174-a490-cd74b1ca1232)
 
 ![Diningroom_SphereLight(spp=256)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8744dabe-75ee-4c1d-abb8-5c6cd204214e)
