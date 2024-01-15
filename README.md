@@ -18,7 +18,7 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
   - Quad
 
 - Accelerated Structure
-  - embree3
+  - Embree3
 
 - Material
   - Diffuse
@@ -61,7 +61,7 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 
 - Gallery
 
-RGB Spectrum:
+RGB Spectrum Scenes:
 ![Diningroom_MeshLight(spp=1307，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8604f2ea-11ff-455a-b383-9b48cf55a722)
 
   
