@@ -1,6 +1,6 @@
 # DreamRender
 
-My cpu offline renderer for learning. If I have time, I will keep refactoring the code. I don't plan on writing scene analysis, it's too tiring. Some features I want to implement in the future: (1) heterogeneous medium; (2) approximate bssrdf; (3) hair material; (4) dreamworks fabric material; (5) volumetric bidirectional path tracing; (6) stochastic progressive photon mapping...
+My cpu offline renderer for learning. If I have time, I will keep refactoring the code. I don't plan on writing scene analysis, it's too tiring.
 
 - Build Project
   - Execute build.bat
@@ -58,6 +58,12 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
   - Sphere Area
   - Triangle Mesh Area
   - Infinite Area
+ 
+- To Do
+  - Heterogeneous Medium
+  - Approximate BSSRDF
+  - Hair Material
+  - Dreamworks Fabric Material
 
 - Gallery
 
