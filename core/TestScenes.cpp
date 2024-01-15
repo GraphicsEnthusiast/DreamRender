@@ -207,21 +207,18 @@ std::shared_ptr<Renderer> TestScenes::Subsurface() {
 	int Height = 800;
 
 	// Medium
-	float sigma_a[3] = { 0.032f, 0.17f, 0.48f };
-	float sigma_s[3] = { 0.74f, 0.88f, 1.01f };
-	float scale = 20.0f;
+	float sigma_a[3] = { 0.0030f, 0.0034f, 0.046f };
+	float sigma_s[3] = { 2.29f, 2.39f, 1.97f };
+	float scale = 100.0f;
 	auto medium = std::make_shared<Homogeneous>(std::make_shared<Isotropic>(), Spectrum::FromRGB(sigma_s), Spectrum::FromRGB(sigma_a), scale);
 
 	// Material
 	float diffuse_white[3] = { 0.725f, 0.71f, 0.68f };
 	float diffuse_red[3] = { 0.63f, 0.065f, 0.05f };
 	float diffuse_green[3] = { 0.14f, 0.45f, 0.091f };
-	float albedo[3] = { 1.0f, 1.0f, 1.0f };
+	float albedo[3] = { 0.8f, 0.9f, 0.82f };
 	float roughness[3] = { 0.1f };
-	float radiance[3] = { 4.0f, 2.0f, 1.0f };
 
-	auto light_material = std::make_shared<DiffuseLight>(Spectrum::FromRGB(radiance));
-	auto plane_material = std::make_shared<Diffuse>(std::make_shared<Constant>(Spectrum::FromRGB(albedo)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)));
 	auto buddha_material = std::make_shared<ThinDielectric>(std::make_shared<Constant>(Spectrum::FromRGB(albedo)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)),
  		std::make_shared<Constant>(Spectrum::FromRGB(roughness)), 1.5f, 1.0f);
 	auto white = std::make_shared<Diffuse>(std::make_shared<Constant>(Spectrum::FromRGB(diffuse_white)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)));
@@ -237,7 +234,7 @@ std::shared_ptr<Renderer> TestScenes::Subsurface() {
 	auto buddha = new TriangleMesh(buddha_material, "scenes/subsurface/models/buddha.obj", tran_b, NULL, medium);
 	auto cbox_back = new TriangleMesh(white, "scenes/subsurface/models/cbox_back.obj", tran_b);
 	auto cbox_floor = new TriangleMesh(white, "scenes/subsurface/models/cbox_floor.obj", tran);
-	auto cbox_greenwall = new TriangleMesh(green, "scenes/subsurface/models/cbox_greenwall.obj", tran);
+	auto cbox_greenwall = new TriangleMesh(red, "scenes/subsurface/models/cbox_greenwall.obj", tran);
 	
 	// Camera
 	auto camera = std::make_shared<Pinhole>(Point3f(0.0f, 0.0f, 55.0f), Point3f(0.0f, 0.0f, 0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 60.0f, 
