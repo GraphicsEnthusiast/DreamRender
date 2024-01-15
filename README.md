@@ -1,9 +1,13 @@
 # DreamRender
 
-My cpu offline renderer for learning. If I have time, I will keep refactoring the code. I don't plan on writing scene analysis, it's too tiring. Some features I want to implement in the future: (1) heterogeneous medium; (2) approximate bssrdf; (3) hair material; (4) dreamworks fabric material; (5) volumetric bidirectional path tracing; (6) stochastic progressive photon mapping...
+My cpu offline renderer for learning. If I have time, I will keep refactoring the code. I don't plan on writing scene analysis, it's too tiring.
 
 - Build Project
   - Execute build.bat
+ 
+- Spectrum
+  - RGB Spectrum
+  - Sampled Spectrum
 
 - Light Transport Method
   - Volumetric Path Tracing
@@ -14,7 +18,7 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
   - Quad
 
 - Accelerated Structure
-  - embree3
+  - Embree3
 
 - Material
   - Diffuse
@@ -54,8 +58,25 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
   - Sphere Area
   - Triangle Mesh Area
   - Infinite Area
+ 
+- To Do
+  - Heterogeneous Medium
+  - Approximate BSSRDF
+  - Hair Material
+  - Dreamworks Fabric Material
 
 - Gallery
+
+RGB Spectrum Scenes:
+![Diningroom_MeshLight(spp=1307，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8604f2ea-11ff-455a-b383-9b48cf55a722)
+
+![Diningroom_EnvironmentLight(spp=450，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/eca821eb-fb9c-481f-a742-8f1402f34a39)
+
+![Subsurface(spp=242，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/f8015f68-f2d5-4983-acf5-11748be3de7f)
+
+![Surface(spp=431，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/13fc9c40-d325-4a14-9aec-28638441d9b2)
+  
+Sampled Spectrum Scenes:
 ![Diningroom_MeshLight(spp=512)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/64ee949c-06a6-4174-a490-cd74b1ca1232)
 
 ![Diningroom_SphereLight(spp=256)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8744dabe-75ee-4c1d-abb8-5c6cd204214e)
