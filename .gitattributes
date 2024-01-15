@@ -1,0 +1,2 @@
+scenes/subsurface/models/buddha.obj filter=lfs diff=lfs merge=lfs -text
+scenes/surface/models/dragon.obj filter=lfs diff=lfs merge=lfs -text
