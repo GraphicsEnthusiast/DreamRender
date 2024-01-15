@@ -64,6 +64,7 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 RGB Spectrum Scenes:
 ![Diningroom_MeshLight(spp=1307，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8604f2ea-11ff-455a-b383-9b48cf55a722)
 
+![Diningroom_EnvironmentLight(spp=450，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/69b7d571-de69-4a73-8dff-c3b78b5762f0)
   
 Sampled Spectrum Scenes:
 ![Diningroom_MeshLight(spp=512)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/64ee949c-06a6-4174-a490-cd74b1ca1232)
