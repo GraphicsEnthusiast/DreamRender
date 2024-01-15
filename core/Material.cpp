@@ -705,7 +705,7 @@ Spectrum MetalWorkflow::Sample(const Vector3f& V, Vector3f& L, float& pdf, const
 	return brdf;
 }
 
-Spectrum ClearCoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
+Spectrum ClearcoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L, float& pdf, const IntersectionInfo& info) {
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
@@ -744,7 +744,7 @@ Spectrum ClearCoatedConductor::Evaluate(const Vector3f& V, const Vector3f& L, fl
 	return brdf;
 }
 
-Spectrum ClearCoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
+Spectrum ClearcoatedConductor::Sample(const Vector3f& V, Vector3f& L, float& pdf, const IntersectionInfo& info, std::shared_ptr<Sampler> sampler) {
 	float alpha_u = glm::pow2(roughnessTexture_u->GetColor(info.uv)[0]);
 	float alpha_v = glm::pow2(roughnessTexture_v->GetColor(info.uv)[0]);
 
@@ -930,7 +930,7 @@ std::shared_ptr<Material> Material::Create(const MaterialParams& params) {
 			params.metallicTexture, params.normalTexture);
 	}
 	else if (params.type == MaterialType::ClearcoatedConductorMaterial) {
-		return std::make_shared<ClearCoatedConductor>(params.conductor, params.roughnessTexture_u, params.roughnessTexture_v, 
+		return std::make_shared<ClearcoatedConductor>(params.conductor, params.roughnessTexture_u, params.roughnessTexture_v, 
 			params.coatWeight, params.normalTexture);
 	}
 	else if(params.type == MaterialType::DiffuseTransmitterMaterial) {

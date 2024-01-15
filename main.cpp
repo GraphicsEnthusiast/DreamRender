@@ -1,10 +1,12 @@
 #include "TestScenes.h"
 
 int main() {
-	SampledSpectrum::Init();
+//	SampledSpectrum::Init();
 
 //	auto renderer = TestScenes::Diningroom_MeshLight();
-	auto renderer = TestScenes::Diningroom_SphereLight();
+//	auto renderer = TestScenes::Diningroom_EnvironmentLight();
+//	auto renderer = TestScenes::Subsurface();
+	auto renderer = TestScenes::Surface();
 	renderer->Run();
 
 	return 0;
