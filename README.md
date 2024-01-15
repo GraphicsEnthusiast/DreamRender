@@ -71,6 +71,8 @@ RGB Spectrum Scenes:
 ![Diningroom_MeshLight(spp=1307，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/8604f2ea-11ff-455a-b383-9b48cf55a722)
 
 ![Diningroom_EnvironmentLight(spp=450，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/eca821eb-fb9c-481f-a742-8f1402f34a39)
+
+![Subsurface(spp=242，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/f8015f68-f2d5-4983-acf5-11748be3de7f)
   
 Sampled Spectrum Scenes:
 ![Diningroom_MeshLight(spp=512)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/64ee949c-06a6-4174-a490-cd74b1ca1232)
