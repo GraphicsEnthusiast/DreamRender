@@ -71,8 +71,9 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 
 ![Diningroom_EnvironmentLight(spp=450，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/eca821eb-fb9c-481f-a742-8f1402f34a39)
 
-![Subsurface(spp=242，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/f8015f68-f2d5-4983-acf5-11748be3de7f)
-
 ![Surface(spp=431，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/13fc9c40-d325-4a14-9aec-28638441d9b2)
+
+![Subsurface(spp=242，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/b21f912e-57e2-4fc7-bc6b-4003b3923984)
+
 
 
