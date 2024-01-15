@@ -73,7 +73,8 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 
 ![Surface(spp=431，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/13fc9c40-d325-4a14-9aec-28638441d9b2)
 
-![Subsurface(spp=242，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/b21f912e-57e2-4fc7-bc6b-4003b3923984)
+![Surface2(spp=695，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/d12c7bd0-2de0-4084-95c4-d554e4f4ea4a)
+
 
 
 
