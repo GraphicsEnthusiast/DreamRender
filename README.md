@@ -75,6 +75,7 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 
 ![Surface2(spp=695，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/d12c7bd0-2de0-4084-95c4-d554e4f4ea4a)
 
+![cornellbox(spp=362，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/232a8fa5-17a4-4c55-8bc2-b280a472bc2c)
 
 
 
