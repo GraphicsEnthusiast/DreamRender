@@ -11,4 +11,6 @@ namespace TestScenes{
 	std::shared_ptr<Renderer> Subsurface();
 
 	std::shared_ptr<Renderer> Surface();
+
+	std::shared_ptr<Renderer> Cornellbox();
 }

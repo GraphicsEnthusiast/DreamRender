@@ -343,3 +343,84 @@ std::shared_ptr<Renderer> TestScenes::Surface() {
 
 	return renderer;
 }
+
+std::shared_ptr<Renderer> TestScenes::Cornellbox() {
+	int Width = 800;
+	int Height = 800;
+
+	// Medium
+	float sigma_a[3] = { 0.25f, 0.5f, 0.75f };
+	float sigma_s[3] = { 1.0f, 1.0f, 1.0f };
+	float g[3] = { 0.2f, 0.2f, 0.2f };
+	float scale = 0.015f;
+	auto medium = std::make_shared<Homogeneous>(std::make_shared<HenyeyGreenstein>(Spectrum::FromRGB(g)), Spectrum::FromRGB(sigma_s), Spectrum::FromRGB(sigma_a), scale);
+//	medium = NULL;
+	// Material
+	float diffuse_white[3] = { 0.725f, 0.71f, 0.68f };
+	float diffuse_red[3] = { 0.63f, 0.065f, 0.05f };
+	float diffuse_green[3] = { 0.14f, 0.45f, 0.091f };
+	float albedo[3] = { 1.0f, 1.0f, 1.0f };
+	float roughness[3] = { 0.1f };
+	float radiance[3] = { 2.0f, 2.0f, 1.2f };
+	auto light_material = std::make_shared<DiffuseLight>(Spectrum::FromRGB(radiance));
+	auto white = std::make_shared<Diffuse>(std::make_shared<Constant>(Spectrum::FromRGB(diffuse_white)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)));
+	auto red = std::make_shared<Diffuse>(std::make_shared<Constant>(Spectrum::FromRGB(diffuse_red)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)));
+	auto green = std::make_shared<Diffuse>(std::make_shared<Constant>(Spectrum::FromRGB(diffuse_green)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)));
+	auto dielctric = std::make_shared<Dielectric>(std::make_shared<Constant>(Spectrum::FromRGB(albedo)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)),
+		std::make_shared<Constant>(Spectrum::FromRGB(roughness)), 1.5f, 1.0f);
+
+	// Light
+//	auto light = std::make_shared<SphereArea>(new Sphere(light_material, Point3f(0.0f, 0.0f, 0.0f), 3.0f, medium));
+	auto light = std::make_shared<QuadArea>(new Quad(light_material, Point3f(-6.5f, 27.4f, -5.0f), Vector3f(12.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 10.0f), medium, medium));
+
+	// Shape
+	Transform tran;
+	auto cbox_ceiling = new TriangleMesh(white, "scenes/cornellbox/models/cbox_ceiling.obj", tran, medium, medium);
+	auto cbox_back = new TriangleMesh(white, "scenes/cornellbox/models/cbox_back.obj", tran, medium, medium);
+	auto cbox_floor = new TriangleMesh(white, "scenes/cornellbox/models/cbox_floor.obj", tran, medium, medium);
+	auto cbox_greenwall = new TriangleMesh(green, "scenes/cornellbox/models/cbox_greenwall.obj", tran, medium, medium);
+	auto cbox_redwall = new TriangleMesh(red, "scenes/cornellbox/models/cbox_redwall.obj", tran, medium, medium);
+	auto cbox_largebox = new TriangleMesh(white, "scenes/cornellbox/models/cbox_largebox.obj", tran, medium);
+	auto cbox_smallbox = new TriangleMesh(white, "scenes/cornellbox/models/cbox_smallbox.obj", tran, medium);
+// 	auto sphere = new Sphere(dielctric, Point3f(6.0f, -15.0f, 0.0f), 8.0f, medium);
+// 	auto sphere2 = new Sphere(dielctric, Point3f(-6.0f, 15.0f, 0.0f), 8.0f, medium);
+
+	// Camera
+	auto camera = std::make_shared<Pinhole>(Point3f(0.0f, 0.0f, -65.0f), Point3f(0.0f, 0.0f, 0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 60.0f,
+		(float)Width / (float)Height, medium);
+
+	// Filter
+	auto filter = std::make_shared<Gaussian>();
+
+	// Sampler
+	auto sampler = std::make_shared<Independent>();
+
+	// Scene
+	auto scene = std::make_shared<Scene>(rtc_device);
+	scene->AddLight(light);
+	scene->AddShape(cbox_redwall);
+	scene->AddShape(cbox_back);
+	scene->AddShape(cbox_ceiling);
+	scene->AddShape(cbox_floor);
+	scene->AddShape(cbox_greenwall);
+	scene->AddShape(cbox_largebox);
+	scene->AddShape(cbox_smallbox);
+// 	scene->AddShape(sphere);
+// 	scene->AddShape(sphere2);
+	scene->SetCamera(camera);
+	scene->Commit();
+
+	// Integrator
+	auto integrator = std::make_shared<VolumetricPathTracing>(scene, sampler, filter, Width, Height, 16);
+
+	// ToneMapper
+	auto tone = std::make_shared<Uncharted2>();
+
+	// PostProcessing
+	auto post = std::make_shared<PostProcessing>(tone, 0.0f);
+
+	// Renderer
+	auto renderer = std::make_shared<Renderer>(integrator, post);
+
+	return renderer;
+}
