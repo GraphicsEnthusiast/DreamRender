@@ -1,5 +1,0 @@
-scenes/subsurface/models/buddha.obj filter=lfs diff=lfs merge=lfs -text
-scenes/surface/models/dragon.obj filter=lfs diff=lfs merge=lfs -text
-scenes/camera_high/models/floor.obj filter=lfs diff=lfs merge=lfs -text
-scenes/camera_high/textures/sunny_vondelpark_8k.hdr filter=lfs diff=lfs merge=lfs -text
-scenes/camera_high/textures/weathered_brown_planks_nor_gl_16k.png filter=lfs diff=lfs merge=lfs -text
