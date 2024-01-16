@@ -3,12 +3,12 @@
 int main() {
 //	SampledSpectrum::Init();
 
-//	auto renderer = TestScenes::Diningroom_MeshLight();
+	auto renderer = TestScenes::Diningroom_MeshLight();
 //	auto renderer = TestScenes::Diningroom_EnvironmentLight();
 //	auto renderer = TestScenes::Subsurface();
 //	auto renderer = TestScenes::Surface();
 //	auto renderer = TestScenes::Cornellbox();
-	auto renderer = TestScenes::Camera_high();
+//	auto renderer = TestScenes::Camera_high();
 	renderer->Run();
 
 	return 0;
