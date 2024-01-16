@@ -424,3 +424,84 @@ std::shared_ptr<Renderer> TestScenes::Cornellbox() {
 
 	return renderer;
 }
+
+std::shared_ptr<Renderer> TestScenes::Camera_high() {
+	int Width = 1280;
+	int Height = 720;
+
+	// Material
+	float specular[3] = { 1.0f, 1.0f, 1.0f };
+	float albedo[3] = { 1.0f, 1.0f, 1.0f }; 
+	float albedo2[3] = { 0.3f, 0.5f, 1.0f };
+	float roughness[3] = { 0.05f };
+	float roughness2[3] = { 0.3f };
+	float metallic[3] = { 0.0f, 0.0f, 0.0f };
+	float eta[3] = { 1.0f, 1.0f, 1.0f };
+	float k[3] = { 1.0f, 1.0f, 1.0f };
+
+	auto camera_body_material = std::make_shared<MetalWorkflow>(std::make_shared<Image>("scenes/camera_high/textures/Camera_01_body_diff_8k.png"),
+		std::make_shared<Image>("scenes/camera_high/textures/Camera_01_body_roughness_8k.png"), std::make_shared<Image>("scenes/camera_high/textures/Camera_01_body_roughness_8k.png"),
+		std::make_shared<Image>("scenes/camera_high/textures/Camera_01_body_metallic_8k.png"), std::make_shared<Image>("scenes/camera_high/textures/Camera_01_body_nor_gl_8k.png"));
+	auto camera_lens_body_material = std::make_shared<MetalWorkflow>(std::make_shared<Image>("scenes/camera_high/textures/Camera_01_lens_body_diff_8k.png"),
+		std::make_shared<Image>("scenes/camera_high/textures/Camera_01_lens_body_roughness_8k.png"), std::make_shared<Image>("scenes/camera_high/textures/Camera_01_lens_body_roughness_8k.png"),
+		std::make_shared<Image>("scenes/camera_high/textures/Camera_01_lens_body_metallic_8k.png"), std::make_shared<Image>("scenes/camera_high/textures/Camera_01_lens_body_nor_gl_8k.png"));
+	auto camera_strap_material = std::make_shared<MetalWorkflow>(std::make_shared<Image>("scenes/camera_high/textures/Camera_01_strap_diff_8k.png"),
+		std::make_shared<Image>("scenes/camera_high/textures/Camera_01_strap_roughness_8k.png"), std::make_shared<Image>("scenes/camera_high/textures/Camera_01_strap_roughness_8k.png"),
+		std::make_shared<Image>("scenes/camera_high/textures/Camera_01_strap_metallic_8k.png"), std::make_shared<Image>("scenes/camera_high/textures/Camera_01_strap_nor_gl_8k.png"));
+	auto camera_lens_glass_material = std::make_shared<ThinDielectric>(std::make_shared<Constant>(Spectrum::FromRGB(albedo)), std::make_shared<Constant>(Spectrum::FromRGB(roughness)), 
+		std::make_shared<Constant>(Spectrum::FromRGB(roughness)), 1.5f, 1.0f);
+	auto camera_lens_glass2_material = std::make_shared<Dielectric>(std::make_shared<Constant>(Spectrum::FromRGB(albedo)), std::make_shared<Constant>(Spectrum::FromRGB(roughness2)),
+		std::make_shared<Constant>(Spectrum::FromRGB(roughness2)), 1.5f, 1.0f);
+	auto camera_lens_material = std::make_shared<Mixture>(camera_lens_glass_material, camera_lens_glass2_material, 0.7f);
+	auto camera_backdrop_material = std::make_shared<MetalWorkflow>(std::make_shared<Image>("scenes/camera_high/textures/weathered_brown_planks_diff_16k.jpg"),
+		std::make_shared<Image>("scenes/camera_high/textures/weathered_brown_planks_nor_gl_16k.png"), std::make_shared<Image>("scenes/camera_high/textures/weathered_brown_planks_nor_gl_16k.png"),
+		std::make_shared<Constant>(Spectrum::FromRGB(metallic)), std::make_shared<Image>("scenes/camera_high/textures/weathered_brown_planks_nor_gl_16k.png"));
+
+	// Light
+	auto envlight = std::make_shared<InfiniteArea>(std::make_shared<Hdr>("scenes/camera_high/textures/sunny_vondelpark_8k.hdr"), 1.0f);
+
+	// Shape
+	Transform tran;
+	auto floor = new TriangleMesh(camera_backdrop_material, "scenes/camera_high/models/floor.obj", tran);
+	auto camera_strap1 = new TriangleMesh(camera_strap_material, "scenes/camera_high/models/Mesh.00000.obj", tran);
+	auto camera_lens_body = new TriangleMesh(camera_lens_body_material, "scenes/camera_high/models/Mesh.00001.obj", tran);
+	auto camera_lens = new TriangleMesh(camera_lens_material, "scenes/camera_high/models/Mesh.00002.obj", tran);
+	auto camera_body = new TriangleMesh(camera_body_material, "scenes/camera_high/models/Mesh.00003.obj", tran);
+	auto camera_strap2 = new TriangleMesh(camera_strap_material, "scenes/camera_high/models/Mesh.00004.obj", tran);
+
+	// Camera
+	auto camera = std::make_shared<Thinlens>(Point3f(15.0f, 15.0f, 33.0f), Point3f(0.0f, 0.0f, 0.0f), Vector3f(0.0f, 1.0f, 0.0f), 1.0f, 45.0f,
+		(float)Width / (float)Height, 1.0f);
+
+	// Filter
+	auto filter = std::make_shared<Gaussian>();
+
+	// Sampler
+	auto sampler = std::make_shared<Independent>();
+
+	// Scene
+	auto scene = std::make_shared<Scene>(rtc_device);
+	scene->AddLight(envlight);
+	scene->AddShape(floor);
+	scene->AddShape(camera_strap1);
+	scene->AddShape(camera_strap2);
+	scene->AddShape(camera_lens_body);
+	scene->AddShape(camera_lens);
+	scene->AddShape(camera_body);
+	scene->SetCamera(camera);
+	scene->Commit();
+
+	// Integrator
+	auto integrator = std::make_shared<VolumetricPathTracing>(scene, sampler, filter, Width, Height, 1024);
+
+	// ToneMapper
+	auto tone = std::make_shared<Reinhard>();
+
+	// PostProcessing
+	auto post = std::make_shared<PostProcessing>(tone, 0.0f);
+
+	// Renderer
+	auto renderer = std::make_shared<Renderer>(integrator, post);
+
+	return renderer;
+}

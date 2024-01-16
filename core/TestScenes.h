@@ -13,4 +13,6 @@ namespace TestScenes{
 	std::shared_ptr<Renderer> Surface();
 
 	std::shared_ptr<Renderer> Cornellbox();
+
+	std::shared_ptr<Renderer> Camera_high();
 }

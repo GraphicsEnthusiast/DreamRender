@@ -10,7 +10,7 @@ Image::Image(const std::string& filepath) : Texture(TextureType::ImageTexture) {
 	stbi_set_flip_vertically_on_load(false);
 	data = stbi_load(filepath.c_str(), &nx, &ny, &nn, 0);
 	if (data == NULL) {
-		std::cerr << "Texture is null.\n";
+		std::cerr << "Texture is null:" + filepath + "\n";
 		assert(0);
 	}
 }
@@ -68,7 +68,7 @@ Hdr::Hdr(const std::string& filepath) : Texture(TextureType::HdrTexture) {
 	stbi_set_flip_vertically_on_load(true);
 	data = stbi_loadf(filepath.c_str(), &nx, &ny, &nn, 0);
 	if (data == NULL) {
-		std::cerr << "Texture is null.\n";
+		std::cerr << "Texture is null:" + filepath + "\n";
 		assert(0);
 	}
 }
