@@ -77,5 +77,6 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
 
 ![cornellbox(spp=362，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/232a8fa5-17a4-4c55-8bc2-b280a472bc2c)
 
+![Camera(spp=380，rgb)](https://github.com/GraphicsEnthusiast/DreamRender/assets/75780167/7f6828ff-8295-4af7-a753-ba445e6492e5)
 
 
