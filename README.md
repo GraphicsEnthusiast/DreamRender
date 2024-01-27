@@ -59,6 +59,11 @@ My cpu offline renderer for learning. If I have time, I will keep refactoring th
   - Triangle Mesh Area
   - Infinite Area
  
+- Tone Mapper
+  - Reinhard
+  - Uncharted2
+  - ACES
+ 
 - To Do
   - Heterogeneous Medium
   - Approximate BSSRDF
