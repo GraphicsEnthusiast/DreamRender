@@ -8,7 +8,7 @@ find_package(OpenGL REQUIRED)
 set(ROOT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Add glad
-set(GLAD_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include)
+set(GLAD_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include)
 add_library(glad ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c)
 
 # Add glfw
