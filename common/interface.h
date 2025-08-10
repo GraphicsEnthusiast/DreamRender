@@ -21,8 +21,8 @@ protected:
 public:
 	GLFWwindow* window_;
 	std::unique_ptr<Console> console_;
-	int width_;
-	int height_;
+	unsigned int width_;
+	unsigned int height_;
 };
 
 NAMESPACE_END(dream)

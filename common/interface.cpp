@@ -15,8 +15,8 @@ Interface::Interface(unsigned int width, unsigned int height): width_(width), he
 		glfwTerminate();
 		exit(0);
 	}
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	window_ = glfwCreateWindow(width_, height_, "dream", nullptr, nullptr);
@@ -45,7 +45,7 @@ Interface::Interface(unsigned int width, unsigned int height): width_(width), he
 	ImGui::StyleColorsDark();
 
 	ImGui_ImplGlfw_InitForOpenGL(window_, true);
-	ImGui_ImplOpenGL3_Init("#version 330");
+	ImGui_ImplOpenGL3_Init("#version 460");
 }
 
 Interface::~Interface() {
