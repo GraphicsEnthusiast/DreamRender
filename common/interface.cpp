@@ -2,7 +2,7 @@
 
 NAMESPACE_BEGIN(dream)
 
-Interface::Interface(int width, int height): width_(width), height_(height) {
+Interface::Interface(unsigned int width, unsigned int height): width_(width), height_(height) {
 	spdlog::set_level(spdlog::level::trace);
 	// Bind console output to spdlog log callback
 	RegisterLogCallback();
@@ -72,7 +72,7 @@ void Interface::RegisterLogCallback() {
 	spdlog::default_logger()->sinks().push_back(callback_sink);
 }
 
-void Interface::ConfigureAndSubmitDockspace(int display_w, int display_h) {
+void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int display_h) {
 	ImGuiIO& io = ImGui::GetIO();
 	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 

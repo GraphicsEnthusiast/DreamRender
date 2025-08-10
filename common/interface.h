@@ -6,14 +6,14 @@ NAMESPACE_BEGIN(dream)
 
 class Interface {
 public:
-	Interface(int width = 2048, int height = 1024);
+	Interface(unsigned int width = 2048, unsigned int height = 1024);
 	~Interface();
 
 	void Render();
 
 protected:
 	void RegisterLogCallback();
-	void ConfigureAndSubmitDockspace(int display_w, int display_h);
+	void ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int display_h);
 	void SelectableOptionFromFlag(const char* name, bool& flag);
 	void CreateMenuBar();
 	void ApplyDarkTheme();
