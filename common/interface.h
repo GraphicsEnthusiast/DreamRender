@@ -18,7 +18,7 @@ protected:
 	void CreateMenuBar();
 	void ApplyDarkTheme();
 
-public:
+protected:
 	GLFWwindow* window_;
 	std::unique_ptr<Console> console_;
 	unsigned int width_;

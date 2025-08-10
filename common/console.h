@@ -9,6 +9,10 @@ public:
 	Console();
 	~Console();
 
+	void AddLog(const char* fmt, ...) IM_FMTARGS(2);
+	void Draw();
+
+protected:
 	// Portable helpers
 	static int Stricmp(const char* s1, const char* s2);
 	static int Strnicmp(const char* s1, const char* s2, int n);
@@ -16,16 +20,13 @@ public:
 	static void Strtrim(char* s);
 
 	void ClearLog();
-	void AddLog(const char* fmt, ...) IM_FMTARGS(2);
-	void Draw();
 	void ExecCommand(const char* command_line);
 
 	// In C++11 you'd be better off using lambdas for this sort of forwarding callbacks
 	static int TextEditCallbackStub(ImGuiInputTextCallbackData* data);
-
 	int TextEditCallback(ImGuiInputTextCallbackData* data);
 
-public:
+protected:
 	char input_buffer_[256];
 	ImVector<char*> items_;
 	ImVector<const char*> commands_;

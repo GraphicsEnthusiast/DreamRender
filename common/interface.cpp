@@ -307,7 +307,7 @@ void Interface::Render() {
 	auto RenderImage = [&texture]() {
 		ImGui::Begin("Rendering Window");
 		ImVec2 rendering_window_size = ImGui::GetContentRegionAvail();
-		static std::vector<float> pixels(rendering_window_size.x * rendering_window_size.y * 3, 1.0f);
+		static std::vector<float> pixels(rendering_window_size.x * rendering_window_size.y * 3, 0.6f);
 		
 		if (0 == texture) {
 			glGenTextures(1, &texture);
