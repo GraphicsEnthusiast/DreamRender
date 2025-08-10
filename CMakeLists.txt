@@ -97,3 +97,5 @@ target_link_libraries(${PROJECT_NAME}
     tbb
     common
 )
+
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)

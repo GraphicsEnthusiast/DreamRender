@@ -107,6 +107,31 @@ void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int
 	// Submit dockspace inside a window
 	ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+
+	static bool first_run = true;
+	if (first_run) {
+		first_run = false;
+
+		ImGui::DockBuilderRemoveNode(dockspace_id);
+		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
+
+		ImGuiID top_node, bottom_node;
+		bottom_node = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.37f, nullptr, &top_node);
+
+		ImGuiID left_node, right_node;
+		right_node = ImGui::DockBuilderSplitNode(top_node, ImGuiDir_Right, 0.214f, nullptr, &left_node);
+
+		ImGui::DockBuilderDockWindow("Rendering Window", left_node);
+		ImGui::DockBuilderDockWindow("Dear ImGui Demo", right_node);
+		ImGui::DockBuilderDockWindow("Console", bottom_node);
+
+		ImGui::DockBuilderFinish(dockspace_id);
+
+		ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
+	}
+
 	ImGui::End();
 	ImGui::PopStyleVar(3);
 }
