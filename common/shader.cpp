@@ -20,6 +20,42 @@ void Shader::SetFloat(const std::string& name, float value) const {
 	glUniform1f(glGetUniformLocation(id_, name.c_str()), value);
 }
 
+template<int N>
+void Shader::SetVector(const std::string& name, const glm::vec<N, float, glm::packed_highp>& vec) {
+	GLint location = glGetUniformLocation(id_, name.c_str());
+	if constexpr (N == 2) {
+		glUniform2fv(location, 1, glm::value_ptr(vec));
+	}
+	else if constexpr (N == 3) {
+		glUniform3fv(location, 1, glm::value_ptr(vec));
+	}
+	else if constexpr (N == 4) {
+		glUniform4fv(location, 1, glm::value_ptr(vec));
+	}
+}
+
+template<int N>
+void Shader::SetMatrix(const std::string& name, const glm::mat<N, N, float, glm::packed_highp>& mat) {
+	GLint location = glGetUniformLocation(id_, name.c_str());
+	if constexpr (N == 2) {
+		glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+	}
+	else if constexpr (N == 3) {
+		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+	}
+	else if constexpr (N == 4) {
+		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+	}
+}
+
+template void Shader::SetVector<2>(const std::string&, const glm::vec2&);
+template void Shader::SetVector<3>(const std::string&, const glm::vec3&);
+template void Shader::SetVector<4>(const std::string&, const glm::vec4&);
+
+template void Shader::SetMatrix<2>(const std::string&, const glm::mat2&);
+template void Shader::SetMatrix<3>(const std::string&, const glm::mat3&);
+template void Shader::SetMatrix<4>(const std::string&, const glm::mat4&);
+
 void Shader::CheckCompileErrors(unsigned int shader, std::string type) {
 	int success;
 	char info_log[1024];
