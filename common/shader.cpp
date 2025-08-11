@@ -54,16 +54,16 @@ RasterizationShader::RasterizationShader(const char* vertex_path, const char* fr
 		// open files
 		v_shader_file.open(vertex_path);
 		f_shader_file.open(fragment_path);
-		std::stringstream v_shaderStream, f_shaderStream;
+		std::stringstream v_shader_stream, f_shader_stream;
 		// read file's buffer contents into streams
-		v_shaderStream << v_shader_file.rdbuf();
-		f_shaderStream << f_shader_file.rdbuf();
+		v_shader_stream << v_shader_file.rdbuf();
+		f_shader_stream << f_shader_file.rdbuf();
 		// close file handlers
 		v_shader_file.close();
 		f_shader_file.close();
 		// convert stream into string
-		vertex_code = v_shaderStream.str();
-		fragment_code = f_shaderStream.str();
+		vertex_code = v_shader_stream.str();
+		fragment_code = f_shader_stream.str();
 	}
 	catch (std::ifstream::failure e) {
 		ERROR("[error] shader file not succesfully read.");
@@ -101,14 +101,14 @@ ComputationShader::ComputationShader(const char* compute_path) : Shader(ShaderTy
 	try {
 		// open files
 		c_shaderFile.open(compute_path);
-		std::stringstream c_shaderStream;
+		std::stringstream c_shader_stream;
 		// read file's buffer contents into streams
-		c_shaderStream << c_shaderFile.rdbuf();
+		c_shader_stream << c_shaderFile.rdbuf();
 
 		// close file handlers
 		c_shaderFile.close();
 		// convert stream into string
-		computeCode = c_shaderStream.str();
+		computeCode = c_shader_stream.str();
 	}
 	catch (std::ifstream::failure e) {
 		ERROR("[error] shader file not succesfully read.");
