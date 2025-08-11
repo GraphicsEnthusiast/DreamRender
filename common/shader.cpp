@@ -1,0 +1,131 @@
+#include <shader.h>
+
+ShaderType Shader::GetShaderType() const {
+	return shader_type_;
+}
+
+void Shader::Use() {
+	glUseProgram(id_);
+}
+
+void Shader::SetBool(const std::string& name, bool value) const {
+	glUniform1i(glGetUniformLocation(id_, name.c_str()), (int)value);
+}
+
+void Shader::SetInt(const std::string& name, int value) const {
+	glUniform1i(glGetUniformLocation(id_, name.c_str()), value);
+}
+
+void Shader::SetFloat(const std::string& name, float value) const {
+	glUniform1f(glGetUniformLocation(id_, name.c_str()), value);
+}
+
+void Shader::CheckCompileErrors(unsigned int shader, std::string type) {
+	int success;
+	char info_log[1024];
+	if (type != "PROGRAM") {
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+		if (!success) {
+			glGetShaderInfoLog(shader, 1024, NULL, info_log);
+			const std::string error = "[error] shader compilation error of type: " + type + "; " + std::string(info_log) + ".";
+			ERROR(error);
+		}
+	}
+	else {
+		glGetProgramiv(shader, GL_LINK_STATUS, &success);
+		if (!success) {
+			glGetProgramInfoLog(shader, 1024, NULL, info_log);
+			const std::string error = "[error] shader compilation error of type: " + type + "; " + std::string(info_log) + ".";
+			ERROR(error);
+		}
+	}
+}
+
+RasterizationShader::RasterizationShader(const char* vertex_path, const char* fragment_path) : Shader(ShaderType::Rasterization) {
+	// 1. retrieve the vertex/fragment source code from file_path
+	std::string vertex_code;
+	std::string fragment_code;
+	std::ifstream v_shader_file;
+	std::ifstream f_shader_file;
+	// ensure ifstream objects can throw exceptions:
+	v_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	f_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	try {
+		// open files
+		v_shader_file.open(vertex_path);
+		f_shader_file.open(fragment_path);
+		std::stringstream v_shaderStream, f_shaderStream;
+		// read file's buffer contents into streams
+		v_shaderStream << v_shader_file.rdbuf();
+		f_shaderStream << f_shader_file.rdbuf();
+		// close file handlers
+		v_shader_file.close();
+		f_shader_file.close();
+		// convert stream into string
+		vertex_code = v_shaderStream.str();
+		fragment_code = f_shaderStream.str();
+	}
+	catch (std::ifstream::failure e) {
+		ERROR("[error] shader file not succesfully read.");
+	}
+	const char* v_shader_code = vertex_code.c_str();
+	const char* f_shader_code = fragment_code.c_str();
+	// 2. compile shaders
+	unsigned int vertex, fragment;
+	// vertex shader
+	vertex = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertex, 1, &v_shader_code, NULL);
+	glCompileShader(vertex);
+	CheckCompileErrors(vertex, "VERTEX");
+	// fragment Shader
+	fragment = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragment, 1, &f_shader_code, NULL);
+	glCompileShader(fragment);
+	CheckCompileErrors(fragment, "FRAGMENT");
+	// shader Program
+	id_ = glCreateProgram();
+	glAttachShader(id_, vertex);
+	glAttachShader(id_, fragment);
+	glLinkProgram(id_);
+	CheckCompileErrors(id_, "PROGRAM");
+	// delete the shaders as they're linked into our program now and no longer necessary
+	glDeleteShader(vertex);
+	glDeleteShader(fragment);
+}
+
+ComputationShader::ComputationShader(const char* compute_path) : Shader(ShaderType::Computation) {
+	std::string computeCode;
+	std::ifstream c_shaderFile;
+	// ensure ifstream objects can throw exceptions:
+	c_shaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	try {
+		// open files
+		c_shaderFile.open(compute_path);
+		std::stringstream c_shaderStream;
+		// read file's buffer contents into streams
+		c_shaderStream << c_shaderFile.rdbuf();
+
+		// close file handlers
+		c_shaderFile.close();
+		// convert stream into string
+		computeCode = c_shaderStream.str();
+	}
+	catch (std::ifstream::failure e) {
+		ERROR("[error] shader file not succesfully read.");
+	}
+	const char* c_shaderCode = computeCode.c_str();
+	// 2. compile shaders
+	unsigned int compute;
+	// vertex shader
+	compute = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(compute, 1, &c_shaderCode, NULL);
+	glCompileShader(compute);
+	CheckCompileErrors(compute, "COMPUTE");
+	// shader Program
+	id_ = glCreateProgram();
+	glAttachShader(id_, compute);
+	glLinkProgram(id_);
+	CheckCompileErrors(id_, "PROGRAM");
+	// delete the shaders as they're linked into our program now and no longer necessary
+	glDeleteShader(compute);
+}
