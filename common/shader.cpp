@@ -1,6 +1,6 @@
 #include <shader.h>
 
-ShaderType Shader::GetShaderType() const {
+ShaderType Shader::GetShaderType() const noexcept {
 	return shader_type_;
 }
 
@@ -8,15 +8,15 @@ void Shader::Use() {
 	glUseProgram(id_);
 }
 
-void Shader::SetBool(const std::string& name, bool value) const {
+void Shader::SetBool(const std::string& name, bool value) {
 	glUniform1i(glGetUniformLocation(id_, name.c_str()), (int)value);
 }
 
-void Shader::SetInt(const std::string& name, int value) const {
+void Shader::SetInt(const std::string& name, int value) {
 	glUniform1i(glGetUniformLocation(id_, name.c_str()), value);
 }
 
-void Shader::SetFloat(const std::string& name, float value) const {
+void Shader::SetFloat(const std::string& name, float value) {
 	glUniform1f(glGetUniformLocation(id_, name.c_str()), value);
 }
 
@@ -56,7 +56,7 @@ template void Shader::SetMatrix<2>(const std::string&, const glm::mat2&);
 template void Shader::SetMatrix<3>(const std::string&, const glm::mat3&);
 template void Shader::SetMatrix<4>(const std::string&, const glm::mat4&);
 
-void Shader::CheckCompileErrors(unsigned int shader, std::string type) {
+void Shader::CheckCompileErrors(unsigned int shader, const std::string& type) {
 	int success;
 	char info_log[1024];
 	if (type != "PROGRAM") {
