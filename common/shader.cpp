@@ -94,31 +94,31 @@ RasterizationShader::RasterizationShader(const char* vertex_path, const char* fr
 }
 
 ComputationShader::ComputationShader(const char* compute_path) : Shader(ShaderType::Computation) {
-	std::string computeCode;
-	std::ifstream c_shaderFile;
+	std::string compute_code;
+	std::ifstream c_shader_file;
 	// ensure ifstream objects can throw exceptions:
-	c_shaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	c_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 	try {
 		// open files
-		c_shaderFile.open(compute_path);
+		c_shader_file.open(compute_path);
 		std::stringstream c_shader_stream;
 		// read file's buffer contents into streams
-		c_shader_stream << c_shaderFile.rdbuf();
+		c_shader_stream << c_shader_file.rdbuf();
 
 		// close file handlers
-		c_shaderFile.close();
+		c_shader_file.close();
 		// convert stream into string
-		computeCode = c_shader_stream.str();
+		compute_code = c_shader_stream.str();
 	}
 	catch (std::ifstream::failure e) {
 		ERROR("[error] shader file not succesfully read.");
 	}
-	const char* c_shaderCode = computeCode.c_str();
+	const char* c_shader_code = compute_code.c_str();
 	// 2. compile shaders
 	unsigned int compute;
 	// vertex shader
 	compute = glCreateShader(GL_COMPUTE_SHADER);
-	glShaderSource(compute, 1, &c_shaderCode, NULL);
+	glShaderSource(compute, 1, &c_shader_code, NULL);
 	glCompileShader(compute);
 	CheckCompileErrors(compute, "COMPUTE");
 	// shader Program
