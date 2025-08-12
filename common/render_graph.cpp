@@ -161,7 +161,9 @@ void RenderGraph::Execute() {
             {
                 std::unique_lock<std::mutex> lock(task_mutex);
                 cv.wait(lock, [&] {
-                    if (ready_tasks.empty()) return true;
+                    if (ready_tasks.empty()) {
+                        return true;
+                    }
 
                     for (auto it = ready_tasks.begin(); it != ready_tasks.end(); ++it) {
                         bool dependencies_met = true;
@@ -188,7 +190,9 @@ void RenderGraph::Execute() {
 
                     return; /// Exit task on completion
                 }
-                if (!task) return; /// No ready tasks
+                if (!task) {
+                    return; /// No ready tasks
+                }
             }
 
             /// Execute pass and mark completion
