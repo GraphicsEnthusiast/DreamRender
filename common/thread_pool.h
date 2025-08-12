@@ -2,24 +2,51 @@
 
 #include <utils.h>
 
+NAMESPACE_BEGIN(dream)
+
+/**
+ * @class ThreadPool
+ * @brief Manages a pool of worker threads for concurrent task execution
+ *
+ * Provides thread-safe task queuing and parallel execution capabilities.
+ * Uses std::function for task encapsulation and condition variables for synchronization.
+ */
 class ThreadPool {
 public:
-    explicit ThreadPool(unsigned int threads = std::thread::hardware_concurrency());
-    ~ThreadPool();
+	/**
+	 * @brief Constructs thread pool with specified worker count
+	 * @param threads Number of worker threads (default = hardware concurrency)
+	 */
+	explicit ThreadPool(unsigned int threads = std::thread::hardware_concurrency());
 
-    template<class F>
-    inline void Enqueue(F&& f) {
-        std::unique_lock<std::mutex> lock(queue_mutex_);
-        tasks_.emplace(std::forward<F>(f));
-        lock.unlock();
+	/// Stops all threads and cleans up resources
+	~ThreadPool();
 
-        condition_.notify_one();
-    }
+	/**
+	 * @brief Enqueues a task for asynchronous execution
+	 * @tparam F Callable type (function/lambda)
+	 * @param f Task to execute
+	 */
+	template<class F>
+	inline void Enqueue(F&& f) {
+		{
+			// Lock task queue for thread-safe modification
+			std::unique_lock<std::mutex> lock(queue_mutex_);
+
+			// Add task to queue via perfect forwarding
+			tasks_.emplace(std::forward<F>(f));
+		}
+
+		// Notify one waiting worker thread
+		condition_.notify_one();
+	}
 
 protected:
-    std::vector<std::thread> workers_;
-    std::queue<std::function<void()>> tasks_;
-    std::mutex queue_mutex_;
-    std::condition_variable condition_;
-    bool stop_;
+	std::vector<std::thread> workers_;         ///< Worker thread collection
+	std::queue<std::function<void()>> tasks_;  ///< FIFO task queue
+	std::mutex queue_mutex_;                   ///< Protects task queue access
+	std::condition_variable condition_;        ///< Coordinates task notification
+    bool stop_;                                ///< Termination flag
 };
+
+NAMESPACE_END(dream)
