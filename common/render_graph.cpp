@@ -54,7 +54,7 @@ void RenderGraph::Compile() {
         if (!pass->IsEnabled()) {
             continue;
         }
-        // Record producer for each output texture
+        /// Record producer for each output texture
         for (auto& output : pass->outputs_) {
             resource_producers[output] = pass.get();
         }
@@ -76,8 +76,8 @@ void RenderGraph::Compile() {
     }
 
     /// Prepare for topological sort (Kahn's algorithm)
-    std::unordered_map<RenderPass*, int> in_degree;  // Tracks dependency count per pass
-    std::queue<RenderPass*> ready_queue;  // Queue for passes with zero dependencies
+    std::unordered_map<RenderPass*, int> in_degree;  /// Tracks dependency count per pass
+    std::queue<RenderPass*> ready_queue;  /// Queue for passes with zero dependencies
 
     /// Initialize in-degree counts for all enabled passes
     for (auto& [name, pass] : passes_) {
@@ -105,7 +105,7 @@ void RenderGraph::Compile() {
     while (!ready_queue.empty()) {
         auto* pass = ready_queue.front();
         ready_queue.pop();
-        execution_order_.push_back(pass);  // Add to execution sequence
+        execution_order_.push_back(pass);  /// Add to execution sequence
 
         /// Identify final output from designated passes
         if (pass->is_final_output_ && !pass->outputs_.empty()) {
