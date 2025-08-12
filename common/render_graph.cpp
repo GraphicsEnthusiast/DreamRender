@@ -163,7 +163,9 @@ void RenderGraph::Execute() {
                 /// Wait until task available or all tasks completed
                 cv.wait(lock, [&] {
                     // Exit if no remaining tasks
-                    if (ready_tasks.empty()) return true;
+                    if (ready_tasks.empty()) {
+                        return true;
+                    }
 
                     /// Find task with satisfied dependencies
                     for (auto it = ready_tasks.begin(); it != ready_tasks.end(); ++it) {
