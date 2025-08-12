@@ -124,27 +124,25 @@ void RenderGraph::Compile() {
 }
 
 /**
- * @brief Executes render passes with thread-parallel processing
+ * @brief Executes render passes using thread pool with dependency enforcement
  *
  * Execution workflow:
  * 1. Initializes task queue with topological order
- * 2. Creates reverse dependency map (consumer -> producers)
- * 3. Launches worker threads that:
- *    - Wait for tasks with satisfied dependencies
+ * 2. Builds reverse dependency map (consumer -> producers)
+ * 3. Submits tasks to thread pool that:
+ *    - Wait for dependencies using condition variables
  *    - Execute passes when dependencies are met
- *    - Update completion status atomically
- * 4. Uses condition variables for task synchronization
+ *    - Update task completion status atomically
  */
 void RenderGraph::Execute() {
-    std::vector<std::thread> workers;
-    std::mutex task_mutex;                 /// Synchronizes task queue access
-    std::condition_variable cv;            /// Coordinates task scheduling
-    unsigned int completed_count = 0;      /// Tracks finished tasks
+    std::mutex task_mutex;
+    std::condition_variable cv;
+    bool all_tasks_completed = false;
 
     /// Initialize task queue with topological order
     std::list<RenderPass*> ready_tasks(execution_order_.begin(), execution_order_.end());
 
-    /// Build reverse dependency map (consumer -> producers)
+    /// Build reverse dependency map (consumers -> producers)
     std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_map;
     for (auto& [producer, consumers] : dependency_graph_) {
         for (auto* consumer : consumers) {
@@ -152,25 +150,21 @@ void RenderGraph::Execute() {
         }
     }
 
-    /// Worker thread function
-    auto worker_func = [&] {
+    /// Atomic task counter for completion tracking
+    std::atomic<unsigned int> completed_count = 0;
+    const unsigned int total_tasks = execution_order_.size();
+
+    /// Worker task function (adapted for thread pool)
+    auto task_func = [&] {
         while (true) {
             RenderPass* task = nullptr;
             {
-                /// Lock scope for condition variable wait
                 std::unique_lock<std::mutex> lock(task_mutex);
-
-                /// Wait until task available or all tasks completed
                 cv.wait(lock, [&] {
-                    /// Exit if no remaining tasks
-                    if (ready_tasks.empty()) {
-                        return true;
-                    }
+                    if (ready_tasks.empty()) return true;
 
-                    /// Find task with satisfied dependencies
                     for (auto it = ready_tasks.begin(); it != ready_tasks.end(); ++it) {
                         bool dependencies_met = true;
-                        /// Check all producer dependencies
                         if (auto deps = dependency_map.find(*it); deps != dependency_map.end()) {
                             for (auto* dep : deps->second) {
                                 if (!dep->IsCompleted()) {
@@ -180,49 +174,51 @@ void RenderGraph::Execute() {
                             }
                         }
 
-                        /// Task ready for execution
                         if (dependencies_met) {
                             task = *it;
                             ready_tasks.erase(it);
                             return true;
                         }
                     }
-                    return false;  /// No ready tasks found
+                    return false;
                     });
 
-                /// Exit worker if all tasks processed
-                if (ready_tasks.empty()) {
-                    return;
+                if (ready_tasks.empty() && completed_count == total_tasks) {
+                    all_tasks_completed = true;
+
+                    return; /// Exit task on completion
                 }
+                if (!task) return; /// No ready tasks
             }
 
-            /// Execute task outside lock scope
+            /// Execute pass and mark completion
             task->Execute();
-            task->completed_.store(true);  // Atomic completion flag
+            task->completed_.store(true);
 
-            /// Update completion counter under lock
+            /// Update completion counter and notify
             {
                 std::lock_guard<std::mutex> lock(task_mutex);
                 completed_count++;
             }
-
-            /// Notify all workers about state change
-            cv.notify_all();
+            cv.notify_all(); /// Wake waiting workers
         }
     };
 
-    /// Launch worker threads (up to hardware concurrency)
-    unsigned int worker_count = std::min(
-        static_cast<unsigned int>(execution_order_.size()),
-        std::thread::hardware_concurrency()
-    );
-    for (unsigned int i = 0; i < worker_count; ++i) {
-        workers.emplace_back(worker_func);
+    /// Submit tasks to thread pool (1 task per thread)
+    for (unsigned int i = 0; i < std::thread::hardware_concurrency(); ++i) {
+        pool_.Enqueue(task_func);
     }
 
-    /// Wait for all workers to finish
-    for (auto& worker : workers) {
-        worker.join();
+    /// Wait for all tasks to complete
+    while (completed_count < total_tasks) {
+        std::this_thread::yield();
+    }
+
+    /// Signal threads to exit
+    {
+        std::lock_guard<std::mutex> lock(task_mutex);
+        all_tasks_completed = true;
+        cv.notify_all();
     }
 }
 
