@@ -34,12 +34,12 @@ void RenderGraph::SetPassEnabled(const std::string& name, bool enabled) {
  * 5. Identifies final output texture from designated passes
  */
 void RenderGraph::Compile() {
-    // Initialize final output as invalid handle
+    /// Initialize final output as invalid handle
     final_output_ = TextureHandle{ UINT32_MAX };
     dependency_graph_.clear();
     execution_order_.clear();
 
-    // Custom hash for TextureHandle to enable unordered_map usage
+    /// Custom hash for TextureHandle to enable unordered_map usage
     struct TextureHandleHash {
         std::size_t operator()(const TextureHandle& handle) const noexcept {
             return std::hash<uint32_t>{}(handle.id);
@@ -65,11 +65,11 @@ void RenderGraph::Compile() {
         if (!pass->IsEnabled()) {
             continue;
         }
-        // For each input dependency
+        /// For each input dependency
         for (auto& input : pass->inputs_) {
             if (auto producer = resource_producers.find(input.resource);
                 producer != resource_producers.end()) {
-                // Add edge: producer -> current pass
+                /// Add edge: producer -> current pass
                 dependency_graph_[producer->second].push_back(pass.get());
             }
         }
@@ -137,9 +137,9 @@ void RenderGraph::Compile() {
  */
 void RenderGraph::Execute() {
     std::vector<std::thread> workers;
-    std::mutex task_mutex;                 // Synchronizes task queue access
-    std::condition_variable cv;            // Coordinates task scheduling
-    unsigned int completed_count = 0;      // Tracks finished tasks
+    std::mutex task_mutex;                 /// Synchronizes task queue access
+    std::condition_variable cv;            /// Coordinates task scheduling
+    unsigned int completed_count = 0;      /// Tracks finished tasks
 
     /// Initialize task queue with topological order
     std::list<RenderPass*> ready_tasks(execution_order_.begin(), execution_order_.end());
@@ -162,7 +162,7 @@ void RenderGraph::Execute() {
 
                 /// Wait until task available or all tasks completed
                 cv.wait(lock, [&] {
-                    // Exit if no remaining tasks
+                    /// Exit if no remaining tasks
                     if (ready_tasks.empty()) {
                         return true;
                     }
@@ -170,7 +170,7 @@ void RenderGraph::Execute() {
                     /// Find task with satisfied dependencies
                     for (auto it = ready_tasks.begin(); it != ready_tasks.end(); ++it) {
                         bool dependencies_met = true;
-                        // Check all producer dependencies
+                        /// Check all producer dependencies
                         if (auto deps = dependency_map.find(*it); deps != dependency_map.end()) {
                             for (auto* dep : deps->second) {
                                 if (!dep->IsCompleted()) {
@@ -180,17 +180,17 @@ void RenderGraph::Execute() {
                             }
                         }
 
-                        // Task ready for execution
+                        /// Task ready for execution
                         if (dependencies_met) {
                             task = *it;
                             ready_tasks.erase(it);
                             return true;
                         }
                     }
-                    return false;  // No ready tasks found
+                    return false;  /// No ready tasks found
                     });
 
-                // Exit worker if all tasks processed
+                /// Exit worker if all tasks processed
                 if (ready_tasks.empty()) {
                     return;
                 }
