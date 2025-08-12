@@ -13,7 +13,7 @@ Console::Console() {
 	commands_.push_back("CLEAR");
 	auto_scroll_ = true;
 	scroll_to_bottom_ = false;
-	AddLog("Welcome to Dream Renderer!");
+	AddLog("Welcome to dream renderer!");
 }
 
 Console::~Console() {

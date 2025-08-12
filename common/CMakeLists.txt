@@ -7,6 +7,8 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/interface.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/shader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool.cpp
 )
 
 include_directories(

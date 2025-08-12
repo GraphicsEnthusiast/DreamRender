@@ -48,14 +48,6 @@ void Shader::SetMatrix(const std::string& name, const glm::mat<N, N, float, glm:
 	}
 }
 
-template void Shader::SetVector<2>(const std::string&, const glm::vec2&);
-template void Shader::SetVector<3>(const std::string&, const glm::vec3&);
-template void Shader::SetVector<4>(const std::string&, const glm::vec4&);
-
-template void Shader::SetMatrix<2>(const std::string&, const glm::mat2&);
-template void Shader::SetMatrix<3>(const std::string&, const glm::mat3&);
-template void Shader::SetMatrix<4>(const std::string&, const glm::mat4&);
-
 void Shader::CheckCompileErrors(unsigned int shader, const std::string& type) {
 	int success;
 	char info_log[1024];
