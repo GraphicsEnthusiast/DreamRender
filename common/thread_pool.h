@@ -11,6 +11,7 @@ public:
     inline void Enqueue(F&& f) {
         std::unique_lock<std::mutex> lock(queue_mutex_);
         tasks_.emplace(std::forward<F>(f));
+        lock.unlock();
 
         condition_.notify_one();
     }

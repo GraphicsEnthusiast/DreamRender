@@ -15,6 +15,7 @@ ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
                 }
                 task = std::move(tasks_.front());
                 tasks_.pop();
+                lock.unlock();
 
                 task();
             }
