@@ -202,7 +202,7 @@ void RenderGraph::Execute() {
 
                     // 2. Check OpenGL errors before execution
                     GLenum pre_err = glGetError();
-                    if (pre_err != GL_NO_ERROR) {
+                    if (GL_NO_ERROR != pre_err) {
                         WARN("[warning] Pre-execution OpenGL error: 0x%X.", pre_err);
                     }
 
@@ -243,7 +243,7 @@ void RenderGraph::Execute() {
 
                     // 5. Check OpenGL errors after execution
                     GLenum err = glGetError();
-                    while (err != GL_NO_ERROR) {
+                    while (GL_NO_ERROR != err) {
                         std::string error_str;
                         switch (err) {
                         case GL_INVALID_ENUM: error_str = "GL_INVALID_ENUM"; break;
