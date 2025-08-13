@@ -17,106 +17,115 @@ void RenderGraph::AddPass(const std::string& name, std::unique_ptr<RenderPass> p
  * @param enabled New enablement state
  */
 void RenderGraph::SetPassEnabled(const std::string& name, bool enabled) {
-    auto it = passes_.find(name);
-    if (passes_.end() != it) {
+    if (auto it = passes_.find(name); it != passes_.end()) {
         it->second->SetEnabled(enabled);
     }
 }
 
 /**
- * @brief Compiles render graph dependencies and execution order
+ * @brief Connects two passes via named slots
+ * @param src_pass Source pass name
+ * @param src_output Source output slot name
+ * @param dst_pass Destination pass name
+ * @param dst_input Destination input slot name
+ * @param access Required access type (default=Read)
+ */
+void RenderGraph::Connect(const std::string& src_pass, const std::string& src_output,
+    const std::string& dst_pass, const std::string& dst_input,
+    AccessType access) {
+    edges_.push_back({ src_pass, src_output, dst_pass, dst_input, access });
+}
+
+/**
+ * @brief Compiles dependency graph based on explicit edges
  *
  * Compilation process:
- * 1. Resets previous compilation state
- * 2. Identifies resource producers (texture -> pass mapping)
- * 3. Builds dependency graph (producer -> consumer edges)
- * 4. Performs Kahn's algorithm for topological sorting
- * 5. Identifies final output texture from designated passes
+ * 1. Processes all connection edges
+ * 2. Builds resource-producer mapping
+ * 3. Performs topological sort (Kahn's algorithm)
+ * 4. Identifies final output texture
  */
 void RenderGraph::Compile() {
-    /// Initialize final output as invalid handle
     final_output_ = TextureHandle{ UINT32_MAX };
     dependency_graph_.clear();
     execution_order_.clear();
 
-    /// Custom hash for TextureHandle to enable unordered_map usage
-    struct TextureHandleHash {
-        std::size_t operator()(const TextureHandle& handle) const noexcept {
-            return std::hash<uint32_t>{}(handle.id);
-        }
-    };
+    // Resource mapping table [resource_id] -> (producer_pass, texture_handle)
+    std::unordered_map<std::string, std::pair<RenderPass*, TextureHandle>> resource_map;
 
-    /// Maps texture resources to their producer passes
-    std::unordered_map<TextureHandle, RenderPass*, TextureHandleHash> resource_producers;
+    // Process all connection edges
+    for (auto& edge : edges_) {
+        auto* src_pass = GetPass(edge.src_pass);
+        auto* dst_pass = GetPass(edge.dst_pass);
 
-    /// First pass: identify all enabled passes and their output resources
-    for (auto& [name, pass] : passes_) {
-        if (!pass->IsEnabled()) {
+        // Skip connections involving disabled passes
+        if (!src_pass || !dst_pass || !src_pass->IsEnabled() || !dst_pass->IsEnabled()) {
             continue;
         }
-        /// Record producer for each output texture
-        for (auto& output : pass->outputs_) {
-            resource_producers[output] = pass.get();
+
+        // Create resource identifier (format: PassName::SlotName)
+        const std::string resource_id = edge.src_pass + "::" + edge.src_output;
+
+        // Create or retrieve texture handle
+        if (!resource_map.count(resource_id)) {
+            resource_map[resource_id] = { src_pass, TextureHandle{next_handle_id_++} };
         }
+        auto& [producer, handle] = resource_map[resource_id];
+
+        // Add to producer outputs
+        if (std::find(producer->outputs_.begin(), producer->outputs_.end(), handle) ==
+            producer->outputs_.end()) {
+            producer->outputs_.push_back(handle);
+        }
+
+        // Add to consumer inputs
+        dst_pass->inputs_.push_back({ handle, edge.access });
+
+        // Add to dependency graph
+        dependency_graph_[producer].push_back(dst_pass);
     }
 
-    /// Second pass: build dependency graph between passes
+    // Topological sort using Kahn's algorithm
+    std::unordered_map<RenderPass*, int> in_degree;
+    std::queue<RenderPass*> ready_queue;
+
+    // Initialize in-degree counts for enabled passes
     for (auto& [name, pass] : passes_) {
-        if (!pass->IsEnabled()) {
-            continue;
-        }
-        /// For each input dependency
-        for (auto& input : pass->inputs_) {
-            if (auto producer = resource_producers.find(input.resource);
-                producer != resource_producers.end()) {
-                /// Add edge: producer -> current pass
-                dependency_graph_[producer->second].push_back(pass.get());
-            }
+        if (pass->IsEnabled()) {
+            in_degree[pass.get()] = 0;
         }
     }
 
-    /// Prepare for topological sort (Kahn's algorithm)
-    std::unordered_map<RenderPass*, int> in_degree;  /// Tracks dependency count per pass
-    std::queue<RenderPass*> ready_queue;  /// Queue for passes with zero dependencies
-
-    /// Initialize in-degree counts for all enabled passes
-    for (auto& [name, pass] : passes_) {
-        if (!pass->IsEnabled()) {
-            continue;
-        }
-        in_degree[pass.get()] = 0;
-    }
-
-    /// Calculate initial in-degrees from dependency graph edges
-    for (auto& [node, dependents] : dependency_graph_) {
-        for (auto* dep : dependents) {
-            in_degree[dep]++;
+    // Calculate initial in-degrees from dependency edges
+    for (auto& [producer, consumers] : dependency_graph_) {
+        for (auto* consumer : consumers) {
+            in_degree[consumer]++;
         }
     }
 
-    /// Identify passes with zero dependencies (starting points)
+    // Find passes with zero dependencies (starting points)
     for (auto& [pass, degree] : in_degree) {
         if (degree == 0) {
             ready_queue.push(pass);
         }
     }
 
-    /// Process nodes in topological order
+    // Process nodes in topological order
     while (!ready_queue.empty()) {
         auto* pass = ready_queue.front();
         ready_queue.pop();
-        execution_order_.push_back(pass);  /// Add to execution sequence
+        execution_order_.push_back(pass);
 
-        /// Identify final output from designated passes
+        // Identify final output from designated passes
         if (pass->is_final_output_ && !pass->outputs_.empty()) {
-            final_output_ = pass->outputs_[0];
+            final_output_ = pass->outputs_.front();
         }
 
-        /// Update dependencies and queue newly ready passes
+        // Update dependencies and enqueue newly ready passes
         if (auto it = dependency_graph_.find(pass); it != dependency_graph_.end()) {
-            for (auto* dependent : it->second) {
-                if (--in_degree[dependent] == 0) {
-                    ready_queue.push(dependent);
+            for (auto* consumer : it->second) {
+                if (--in_degree[consumer] == 0) {
+                    ready_queue.push(consumer);
                 }
             }
         }
@@ -124,59 +133,64 @@ void RenderGraph::Compile() {
 }
 
 /**
- * @brief Executes render passes using thread pool with dependency enforcement
+ * @brief Executes render passes with thread pool
  *
  * Execution workflow:
  * 1. Initializes task queue with topological order
- * 2. Builds reverse dependency map (consumer -> producers)
- * 3. Submits tasks to thread pool that:
- *    - Wait for dependencies using condition variables
- *    - Execute passes when dependencies are met
- *    - Update task completion status atomically
+ * 2. Builds reverse dependency map
+ * 3. Launches worker threads that:
+ *    - Wait for tasks with satisfied dependencies
+ *    - Execute passes when ready
+ *    - Update completion status atomically
  */
 void RenderGraph::Execute() {
     std::mutex task_mutex;
     std::condition_variable cv;
-    bool all_tasks_completed = false;
+    std::atomic<bool> all_tasks_completed = false;
 
-    /// Initialize task queue with topological order
+    // Initialize task queue with topological order
     std::list<RenderPass*> ready_tasks(execution_order_.begin(), execution_order_.end());
 
-    /// Build reverse dependency map (consumers -> producers)
-    std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_map;
+    // Build reverse dependency map [consumer -> producers]
+    std::unordered_map<RenderPass*, std::vector<RenderPass*>> reverse_deps;
     for (auto& [producer, consumers] : dependency_graph_) {
         for (auto* consumer : consumers) {
-            dependency_map[consumer].push_back(producer);
+            reverse_deps[consumer].push_back(producer);
         }
     }
 
-    /// Atomic task counter for completion tracking
+    // Atomic task counter for completion tracking
     std::atomic<unsigned int> completed_count = 0;
-    const unsigned int total_tasks = execution_order_.size();
+    const unsigned int total_tasks = static_cast<unsigned int>(execution_order_.size());
 
-    /// Worker task function (adapted for thread pool)
-    auto task_func = [&] {
-        while (true) {
+    // Worker task function
+    auto worker_task = [&] {
+        while (!all_tasks_completed) {
             RenderPass* task = nullptr;
+
             {
                 std::unique_lock<std::mutex> lock(task_mutex);
-                cv.wait(lock, [&] {
-                    if (ready_tasks.empty()) {
-                        return true;
-                    }
 
+                // Wait for ready task or completion signal
+                cv.wait(lock, [&] {
+                    if (ready_tasks.empty() || all_tasks_completed)
+                        return true;
+
+                    // Find task with satisfied dependencies
                     for (auto it = ready_tasks.begin(); it != ready_tasks.end(); ++it) {
-                        bool dependencies_met = true;
-                        if (auto deps = dependency_map.find(*it); deps != dependency_map.end()) {
+                        bool deps_met = true;
+
+                        // Check all producer dependencies
+                        if (auto deps = reverse_deps.find(*it); deps != reverse_deps.end()) {
                             for (auto* dep : deps->second) {
                                 if (!dep->IsCompleted()) {
-                                    dependencies_met = false;
+                                    deps_met = false;
                                     break;
                                 }
                             }
                         }
 
-                        if (dependencies_met) {
+                        if (deps_met) {
                             task = *it;
                             ready_tasks.erase(it);
                             return true;
@@ -185,45 +199,45 @@ void RenderGraph::Execute() {
                     return false;
                     });
 
-                if (ready_tasks.empty() && completed_count == total_tasks) {
-                    all_tasks_completed = true;
-
-                    return; /// Exit task on completion
-                }
-                if (!task) {
-                    return; /// No ready tasks
-                }
+                if (all_tasks_completed) return;
             }
 
-            /// Execute pass and mark completion
-            task->Execute();
-            task->completed_.store(true);
+            if (task) {
+                // Execute pass and mark completion
+                task->Execute();
+                task->completed_.store(true);
 
-            /// Update completion counter and notify
-            {
-                std::lock_guard<std::mutex> lock(task_mutex);
-                completed_count++;
+                // Update completion counter
+                {
+                    std::lock_guard<std::mutex> lock(task_mutex);
+                    completed_count++;
+                }
+                cv.notify_all();
             }
-            cv.notify_all(); /// Wake waiting workers
         }
     };
 
-    /// Submit tasks to thread pool (1 task per thread)
-    for (unsigned int i = 0; i < std::thread::hardware_concurrency(); ++i) {
-        pool_.Enqueue(task_func);
+    // Submit tasks to thread pool
+    const unsigned int num_workers = std::min(
+        static_cast<unsigned int>(execution_order_.size()),
+        static_cast<unsigned int>(std::thread::hardware_concurrency())
+    );
+
+    for (unsigned int i = 0; i < num_workers; ++i) {
+        pool_.Enqueue(worker_task);
     }
 
-    /// Wait for all tasks to complete
+    // Wait for all tasks to complete
     while (completed_count < total_tasks) {
-        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
-    /// Signal threads to exit
+    // Signal threads to exit
     {
         std::lock_guard<std::mutex> lock(task_mutex);
         all_tasks_completed = true;
-        cv.notify_all();
     }
+    cv.notify_all();
 }
 
 /**
@@ -232,6 +246,18 @@ void RenderGraph::Execute() {
  */
 TextureHandle RenderGraph::GetFinalOutput() const noexcept {
     return final_output_;
+}
+
+/**
+ * @brief Retrieves pass pointer by name
+ * @param name Pass identifier
+ * @return RenderPass* or nullptr if not found
+ */
+RenderPass* RenderGraph::GetPass(const std::string& name) {
+    if (auto it = passes_.find(name); it != passes_.end()) {
+        return it->second.get();
+    }
+    return nullptr;
 }
 
 NAMESPACE_END(dream)

@@ -7,53 +7,88 @@ NAMESPACE_BEGIN(dream)
 
 /**
  * @class RenderGraph
- * @brief Manages a directed acyclic graph (DAG) of rendering passes with dependency resolution
- *
- * The RenderGraph orchestrates execution of rendering passes based on their resource dependencies.
- * It provides mechanisms for:
- * - Adding/removing rendering passes
- * - Managing pass enable/disable states
- * - Compiling dependency graphs
- * - Executing passes in topological order
- * - Parallel execution via thread pooling
+ * @brief Manages a directed acyclic graph (DAG) of rendering passes with explicit edge-based dependencies
  */
 class RenderGraph {
 public:
-    /// Initializes thread pool with hardware-concurrency count
-    RenderGraph() : pool_(std::thread::hardware_concurrency()) {}
+    /**
+     * @brief Constructs render graph with thread pool
+     * @note Initializes thread pool with hardware-concurrency count
+     */
+    RenderGraph() : pool_(std::thread::hardware_concurrency()), next_handle_id_(0) {}
 
-    /// Registers a render pass with unique name
+    /**
+     * @brief Registers a render pass with unique identifier
+     * @param name Unique pass identifier
+     * @param pass RenderPass instance (ownership transferred)
+     */
     void AddPass(const std::string& name, std::unique_ptr<RenderPass> pass);
 
-    /// Enables/disables specified render pass
+    /**
+     * @brief Toggles enabled state of specified pass
+     * @param name Pass identifier to modify
+     * @param enabled New enablement state
+     */
     void SetPassEnabled(const std::string& name, bool enabled);
 
     /**
-     * Compiles render graph by:
-     * 1. Identifying resource producers
-     * 2. Building dependency graph
-     * 3. Performing topological sort
-     * 4. Determining final output texture
+     * @brief Connects two passes via named slots
+     * @param src_pass Source pass name
+     * @param src_output Source output slot name
+     * @param dst_pass Destination pass name
+     * @param dst_input Destination input slot name
+     * @param access Required access type (default=Read)
+     */
+    void Connect(const std::string& src_pass, const std::string& src_output,
+        const std::string& dst_pass, const std::string& dst_input,
+        AccessType access = AccessType::Read);
+
+    /**
+     * @brief Compiles dependency graph based on explicit edges
+     *
+     * Compilation process:
+     * 1. Processes all connection edges
+     * 2. Builds resource-producer mapping
+     * 3. Performs topological sort (Kahn's algorithm)
+     * 4. Identifies final output texture
      */
     void Compile();
 
     /**
-     * Executes render passes with:
-     * - Dependency-resolved ordering
-     * - Thread-parallel execution
-     * - Condition variable synchronization
+     * @brief Executes render passes with thread pool
+     *
+     * Execution workflow:
+     * 1. Initializes task queue with topological order
+     * 2. Builds reverse dependency map
+     * 3. Launches worker threads that:
+     *    - Wait for tasks with satisfied dependencies
+     *    - Execute passes when ready
+     *    - Update completion status atomically
      */
     void Execute();
 
-    /// Retrieves final output texture handle
+    /**
+     * @brief Provides access to final output texture
+     * @return Texture handle or UINT32_MAX if undefined
+     */
     TextureHandle GetFinalOutput() const noexcept;
 
-private:
+protected:
+    /**
+     * @brief Retrieves pass pointer by name
+     * @param name Pass identifier
+     * @return RenderPass* or nullptr if not found
+     */
+    RenderPass* GetPass(const std::string& name);
+
+protected:
     std::unordered_map<std::string, std::unique_ptr<RenderPass>> passes_;         ///< Name-indexed render passes
-    std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_graph_;  ///< Adjacency list of pass dependencies
+    std::vector<ResourceEdge> edges_;                                             ///< Explicit dependency connections
+    std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_graph_;  ///< Adjacency list of dependencies
     std::vector<RenderPass*> execution_order_;                                    ///< Topologically sorted execution sequence
     TextureHandle final_output_;                                                  ///< Handle to final output texture
     ThreadPool pool_;                                                             ///< Thread pool for parallel execution
+    unsigned int next_handle_id_;                                                 ///< Auto-generated texture handle counter
 };
 
 NAMESPACE_END(dream)

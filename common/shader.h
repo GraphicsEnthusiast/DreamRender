@@ -25,11 +25,37 @@ public:
      */
     Shader(ShaderType type) : shader_type_(type), id_(0) {}
 
-    ShaderType GetShaderType() const noexcept;  ///< Returns shader type
-    void Use();  ///< Activates shader program
-    void SetBool(const std::string& name, bool value);  ///< Sets boolean uniform
-    void SetInt(const std::string& name, int value);  ///< Sets integer uniform
-    void SetFloat(const std::string& name, float value);  ///< Sets float uniform
+    /**
+     * @brief Retrieves the shader type classification
+     * @return ShaderType enumeration value
+     */
+    ShaderType GetShaderType() const noexcept;
+
+    /**
+     * @brief Activates the shader program for rendering
+     */
+    void Use();
+
+    /**
+     * @brief Sets a boolean uniform value in the shader
+     * @param name Name of the uniform variable
+     * @param value Boolean value to set
+     */
+    void SetBool(const std::string& name, bool value);
+
+    /**
+     * @brief Sets an integer uniform value in the shader
+     * @param name Name of the uniform variable
+     * @param value Integer value to set
+     */
+    void SetInt(const std::string& name, int value);
+
+    /**
+     * @brief Sets a floating-point uniform value in the shader
+     * @param name Name of the uniform variable
+     * @param value Float value to set
+     */
+    void SetFloat(const std::string& name, float value);
 
     /**
      * @brief Sets GLSL vector uniform
