@@ -177,7 +177,7 @@ void RenderGraph::Execute() {
 
                 // Update completion counter
                 {
-                    std::lock_guard<std::mutex> lock(task_mutex);
+                    std::unique_lock<std::mutex> lock(task_mutex);
                     completed_count++;
                 }
                 cv.notify_all();
@@ -202,7 +202,7 @@ void RenderGraph::Execute() {
 
     // Signal threads to exit
     {
-        std::lock_guard<std::mutex> lock(task_mutex);
+        std::unique_lock<std::mutex> lock(task_mutex);
         all_tasks_completed = true;
     }
     cv.notify_all();
