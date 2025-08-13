@@ -35,4 +35,8 @@ AccessType RenderPass::GetInputAccess(const std::string& slot_name) const {
 	return AccessType::Read;
 }
 
+void RenderPass::SetContext(std::shared_ptr<RenderContext> context) {
+	context_ = context;
+}
+
 NAMESPACE_END(dream)

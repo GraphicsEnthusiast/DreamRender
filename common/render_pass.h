@@ -1,6 +1,7 @@
 #pragma once
 
 #include <shader.h>
+#include <render_context.h>
 
 NAMESPACE_BEGIN(dream)
 
@@ -118,6 +119,12 @@ public:
      */
     AccessType GetInputAccess(const std::string& slot_name) const;
 
+    /**
+     * @brief Sets the rendering context for this pass
+     * @param context RenderContext to use
+     */
+    void SetContext(std::shared_ptr<RenderContext> context);
+
 protected:
     /// Input slot descriptor
     struct InputSlot {
@@ -139,6 +146,8 @@ protected:
     /// Populated by RenderGraph during compilation
     std::vector<Dependency> inputs_;     ///< Resolved input dependencies
     std::vector<TextureHandle> outputs_; ///< Generated output resources
+
+    std::shared_ptr<RenderContext> context_; ///< Context for this render pass
 };
 
 NAMESPACE_END(dream)

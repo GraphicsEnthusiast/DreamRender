@@ -12,10 +12,11 @@ NAMESPACE_BEGIN(dream)
 class RenderGraph {
 public:
     /**
-     * @brief Constructs render graph with thread pool
-     * @note Initializes thread pool with hardware-concurrency count
+     * @brief Constructs render graph with context management
+     * @param main_window Main GLFW window for context sharing
      */
-    RenderGraph() : pool_(std::thread::hardware_concurrency()), next_handle_id_(0) {}
+    RenderGraph(GLFWwindow* main_window) : pool_(std::thread::hardware_concurrency()),
+        next_handle_id_(0), main_window_(main_window) {}
 
     /**
      * @brief Registers a render pass with unique identifier
@@ -73,6 +74,14 @@ public:
      */
     TextureHandle GetFinalOutput() const noexcept;
 
+    /**
+     * @brief Assigns a dedicated context to a render pass
+     * @param pass_name Name of the render pass
+     * @param width Context width (default=1)
+     * @param height Context height (default=1)
+     */
+    void AssignContextToPass(const std::string& pass_name, unsigned int width = 1, unsigned int height = 1);
+
 protected:
     /**
      * @brief Retrieves pass pointer by name
@@ -82,13 +91,15 @@ protected:
     RenderPass* GetPass(const std::string& name);
 
 protected:
-    std::unordered_map<std::string, std::unique_ptr<RenderPass>> passes_;         ///< Name-indexed render passes
-    std::vector<ResourceEdge> edges_;                                             ///< Explicit dependency connections
-    std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_graph_;  ///< Adjacency list of dependencies
-    std::vector<RenderPass*> execution_order_;                                    ///< Topologically sorted execution sequence
-    TextureHandle final_output_;                                                  ///< Handle to final output texture
-    ThreadPool pool_;                                                             ///< Thread pool for parallel execution
-    unsigned int next_handle_id_;                                                 ///< Auto-generated texture handle counter
+    std::unordered_map<std::string, std::unique_ptr<RenderPass>> passes_;          ///< Name-indexed render passes
+    std::vector<ResourceEdge> edges_;                                              ///< Explicit dependency connections
+    std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_graph_;   ///< Adjacency list of dependencies
+    std::vector<RenderPass*> execution_order_;                                     ///< Topologically sorted execution sequence
+    TextureHandle final_output_;                                                   ///< Handle to final output texture
+    ThreadPool pool_;                                                              ///< Thread pool for parallel execution
+    unsigned int next_handle_id_;                                                  ///< Auto-generated texture handle counter
+    GLFWwindow* main_window_;                                                      ///< Main GLFW window for context sharing
+    std::unordered_map<std::string, std::shared_ptr<RenderContext>> pass_contexts_;///< Accessed during task execution to bind pass-specific context
 };
 
 NAMESPACE_END(dream)

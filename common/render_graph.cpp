@@ -129,6 +129,7 @@ void RenderGraph::Execute() {
     auto worker_task = [&] {
         while (!all_tasks_completed) {
             RenderPass* task = nullptr;
+            std::shared_ptr<RenderContext> context;
 
             {
                 std::unique_lock<std::mutex> lock(task_mutex);
@@ -171,9 +172,19 @@ void RenderGraph::Execute() {
             }
 
             if (task) {
+                // Activate pass-specific context if available
+                if (task->context_) {
+                    task->context_->MakeCurrent();
+                }
+
                 // Execute pass and mark completion
                 task->Execute();
                 task->completed_.store(true);
+
+                // Release context after execution
+                if (task->context_) {
+                    task->context_->Release();
+                }
 
                 // Update completion counter
                 {
@@ -210,6 +221,15 @@ void RenderGraph::Execute() {
 
 TextureHandle RenderGraph::GetFinalOutput() const noexcept {
     return final_output_;
+}
+
+void RenderGraph::AssignContextToPass(const std::string& pass_name, unsigned int width, unsigned int height) {
+    auto context = std::make_shared<RenderContext>(main_window_, width, height);
+    pass_contexts_[pass_name] = context;
+
+    if (auto pass = GetPass(pass_name)) {
+        pass->SetContext(context);
+    }
 }
 
 RenderPass* RenderGraph::GetPass(const std::string& name) {

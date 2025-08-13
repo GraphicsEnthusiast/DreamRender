@@ -19,14 +19,26 @@ public:
      */
     Interface(unsigned int width = 2048, unsigned int height = 1024);
 
-    /// Cleans up resources and terminates GLFW/ImGui contexts
+    /**
+     * @brief Cleans up resources and terminates GLFW/ImGui contexts
+     */
     ~Interface();
 
-    /// Main rendering loop that drives the application
+    /**
+     * @brief Main rendering loop that drives the application
+     */
     void Render();
 
+    /**
+     * @brief Gets the main GLFW window handle
+     * @return Pointer to the main GLFW window
+     */
+    GLFWwindow* GetMainWindow() const noexcept;
+
 protected:
-    /// Registers SPDlog callback to redirect logs to console
+    /**
+     * @brief Registers SPDlog callback to redirect logs to console
+     */
     void RegisterLogCallback();
 
     /**
@@ -43,17 +55,21 @@ protected:
      */
     void SelectableOptionFromFlag(const char* name, bool& flag);
 
-    /// Creates the main menu bar with dropdown options
+    /**
+     * @brief Creates the main menu bar with dropdown options
+     */
     void CreateMenuBar();
 
-    /// Applies custom dark color theme to ImGui interface
+    /**
+     * @brief Applies custom dark color theme to ImGui interface
+     */
     void ApplyDarkTheme();
 
 protected:
-    GLFWwindow* window_;          ///< GLFW window handle
+    GLFWwindow* window_;                ///< GLFW window handle
     std::unique_ptr<Console> console_;  ///< Console for log display
-    unsigned int width_;          ///< Current window width
-    unsigned int height_;         ///< Current window height
+    unsigned int width_;                ///< Current window width
+    unsigned int height_;               ///< Current window height
 };
 
 NAMESPACE_END(dream)

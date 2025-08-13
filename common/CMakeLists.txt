@@ -13,6 +13,8 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_context.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_context.cpp
 )
 
 include_directories(

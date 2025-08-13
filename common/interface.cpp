@@ -303,4 +303,8 @@ void Interface::Render() {
     }
 }
 
+GLFWwindow* Interface::GetMainWindow() const noexcept {
+    return window_;
+}
+
 NAMESPACE_END(dream)
