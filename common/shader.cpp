@@ -2,54 +2,26 @@
 
 NAMESPACE_BEGIN(dream)
 
-/**
- * @brief Retrieves the shader type classification
- * @return ShaderType enumeration value
- */
 ShaderType Shader::GetShaderType() const noexcept {
     return shader_type_;
 }
 
-/**
- * @brief Activates the shader program for rendering
- */
 void Shader::Use() {
     glUseProgram(id_);
 }
 
-/**
- * @brief Sets a boolean uniform value in the shader
- * @param name Name of the uniform variable
- * @param value Boolean value to set
- */
 void Shader::SetBool(const std::string& name, bool value) {
     glUniform1i(glGetUniformLocation(id_, name.c_str()), (int)value);
 }
 
-/**
- * @brief Sets an integer uniform value in the shader
- * @param name Name of the uniform variable
- * @param value Integer value to set
- */
 void Shader::SetInt(const std::string& name, int value) {
     glUniform1i(glGetUniformLocation(id_, name.c_str()), value);
 }
 
-/**
- * @brief Sets a floating-point uniform value in the shader
- * @param name Name of the uniform variable
- * @param value Float value to set
- */
 void Shader::SetFloat(const std::string& name, float value) {
     glUniform1f(glGetUniformLocation(id_, name.c_str()), value);
 }
 
-/**
- * @brief Sets a GLSL vector uniform of dimension N
- * @tparam N Dimension of the vector (2, 3, or 4)
- * @param name Name of the uniform variable
- * @param vec Vector value to set
- */
 template<int N>
 void Shader::SetVector(const std::string& name, const glm::vec<N, float, glm::packed_highp>& vec) {
     GLint location = glGetUniformLocation(id_, name.c_str());
@@ -64,12 +36,6 @@ void Shader::SetVector(const std::string& name, const glm::vec<N, float, glm::pa
     }
 }
 
-/**
- * @brief Sets a GLSL matrix uniform of dimension NxN
- * @tparam N Dimension of the matrix (2, 3, or 4)
- * @param name Name of the uniform variable
- * @param mat Matrix value to set
- */
 template<int N>
 void Shader::SetMatrix(const std::string& name, const glm::mat<N, N, float, glm::packed_highp>& mat) {
     GLint location = glGetUniformLocation(id_, name.c_str());
@@ -84,11 +50,6 @@ void Shader::SetMatrix(const std::string& name, const glm::mat<N, N, float, glm:
     }
 }
 
-/**
- * @brief Checks for compilation/linking errors in shaders/programs
- * @param shader Shader or program ID to check
- * @param type Type identifier ("VERTEX", "FRAGMENT", "COMPUTE", or "PROGRAM")
- */
 void Shader::CheckCompileErrors(unsigned int shader, const std::string& type) {
     int success;
     char info_log[1024];
@@ -110,11 +71,6 @@ void Shader::CheckCompileErrors(unsigned int shader, const std::string& type) {
     }
 }
 
-/**
- * @brief Constructs a rasterization shader from vertex and fragment files
- * @param vertex_path Path to vertex shader source file
- * @param fragment_path Path to fragment shader source file
- */
 RasterizationShader::RasterizationShader(const char* vertex_path, const char* fragment_path) : Shader(ShaderType::Rasterization) {
     std::string vertex_code;
     std::string fragment_code;
@@ -162,10 +118,6 @@ RasterizationShader::RasterizationShader(const char* vertex_path, const char* fr
     glDeleteShader(fragment);
 }
 
-/**
- * @brief Constructs a computation shader from a compute shader file
- * @param compute_path Path to compute shader source file
- */
 ComputationShader::ComputationShader(const char* compute_path) : Shader(ShaderType::Computation) {
     std::string compute_code;
     std::ifstream c_shader_file;

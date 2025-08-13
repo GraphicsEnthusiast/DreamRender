@@ -2,10 +2,6 @@
 
 NAMESPACE_BEGIN(dream)
 
-/**
- * @brief Initializes worker threads and task processing loop
- * @param threads Number of worker threads to create
- */
 ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
     // Create specified number of worker threads
     for (unsigned int i = 0; i < threads; ++i) {
@@ -40,9 +36,6 @@ ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
     }
 }
 
-/**
- * @brief Initiates graceful shutdown and cleans up resources
- */
 ThreadPool::~ThreadPool() {
     // Lock before modifying shared state
     std::unique_lock<std::mutex> lock(queue_mutex_);

@@ -2,12 +2,7 @@
 
 NAMESPACE_BEGIN(dream)
 
-/**
- * @brief Constructs GUI interface with specified dimensions
- * @param width Initial window width
- * @param height Initial window height
- */
-    Interface::Interface(unsigned int width, unsigned int height) : width_(width), height_(height) {
+Interface::Interface(unsigned int width, unsigned int height) : width_(width), height_(height) {
     spdlog::set_level(spdlog::level::trace);
     RegisterLogCallback();
 
@@ -57,9 +52,6 @@ NAMESPACE_BEGIN(dream)
     ImGui_ImplOpenGL3_Init("#version 460");
 }
 
-/**
- * @brief Cleans up GUI resources and contexts
- */
 Interface::~Interface() {
     // Shutdown ImGui subsystems
     ImGui_ImplOpenGL3_Shutdown();
@@ -71,9 +63,6 @@ Interface::~Interface() {
     glfwTerminate();
 }
 
-/**
- * @brief Registers log callback to redirect output to console
- */
 void Interface::RegisterLogCallback() {
     // Create sink forwarding logs to console
     auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>(
@@ -85,11 +74,6 @@ void Interface::RegisterLogCallback() {
     spdlog::default_logger()->sinks().push_back(callback_sink);
 }
 
-/**
- * @brief Configures and submits main docking layout
- * @param display_w Current display width
- * @param display_h Current display height
- */
 void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int display_h) {
     ImGuiIO& io = ImGui::GetIO();
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
@@ -157,9 +141,6 @@ void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int
     ImGui::PopStyleVar(3);
 }
 
-/**
- * @brief Applies custom dark theme to ImGui interface
- */
 void Interface::ApplyDarkTheme() {
     // Define color palette components
     ImColor text = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -198,11 +179,6 @@ void Interface::ApplyDarkTheme() {
     }
 }
 
-/**
- * @brief Creates selectable option with checkbox
- * @param name Display name of option
- * @param flag Reference to boolean state
- */
 void Interface::SelectableOptionFromFlag(const char* name, bool& flag) {
     static std::map<std::string, bool> selectStates;
     selectStates[name] = flag;
@@ -225,9 +201,6 @@ void Interface::SelectableOptionFromFlag(const char* name, bool& flag) {
     ImGui::PopStyleVar();
 }
 
-/**
- * @brief Constructs main application menu bar
- */
 void Interface::CreateMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
         // File operations menu
@@ -260,9 +233,6 @@ void Interface::CreateMenuBar() {
     }
 }
 
-/**
- * @brief Executes main rendering loop
- */
 void Interface::Render() {
     GLuint texture = 0;
     auto RenderImage = [&texture]() {

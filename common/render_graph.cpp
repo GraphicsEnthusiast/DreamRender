@@ -2,49 +2,22 @@
 
 NAMESPACE_BEGIN(dream)
 
-/**
- * @brief Registers a render pass with unique identifier
- * @param name Unique pass identifier
- * @param pass RenderPass instance (ownership transferred)
- */
 void RenderGraph::AddPass(const std::string& name, std::unique_ptr<RenderPass> pass) {
     passes_.emplace(name, std::move(pass));
 }
 
-/**
- * @brief Toggles enabled state of specified pass
- * @param name Pass identifier to modify
- * @param enabled New enablement state
- */
 void RenderGraph::SetPassEnabled(const std::string& name, bool enabled) {
     if (auto it = passes_.find(name); it != passes_.end()) {
         it->second->SetEnabled(enabled);
     }
 }
 
-/**
- * @brief Connects two passes via named slots
- * @param src_pass Source pass name
- * @param src_output Source output slot name
- * @param dst_pass Destination pass name
- * @param dst_input Destination input slot name
- * @param access Required access type (default=Read)
- */
 void RenderGraph::Connect(const std::string& src_pass, const std::string& src_output,
     const std::string& dst_pass, const std::string& dst_input,
     AccessType access) {
     edges_.push_back({ src_pass, src_output, dst_pass, dst_input, access });
 }
 
-/**
- * @brief Compiles dependency graph based on explicit edges
- *
- * Compilation process:
- * 1. Processes all connection edges
- * 2. Builds resource-producer mapping
- * 3. Performs topological sort (Kahn's algorithm)
- * 4. Identifies final output texture
- */
 void RenderGraph::Compile() {
     final_output_ = TextureHandle{ UINT32_MAX };
     dependency_graph_.clear();
@@ -132,17 +105,6 @@ void RenderGraph::Compile() {
     }
 }
 
-/**
- * @brief Executes render passes with thread pool
- *
- * Execution workflow:
- * 1. Initializes task queue with topological order
- * 2. Builds reverse dependency map
- * 3. Launches worker threads that:
- *    - Wait for tasks with satisfied dependencies
- *    - Execute passes when ready
- *    - Update completion status atomically
- */
 void RenderGraph::Execute() {
     std::mutex task_mutex;
     std::condition_variable cv;
@@ -240,19 +202,10 @@ void RenderGraph::Execute() {
     cv.notify_all();
 }
 
-/**
- * @brief Provides access to final output texture
- * @return Texture handle or UINT32_MAX if undefined
- */
 TextureHandle RenderGraph::GetFinalOutput() const noexcept {
     return final_output_;
 }
 
-/**
- * @brief Retrieves pass pointer by name
- * @param name Pass identifier
- * @return RenderPass* or nullptr if not found
- */
 RenderPass* RenderGraph::GetPass(const std::string& name) {
     if (auto it = passes_.find(name); it != passes_.end()) {
         return it->second.get();

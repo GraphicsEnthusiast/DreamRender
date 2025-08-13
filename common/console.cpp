@@ -2,10 +2,7 @@
 
 NAMESPACE_BEGIN(dream)
 
-/**
- * @brief Initializes console with default commands and welcome message
- */
-    Console::Console() {
+Console::Console() {
     ClearLog();
     memset(input_buffer_, 0, sizeof(input_buffer_));
     history_pos_ = -1;
@@ -19,9 +16,6 @@ NAMESPACE_BEGIN(dream)
     AddLog("Welcome to dream renderer!");
 }
 
-/**
- * @brief Cleans up dynamically allocated log and history items
- */
 Console::~Console() {
     ClearLog();
     for (int i = 0; i < history_.Size; i++) {
@@ -29,12 +23,6 @@ Console::~Console() {
     }
 }
 
-/**
- * @brief Performs case-insensitive string comparison
- * @param s1 First string to compare
- * @param s2 Second string to compare
- * @return Negative if s1 < s2, positive if s1 > s2, zero if equal
- */
 int Console::Stricmp(const char* s1, const char* s2) {
     int d;
     while ((d = std::toupper(*s2) - std::toupper(*s1)) == 0 && *s1) {
@@ -44,13 +32,6 @@ int Console::Stricmp(const char* s1, const char* s2) {
     return d;
 }
 
-/**
- * @brief Performs case-insensitive comparison of first n characters
- * @param s1 First string to compare
- * @param s2 Second string to compare
- * @param n Maximum characters to compare
- * @return Negative if s1 < s2, positive if s1 > s2, zero if equal
- */
 int Console::Strnicmp(const char* s1, const char* s2, int n) {
     int d = 0;
     while (n > 0 && (d = std::toupper(*s2) - std::toupper(*s1)) == 0 && *s1) {
@@ -61,11 +42,6 @@ int Console::Strnicmp(const char* s1, const char* s2, int n) {
     return d;
 }
 
-/**
- * @brief Duplicates string using ImGui memory allocator
- * @param s Source string to duplicate
- * @return Pointer to duplicated string
- */
 char* Console::Strdup(const char* s) {
     IM_ASSERT(s);
     size_t len = std::strlen(s) + 1;
@@ -74,10 +50,6 @@ char* Console::Strdup(const char* s) {
     return (char*)memcpy(buf, (const void*)s, len);
 }
 
-/**
- * @brief Trims trailing whitespace from string
- * @param s String to modify (modified in-place)
- */
 void Console::Strtrim(char* s) {
     char* str_end = s + std::strlen(s);
     while (str_end > s && str_end[-1] == ' ') {
@@ -86,9 +58,6 @@ void Console::Strtrim(char* s) {
     *str_end = 0;
 }
 
-/**
- * @brief Clears all log entries and frees allocated memory
- */
 void Console::ClearLog() {
     for (int i = 0; i < items_.Size; i++) {
         ImGui::MemFree(items_[i]);
@@ -96,11 +65,6 @@ void Console::ClearLog() {
     items_.clear();
 }
 
-/**
- * @brief Adds formatted log entry to console
- * @param fmt Format string (printf-style)
- * @param ... Variable arguments for formatted string
- */
 void Console::AddLog(const char* fmt, ...) IM_FMTARGS(2) {
     char buf[1024];
     va_list args;
@@ -111,9 +75,6 @@ void Console::AddLog(const char* fmt, ...) IM_FMTARGS(2) {
     items_.push_back(Strdup(buf));
 }
 
-/**
- * @brief Renders console window using ImGui
- */
 void Console::Draw() {
     ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Console", nullptr, ImGuiWindowFlags_None)) {
@@ -224,10 +185,6 @@ void Console::Draw() {
     ImGui::End();
 }
 
-/**
- * @brief Executes console command and updates history
- * @param command_line Command string to execute
- */
 void Console::ExecCommand(const char* command_line) {
     AddLog("# %s\n", command_line);
 
@@ -265,17 +222,11 @@ void Console::ExecCommand(const char* command_line) {
     scroll_to_bottom_ = true;
 }
 
-/**
- * @brief Static wrapper for text edit callback
- */
 int Console::TextEditCallbackStub(ImGuiInputTextCallbackData* data) {
     Console* console = (Console*)data->UserData;
     return console->TextEditCallback(data);
 }
 
-/**
- * @brief Handles text input events (tab completion and history navigation)
- */
 int Console::TextEditCallback(ImGuiInputTextCallbackData* data) {
     switch (data->EventFlag) {
     case ImGuiInputTextFlags_CallbackCompletion: {
