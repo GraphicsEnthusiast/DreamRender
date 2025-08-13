@@ -140,11 +140,11 @@ void RenderGraph::Execute() {
                     }
 
                     // Find task with satisfied dependencies
-                    for (auto it = ready_tasks.begin(); it != ready_tasks.end(); ++it) {
+                    for (auto it = ready_tasks.begin(); ready_tasks.end() != it; ++it) {
                         bool deps_met = true;
 
                         // Check all producer dependencies
-                        if (auto deps = reverse_deps.find(*it); deps != reverse_deps.end()) {
+                        if (auto deps = reverse_deps.find(*it); reverse_deps.end() != deps) {
                             for (auto* dep : deps->second) {
                                 if (!dep->IsCompleted()) {
                                     deps_met = false;
