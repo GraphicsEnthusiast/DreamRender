@@ -4,6 +4,10 @@ NAMESPACE_BEGIN(dream)
 
 void RenderPass::SetEnabled(bool enabled) {
 	enabled_ = enabled;
+	// Reset completion state when enabling
+	if (enabled) {
+		completed_.store(false, std::memory_order_release);
+	}
 }
 
 bool RenderPass::IsEnabled() const noexcept {
@@ -45,6 +49,14 @@ GLsync RenderPass::GetSync() const noexcept {
 
 void RenderPass::SetSync(GLsync sync) {
 	sync_ = sync;
+}
+
+bool RenderPass::IsCompleted(std::memory_order order) const noexcept {
+	return completed_.load(order);
+}
+
+void RenderPass::SetCompleted(std::memory_order order) {
+	completed_.store(true, order);
 }
 
 NAMESPACE_END(dream)

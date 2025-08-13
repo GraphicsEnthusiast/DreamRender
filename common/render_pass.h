@@ -138,6 +138,18 @@ public:
      */
     void SetSync(GLsync sync);
 
+    /**
+     * @brief Checks if pass execution has completed
+     * @return true if execution finished with memory order acquire
+     */
+    bool IsCompleted(std::memory_order order = std::memory_order_acquire) const noexcept;
+
+    /**
+     * @brief Marks pass as completed with specified memory order
+     * @param order Memory order to use
+     */
+    void SetCompleted(std::memory_order order = std::memory_order_release);
+
 protected:
     /// Input slot descriptor
     struct InputSlot {

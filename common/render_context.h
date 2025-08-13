@@ -31,6 +31,15 @@ public:
     /// Gets the GLFW window handle
     GLFWwindow* GetWindow() const noexcept;
 
+    /**
+     * @brief Checks if contexts share resources
+     * @param other Context to compare
+     * @param other Window to compare
+     * @return true if contexts share resources
+     */
+    bool IsSharingWith(const RenderContext* other) const noexcept;
+    bool IsSharingWith(GLFWwindow* window) const noexcept;
+
 protected:
     GLFWwindow* window_;  ///< Offscreen GLFW window
 };

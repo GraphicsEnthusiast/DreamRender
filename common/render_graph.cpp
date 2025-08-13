@@ -118,6 +118,9 @@ void RenderGraph::Execute() {
     std::condition_variable cv;
     std::atomic<bool> all_tasks_completed = false;
 
+    std::mutex done_mutex;
+    std::condition_variable done_cv;
+
     // Initialize task queue with topological order
     std::list<RenderPass*> ready_tasks(execution_order_.begin(), execution_order_.end());
 
@@ -155,7 +158,7 @@ void RenderGraph::Execute() {
                         // Check all producer dependencies
                         if (auto deps = reverse_deps.find(*it); reverse_deps.end() != deps) {
                             for (auto* dep : deps->second) {
-                                if (!dep->IsCompleted()) {
+                                if (!dep->IsCompleted(std::memory_order_acquire)) {
                                     deps_met = false;
 
                                     break;
@@ -180,42 +183,106 @@ void RenderGraph::Execute() {
             }
 
             if (task) {
-                // 1. Activate pass-specific context if available
-                if (task->context_) {
-                    task->context_->MakeCurrent();
-                }
-
-                // 2. Wait for producer dependencies
-                if (auto deps = reverse_deps.find(task); deps != reverse_deps.end()) {
-                    for (auto* dep_pass : deps->second) {
-                        if (GLsync sync = dep_pass->GetSync()) {
-                            glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+                auto UpdateCompletionCounter = [&]() {
+                    {
+                        std::unique_lock<std::mutex> lock(task_mutex);
+                        completed_count++;
+                        if (completed_count == total_tasks) {
+                            done_cv.notify_one();
                         }
                     }
+                    cv.notify_all();
+                };
+
+                try {
+                    // 1. Activate pass - specific context if available
+                    if (task->context_) {
+                        task->context_->MakeCurrent();
+                    }
+
+                    // 2. Check OpenGL errors before execution
+                    GLenum pre_err = glGetError();
+                    if (pre_err != GL_NO_ERROR) {
+                        WARN("[warning] Pre-execution OpenGL error: 0x%X", pre_err);
+                    }
+
+                    // 3. Wait for producer dependencies
+                    if (auto deps = reverse_deps.find(task); deps != reverse_deps.end()) {
+                        for (auto* dep_pass : deps->second) {
+                            if (GLsync sync = dep_pass->GetSync()) {
+                                // Check context compatibility
+                                bool safe_to_wait = false;
+
+                                // Case 1: Same context
+                                if (task->context_ == dep_pass->context_) {
+                                    safe_to_wait = true;
+                                }
+                                // Case 2: Sharing contexts
+                                else if (task->context_ && dep_pass->context_ &&
+                                    task->context_->IsSharingWith(dep_pass->context_.get())) {
+                                    safe_to_wait = true;
+                                }
+                                // Case 3: Main context and offscreen
+                                else if (!task->context_ && dep_pass->context_ &&
+                                    dep_pass->context_->IsSharingWith(main_window_)) {
+                                    safe_to_wait = true;
+                                }
+
+                                if (safe_to_wait) {
+                                    glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+                                }
+                                else {
+                                    WARN("[warning] Skipping sync wait due to context incompatibility");
+                                }
+                            }
+                        }
+                    }
+
+                    // 4. Execute the pass
+                    task->Execute();
+
+                    // 5. Check OpenGL errors after execution
+                    GLenum err = glGetError();
+                    while (err != GL_NO_ERROR) {
+                        std::string error_str;
+                        switch (err) {
+                        case GL_INVALID_ENUM: error_str = "GL_INVALID_ENUM"; break;
+                        case GL_INVALID_VALUE: error_str = "GL_INVALID_VALUE"; break;
+                        case GL_INVALID_OPERATION: error_str = "GL_INVALID_OPERATION"; break;
+                        case GL_INVALID_FRAMEBUFFER_OPERATION: error_str = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+                        case GL_OUT_OF_MEMORY: error_str = "GL_OUT_OF_MEMORY"; break;
+                        default: error_str = "Unknown error"; break;
+                        }
+                        ERROR("[error] OpenGL error during pass execution: %s", error_str.c_str());
+                        err = glGetError();
+                    }
+
+                    // 6. Create new sync fence
+                    GLsync new_sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+                    task->SetSync(new_sync);
+                    {
+                        std::lock_guard<std::mutex> lock(sync_mutex_);
+                        frame_sync_objects_.push_back(new_sync);
+                    }
+
+                    // 7. Update completion counter
+                    task->SetCompleted(std::memory_order_release);
+
+                    // 8. Release context after execution
+                    if (task->context_) {
+                        task->context_->Release();
+                    }
+
+                    // 9. Update completion counter
+                    UpdateCompletionCounter();
                 }
+                catch (const std::exception& e) {
+                    ERROR("[error] Exception in render pass: %s", e.what());
 
-                // 3. Execute the pass
-                task->Execute();
+                    task->SetCompleted(std::memory_order_release);
 
-                // 4. Create new sync fence
-                GLsync new_sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-                task->SetSync(new_sync);
-                frame_sync_objects_.push_back(new_sync);
-
-                // 5. Mark CPU task as completed
-                task->completed_.store(true);
-
-                // 6. Release context after execution
-                if (task->context_) {
-                    task->context_->Release();
+                    UpdateCompletionCounter();
                 }
-
-                // 7. Update completion counter
-                {
-                    std::unique_lock<std::mutex> lock(task_mutex);
-                    completed_count++;
-                }
-                cv.notify_all();
             }
         }
     };
@@ -231,8 +298,11 @@ void RenderGraph::Execute() {
     }
 
     // Wait for all tasks to complete
-    while (completed_count < total_tasks) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    {
+        std::unique_lock<std::mutex> lock(done_mutex);
+        done_cv.wait(lock, [&] {
+            return completed_count == total_tasks;
+            });
     }
 
     // Signal threads to exit
@@ -257,9 +327,10 @@ void RenderGraph::AssignContextToPass(const std::string& pass_name, unsigned int
 }
 
 void RenderGraph::CleanupSyncObjects() {
-    for (GLsync sync : frame_sync_objects_) {
+    std::lock_guard<std::mutex> lock(sync_mutex_);
+    for (auto it = frame_sync_objects_.begin(); it != frame_sync_objects_.end();) {
+        GLsync sync = *it;
         if (sync) {
-            // Check sync status before deletion
             GLint status;
             glGetSynciv(sync, GL_SYNC_STATUS, sizeof(status), nullptr, &status);
 
@@ -267,13 +338,15 @@ void RenderGraph::CleanupSyncObjects() {
                 glDeleteSync(sync);
             }
             else {
-                // For safety, wait if not signaled
                 glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
                 glDeleteSync(sync);
             }
+            it = frame_sync_objects_.erase(it);
+        }
+        else {
+            ++it;
         }
     }
-    frame_sync_objects_.clear();
 }
 
 RenderPass* RenderGraph::GetPass(const std::string& name) {

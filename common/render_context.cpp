@@ -47,4 +47,20 @@ GLFWwindow* RenderContext::GetWindow() const noexcept {
     return window_;
 }
 
+bool RenderContext::IsSharingWith(const RenderContext* other) const noexcept {
+    if (!window_ || !other || !other->GetWindow()) {
+        return false;
+    }
+
+    return glfwGetWindowUserPointer(window_) == glfwGetWindowUserPointer(other->GetWindow());
+}
+
+bool RenderContext::IsSharingWith(GLFWwindow* window) const noexcept {
+    if (!window_ || !window) {
+        return false;
+    }
+
+    return glfwGetWindowUserPointer(window_) == glfwGetWindowUserPointer(window);
+}
+
 NAMESPACE_END(dream)

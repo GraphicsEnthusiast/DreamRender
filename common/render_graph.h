@@ -110,6 +110,7 @@ protected:
     GLFWwindow* main_window_;                                                      ///< Main GLFW window for context sharing
     std::unordered_map<std::string, std::shared_ptr<RenderContext>> pass_contexts_;///< Accessed during task execution to bind pass-specific context
     std::vector<GLsync> frame_sync_objects_;                                       ///< Frame lifetime sync objects
+    mutable std::mutex sync_mutex_;                                                ///< Protect frame_sync_objects_
 };
 
 NAMESPACE_END(dream)
