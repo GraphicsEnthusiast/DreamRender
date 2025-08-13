@@ -105,7 +105,7 @@ void RenderGraph::Compile() {
 
     // Find passes with zero dependencies (starting points)
     for (auto& [pass, degree] : in_degree) {
-        if (degree == 0) {
+        if (0 == degree) {
             ready_queue.push(pass);
         }
     }
@@ -257,6 +257,7 @@ RenderPass* RenderGraph::GetPass(const std::string& name) {
     if (auto it = passes_.find(name); it != passes_.end()) {
         return it->second.get();
     }
+
     return nullptr;
 }
 
