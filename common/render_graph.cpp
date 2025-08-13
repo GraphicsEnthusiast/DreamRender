@@ -7,7 +7,7 @@ void RenderGraph::AddPass(const std::string& name, std::unique_ptr<RenderPass> p
 }
 
 void RenderGraph::SetPassEnabled(const std::string& name, bool enabled) {
-    if (auto it = passes_.find(name); it != passes_.end()) {
+    if (auto it = passes_.find(name); passes_.end() != it) {
         it->second->SetEnabled(enabled);
     }
 }
@@ -46,8 +46,8 @@ void RenderGraph::Compile() {
         auto& [producer, handle] = resource_map[resource_id];
 
         // Add to producer outputs
-        if (std::find(producer->outputs_.begin(), producer->outputs_.end(), handle) ==
-            producer->outputs_.end()) {
+        if (producer->outputs_.end() == 
+            std::find(producer->outputs_.begin(), producer->outputs_.end(), handle)) {
             producer->outputs_.push_back(handle);
         }
 
@@ -95,9 +95,9 @@ void RenderGraph::Compile() {
         }
 
         // Update dependencies and enqueue newly ready passes
-        if (auto it = dependency_graph_.find(pass); it != dependency_graph_.end()) {
+        if (auto it = dependency_graph_.find(pass); dependency_graph_.end() != it) {
             for (auto* consumer : it->second) {
-                if (--in_degree[consumer] == 0) {
+                if (0 == --in_degree[consumer]) {
                     ready_queue.push(consumer);
                 }
             }
@@ -135,8 +135,9 @@ void RenderGraph::Execute() {
 
                 // Wait for ready task or completion signal
                 cv.wait(lock, [&] {
-                    if (ready_tasks.empty() || all_tasks_completed)
+                    if (ready_tasks.empty() || all_tasks_completed) {
                         return true;
+                    }
 
                     // Find task with satisfied dependencies
                     for (auto it = ready_tasks.begin(); it != ready_tasks.end(); ++it) {
@@ -147,6 +148,7 @@ void RenderGraph::Execute() {
                             for (auto* dep : deps->second) {
                                 if (!dep->IsCompleted()) {
                                     deps_met = false;
+
                                     break;
                                 }
                             }
@@ -155,13 +157,17 @@ void RenderGraph::Execute() {
                         if (deps_met) {
                             task = *it;
                             ready_tasks.erase(it);
+
                             return true;
                         }
                     }
+
                     return false;
                     });
 
-                if (all_tasks_completed) return;
+                if (all_tasks_completed) {
+                    return;
+                }
             }
 
             if (task) {
@@ -207,7 +213,7 @@ TextureHandle RenderGraph::GetFinalOutput() const noexcept {
 }
 
 RenderPass* RenderGraph::GetPass(const std::string& name) {
-    if (auto it = passes_.find(name); it != passes_.end()) {
+    if (auto it = passes_.find(name); passes_.end() != it) {
         return it->second.get();
     }
 
