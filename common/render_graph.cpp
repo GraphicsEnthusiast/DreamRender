@@ -203,7 +203,7 @@ void RenderGraph::Execute() {
                     // 2. Check OpenGL errors before execution
                     GLenum pre_err = glGetError();
                     if (pre_err != GL_NO_ERROR) {
-                        WARN("[warning] Pre-execution OpenGL error: 0x%X", pre_err);
+                        WARN("[warning] Pre-execution OpenGL error: 0x%X.", pre_err);
                     }
 
                     // 3. Wait for producer dependencies
@@ -232,7 +232,7 @@ void RenderGraph::Execute() {
                                     glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
                                 }
                                 else {
-                                    WARN("[warning] Skipping sync wait due to context incompatibility");
+                                    WARN("[warning] Skipping sync wait due to context incompatibility.");
                                 }
                             }
                         }
@@ -253,7 +253,7 @@ void RenderGraph::Execute() {
                         case GL_OUT_OF_MEMORY: error_str = "GL_OUT_OF_MEMORY"; break;
                         default: error_str = "Unknown error"; break;
                         }
-                        ERROR("[error] OpenGL error during pass execution: %s", error_str.c_str());
+                        ERROR("[error] OpenGL error during pass execution: %s.", error_str.c_str());
                         err = glGetError();
                     }
 
@@ -277,7 +277,7 @@ void RenderGraph::Execute() {
                     UpdateCompletionCounter();
                 }
                 catch (const std::exception& e) {
-                    ERROR("[error] Exception in render pass: %s", e.what());
+                    ERROR("[error] Exception in render pass: %s.", e.what());
 
                     task->SetCompleted(std::memory_order_release);
 
