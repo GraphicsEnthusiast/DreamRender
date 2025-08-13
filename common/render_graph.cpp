@@ -2,6 +2,11 @@
 
 NAMESPACE_BEGIN(dream)
 
+RenderGraph::~RenderGraph() {
+    // Ensure all sync objects are cleaned up
+    CleanupSyncObjects();
+}
+
 void RenderGraph::AddPass(const std::string& name, std::unique_ptr<RenderPass> pass) {
     passes_.emplace(name, std::move(pass));
 }
@@ -106,6 +111,9 @@ void RenderGraph::Compile() {
 }
 
 void RenderGraph::Execute() {
+    // Cleanup previous frame's sync objects
+    CleanupSyncObjects();
+
     std::mutex task_mutex;
     std::condition_variable cv;
     std::atomic<bool> all_tasks_completed = false;
@@ -172,21 +180,37 @@ void RenderGraph::Execute() {
             }
 
             if (task) {
-                // Activate pass-specific context if available
+                // 1. Activate pass-specific context if available
                 if (task->context_) {
                     task->context_->MakeCurrent();
                 }
 
-                // Execute pass and mark completion
+                // 2. Wait for producer dependencies
+                if (auto deps = reverse_deps.find(task); deps != reverse_deps.end()) {
+                    for (auto* dep_pass : deps->second) {
+                        if (GLsync sync = dep_pass->GetSync()) {
+                            glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+                        }
+                    }
+                }
+
+                // 3. Execute the pass
                 task->Execute();
+
+                // 4. Create new sync fence
+                GLsync new_sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+                task->SetSync(new_sync);
+                frame_sync_objects_.push_back(new_sync);
+
+                // 5. Mark CPU task as completed
                 task->completed_.store(true);
 
-                // Release context after execution
+                // 6. Release context after execution
                 if (task->context_) {
                     task->context_->Release();
                 }
 
-                // Update completion counter
+                // 7. Update completion counter
                 {
                     std::unique_lock<std::mutex> lock(task_mutex);
                     completed_count++;
@@ -230,6 +254,26 @@ void RenderGraph::AssignContextToPass(const std::string& pass_name, unsigned int
     if (auto pass = GetPass(pass_name)) {
         pass->SetContext(context);
     }
+}
+
+void RenderGraph::CleanupSyncObjects() {
+    for (GLsync sync : frame_sync_objects_) {
+        if (sync) {
+            // Check sync status before deletion
+            GLint status;
+            glGetSynciv(sync, GL_SYNC_STATUS, sizeof(status), nullptr, &status);
+
+            if (status == GL_SIGNALED) {
+                glDeleteSync(sync);
+            }
+            else {
+                // For safety, wait if not signaled
+                glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+                glDeleteSync(sync);
+            }
+        }
+    }
+    frame_sync_objects_.clear();
 }
 
 RenderPass* RenderGraph::GetPass(const std::string& name) {

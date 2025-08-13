@@ -39,4 +39,12 @@ void RenderPass::SetContext(std::shared_ptr<RenderContext> context) {
 	context_ = context;
 }
 
+GLsync RenderPass::GetSync() const noexcept {
+	return sync_;
+}
+
+void RenderPass::SetSync(GLsync sync) {
+	sync_ = sync;
+}
+
 NAMESPACE_END(dream)

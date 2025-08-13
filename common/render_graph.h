@@ -17,6 +17,7 @@ public:
      */
     RenderGraph(GLFWwindow* main_window) : pool_(std::thread::hardware_concurrency()),
         next_handle_id_(0), main_window_(main_window) {}
+    ~RenderGraph();
 
     /**
      * @brief Registers a render pass with unique identifier
@@ -84,6 +85,14 @@ public:
 
 protected:
     /**
+     * @brief Cleans up synchronization objects
+     *
+     * Must be called at the end of each frame to release
+     * GPU synchronization resources.
+     */
+    void CleanupSyncObjects();
+
+    /**
      * @brief Retrieves pass pointer by name
      * @param name Pass identifier
      * @return RenderPass* or nullptr if not found
@@ -100,6 +109,7 @@ protected:
     unsigned int next_handle_id_;                                                  ///< Auto-generated texture handle counter
     GLFWwindow* main_window_;                                                      ///< Main GLFW window for context sharing
     std::unordered_map<std::string, std::shared_ptr<RenderContext>> pass_contexts_;///< Accessed during task execution to bind pass-specific context
+    std::vector<GLsync> frame_sync_objects_;                                       ///< Frame lifetime sync objects
 };
 
 NAMESPACE_END(dream)

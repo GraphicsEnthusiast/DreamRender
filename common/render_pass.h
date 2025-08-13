@@ -71,7 +71,8 @@ public:
      * @brief Construct a new RenderPass object
      * @param enabled Initial enabled state
      */
-    RenderPass(bool enabled = true) : enabled_(enabled), is_final_output_(false), completed_(false) {}
+    RenderPass(bool enabled = true) : enabled_(enabled), is_final_output_(false), 
+        completed_(false), sync_(nullptr) {}
     virtual ~RenderPass() = default;
 
     /**
@@ -125,6 +126,18 @@ public:
      */
     void SetContext(std::shared_ptr<RenderContext> context);
 
+    /**
+     * @brief Gets the last synchronization fence for this pass
+     * @return GLsync object or nullptr if no fence exists
+     */
+    GLsync GetSync() const noexcept;
+
+    /**
+     * @brief Sets a new synchronization fence for this pass
+     * @param sync GLsync object to associate with this pass
+     */
+    void SetSync(GLsync sync);
+
 protected:
     /// Input slot descriptor
     struct InputSlot {
@@ -148,6 +161,7 @@ protected:
     std::vector<TextureHandle> outputs_; ///< Generated output resources
 
     std::shared_ptr<RenderContext> context_; ///< Context for this render pass
+    GLsync sync_ ;                           ///< GPU synchronization fence
 };
 
 NAMESPACE_END(dream)
