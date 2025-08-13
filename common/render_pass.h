@@ -73,12 +73,23 @@ public:
     RenderPass(bool enabled = true) : enabled_(enabled), is_final_output_(false), completed_(false) {}
     virtual ~RenderPass() = default;
 
-    /// @name State Management
-    /// @{
-    void SetEnabled(bool enabled);      ///< Set enable/disable state
-    bool IsEnabled() const noexcept;    ///< Check if pass is enabled
-    bool IsCompleted() const noexcept;  ///< Check if pass execution completed
-    /// @}
+    /**
+     * @brief Sets the enabled state of the render pass
+     * @param enabled New enablement state(true = active, false = disabled)
+     */
+    void SetEnabled(bool enabled);
+
+    /**
+     * @brief Checks if the render pass is currently enabled
+     * @return true if enabled and should execute, false otherwise
+     */
+    bool IsEnabled() const noexcept;
+
+    /**
+     * @brief Checks if pass execution has completed
+     * @return true if execution finished, false if still pending or not started
+     */
+    bool IsCompleted() const noexcept;
 
     /**
      * @brief Execute rendering commands (pure virtual)

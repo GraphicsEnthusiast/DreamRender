@@ -11,7 +11,7 @@ bool RenderPass::IsEnabled() const noexcept {
 }
 
 bool RenderPass::IsCompleted() const noexcept {
-	return completed_.load();  ///< Atomic load for thread-safe access
+	return completed_.load();
 }
 
 void RenderPass::DeclareInput(const std::string& slot_name, AccessType access) {
