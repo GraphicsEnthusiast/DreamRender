@@ -151,7 +151,10 @@ void RenderGraph::Execute() {
                         return true;
                     }
 
-                    // Find task with satisfied dependencies
+                    // Priority-based task selection
+                    RenderPass* best_task = nullptr;
+                    int max_priority = -1;
+
                     for (auto it = ready_tasks.begin(); ready_tasks.end() != it; ++it) {
                         bool deps_met = true;
 
@@ -167,11 +170,26 @@ void RenderGraph::Execute() {
                         }
 
                         if (deps_met) {
-                            task = *it;
-                            ready_tasks.erase(it);
+                            // Calculate task priority (number of consumers)
+                            int priority = 0;
+                            if (auto consumers = dependency_graph_.find(*it);
+                                dependency_graph_.end() != consumers) {
+                                priority = consumers->second.size();
+                            }
 
-                            return true;
+                            // Select task with highest priority
+                            if (priority > max_priority) {
+                                best_task = *it;
+                                max_priority = priority;
+                            }
                         }
+                    }
+
+                    if (best_task) {
+                        task = best_task;
+                        ready_tasks.remove(best_task);
+
+                        return true;
                     }
 
                     return false;
@@ -195,7 +213,7 @@ void RenderGraph::Execute() {
                 };
 
                 try {
-                    // 1. Activate pass - specific context if available
+                    // 1. Activate pass-specific context if available
                     if (task->context_) {
                         task->context_->MakeCurrent();
                     }
@@ -265,7 +283,7 @@ void RenderGraph::Execute() {
                         frame_sync_objects_.push_back(new_sync);
                     }
 
-                    // 7. Update completion counter
+                    // 7. Mark CPU task as completed
                     task->SetCompleted(std::memory_order_release);
 
                     // 8. Release context after execution
