@@ -7,8 +7,6 @@ NAMESPACE_BEGIN(dream)
 /**
  * @class Interface
  * @brief Main GUI management class for the application
- *
- * Handles window creation, rendering pipeline, and ImGui integration.
  */
 class Interface {
 public:

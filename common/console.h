@@ -7,47 +7,122 @@ NAMESPACE_BEGIN(dream)
 /**
  * @class Console
  * @brief Implements an interactive debugging console with command history and logging
- *
- * Features include:
- * - Command input with auto-completion
- * - Colored log output based on message type
- * - Persistent command history
- * - Filterable log display
  */
 class Console {
 public:
-	Console();
-	~Console();
+    /**
+     * @brief Constructs a Console object
+     *
+     * Initializes the console with default values:
+     * - Clears input buffer
+     * - Initializes history position
+     * - Sets auto-scroll to true
+     */
+    Console();
 
-	/// Log formatted message to console (supports printf-style formatting)
-	void AddLog(const char* fmt, ...) IM_FMTARGS(2);
+    /**
+     * @brief Destroys the Console object
+     *
+     * Cleans up all allocated resources:
+     * - Frees log items
+     * - Clears command history
+     */
+    ~Console();
 
-	/// Render console UI using ImGui
-	void Draw();
+    /**
+     * @brief Logs a formatted message to the console
+     * @param fmt Format string (printf-style)
+     * @param ... Variable arguments matching the format string
+     *
+     * @note Uses IM_FMTARGS attribute for compile-time format checking
+     */
+    void AddLog(const char* fmt, ...) IM_FMTARGS(2);
+
+    /**
+     * @brief Renders the console UI using ImGui
+     *
+     * Draws the console window with:
+     * - Log display area with filtering
+     * - Command input field with history
+     * - Auto-completion suggestions
+     */
+    void Draw();
 
 protected:
-	// String utility functions
-	static int Stricmp(const char* s1, const char* s2);      ///< Case-insensitive string comparison
-	static int Strnicmp(const char* s1, const char* s2, int n); ///< Case-insensitive comparison of first n characters
-	static char* Strdup(const char* s);                     ///< Duplicate string with ImGui memory allocator
-	static void Strtrim(char* s);                           ///< Remove trailing whitespace from string
+    /**
+     * @brief Case-insensitive string comparison
+     * @param s1 First string to compare
+     * @param s2 Second string to compare
+     * @return Negative value if s1 < s2, 0 if equal, positive if s1 > s2
+     */
+    static int Stricmp(const char* s1, const char* s2);
 
-	void ClearLog();                     ///< Clear all log entries
-	void ExecCommand(const char* command_line); ///< Execute console command
+    /**
+     * @brief Case-insensitive comparison of first n characters
+     * @param s1 First string to compare
+     * @param s2 Second string to compare
+     * @param n Number of characters to compare
+     * @return Negative value if s1 < s2, 0 if equal, positive if s1 > s2
+     */
+    static int Strnicmp(const char* s1, const char* s2, int n);
 
-	// Text input callback handlers
-	static int TextEditCallbackStub(ImGuiInputTextCallbackData* data);
-	int TextEditCallback(ImGuiInputTextCallbackData* data);
+    /**
+     * @brief Duplicates a string using ImGui memory allocator
+     * @param s String to duplicate
+     * @return Pointer to duplicated string
+     *
+     * @note Caller is responsible for freeing the memory
+     */
+    static char* Strdup(const char* s);
+
+    /**
+     * @brief Removes trailing whitespace from a string
+     * @param s String to trim (modified in-place)
+     */
+    static void Strtrim(char* s);
+
+    /**
+     * @brief Clears all log entries
+     *
+     * Frees all allocated log items and clears the log buffer
+     */
+    void ClearLog();
+
+    /**
+     * @brief Executes a console command
+     * @param command_line Full command string to execute
+     *
+     * Processes the command and adds it to history
+     */
+    void ExecCommand(const char* command_line);
+
+    /**
+     * @brief Static stub for ImGui text edit callback
+     * @param data ImGui input text callback data
+     * @return 0 to continue, 1 to prevent default handling
+     */
+    static int TextEditCallbackStub(ImGuiInputTextCallbackData* data);
+
+    /**
+     * @brief Handles text input callbacks
+     * @param data ImGui input text callback data
+     * @return 0 to continue, 1 to prevent default handling
+     *
+     * Implements:
+     * - Tab completion
+     * - Command history navigation
+     */
+    int TextEditCallback(ImGuiInputTextCallbackData* data);
 
 protected:
-	char input_buffer_[256];          ///< Command input buffer
-	ImVector<char*> items_;            ///< Log items storage
-	ImVector<const char*> commands_;   ///< Registered command list
-	ImVector<char*> history_;          ///< Command history storage
-	int history_pos_;                  ///< Current position in command history (-1 = new line)
-	ImGuiTextFilter filter_;           ///< Log text filter
-	bool auto_scroll_;                  ///< Automatic scroll to bottom when new log added
-    bool scroll_to_bottom_;             ///< Request scroll to bottom on next frame
+    char input_buffer_[256];          ///< Buffer for command input (max 255 characters + null terminator)
+    ImVector<char*> items_;           ///< Storage for log items (dynamically allocated strings)
+    ImVector<const char*> commands_;  ///< List of registered commands (static strings)
+    ImVector<char*> history_;         ///< Command history storage (dynamically allocated strings)
+    int history_pos_;                 ///< Current position in command history (-1 = new command)
+    ImGuiTextFilter filter_;          ///< Text filter for log display
+    bool auto_scroll_;                ///< Automatically scroll to bottom when new log added
+    bool scroll_to_bottom_;           ///< Flag to request scroll to bottom on next frame
 };
 
 NAMESPACE_END(dream)
