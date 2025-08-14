@@ -331,15 +331,22 @@ void RenderGraph::CleanupSyncObjects() {
     for (auto it = frame_sync_objects_.begin(); it != frame_sync_objects_.end();) {
         GLsync sync = *it;
         if (sync) {
-            GLint status;
-            glGetSynciv(sync, GL_SYNC_STATUS, sizeof(status), nullptr, &status);
+            GLint status = GL_UNSIGNALED;
+            glGetSynciv(sync, GL_SYNC_STATUS, sizeof(GLint), nullptr, &status);
 
-            if (status == GL_SIGNALED) {
+            if (GL_SIGNALED == status) {
                 glDeleteSync(sync);
             }
             else {
-                glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-                glDeleteSync(sync);
+                // Add a timeout mechanism to avoid permanent blocking.
+                GLenum wait = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000); // 1 s timeout
+                if (wait == GL_ALREADY_SIGNALED || wait == GL_CONDITION_SATISFIED) {
+                    glDeleteSync(sync);
+                }
+                else {
+                    ERROR("[error] Sync object wait timeout, force delete.");
+                    glDeleteSync(sync);
+                }
             }
             it = frame_sync_objects_.erase(it);
         }
