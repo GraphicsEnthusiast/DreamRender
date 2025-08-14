@@ -1,7 +1,6 @@
 #pragma once
 
 #include <shader.h>
-#include <render_context.h>
 
 NAMESPACE_BEGIN(dream)
 
@@ -12,36 +11,17 @@ NAMESPACE_BEGIN(dream)
  * Uses integer-based identifier for lightweight texture referencing.
  * Provides equality comparison operator for container compatibility.
  */
-struct TextureHandle {
-	uint32_t id = UINT32_MAX; ///< Unique texture identifier (UINT32_MAX = invalid handle)
+    struct TextureHandle {
+    uint32_t id = UINT32_MAX; ///< Unique texture identifier (UINT32_MAX = invalid handle)
 
-	/**
-	 * @brief Equality comparison operator
-	 * @param other TextureHandle to compare against
-	 * @return true if texture IDs match
-	 */
-	bool operator==(const TextureHandle& other) const {
-		return other.id == id;
-	}
-};
-
-/**
- * @enum AccessType
- * @brief Specifies resource access patterns for render pass dependencies
- */
-enum class AccessType {
-	Read,      ///< Read-only resource access
-	Write,     ///< Write-only resource access
-	ReadWrite  ///< Read-write resource access
-};
-
-/**
- * @struct Dependency
- * @brief Defines a resource dependency between render passes
- */
-struct Dependency {
-	TextureHandle resource;       ///< Texture resource required by the pass
-	AccessType required_access;   ///< Required access type for the resource
+    /**
+     * @brief Equality comparison operator
+     * @param other TextureHandle to compare against
+     * @return true if texture IDs match
+     */
+    bool operator==(const TextureHandle& other) const {
+        return other.id == id;
+    }
 };
 
 /**
@@ -53,7 +33,6 @@ struct ResourceEdge {
     std::string src_output;   ///< Source output slot name
     std::string dst_pass;     ///< Destination pass name
     std::string dst_input;    ///< Destination input slot name
-    AccessType access;        ///< Required access type for the resource
 };
 
 // Forward declaration for friendship
@@ -69,15 +48,18 @@ class RenderPass {
 public:
     /**
      * @brief Construct a new RenderPass object
-     * @param enabled Initial enabled state
+     * @param enabled Initial enabled state (true = active, false = disabled)
      */
-    RenderPass(bool enabled = true) : enabled_(enabled), is_final_output_(false), 
-        completed_(false), sync_(nullptr) {}
+    RenderPass(bool enabled = true) : enabled_(enabled), is_final_output_(false) {}
+
+    /**
+     * @brief Virtual destructor for proper cleanup of derived classes
+     */
     virtual ~RenderPass() = default;
 
     /**
      * @brief Sets the enabled state of the render pass
-     * @param enabled New enablement state(true = active, false = disabled)
+     * @param enabled New enablement state (true = active, false = disabled)
      */
     void SetEnabled(bool enabled);
 
@@ -88,73 +70,28 @@ public:
     bool IsEnabled() const noexcept;
 
     /**
-     * @brief Checks if pass execution has completed
-     * @return true if execution finished, false if still pending or not started
-     */
-    bool IsCompleted() const noexcept;
-
-    /**
-     * @brief Execute rendering commands (pure virtual)
-     * @note Implemented by derived classes to perform actual rendering work
+     * @brief Pure virtual function for executing rendering commands
+     * @note Must be implemented by derived classes to perform actual rendering work
      */
     virtual void Execute() = 0;
 
     /**
-     * @brief Declares named input slot
+     * @brief Declares a named input slot for resource dependencies
      * @param slot_name Name of the input slot
-     * @param access Required access type for this input
      */
-    void DeclareInput(const std::string& slot_name, AccessType access);
+    void DeclareInput(const std::string& slot_name);
 
     /**
-     * @brief Declares named output slot
+     * @brief Declares a named output slot for produced resources
      * @param slot_name Name of the output slot
-     * @param is_final Marks this output as the final render result
+     * @param is_final Marks this output as the final render result (default = false)
      */
     void DeclareOutput(const std::string& slot_name, bool is_final = false);
-
-    /**
-     * @brief Gets input access type by slot name
-     * @param slot_name Name of the input slot
-     * @return AccessType for the specified slot
-     */
-    AccessType GetInputAccess(const std::string& slot_name) const;
-
-    /**
-     * @brief Sets the rendering context for this pass
-     * @param context RenderContext to use
-     */
-    void SetContext(std::shared_ptr<RenderContext> context);
-
-    /**
-     * @brief Gets the last synchronization fence for this pass
-     * @return GLsync object or nullptr if no fence exists
-     */
-    GLsync GetSync() const noexcept;
-
-    /**
-     * @brief Sets a new synchronization fence for this pass
-     * @param sync GLsync object to associate with this pass
-     */
-    void SetSync(GLsync sync);
-
-    /**
-     * @brief Checks if pass execution has completed
-     * @return true if execution finished with memory order acquire
-     */
-    bool IsCompleted(std::memory_order order = std::memory_order_acquire) const noexcept;
-
-    /**
-     * @brief Marks pass as completed with specified memory order
-     * @param order Memory order to use
-     */
-    void SetCompleted(std::memory_order order = std::memory_order_release);
 
 protected:
     /// Input slot descriptor
     struct InputSlot {
         std::string name;     ///< Slot identifier
-        AccessType access;    ///< Required access type
     };
 
     /// Output slot descriptor
@@ -162,18 +99,14 @@ protected:
         std::string name;     ///< Slot identifier
     };
 
-    bool enabled_;                        ///< Controls whether pass executes
-    std::atomic<bool> completed_;         ///< Tracks execution completion state
-    std::vector<InputSlot> input_slots_;  ///< Named input slots
-    std::vector<OutputSlot> output_slots_;///< Named output slots
-    bool is_final_output_;                ///< Marks pass as final output producer
+    bool enabled_;                         ///< Controls whether pass executes
+    std::vector<InputSlot> input_slots_;   ///< Named input slots
+    std::vector<OutputSlot> output_slots_; ///< Named output slots
+    bool is_final_output_;                 ///< Marks pass as final output producer
 
     /// Populated by RenderGraph during compilation
-    std::vector<Dependency> inputs_;     ///< Resolved input dependencies
-    std::vector<TextureHandle> outputs_; ///< Generated output resources
-
-    std::shared_ptr<RenderContext> context_; ///< Context for this render pass
-    GLsync sync_ ;                           ///< GPU synchronization fence
+    std::vector<TextureHandle> inputs_;   ///< Resolved input dependencies
+    std::vector<TextureHandle> outputs_;  ///< Generated output resources
 };
 
 NAMESPACE_END(dream)

@@ -1,116 +1,100 @@
 #pragma once
 
 #include <render_pass.h>
-#include <thread_pool.h>
 
 NAMESPACE_BEGIN(dream)
 
 /**
  * @class RenderGraph
- * @brief Manages a directed acyclic graph (DAG) of rendering passes with explicit edge-based dependencies
+ * @brief Manages a directed acyclic graph (DAG) of rendering passes for serial execution
  */
 class RenderGraph {
 public:
     /**
-     * @brief Constructs render graph with context management
-     * @param main_window Main GLFW window for context sharing
+     * @brief Constructs a RenderGraph object
+     *
+     * Initializes the render graph with default values:
+     * - Sets next texture handle ID to 0
+     * - Marks final output as invalid (UINT32_MAX)
      */
-    RenderGraph(GLFWwindow* main_window) : pool_(std::thread::hardware_concurrency()),
-        next_handle_id_(0), main_window_(main_window) {}
-    ~RenderGraph();
+    RenderGraph() : next_handle_id_(0) {}
 
     /**
-     * @brief Registers a render pass with unique identifier
-     * @param name Unique pass identifier
-     * @param pass RenderPass instance (ownership transferred)
+     * @brief Registers a render pass with a unique identifier
+     * @param name Unique name for the render pass
+     * @param pass Unique pointer to the RenderPass instance (ownership transferred to graph)
+     *
+     * @note The graph takes ownership of the RenderPass object
      */
     void AddPass(const std::string& name, std::unique_ptr<RenderPass> pass);
 
     /**
-     * @brief Toggles enabled state of specified pass
-     * @param name Pass identifier to modify
-     * @param enabled New enablement state
+     * @brief Sets the enabled state of a specific render pass
+     * @param name Name of the pass to modify
+     * @param enabled New enablement state (true = active, false = disabled)
+     *
+     * @note Disabled passes will be skipped during compilation and execution
      */
     void SetPassEnabled(const std::string& name, bool enabled);
 
     /**
-     * @brief Connects two passes via named slots
+     * @brief Connects two render passes via their named resource slots
      * @param src_pass Source pass name
-     * @param src_output Source output slot name
+     * @param src_output Output slot name of the source pass
      * @param dst_pass Destination pass name
-     * @param dst_input Destination input slot name
-     * @param access Required access type (default=Read)
+     * @param dst_input Input slot name of the destination pass
+     *
+     * Creates a resource dependency where the destination pass consumes
+     * a resource produced by the source pass.
      */
     void Connect(const std::string& src_pass, const std::string& src_output,
-        const std::string& dst_pass, const std::string& dst_input,
-        AccessType access = AccessType::Read);
+        const std::string& dst_pass, const std::string& dst_input);
 
     /**
-     * @brief Compiles dependency graph based on explicit edges
+     * @brief Compiles the dependency graph
      *
-     * Compilation process:
+     * Performs the following operations:
      * 1. Processes all connection edges
-     * 2. Builds resource-producer mapping
-     * 3. Performs topological sort (Kahn's algorithm)
-     * 4. Identifies final output texture
+     * 2. Assigns texture handles to resources
+     * 3. Builds dependency graph
+     * 4. Performs topological sort to determine execution order
+     * 5. Identifies the final output texture
+     *
+     * @note Must be called after adding all passes and connections
+     *       and before executing the graph
      */
     void Compile();
 
     /**
-     * @brief Executes render passes with thread pool
+     * @brief Executes all enabled render passes in topological order
      *
-     * Execution workflow:
-     * 1. Initializes task queue with topological order
-     * 2. Builds reverse dependency map
-     * 3. Launches worker threads that:
-     *    - Wait for tasks with satisfied dependencies
-     *    - Execute passes when ready
-     *    - Update completion status atomically
+     * Iterates through the compiled execution order and calls
+     * the Execute() method of each enabled pass.
      */
     void Execute();
 
     /**
-     * @brief Provides access to final output texture
-     * @return Texture handle or UINT32_MAX if undefined
+     * @brief Retrieves the handle to the final output texture
+     * @return TextureHandle of the final output, or invalid handle (UINT32_MAX)
+     *         if no final output is defined
      */
     TextureHandle GetFinalOutput() const noexcept;
 
-    /**
-     * @brief Assigns a dedicated context to a render pass
-     * @param pass_name Name of the render pass
-     * @param width Context width (default=1)
-     * @param height Context height (default=1)
-     */
-    void AssignContextToPass(const std::string& pass_name, unsigned int width = 1, unsigned int height = 1);
-
 protected:
     /**
-     * @brief Cleans up synchronization objects
-     *
-     * Must be called at the end of each frame to release
-     * GPU synchronization resources.
-     */
-    void CleanupSyncObjects();
-
-    /**
-     * @brief Retrieves pass pointer by name
-     * @param name Pass identifier
-     * @return RenderPass* or nullptr if not found
+     * @brief Retrieves a render pass by name
+     * @param name Name of the pass to retrieve
+     * @return Pointer to RenderPass, or nullptr if not found
      */
     RenderPass* GetPass(const std::string& name);
 
 protected:
-    std::unordered_map<std::string, std::unique_ptr<RenderPass>> passes_;          ///< Name-indexed render passes
-    std::vector<ResourceEdge> edges_;                                              ///< Explicit dependency connections
-    std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_graph_;   ///< Adjacency list of dependencies
-    std::vector<RenderPass*> execution_order_;                                     ///< Topologically sorted execution sequence
-    TextureHandle final_output_;                                                   ///< Handle to final output texture
-    ThreadPool pool_;                                                              ///< Thread pool for parallel execution
-    unsigned int next_handle_id_;                                                  ///< Auto-generated texture handle counter
-    GLFWwindow* main_window_;                                                      ///< Main GLFW window for context sharing
-    std::unordered_map<std::string, std::shared_ptr<RenderContext>> pass_contexts_;///< Accessed during task execution to bind pass-specific context
-    std::vector<GLsync> frame_sync_objects_;                                       ///< Frame lifetime sync objects
-    mutable std::mutex sync_mutex_;                                                ///< Protect frame_sync_objects_
+    std::unordered_map<std::string, std::unique_ptr<RenderPass>> passes_;         ///< Map of pass names to RenderPass instances
+    std::vector<ResourceEdge> edges_;                                             ///< List of explicit resource connections
+    std::unordered_map<RenderPass*, std::vector<RenderPass*>> dependency_graph_;  ///< Adjacency list representing pass dependencies
+    std::vector<RenderPass*> execution_order_;                                    ///< Topologically sorted execution sequence
+    TextureHandle final_output_;                                                  ///< Handle to the final output texture
+    unsigned int next_handle_id_;                                                 ///< Counter for generating unique texture handles
 };
 
 NAMESPACE_END(dream)
