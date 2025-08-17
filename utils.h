@@ -28,6 +28,7 @@
 #include <vector>
 #include <unordered_map>
 #include <queue>
+#include <array>
 #include <list>
 #include <string>
 #include <fstream>

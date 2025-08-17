@@ -2,6 +2,15 @@
 
 NAMESPACE_BEGIN(dream)
 
+std::shared_ptr<Interface> Interface::Create(unsigned int width, unsigned int height) {
+    auto interface = std::shared_ptr<Interface>(new Interface(width, height));
+
+	// Associate interface with renderer
+    interface->renderer_->SetInterface(interface->shared_from_this());
+
+    return interface;
+}
+
 Interface::Interface(unsigned int width, unsigned int height) : width_(width), height_(height) {
     spdlog::set_level(spdlog::level::trace);
     RegisterLogCallback();
@@ -50,6 +59,9 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
     // Initialize platform bindings
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 460");
+
+	// Create renderer
+	renderer_ = std::make_shared<Renderer>();
 }
 
 Interface::~Interface() {
@@ -234,33 +246,38 @@ void Interface::CreateMenuBar() {
 }
 
 void Interface::Render() {
-    GLuint texture = 0;
-    auto RenderImage = [&texture]() {
-        ImGui::Begin("Rendering Window");
+	// Render output
+	auto RenderOutput = [this]() {
+		ImGui::Begin("Rendering Window");
+		ImVec2 size = ImGui::GetContentRegionAvail();
 
-        // Generate placeholder texture
-        ImVec2 rendering_window_size = ImGui::GetContentRegionAvail();
-        static std::vector<float> pixels(rendering_window_size.x * rendering_window_size.y * 3, 0.6f);
-        if (0 == texture) {
-            glGenTextures(1, &texture);
-        }
+		// Cache rendering window dimensions
+		SetRenderingWindowSize(size);
 
-        // Configure texture parameters
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, rendering_window_size.x, rendering_window_size.y,
-            0, GL_RGB, GL_FLOAT, pixels.data());
+		GLuint tex = renderer_->GetLatestTexture();
+		if (0 != tex) {
+			ImGui::Image((void*)(intptr_t)tex, size, ImVec2(0, 1), ImVec2(1, 0));
+		}
+		else {
+			// Placeholder while rendering
+			ImGui::Text("Rendering in progress...");
+		}
 
-        // Display texture in viewport
-        ImGui::Image((void*)(intptr_t)texture, rendering_window_size, ImVec2(0, 1), ImVec2(1, 0));
-        ImGui::End();
-    };
+		ImGui::End();
+	};
 
     // Main application loop
     while (!glfwWindowShouldClose(window_)) {
+		// Update frame timing
+		float current_time = static_cast<float>(glfwGetTime());
+		float delta_time = current_time - frame_timer_;
+		frame_timer_ = current_time;
+
+		// Request new frame every 33ms (30fps)
+		if (delta_time > 0.033f) {
+			RequestFrame();
+		}
+
         glfwPollEvents();
 
         // Retrieve current framebuffer dimensions
@@ -276,7 +293,7 @@ void Interface::Render() {
         ConfigureAndSubmitDockspace(display_w, display_h);  // Setup layout
         CreateMenuBar();  // Render top menu
         console_->Draw();  // Display console
-        RenderImage();  // Render main viewport
+        RenderOutput();  // Render main viewport
         ImGui::ShowDemoWindow(nullptr);  // Show ImGui demo
 
         // Finalize and render frame
@@ -303,8 +320,29 @@ void Interface::Render() {
     }
 }
 
+void Interface::RequestFrame() {
+	if (renderer_) {
+		renderer_->RequestFrame();
+	}
+}
+
 GLFWwindow* Interface::GetMainWindow() const noexcept {
     return window_;
+}
+
+Renderer& Interface::GetRenderer() const noexcept {
+	return *renderer_;
+}
+
+ImVec2 Interface::GetRenderingWindowSize() const noexcept {
+	std::lock_guard<std::mutex> lock(size_mutex_);
+
+	return rendering_window_size_;
+}
+
+void Interface::SetRenderingWindowSize(const ImVec2& size) {
+	std::lock_guard<std::mutex> lock(size_mutex_);
+	rendering_window_size_ = size;
 }
 
 NAMESPACE_END(dream)

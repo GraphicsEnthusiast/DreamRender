@@ -19,8 +19,16 @@ NAMESPACE_BEGIN(dream)
      * @param other TextureHandle to compare against
      * @return true if texture IDs match
      */
-    bool operator==(const TextureHandle& other) const {
+    inline bool operator==(const TextureHandle& other) const {
         return other.id == id;
+    }
+
+    /**
+     * @brief Checks if valid
+     * @return true if valid
+     */
+    inline bool IsValid() const noexcept {
+        return UINT32_MAX != id;
     }
 };
 

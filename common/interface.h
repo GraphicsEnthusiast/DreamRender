@@ -1,6 +1,7 @@
 #pragma once
 
 #include <console.h>
+#include <renderer.h>
 
 NAMESPACE_BEGIN(dream)
 
@@ -8,14 +9,25 @@ NAMESPACE_BEGIN(dream)
  * @class Interface
  * @brief Main GUI management class for the application
  */
-class Interface {
+class Interface : public std::enable_shared_from_this<Interface> {
 public:
     /**
-     * @brief Constructs the interface with specified dimensions
+     * @brief Creates an Interface instance
      * @param width Initial window width (default: 2048)
      * @param height Initial window height (default: 1024)
+     * @return Shared pointer to the interface instance
      */
-    Interface(unsigned int width = 2048, unsigned int height = 1024);
+    static std::shared_ptr<Interface> Create(unsigned int width = 2048, unsigned int height = 1024);
+
+    /**
+     * @brief Main rendering loop
+     */
+    void Render();
+
+    /**
+     * @brief Requests a new frame from the renderer
+     */
+    void RequestFrame();
 
     /**
      * @brief Cleans up resources and terminates GLFW/ImGui contexts
@@ -23,17 +35,37 @@ public:
     ~Interface();
 
     /**
-     * @brief Main rendering loop that drives the application
-     */
-    void Render();
-
-    /**
      * @brief Gets the main GLFW window handle
      * @return Pointer to the main GLFW window
      */
     GLFWwindow* GetMainWindow() const noexcept;
 
+    /**
+     * @brief Gets the associated renderer instance
+     * @return Reference to the renderer
+     */
+    Renderer& GetRenderer() const noexcept;
+
+    /**
+     * @brief Retrieves the rendering window dimensions
+     * @return ImVec2 containing current rendering window dimensions
+     */
+    ImVec2 GetRenderingWindowSize() const noexcept;
+
+    /**
+     * @brief Stores the current rendering window dimensions
+     * @param size Dimensions to store
+     */
+    void SetRenderingWindowSize(const ImVec2& size);
+
 protected:
+    /**
+     * @brief Constructs the interface with specified dimensions
+     * @param width Initial window width (default: 2048)
+     * @param height Initial window height (default: 1024)
+     */
+    Interface(unsigned int width = 2048, unsigned int height = 1024);
+
     /**
      * @brief Registers SPDlog callback to redirect logs to console
      */
@@ -68,6 +100,10 @@ protected:
     std::unique_ptr<Console> console_;  ///< Console for log display
     unsigned int width_;                ///< Current window width
     unsigned int height_;               ///< Current window height
+	std::shared_ptr<Renderer> renderer_;///< Renderer instance
+	float frame_timer_ = 0.0f;          ///< Frame timing control
+	ImVec2 rendering_window_size_;      ///< Cached rendering window dimensions
+	mutable std::mutex size_mutex_;     ///< Protects access to rendering_window_size_
 };
 
 NAMESPACE_END(dream)
