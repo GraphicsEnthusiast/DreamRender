@@ -43,131 +43,78 @@ struct ResourceEdge {
     std::string dst_input;    ///< Destination input slot name
 };
 
-// Forward declaration for friendship
-class RenderGraph;
-
 /**
  * @class RenderPass
  * @brief Abstract base class for render passes with named resource slots
  */
 class RenderPass {
-    friend class RenderGraph;  ///< Grant RenderGraph access to internal state
-
 public:
     /**
-     * @brief Construct a new RenderPass object
-     * @param enabled Initial enabled state (true = active, false = disabled)
+     * @brief Constructs a RenderPass with specified enable state
      */
-    RenderPass(bool enabled = true) : enabled_(enabled), is_final_output_(false) {}
+    RenderPass() : enabled_(true), is_final_output_(false) {}
 
     /**
-     * @brief Virtual destructor for proper cleanup of derived classes
+     * @brief Virtual destructor for polymorphic deletion
      */
     virtual ~RenderPass() = default;
 
     /**
-     * @brief Sets the enabled state of the render pass
-     * @param enabled New enablement state (true = active, false = disabled)
+     * @brief Sets the activation state of the render pass
+     * @param enabled New activation state
      */
     void SetEnabled(bool enabled);
 
     /**
-     * @brief Checks if the render pass is currently enabled
-     * @return true if enabled and should execute, false otherwise
+     * @brief Checks current activation status
+     * @return true if pass is enabled and should execute
      */
     bool IsEnabled() const noexcept;
 
     /**
-     * @brief Pure virtual function for executing rendering commands
-     * @note Must be implemented by derived classes to perform actual rendering work
+     * @brief Pure virtual function for rendering command execution
+     * @note Must be implemented by derived classes
      */
     virtual void Execute() = 0;
 
     /**
-     * @brief Declares a named input slot for resource dependencies
-     * @param slot_name Name of the input slot
-     */
-    void DeclareInput(const std::string& slot_name);
+	 * @brief Sets the texture handle for a specified input slot.
+	 * @param slot_name Name identifier of the input slot to modify.
+	 * @param handle Texture handle to assign to the slot.
+	 */
+    void SetInputTexture(const std::string& slot_name, TextureHandle handle);
 
     /**
-     * @brief Declares a named output slot for produced resources
-     * @param slot_name Name of the output slot
-     * @param is_final Marks this output as the final render result (default = false)
+     * @brief Sets the texture handle for a specified output slot.
+     * @param slot_name Name identifier of the output slot to modify.
+     * @param handle Texture handle to assign to the slot.
      */
-    void DeclareOutput(const std::string& slot_name, bool is_final = false);
+    void SetOutputTexture(const std::string& slot_name, TextureHandle handle);
+
+    /**
+     * @brief Marks this pass as the final output producer
+     * @param is_final True to mark as final output pass
+     */
+    void SetAsFinalOutput(bool is_final);
+
+    /**
+     * @brief Checks if this pass produces the final render output.
+     * @return true If the pass is marked as the final output producer.
+     * @return false If the pass does not produce final output.
+     */
+    bool IsFinalOutput() const noexcept;
 
 protected:
-    /// Input slot descriptor
-    struct InputSlot {
-        std::string name;     ///< Slot identifier
-    };
+    /// Map type for input slot name to texture handle
+    using InputSlotMap = std::unordered_map<std::string, TextureHandle>;
 
-    /// Output slot descriptor
-    struct OutputSlot {
-        std::string name;     ///< Slot identifier
-    };
+    /// Map type for output slot name to texture handle
+    using OutputSlotMap = std::unordered_map<std::string, TextureHandle>;
 
-    bool enabled_;                         ///< Controls whether pass executes
-    std::vector<InputSlot> input_slots_;   ///< Named input slots
-    std::vector<OutputSlot> output_slots_; ///< Named output slots
-    bool is_final_output_;                 ///< Marks pass as final output producer
-
-    /// Populated by RenderGraph during compilation
-    std::vector<TextureHandle> inputs_;   ///< Resolved input dependencies
-    std::vector<TextureHandle> outputs_;  ///< Generated output resources
-};
-
-/**
- * @class SimplePass
- * @brief The simplest possible render pass for testing
- */
-class SimplePass : public RenderPass {
-    
-public:
-    SimplePass() {
-        // Declare output slot
-        DeclareOutput("output", true);  // Mark as final output
-        outputs_.resize(1);
-    }
-
-    void Execute() override {
-        // Create a fixed-size texture
-        const int width = 1397;
-        const int height = 721;
-
-        // Generate checkered pattern
-        std::vector<unsigned char> pixels(width * height * 4);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int idx = (y * width + x) * 4;
-                bool checker = (x / 32 + y / 32) % 2 == 0;
-
-                pixels[idx + 0] = checker ? 255 : 0;    // R
-                pixels[idx + 1] = checker ? 0 : 255;    // G
-                pixels[idx + 2] = 0;                    // B
-                pixels[idx + 3] = 255;                  // A
-            }
-        }
-
-        // Create texture
-        GLuint texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        // Set output handle
-        if (!outputs_.empty()) {
-            outputs_[0].id = texture;
-        }
-
-        DEBUG("[debug] SimplePass executed");
-    }
-
-    GLuint GetId() {
-        return outputs_[0].id;
-    }
+    bool enabled_;                       ///< Controls pass execution
+    InputSlotMap input_map_;             ///< Input slot name to resource mapping
+    OutputSlotMap output_map_;           ///< Output slot name to resource mapping
+    bool is_final_output_;               ///< Flag indicating final output producer
 };
 
 NAMESPACE_END(dream)

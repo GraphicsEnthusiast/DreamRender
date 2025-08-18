@@ -246,11 +246,8 @@ void Interface::Render() {
 		ImGui::Begin("Rendering Window");
 		ImVec2 size = ImGui::GetContentRegionAvail();
 
-        SimplePass p;
-        p.Execute();
-        auto x = p.GetId();
-		if (0 != x) {
-			ImGui::Image((void*)(intptr_t)x, size, ImVec2(0, 1), ImVec2(1, 0));
+		if (0) {
+			//ImGui::Image((void*)(intptr_t)x, size, ImVec2(0, 1), ImVec2(1, 0));
 		}
 		else {
 			// Placeholder while rendering
