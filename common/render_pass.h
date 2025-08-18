@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(dream)
  * Uses integer-based identifier for lightweight texture referencing.
  * Provides equality comparison operator for container compatibility.
  */
-    struct TextureHandle {
-    uint32_t id = UINT32_MAX; ///< Unique texture identifier (UINT32_MAX = invalid handle)
+struct TextureHandle {
+    GLuint id = UINT32_MAX; ///< Unique texture identifier (UINT32_MAX = invalid handle)
 
     /**
      * @brief Equality comparison operator
@@ -115,6 +115,59 @@ protected:
     /// Populated by RenderGraph during compilation
     std::vector<TextureHandle> inputs_;   ///< Resolved input dependencies
     std::vector<TextureHandle> outputs_;  ///< Generated output resources
+};
+
+/**
+ * @class SimplePass
+ * @brief The simplest possible render pass for testing
+ */
+class SimplePass : public RenderPass {
+    
+public:
+    SimplePass() {
+        // Declare output slot
+        DeclareOutput("output", true);  // Mark as final output
+        outputs_.resize(1);
+    }
+
+    void Execute() override {
+        // Create a fixed-size texture
+        const int width = 1397;
+        const int height = 721;
+
+        // Generate checkered pattern
+        std::vector<unsigned char> pixels(width * height * 4);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int idx = (y * width + x) * 4;
+                bool checker = (x / 32 + y / 32) % 2 == 0;
+
+                pixels[idx + 0] = checker ? 255 : 0;    // R
+                pixels[idx + 1] = checker ? 0 : 255;    // G
+                pixels[idx + 2] = 0;                    // B
+                pixels[idx + 3] = 255;                  // A
+            }
+        }
+
+        // Create texture
+        GLuint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        // Set output handle
+        if (!outputs_.empty()) {
+            outputs_[0].id = texture;
+        }
+
+        DEBUG("[debug] SimplePass executed");
+    }
+
+    GLuint GetId() {
+        return outputs_[0].id;
+    }
 };
 
 NAMESPACE_END(dream)

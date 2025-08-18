@@ -1,12 +1,10 @@
 #include <interface.h>
+#include <render_pass.h>
 
 NAMESPACE_BEGIN(dream)
 
 std::shared_ptr<Interface> Interface::Create(unsigned int width, unsigned int height) {
-    auto interface = std::shared_ptr<Interface>(new Interface(width, height));
-
-	// Associate interface with renderer
-    interface->renderer_->SetInterface(interface->shared_from_this());
+    std::shared_ptr<Interface> interface = std::shared_ptr<Interface>(new Interface(width, height));
 
     return interface;
 }
@@ -59,9 +57,6 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
     // Initialize platform bindings
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 460");
-
-	// Create renderer
-	renderer_ = std::make_shared<Renderer>();
 }
 
 Interface::~Interface() {
@@ -251,12 +246,11 @@ void Interface::Render() {
 		ImGui::Begin("Rendering Window");
 		ImVec2 size = ImGui::GetContentRegionAvail();
 
-		// Cache rendering window dimensions
-		SetRenderingWindowSize(size);
-
-		GLuint tex = renderer_->GetLatestTexture();
-		if (0 != tex) {
-			ImGui::Image((void*)(intptr_t)tex, size, ImVec2(0, 1), ImVec2(1, 0));
+        SimplePass p;
+        p.Execute();
+        auto x = p.GetId();
+		if (0 != x) {
+			ImGui::Image((void*)(intptr_t)x, size, ImVec2(0, 1), ImVec2(1, 0));
 		}
 		else {
 			// Placeholder while rendering
@@ -268,16 +262,6 @@ void Interface::Render() {
 
     // Main application loop
     while (!glfwWindowShouldClose(window_)) {
-		// Update frame timing
-		float current_time = static_cast<float>(glfwGetTime());
-		float delta_time = current_time - frame_timer_;
-		frame_timer_ = current_time;
-
-		// Request new frame every 33ms (30fps)
-		if (delta_time > 0.033f) {
-			RequestFrame();
-		}
-
         glfwPollEvents();
 
         // Retrieve current framebuffer dimensions
@@ -320,29 +304,9 @@ void Interface::Render() {
     }
 }
 
-void Interface::RequestFrame() {
-	if (renderer_) {
-		renderer_->RequestFrame();
-	}
-}
 
 GLFWwindow* Interface::GetMainWindow() const noexcept {
     return window_;
-}
-
-Renderer& Interface::GetRenderer() const noexcept {
-	return *renderer_;
-}
-
-ImVec2 Interface::GetRenderingWindowSize() const noexcept {
-	std::lock_guard<std::mutex> lock(size_mutex_);
-
-	return rendering_window_size_;
-}
-
-void Interface::SetRenderingWindowSize(const ImVec2& size) {
-	std::lock_guard<std::mutex> lock(size_mutex_);
-	rendering_window_size_ = size;
 }
 
 NAMESPACE_END(dream)

@@ -11,10 +11,6 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer.cpp
 )
 
 include_directories(

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <console.h>
-#include <renderer.h>
 
 NAMESPACE_BEGIN(dream)
 
@@ -25,11 +24,6 @@ public:
     void Render();
 
     /**
-     * @brief Requests a new frame from the renderer
-     */
-    void RequestFrame();
-
-    /**
      * @brief Cleans up resources and terminates GLFW/ImGui contexts
      */
     ~Interface();
@@ -39,24 +33,6 @@ public:
      * @return Pointer to the main GLFW window
      */
     GLFWwindow* GetMainWindow() const noexcept;
-
-    /**
-     * @brief Gets the associated renderer instance
-     * @return Reference to the renderer
-     */
-    Renderer& GetRenderer() const noexcept;
-
-    /**
-     * @brief Retrieves the rendering window dimensions
-     * @return ImVec2 containing current rendering window dimensions
-     */
-    ImVec2 GetRenderingWindowSize() const noexcept;
-
-    /**
-     * @brief Stores the current rendering window dimensions
-     * @param size Dimensions to store
-     */
-    void SetRenderingWindowSize(const ImVec2& size);
 
 protected:
     /**
@@ -100,10 +76,6 @@ protected:
     std::unique_ptr<Console> console_;  ///< Console for log display
     unsigned int width_;                ///< Current window width
     unsigned int height_;               ///< Current window height
-	std::shared_ptr<Renderer> renderer_;///< Renderer instance
-	float frame_timer_ = 0.0f;          ///< Frame timing control
-	ImVec2 rendering_window_size_;      ///< Cached rendering window dimensions
-	mutable std::mutex size_mutex_;     ///< Protects access to rendering_window_size_
 };
 
 NAMESPACE_END(dream)
