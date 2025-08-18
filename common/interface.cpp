@@ -246,8 +246,44 @@ void Interface::Render() {
 		ImGui::Begin("Rendering Window");
 		ImVec2 size = ImGui::GetContentRegionAvail();
 
-		if (0) {
-			//ImGui::Image((void*)(intptr_t)x, size, ImVec2(0, 1), ImVec2(1, 0));
+		// Create textures externally
+		TextureHandle sourceTex = CreateColorTexture(size.x, size.y);
+		TextureHandle processedTex = CreateColorTexture(size.x, size.y);
+        TextureHandle finalTex = CreateColorTexture(size.x, size.y);
+
+		// Create render graph
+		RenderGraph graph;
+
+		// Create passes
+		auto processor = std::make_shared<ColorProcessingPass>();
+		auto presenter = std::make_shared<PresentPass>();
+
+		// Configure passes with external textures
+		processor->SetInputTexture("Input", sourceTex);
+		processor->SetOutputTexture("Output", processedTex);
+		presenter->SetInputTexture("ScreenInput", processedTex);
+        presenter->SetOutputTexture("ScreenOutput", finalTex);
+
+		// Add passes to graph
+		graph.AddPass("Processor", processor);
+		graph.AddPass("Presenter", presenter);
+
+		// Connect them
+		graph.AddEdge({
+			"Processor", "Output",   // Processed output
+			"Presenter", "ScreenInput"  // Final presentation
+			});
+
+		// Compile and execute
+		graph.Compile();
+		graph.Execute();
+
+		// Get final output
+        graph.SetFinalOutput(finalTex);
+		TextureHandle finalOutput = graph.GetFinalOutput();
+
+		if (finalOutput.IsValid()) {
+			ImGui::Image((void*)(intptr_t)finalOutput.id, size, ImVec2(0, 1), ImVec2(1, 0));
 		}
 		else {
 			// Placeholder while rendering

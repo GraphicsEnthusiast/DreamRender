@@ -1,6 +1,7 @@
 #pragma once
 
 #include <console.h>
+#include <render_graph.h>
 
 NAMESPACE_BEGIN(dream)
 

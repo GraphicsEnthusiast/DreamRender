@@ -52,7 +52,7 @@ public:
     /**
      * @brief Constructs a RenderPass with specified enable state
      */
-    RenderPass() : enabled_(true), is_final_output_(false) {}
+    RenderPass() : enabled_(true) {}
 
     /**
      * @brief Virtual destructor for polymorphic deletion
@@ -82,27 +82,14 @@ public:
 	 * @param slot_name Name identifier of the input slot to modify.
 	 * @param handle Texture handle to assign to the slot.
 	 */
-    void SetInputTexture(const std::string& slot_name, TextureHandle handle);
+    void SetInputTexture(const std::string& slot_name, const TextureHandle& handle);
 
     /**
      * @brief Sets the texture handle for a specified output slot.
      * @param slot_name Name identifier of the output slot to modify.
      * @param handle Texture handle to assign to the slot.
      */
-    void SetOutputTexture(const std::string& slot_name, TextureHandle handle);
-
-    /**
-     * @brief Marks this pass as the final output producer
-     * @param is_final True to mark as final output pass
-     */
-    void SetAsFinalOutput(bool is_final);
-
-    /**
-     * @brief Checks if this pass produces the final render output.
-     * @return true If the pass is marked as the final output producer.
-     * @return false If the pass does not produce final output.
-     */
-    bool IsFinalOutput() const noexcept;
+    void SetOutputTexture(const std::string& slot_name, const TextureHandle& handle);
 
 protected:
     /// Map type for input slot name to texture handle
@@ -114,7 +101,59 @@ protected:
     bool enabled_;                       ///< Controls pass execution
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
-    bool is_final_output_;               ///< Flag indicating final output producer
 };
+
+// Simple pass that processes an input texture and outputs to another texture
+class ColorProcessingPass : public RenderPass {
+public:
+	void Execute() override {
+		// Get input texture (created externally)
+		TextureHandle input = input_map_.at("Input");
+
+		// Get output texture (created externally)
+		TextureHandle output = output_map_.at("Output");
+
+		// In a real implementation, we would:
+		// 1. Bind framebuffer with output texture
+		// 2. Bind input texture as sampler
+		// 3. Draw fullscreen quad with processing shader
+
+		std::cout << "Processing color from texture " << input.id
+			<< " to texture " << output.id << std::endl;
+	}
+};
+
+// Final output pass that presents to screen
+class PresentPass : public RenderPass {
+public:
+	void Execute() override {
+		TextureHandle input = input_map_.at("ScreenInput");
+
+		// In a real implementation, we would:
+		// 1. Bind default framebuffer
+		// 2. Draw fullscreen quad with input texture
+		// 3. Swap buffers
+
+		std::cout << "Presenting texture " << input.id << " to screen" << std::endl;
+	}
+};
+
+// Helper function to create an OpenGL texture
+inline TextureHandle CreateColorTexture(int width, int height) {
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	// Create empty texture
+	std::vector<float> pixels(width * height * 4, 1); // White texture
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+		GL_RGBA, GL_FLOAT, pixels.data());
+
+	// Set parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	return TextureHandle{ textureID };
+}
 
 NAMESPACE_END(dream)
