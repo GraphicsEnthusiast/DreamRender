@@ -52,7 +52,7 @@ protected:
 	std::unordered_map<std::string, RenderPass*> pass_map_;                     ///< Pass lookup by name (non-owning references)
 	std::vector<ResourceEdge> edges_;                                           ///< Dependency definitions
     std::vector<RenderPass*> pass_execution_queue_;                             ///< Topologically sorted passes (non-owning pointers)
-	TextureHandle output_;                                                     ///< Graph output
+	TextureHandle output_;                                                      ///< Graph output
 };
 
 NAMESPACE_END(dream)
