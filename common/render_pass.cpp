@@ -30,4 +30,30 @@ void RenderPass::SetOutputTexture(const std::string& slot_name, const TextureHan
 	}
 }
 
+TextureHandle RenderPass::GetInputTexture(const std::string& slot_name) const noexcept {
+	auto it = input_map_.find(slot_name);
+	if (input_map_.end() != it) {
+		return it->second;
+	}
+
+	return TextureHandle{};
+}
+
+TextureHandle RenderPass::GetOutputTexture(const std::string& slot_name) const noexcept {
+	auto it = output_map_.find(slot_name);
+	if (output_map_.end() != it) {
+		return it->second;
+	}
+
+	return TextureHandle{};
+}
+
+const RenderPass::InputSlotMap& RenderPass::GetInputSlots() const noexcept {
+	return input_map_;
+}
+
+const RenderPass::OutputSlotMap& RenderPass::GetOutputSlots() const noexcept {
+	return output_map_;
+}
+
 NAMESPACE_END(dream)

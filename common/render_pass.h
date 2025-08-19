@@ -49,6 +49,12 @@ struct ResourceEdge {
  */
 class RenderPass {
 public:
+    /// Map type for input slot name to texture handle
+    using InputSlotMap = std::unordered_map<std::string, TextureHandle>;
+
+    /// Map type for output slot name to texture handle
+    using OutputSlotMap = std::unordered_map<std::string, TextureHandle>;
+
     /**
      * @brief Constructs a RenderPass with specified enable state
      */
@@ -91,13 +97,33 @@ public:
      */
     void SetOutputTexture(const std::string& slot_name, const TextureHandle& handle);
 
+    /**
+     * @brief Retrieves the texture handle for a specified input slot.
+     * @param slot_name Name identifier of the input slot to retrieve.
+     * @return TextureHandle associated with the input slot (invalid if not found)
+     */
+    TextureHandle GetInputTexture(const std::string& slot_name) const noexcept;
+
+    /**
+     * @brief Retrieves the texture handle for a specified output slot.
+     * @param slot_name Name identifier of the output slot to retrieve.
+     * @return TextureHandle associated with the output slot (invalid if not found)
+     */
+    TextureHandle GetOutputTexture(const std::string& slot_name) const noexcept;
+
+    /**
+     * @brief Retrieves all input slot names and their associated texture handles.
+     * @return const reference to the input slot map
+     */
+    const InputSlotMap& GetInputSlots() const noexcept;
+
+    /**
+     * @brief Retrieves all output slot names and their associated texture handles.
+     * @return const reference to the output slot map
+     */
+    const OutputSlotMap& GetOutputSlots() const noexcept;
+
 protected:
-    /// Map type for input slot name to texture handle
-    using InputSlotMap = std::unordered_map<std::string, TextureHandle>;
-
-    /// Map type for output slot name to texture handle
-    using OutputSlotMap = std::unordered_map<std::string, TextureHandle>;
-
     bool enabled_;                       ///< Controls pass execution
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
