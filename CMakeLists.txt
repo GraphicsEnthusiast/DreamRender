@@ -51,10 +51,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/fmt)
 # Add nlohmann
 set(NLOHMANN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann/include)
 
-# Add embree
-set(EMBREE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/embree/include)
-set(EMBREE_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/embree/lib)
-
 # Add stb
 set(STB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/stb)
 
@@ -78,7 +74,6 @@ include_directories(
     ${IMGUI_INCLUDE_DIR}
     ${FMT_INCLUDE_DIR}
     ${NLOHMANN_INCLUDE_DIR}
-    ${EMBREE_INCLUDE_DIR}
     ${STB_INCLUDE_DIR}
     ${TINY_INCLUDE_DIR}
     ${COMMON_INCLUDE_DIR}
@@ -95,8 +90,6 @@ target_link_libraries(${PROJECT_NAME}
     spdlog
     imgui
     fmt
-    embree3
-    tbb
     common
 )
 
