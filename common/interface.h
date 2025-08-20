@@ -1,6 +1,7 @@
 #pragma once
 
 #include <console.h>
+#include <thread_pool.h>
 #include <render_pipeline.h>
 
 NAMESPACE_BEGIN(dream)
@@ -18,6 +19,12 @@ public:
      * @return Shared pointer to the interface instance
      */
     static std::shared_ptr<Interface> Create(unsigned int width = 2048, unsigned int height = 1024);
+
+    /**
+     * @brief Sets the active render pipeline for the application
+     * @param pipeline Unique pointer to the render pipeline instance
+     */
+    void SetRenderPipeline(std::unique_ptr<RenderPipeline>&& pipeline);
 
     /**
      * @brief Main rendering loop
@@ -77,6 +84,14 @@ protected:
     std::unique_ptr<Console> console_;  ///< Console for log display
     unsigned int width_;                ///< Current window width
     unsigned int height_;               ///< Current window height
+    std::unique_ptr<ThreadPool> thread_pool_;
+    std::unique_ptr<RenderPipeline> pipeline_;
+	TextureHandle front_buffer_;        ///< Front buffer (accessed by UI thread)
+	TextureHandle back_buffer_;         ///< Back buffer (accessed by render thread)
+	std::mutex buffer_mutex_;           ///< Mutex protecting buffer swapping
+	bool buffer_updated_ = false;       ///< Flag indicating back buffer update
+	bool rendering_active_ = false;     ///< Render thread activity status
+	unsigned int frame_counter_;        ///< Frame counter (for debugging)
 };
 
 NAMESPACE_END(dream)

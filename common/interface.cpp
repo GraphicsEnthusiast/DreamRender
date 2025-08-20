@@ -3,12 +3,12 @@
 NAMESPACE_BEGIN(dream)
 
 std::shared_ptr<Interface> Interface::Create(unsigned int width, unsigned int height) {
-    std::shared_ptr<Interface> interface = std::shared_ptr<Interface>(new Interface(width, height));
+    std::shared_ptr<Interface> interface(new Interface(width, height));
 
     return interface;
 }
 
-Interface::Interface(unsigned int width, unsigned int height) : width_(width), height_(height) {
+Interface::Interface(unsigned int width, unsigned int height) : width_(width), height_(height), frame_counter_(0) {
     spdlog::set_level(spdlog::level::trace);
     RegisterLogCallback();
 
@@ -56,6 +56,8 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
     // Initialize platform bindings
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 460");
+
+    thread_pool_ = std::make_unique<ThreadPool>(1);
 }
 
 Interface::~Interface() {
@@ -239,81 +241,126 @@ void Interface::CreateMenuBar() {
     }
 }
 
+void Interface::SetRenderPipeline(std::unique_ptr<RenderPipeline>&& pipeline) {
+	pipeline_ = std::move(pipeline);
+	pipeline_->Compile();
+}
+
 void Interface::Render() {
+	// Start rendering thread on first run
+	if (pipeline_ && !rendering_active_) {
+		rendering_active_ = true;
+
+		// Launch rendering in thread pool
+		thread_pool_->Enqueue([this] {
+			while (rendering_active_) {
+				// Execute pipeline
+				pipeline_->Execute();
+
+				// Get output safely
+				auto output = pipeline_->GetFinalOutput();
+
+				// Update back buffer with lock
+				{
+					std::lock_guard<std::mutex> lock(buffer_mutex_);
+					back_buffer_ = output;
+					buffer_updated_ = true;
+				}
+			}
+			});
+	}
+
 	// Render output
 	auto RenderOutput = [this]() {
 		ImGui::Begin("Rendering Window");
 		ImVec2 size = ImGui::GetContentRegionAvail();
 
-        INFO("Initializing test pipeline...");
-        TestPipeline pipeline;
-        pipeline.Init();
+		// Check if we have a new frame to display
+		bool new_frame_available = false;
+		{
+			std::lock_guard<std::mutex> lock(buffer_mutex_);
+			if (buffer_updated_) {
+				// Swap front and back buffers
+				std::swap(front_buffer_, back_buffer_);
+				buffer_updated_ = false;
+				new_frame_available = true;
+			}
+		}
 
-        INFO("Compiling render graph...");
-        pipeline.Compile();
+		if (front_buffer_.IsValid()) {
+			ImGui::Image((void*)(intptr_t)front_buffer_.id, size, ImVec2(0, 1), ImVec2(1, 0));
 
-        INFO("Executing pipeline...");
-        pipeline.Execute();
-
-        INFO("Retrieving final output...");
-        TextureHandle output = pipeline.GetFinalOutput();
-
-        // Validate pipeline output
-        if (output.IsValid()) {
-            ImGui::Image((void*)(intptr_t)output.id, size, ImVec2(0, 1), ImVec2(1, 0));
-        }
-        else {
-            // Placeholder while rendering
-            ImGui::Text("Rendering in progress...");
-        }
+			// Display frame rate info in corner
+			ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+			ImGui::SetNextWindowBgAlpha(0.35f);
+			if (ImGui::Begin("FPS Overlay", nullptr,
+				ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+				ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
+				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing)) {
+				ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+				ImGui::Text("Frame: %d", frame_counter_++);
+				if (new_frame_available) {
+					ImGui::TextColored(ImVec4(0, 1, 0, 1), "New Frame");
+				}
+			}
+			ImGui::End();
+		}
+		else if (pipeline_) {
+			ImGui::Text("Rendering in progress...");
+		}
+		else {
+			ImGui::Text("No render pipeline set");
+		}
 
 		ImGui::End();
 	};
 
-    // Main application loop
-    while (!glfwWindowShouldClose(window_)) {
-        glfwPollEvents();
+	// Main application loop
+	while (!glfwWindowShouldClose(window_)) {
+		glfwPollEvents();
 
-        // Retrieve current framebuffer dimensions
-        int display_w, display_h;
-        glfwGetFramebufferSize(window_, &display_w, &display_h);
+		// Retrieve current framebuffer dimensions
+		int display_w, display_h;
+		glfwGetFramebufferSize(window_, &display_w, &display_h);
 
-        // Begin new ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+		// Begin new ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
-        ApplyDarkTheme();  // Apply UI theme
-        ConfigureAndSubmitDockspace(display_w, display_h);  // Setup layout
-        CreateMenuBar();  // Render top menu
-        console_->Draw();  // Display console
-        RenderOutput();  // Render main viewport
-        ImGui::ShowDemoWindow(nullptr);  // Show ImGui demo
+		ApplyDarkTheme();  // Apply UI theme
+		ConfigureAndSubmitDockspace(display_w, display_h);  // Setup layout
+		CreateMenuBar();   // Render top menu
+		console_->Draw();  // Display console
+		RenderOutput();  // Render output
+		ImGui::ShowDemoWindow(nullptr);  // Show ImGui demo
 
-        // Finalize and render frame
-        ImGui::EndFrame();
-        ImGui::Render();
+		// Finalize and render frame
+		ImGui::EndFrame();
+		ImGui::Render();
 
-        // Clear framebuffer
-        glViewport(0, 0, display_w, display_h);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		// Clear framebuffer
+		glViewport(0, 0, display_w, display_h);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Handle multi-viewport rendering
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
-        }
+		// Handle multi-viewport rendering
+		ImGuiIO& io = ImGui::GetIO();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+			glfwMakeContextCurrent(backup_current_context);
+		}
 
-        // Swap display buffers
-        glfwSwapBuffers(window_);
-    }
+		// Swap display buffers
+		glfwSwapBuffers(window_);
+	}
+
+	// Cleanup rendering thread
+	rendering_active_ = false;
 }
-
 
 GLFWwindow* Interface::GetMainWindow() const noexcept {
     return window_;

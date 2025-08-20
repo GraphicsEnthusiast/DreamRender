@@ -12,8 +12,14 @@ class RenderPipeline {
 public:
     /**
      * @brief Constructs a RenderPipeline and initializes the internal render graph
+     * @param share_window Main window context for resource sharing (optional)
      */
-    RenderPipeline() : graph_(std::make_unique<RenderGraph>()) {}
+    explicit RenderPipeline(GLFWwindow* share_window = nullptr);
+
+    /**
+     * @brief Destructor - releases OpenGL context resources
+     */
+    virtual ~RenderPipeline();
 
     /**
      * @brief Pure virtual method for pipeline configuration
@@ -41,6 +47,11 @@ public:
      */
     void Compile();
 
+    /**
+     * @brief Makes the pipeline's OpenGL context current for the calling thread
+     */
+    void MakeContextCurrent();
+
 protected:
     /**
      * @brief Adds a pass to the pipeline with ownership transfer
@@ -67,6 +78,7 @@ protected:
 
 protected:
     std::unique_ptr<RenderGraph> graph_;  ///< Managed render graph instance
+    GLFWwindow* render_context_;          ///< Dedicated OpenGL context
 };
 
 /**
@@ -75,7 +87,7 @@ protected:
  */
 class TestPipeline : public RenderPipeline {
 public:
-    TestPipeline() : RenderPipeline() {}
+    TestPipeline(GLFWwindow* share_window = nullptr) : RenderPipeline(share_window) {}
 
     /**
          * @brief Configures the test pipeline with processing and presentation passes

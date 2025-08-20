@@ -133,19 +133,7 @@ protected:
 class ColorProcessingPass : public RenderPass {
 public:
 	void Execute() override {
-		// Get input texture (created externally)
-		TextureHandle input = input_map_.at("Input");
-
-		// Get output texture (created externally)
-		TextureHandle output = output_map_.at("Output");
-
-		// In a real implementation, we would:
-		// 1. Bind framebuffer with output texture
-		// 2. Bind input texture as sampler
-		// 3. Draw fullscreen quad with processing shader
-
-		std::cout << "Processing color from texture " << input.id
-			<< " to texture " << output.id << std::endl;
+		
 	}
 };
 
@@ -153,14 +141,7 @@ public:
 class PresentPass : public RenderPass {
 public:
 	void Execute() override {
-		TextureHandle input = input_map_.at("ScreenInput");
-
-		// In a real implementation, we would:
-		// 1. Bind default framebuffer
-		// 2. Draw fullscreen quad with input texture
-		// 3. Swap buffers
-
-		std::cout << "Presenting texture " << input.id << " to screen" << std::endl;
+		
 	}
 };
 
