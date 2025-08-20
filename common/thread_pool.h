@@ -7,9 +7,6 @@ NAMESPACE_BEGIN(dream)
 /**
  * @class ThreadPool
  * @brief Manages a pool of worker threads for concurrent task execution
- *
- * Provides thread-safe task queuing and parallel execution capabilities.
- * Uses std::function for task encapsulation and condition variables for synchronization.
  */
 class ThreadPool {
 public:
