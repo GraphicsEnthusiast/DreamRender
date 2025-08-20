@@ -1,7 +1,7 @@
 #pragma once
 
 #include <console.h>
-#include <render_graph.h>
+#include <render_pipeline.h>
 
 NAMESPACE_BEGIN(dream)
 

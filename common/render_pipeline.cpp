@@ -2,11 +2,6 @@
 
 NAMESPACE_BEGIN(dream)
 
-RenderPipeline::RenderPipeline() {
-	graph_ = std::make_unique<RenderGraph>();
-	Setup();
-}
-
 void RenderPipeline::Execute() {
 	graph_->Execute();
 }

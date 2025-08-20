@@ -13,7 +13,17 @@ public:
     /**
      * @brief Constructs a RenderPipeline and initializes the internal render graph
      */
-    RenderPipeline();
+    RenderPipeline() : graph_(std::make_unique<RenderGraph>()) {}
+
+    /**
+     * @brief Pure virtual method for pipeline configuration
+     *
+     * Derived classes must implement this to:
+     * 1. Add render passes to the graph
+     * 2. Define resource dependencies between passes
+     * 3. Set the final output texture
+     */
+    virtual void Init() = 0;
 
     /**
      * @brief Executes the compiled render pipeline
@@ -32,16 +42,6 @@ public:
     void Compile();
 
 protected:
-    /**
-     * @brief Pure virtual method for pipeline configuration
-     *
-     * Derived classes must implement this to:
-     * 1. Add render passes to the graph
-     * 2. Define resource dependencies between passes
-     * 3. Set the final output texture
-     */
-    virtual void Setup() = 0;
-
     /**
      * @brief Adds a pass to the pipeline with ownership transfer
      * @param name Unique identifier for the pass
@@ -67,6 +67,50 @@ protected:
 
 protected:
     std::unique_ptr<RenderGraph> graph_;  ///< Managed render graph instance
+};
+
+/**
+ * @class TestPipeline
+ * @brief Concrete implementation of RenderPipeline for testing purposes
+ */
+class TestPipeline : public RenderPipeline {
+public:
+    TestPipeline() : RenderPipeline() {}
+
+    /**
+         * @brief Configures the test pipeline with processing and presentation passes
+         */
+    virtual void Init() override {
+        // Create processing pass (simulates color transformation)
+        auto processor = std::make_shared<ColorProcessingPass>();
+
+        // Create presentation pass (simulates final rendering)
+        auto presenter = std::make_shared<PresentPass>();
+
+        // Create test textures (simulated resources)
+        TextureHandle input_tex = CreateColorTexture(512, 512);
+        TextureHandle processed_tex = CreateColorTexture(512, 512);
+        TextureHandle output_tex = CreateColorTexture(512, 512);
+
+        // Configure pass inputs/outputs
+        processor->SetInputTexture("Input", input_tex);
+        processor->SetOutputTexture("Output", processed_tex);
+        presenter->SetInputTexture("ScreenInput", processed_tex);
+        presenter->SetOutputTexture("ScreenOutput", output_tex);
+
+        // Register passes in the render graph
+        AddPass("ColorProcessor", processor);
+        AddPass("FinalPresenter", presenter);
+
+        // Define resource dependencies
+        ConnectPasses(
+            "ColorProcessor", "Output",
+            "FinalPresenter", "ScreenInput"
+        );
+
+        // Designate final output
+        SetFinalOutput(output_tex);
+    }
 };
 
 NAMESPACE_END(dream)
