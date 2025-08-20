@@ -253,9 +253,28 @@ void Interface::Render() {
 
 		// Launch rendering in thread pool
 		thread_pool_->Enqueue([this] {
+            // Make sure we have the correct OpenGL context for this thread
+            pipeline_->MakeContextCurrent();
+
+			// Create a fence for GPU synchronization
+			GLsync fence = nullptr;
+
 			while (rendering_active_) {
+				// Wait for GPU if a fence exists (max one frame in flight)
+				if (fence) {
+					GLenum result = glClientWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+					if (GL_TIMEOUT_EXPIRED == result) {
+						WARN("GPU fence timeout!");
+					}
+					glDeleteSync(fence);
+					fence = nullptr;
+				}
+
 				// Execute pipeline
 				pipeline_->Execute();
+
+				// Create a new GPU fence
+				fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
 				// Get output safely
 				auto output = pipeline_->GetFinalOutput();
@@ -266,6 +285,11 @@ void Interface::Render() {
 					back_buffer_ = output;
 					buffer_updated_ = true;
 				}
+			}
+
+			// Cleanup fence on exit
+			if (fence) {
+				glDeleteSync(fence);
 			}
 			});
 	}
@@ -317,6 +341,9 @@ void Interface::Render() {
 
 	// Main application loop
 	while (!glfwWindowShouldClose(window_)) {
+        // Ensure main thread uses main context
+        glfwMakeContextCurrent(window_);
+
 		glfwPollEvents();
 
 		// Retrieve current framebuffer dimensions

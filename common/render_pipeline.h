@@ -92,37 +92,22 @@ public:
     /**
          * @brief Configures the test pipeline with processing and presentation passes
          */
-    virtual void Init() override {
-        // Create processing pass (simulates color transformation)
-        auto processor = std::make_shared<ColorProcessingPass>();
+	void Init() override {
+		// 创建计算通道输出纹理
+		TextureHandle compute_output = CreateColorTexture(512, 512);
 
-        // Create presentation pass (simulates final rendering)
-        auto presenter = std::make_shared<PresentPass>();
+		// 创建计算通道
+		auto compute_pass = std::make_shared<SimpleComputePass>();
 
-        // Create test textures (simulated resources)
-        TextureHandle input_tex = CreateColorTexture(512, 512);
-        TextureHandle processed_tex = CreateColorTexture(512, 512);
-        TextureHandle output_tex = CreateColorTexture(512, 512);
+		// 配置通道
+		compute_pass->SetOutputTexture("Output", compute_output);
 
-        // Configure pass inputs/outputs
-        processor->SetInputTexture("Input", input_tex);
-        processor->SetOutputTexture("Output", processed_tex);
-        presenter->SetInputTexture("ScreenInput", processed_tex);
-        presenter->SetOutputTexture("ScreenOutput", output_tex);
+		// 添加到渲染图
+		AddPass("Compute", compute_pass);
 
-        // Register passes in the render graph
-        AddPass("ColorProcessor", processor);
-        AddPass("FinalPresenter", presenter);
-
-        // Define resource dependencies
-        ConnectPasses(
-            "ColorProcessor", "Output",
-            "FinalPresenter", "ScreenInput"
-        );
-
-        // Designate final output
-        SetFinalOutput(output_tex);
-    }
+		// 设置最终输出
+		SetFinalOutput(compute_output);
+	}
 };
 
 NAMESPACE_END(dream)
