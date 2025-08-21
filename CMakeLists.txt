@@ -62,7 +62,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/common)
 set(COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/common)
 
 link_directories(
-    ${EMBREE_LIB_DIR}
+    
 )
 
 include_directories(
@@ -94,3 +94,9 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
+set(TARGET_NAME dream)
+add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/shader $<TARGET_FILE_DIR:${TARGET_NAME}>/shader
+)

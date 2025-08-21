@@ -87,25 +87,23 @@ RasterizationShader::RasterizationShader(const char* vertex_path, const char* fr
     // Enable exception handling for file operations
     v_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     f_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	//try {
-	//    // Open and read shader source files
-	//    v_shader_file.open(vertex_path);
-	//    f_shader_file.open(fragment_path);
-	//    std::stringstream v_shader_stream, f_shader_stream;
-	//    v_shader_stream << v_shader_file.rdbuf();
-	//    f_shader_stream << f_shader_file.rdbuf();
-	//    v_shader_file.close();
-	//    f_shader_file.close();
-	//    vertex_code = v_shader_stream.str();
-	//    fragment_code = f_shader_stream.str();
-	//}
-	//catch (std::ifstream::failure e) {
-	//    ERROR("[error] shader file not succesfully read.");
-	//}
-    //const char* v_shader_code = vertex_code.c_str();
-    //const char* f_shader_code = fragment_code.c_str();
-	const char* v_shader_code = vertex_path;
-	const char* f_shader_code = fragment_path;
+	try {
+		// Open and read shader source files
+		v_shader_file.open(vertex_path);
+		f_shader_file.open(fragment_path);
+		std::stringstream v_shader_stream, f_shader_stream;
+		v_shader_stream << v_shader_file.rdbuf();
+		f_shader_stream << f_shader_file.rdbuf();
+		v_shader_file.close();
+		f_shader_file.close();
+		vertex_code = v_shader_stream.str();
+		fragment_code = f_shader_stream.str();
+	}
+	catch (std::ifstream::failure e) {
+		ERROR("[error] shader file not succesfully read.");
+	}
+	const char* v_shader_code = vertex_code.c_str();
+	const char* f_shader_code = fragment_code.c_str();
     unsigned int vertex, fragment;
     // Compile vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
@@ -133,19 +131,18 @@ ComputationShader::ComputationShader(const char* compute_path) : Shader(ShaderTy
     std::ifstream c_shader_file;
     // Enable exception handling for file operations
     c_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    //try {
-    //    // Open and read compute shader source
-    //    c_shader_file.open(compute_path);
-    //    std::stringstream c_shader_stream;
-    //    c_shader_stream << c_shader_file.rdbuf();
-    //    c_shader_file.close();
-    //    compute_code = c_shader_stream.str();
-    //}
-    //catch (std::ifstream::failure e) {
-    //    ERROR("[error] shader file not succesfully read.");
-    //}
-    //const char* c_shader_code = compute_code.c_str(); compute_path
-    const char* c_shader_code = compute_path;
+	try {
+		// Open and read compute shader source
+		c_shader_file.open(compute_path);
+		std::stringstream c_shader_stream;
+		c_shader_stream << c_shader_file.rdbuf();
+		c_shader_file.close();
+		compute_code = c_shader_stream.str();
+	}
+	catch (std::ifstream::failure e) {
+		ERROR("[error] shader file not succesfully read.");
+	}
+	const char* c_shader_code = compute_code.c_str();
     unsigned int compute;
     // Compile compute shader
     compute = glCreateShader(GL_COMPUTE_SHADER);

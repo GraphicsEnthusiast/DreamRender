@@ -154,31 +154,9 @@ class SimpleComputePass : public RenderPass {
 public:
     SimpleComputePass() {
         // Create compute shader
-        const char* compute_src = R"glsl(
-            #version 460
-            layout(local_size_x = 16, local_size_y = 16) in;
-            layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
-            
-            // Uniform variable for time-based animation
-            uniform float time;
-            
-            void main() {
-                ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-                ivec2 size = imageSize(outputTex);
-                vec2 uv = vec2(coord) / vec2(size);
-                
-                // Generate animated gradient pattern
-                vec3 color = vec3(
-                    sin(uv.x * 10.0 + time) * 0.5 + 0.5,
-                    cos(uv.y * 10.0 + time) * 0.5 + 0.5,
-                    uv.x * uv.y
-                );
-                
-                imageStore(outputTex, coord, vec4(color, 1.0));
-            }
-        )glsl";
+        const char* compute_path = "shader/test.comp";
 
-        shader_ = std::make_unique<ComputationShader>(compute_src);
+        shader_ = std::make_unique<ComputationShader>(compute_path);
     }
 
     void Execute() override {
