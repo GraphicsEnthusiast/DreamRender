@@ -76,6 +76,14 @@ protected:
      */
     void SetFinalOutput(const TextureHandle& output);
 
+    /**
+	 * @brief Creates a new 2D texture with specified dimensions and default parameters.
+	 * @param width  The width of the texture in pixels (must be positive).
+	 * @param height The height of the texture in pixels (must be positive).
+	 * @return TextureHandle  Wrapper containing the OpenGL texture ID.
+	 */
+    TextureHandle CreateTexture(int width, int height);
+
 protected:
     std::unique_ptr<RenderGraph> graph_;  ///< Managed render graph instance
     GLFWwindow* render_context_;          ///< Dedicated OpenGL context
@@ -93,19 +101,14 @@ public:
          * @brief Configures the test pipeline with processing and presentation passes
          */
 	void Init() override {
-		// 创建计算通道输出纹理
-		TextureHandle compute_output = CreateColorTexture(512, 512);
+		TextureHandle compute_output = CreateTexture(512, 512);
 
-		// 创建计算通道
 		auto compute_pass = std::make_shared<SimpleComputePass>();
 
-		// 配置通道
 		compute_pass->SetOutputTexture("Output", compute_output);
 
-		// 添加到渲染图
 		AddPass("Compute", compute_pass);
 
-		// 设置最终输出
 		SetFinalOutput(compute_output);
 	}
 };

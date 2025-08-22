@@ -111,40 +111,11 @@ public:
      */
     TextureHandle GetOutputTexture(const std::string& slot_name) const noexcept;
 
-    /**
-     * @brief Retrieves all input slot names and their associated texture handles.
-     * @return const reference to the input slot map
-     */
-    const InputSlotMap& GetInputSlots() const noexcept;
-
-    /**
-     * @brief Retrieves all output slot names and their associated texture handles.
-     * @return const reference to the output slot map
-     */
-    const OutputSlotMap& GetOutputSlots() const noexcept;
-
 protected:
     bool enabled_;                       ///< Controls pass execution
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
 };
-
-// Helper function to create an OpenGL texture
-inline TextureHandle CreateColorTexture(int width, int height) {
-	GLuint textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0,
-		GL_RGBA, GL_FLOAT, nullptr);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	return TextureHandle{ textureID };
-}
 
 /**
  * @class SimpleComputePass
@@ -180,119 +151,6 @@ public:
 
 private:
     std::unique_ptr<ComputationShader> shader_;
-};
-
-/**
- * @class SimpleRasterPass
- * @brief Demonstrates rasterization shader by applying a color tint
- */
-class SimpleRasterPass : public RenderPass {
-public:
-    SimpleRasterPass() {
-        // Create shader
-        const char* vertex_src = R"glsl(
-            #version 460
-            layout(location = 0) in vec3 position;
-            layout(location = 1) in vec2 texCoord;
-            out vec2 uv;
-            void main() {
-                gl_Position = vec4(position, 1.0);
-                uv = texCoord;
-            }
-        )glsl";
-
-        const char* fragment_src = R"glsl(
-            #version 460
-            in vec2 uv;
-            out vec4 fragColor;
-            uniform sampler2D inputTex;
-            uniform float time;
-            uniform vec3 tintColor = vec3(1.0, 0.7, 0.3); // Default tint color
-            
-            void main() {
-                vec3 color = texture(inputTex, uv).rgb;
-                
-                // Apply pulsating tint effect
-                float wave = sin(time * 2.0) * 0.3 + 0.7;
-                vec3 tint = tintColor * wave;
-                
-                fragColor = vec4(color * tint, 1.0);
-            }
-        )glsl";
-
-        shader_ = std::make_unique<RasterizationShader>(vertex_src, fragment_src);
-
-        // Create fullscreen quad VAO
-        CreateFullscreenQuad();
-    }
-
-    void Execute() override {
-        // Get input texture
-        auto input = GetInputTexture("Input");
-        if (!input.IsValid()) return;
-
-        // Use shader
-        shader_->Use();
-
-        // Set texture sampler uniform
-        shader_->SetInt("inputTex", 0);
-
-        // Set time uniform variable
-        static float time = 0.0f;
-        time += 0.01f;
-        shader_->SetFloat("time", time);
-
-        // Set tint color uniform
-        glm::vec3 tintColor(0.8f, 0.5f, 0.2f);
-        shader_->SetVector<3>("tintColor", tintColor);
-
-        // Bind input texture to texture unit 0
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, input.id);
-
-        // Draw fullscreen quad
-        glBindVertexArray(vao_);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
-
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |
-			GL_TEXTURE_FETCH_BARRIER_BIT);
-    }
-
-protected:
-    void CreateFullscreenQuad() {
-        // Fullscreen quad vertices
-        float vertices[] = {
-            // Position      // UV
-            -1.0f,  1.0f,  0.0f, 1.0f,
-            -1.0f, -1.0f,  0.0f, 0.0f,
-             1.0f,  1.0f,  1.0f, 1.0f,
-             1.0f, -1.0f,  1.0f, 0.0f
-        };
-
-        // Create VAO/VBO
-        glGenVertexArrays(1, &vao_);
-        glGenBuffers(1, &vbo_);
-
-        glBindVertexArray(vao_);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        // Position attribute
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-
-        // UV attribute
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-
-        glBindVertexArray(0);
-    }
-
-private:
-    GLuint vao_ = 0;
-    GLuint vbo_ = 0;
-    std::unique_ptr<RasterizationShader> shader_;
 };
 
 NAMESPACE_END(dream)
