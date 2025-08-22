@@ -15,48 +15,95 @@ void RenderGraph::AddEdge(const ResourceEdge& edge) {
 }
 
 void RenderGraph::Compile() {
-	// Build adjacency list and in-degree counters
-	std::unordered_map<RenderPass*, std::vector<RenderPass*>> adjacency_list;
-	std::unordered_map<RenderPass*, int> in_degree_map;
-
-	// Initialize all passes with zero in-degree
-	for (const auto& [name, pass_ptr] : passes_) {
-		RenderPass* pass = pass_ptr.get();
-		in_degree_map[pass] = 0;
-		adjacency_list[pass] = {};
+	// Step 1: Build pass enablement map
+	std::unordered_map<RenderPass*, bool> pass_enabled;
+	for (auto& [name, pass] : passes_) {
+		pass_enabled[pass.get()] = pass->IsEnabled();
 	}
 
-	// Process edges to build dependencies
+	// Step 2: Build effective edge relationships
+	std::vector<ResourceEdge> effective_edges;
 	for (const auto& edge : edges_) {
-		auto src_it = pass_map_.find(edge.src_pass);
-		auto dst_it = pass_map_.find(edge.dst_pass);
+		RenderPass* src_pass = pass_map_[edge.src_pass];
+		RenderPass* dst_pass = pass_map_[edge.dst_pass];
 
-		if (pass_map_.end() != src_it && pass_map_.end() != dst_it) {
-			// Establish dependency: src_pass must execute before dst_pass
-			adjacency_list[src_it->second].push_back(dst_it->second);
-			in_degree_map[dst_it->second]++;
+		// Scenario 1: Both passes enabled ¡ú preserve original edge
+		if (pass_enabled[src_pass] && pass_enabled[dst_pass]) {
+			effective_edges.push_back(edge);
+		}
+		// Scenario 2: Destination pass disabled ¡ú redirect to next enabled node
+		else if (pass_enabled[src_pass] && !pass_enabled[dst_pass]) {
+			bool redirected = false;
+
+			// Find all downstream nodes of dst_pass
+			for (const auto& next_edge : edges_) {
+				if (next_edge.src_pass == edge.dst_pass) {
+					RenderPass* next_dst = pass_map_[next_edge.dst_pass];
+
+					// Redirect only to ENABLED downstream nodes
+					if (pass_enabled[next_dst]) {
+						effective_edges.push_back({
+							edge.src_pass, edge.src_output,
+							next_edge.dst_pass, next_edge.dst_input
+							});
+						redirected = true;
+					}
+				}
+			}
+
+			// Scenario 3: No enabled downstream ¡ú mark as final output
+			if (!redirected) {
+				WARN("Disconnected output from disabled pass: %s.", edge.dst_pass.c_str());
+				SetFinalOutput(src_pass->GetOutputTexture(edge.src_output));
+			}
 		}
 	}
 
-	// Kahn's algorithm for topological sort
+	// Step 3: Build dependency graph (enabled nodes only)
+	std::unordered_map<RenderPass*, std::vector<RenderPass*>> adjacency_list;
+	std::unordered_map<RenderPass*, int> in_degree_map;
+
+	// Initialize only enabled passes
+	int enabled_pass_count = 0;
+	for (auto& [name, pass_ptr] : passes_) {
+		if (!pass_enabled[pass_ptr.get()]) {
+			continue;
+		}
+		in_degree_map[pass_ptr.get()] = 0;
+		adjacency_list[pass_ptr.get()] = {};
+		enabled_pass_count++;
+	}
+
+	// Build dependencies using effective edges
+	for (const auto& edge : effective_edges) {
+		RenderPass* src = pass_map_[edge.src_pass];
+		RenderPass* dst = pass_map_[edge.dst_pass];
+
+		// Ensure both ends are enabled
+		if (pass_enabled[src] && pass_enabled[dst]) {
+			adjacency_list[src].push_back(dst);
+			in_degree_map[dst]++;
+		}
+	}
+
+	// Step 4: Kahn's topological sort (enabled nodes only)
 	std::queue<RenderPass*> zero_degree_queue;
 	pass_execution_queue_.clear();
 
-	// Initialize queue with zero in-degree passes
-	for (const auto& [pass, degree] : in_degree_map) {
+	// Initialize zero in-degree queue
+	for (auto& [pass, degree] : in_degree_map) {
 		if (0 == degree) {
 			zero_degree_queue.push(pass);
 		}
 	}
 
-	// Process the queue
+	// Process queue
 	while (!zero_degree_queue.empty()) {
 		RenderPass* current = zero_degree_queue.front();
 		zero_degree_queue.pop();
-
 		pass_execution_queue_.push_back(current);
 
-		// Update neighbors' in-degree
+		// Update neighbor in-degrees
 		for (RenderPass* neighbor : adjacency_list[current]) {
 			if (0 == --in_degree_map[neighbor]) {
 				zero_degree_queue.push(neighbor);
@@ -64,9 +111,9 @@ void RenderGraph::Compile() {
 		}
 	}
 
-	// Cycle detection
-	if (pass_execution_queue_.size() != passes_.size()) {
-		ERROR("RenderGraph contains cyclic dependencies.");
+	// Step 5: Cycle detection
+	if (pass_execution_queue_.size() != enabled_pass_count) {
+		ERROR("RenderGraph contains cyclic dependencies or disconnected enabled passes.");
 	}
 }
 
