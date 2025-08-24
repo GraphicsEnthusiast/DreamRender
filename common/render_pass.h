@@ -56,26 +56,14 @@ public:
     using OutputSlotMap = std::unordered_map<std::string, TextureHandle>;
 
     /**
-     * @brief Constructs a RenderPass with specified enable state
+     * @brief Constructor for polymorphic deletion
      */
-    RenderPass() : enabled_(true) {}
+    RenderPass() = default;
 
     /**
      * @brief Virtual destructor for polymorphic deletion
      */
     virtual ~RenderPass() = default;
-
-    /**
-     * @brief Sets the activation state of the render pass
-     * @param enabled New activation state
-     */
-    void SetEnabled(bool enabled);
-
-    /**
-     * @brief Checks current activation status
-     * @return true if pass is enabled and should execute
-     */
-    bool IsEnabled() const noexcept;
 
     /**
      * @brief Pure virtual function for rendering command execution
@@ -118,7 +106,6 @@ public:
     const std::string& GetName() const noexcept;
 
 protected:
-    bool enabled_;                       ///< Controls pass execution
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
     std::string name_;

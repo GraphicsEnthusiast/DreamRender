@@ -2,14 +2,6 @@
 
 NAMESPACE_BEGIN(dream)
 
-void RenderPass::SetEnabled(bool enabled) {
-	enabled_ = enabled;
-}
-
-bool RenderPass::IsEnabled() const noexcept {
-	return enabled_;
-}
-
 void RenderPass::SetInputTexture(const std::string& slot_name, const TextureHandle& handle) {
 	auto it = input_map_.find(slot_name);
 	if (input_map_.end() != it) {
