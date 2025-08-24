@@ -73,7 +73,7 @@ protected:
 	 * @param base_path Base directory path for resolving includes
 	 * @return Preprocessed shader source code
 	 */
-    std::string Shader::PreprocessShader(const std::string& source, const std::string& base_path);
+    std::string PreprocessShader(const std::string& source, const std::string& base_path);
 
     /**
 	 * @brief Extracts the base directory path from a full file path
