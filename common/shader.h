@@ -5,15 +5,6 @@
 NAMESPACE_BEGIN(dream)
 
 /**
- * @enum ShaderType
- * @brief Defines supported shader program types
- */
-enum class ShaderType {
-    Rasterization,  ///< Traditional rendering pipeline (vertex+fragment)
-    Computation     ///< GPU computing pipeline (compute shader)
-};
-
-/**
  * @class Shader
  * @brief Base class for shader program management
  */
@@ -21,15 +12,8 @@ class Shader {
 public:
     /**
      * @brief Constructs shader with specified type
-     * @param type ShaderType classification
      */
-    Shader(ShaderType type) : shader_type_(type), id_(0) {}
-
-    /**
-     * @brief Retrieves the shader type classification
-     * @return ShaderType enumeration value
-     */
-    ShaderType GetShaderType() const noexcept;
+    Shader() : id_(0) {}
 
     /**
      * @brief Activates the shader program for rendering
@@ -83,9 +67,26 @@ protected:
      */
     void CheckCompileErrors(unsigned int shader, const std::string& type);
 
+    /**
+	 * @brief Preprocesses shader source code with custom directives
+	 * @param source Original shader source code string
+	 * @param base_path Base directory path for resolving includes
+	 * @return Preprocessed shader source code
+	 */
+    std::string Shader::PreprocessShader(const std::string& source, const std::string& base_path);
+
+    /**
+	 * @brief Extracts the base directory path from a full file path
+	 * @param file_path Full path to a shader file (absolute or relative)
+	 * @return Directory path component of the input file path
+	 * @example
+	 *   Input: "shaders/core/lighting.frag"
+	 *   Output: "shaders/core/"
+	 */
+	std::string ExtractBasePath(const std::string& file_path);
+
 protected:
     unsigned int id_;          ///< OpenGL program ID
-    ShaderType shader_type_;   ///< Shader type classification
 };
 
 // Explicit template instantiation declarations
