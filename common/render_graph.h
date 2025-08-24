@@ -27,6 +27,11 @@ public:
 	void AddEdge(const ResourceEdge& edge);
 
 	/**
+     * @brief Rebuilds the pass name to pointer mapping from current passes_
+     */
+	void RebuildPassMap();
+
+	/**
 	 * @brief Compiles the graph by resolving dependencies
 	 */
 	void Compile();
