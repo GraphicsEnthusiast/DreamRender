@@ -370,13 +370,19 @@ XYZ XYZClampZero(XYZ xyz) {
 }
 
 /**
- * @struct RGBSigmoidPolynomial
- * @brief Represents a sigmoid polynomial for RGB to spectrum conversion
+ * @brief Convert XYZ color to RGB
+ * @param xyz Input XYZ color
+ * @return RGB color
  */
-struct RGBSigmoidPolynomial {
-    float c0;
-    float c1;
-    float c2;
-};
+RGB XYZToRGB(XYZ xyz) {
+    RGB rgb;
+    
+    // Apply XYZ to RGB conversion matrix
+    rgb.r = 3.240479f * xyz.X - 1.537150f * xyz.Y - 0.498535f * xyz.Z;
+    rgb.g = -0.969256f * xyz.X + 1.875991f * xyz.Y + 0.041556f * xyz.Z;
+    rgb.b = 0.055648f * xyz.X - 0.204043f * xyz.Y + 1.057311f * xyz.Z;
+    
+    return rgb;
+}
 
 #endif
