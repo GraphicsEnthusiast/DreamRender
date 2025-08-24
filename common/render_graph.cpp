@@ -78,7 +78,7 @@ void RenderGraph::Compile() {
 		error_msg += (sorted_pass_count < total_pass_count) ?
 			"disconnected passes" : "cyclic dependencies";
 		error_msg += ". Total passes: " + std::to_string(total_pass_count);
-		error_msg += ", Sorted passes: " + std::to_string(sorted_pass_count);
+		error_msg += ". Sorted passes: " + std::to_string(sorted_pass_count);
 		ERROR("[error] {}.", error_msg.c_str());
 	}
 }
