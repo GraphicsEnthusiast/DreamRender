@@ -111,10 +111,17 @@ public:
      */
     TextureHandle GetOutputTexture(const std::string& slot_name) const noexcept;
 
+    /**
+     * @brief Gets the current name of the object.
+     * @return Current name of the object (guaranteed valid due to noexcept).
+     */
+    const std::string& GetName() const noexcept;
+
 protected:
     bool enabled_;                       ///< Controls pass execution
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
+    std::string name_;
 };
 
 /**
@@ -124,8 +131,10 @@ protected:
 class SimpleComputePass : public RenderPass {
 public:
     SimpleComputePass() {
+        name_ = "Simple compute pass";
+
         // Create compute shader
-        const char* compute_path = "shader/test.comp";
+        const char* compute_path = "../shader/test.comp";
 
         shader_ = std::make_unique<ComputationShader>(compute_path);
     }

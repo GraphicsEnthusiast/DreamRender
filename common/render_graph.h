@@ -27,11 +27,6 @@ public:
 	void AddEdge(const ResourceEdge& edge);
 
 	/**
-     * @brief Rebuilds the pass name to pointer mapping from current passes_
-     */
-	void RebuildPassMap();
-
-	/**
 	 * @brief Compiles the graph by resolving dependencies
 	 */
 	void Compile();
@@ -51,12 +46,17 @@ public:
 	 * @return TextureHandle
 	 */
 	TextureHandle GetFinalOutput() const noexcept;
+protected:
+	/**
+	 * @brief Rebuilds the pass name to pointer mapping from current passes_
+	 */
+	void RebuildPassMap();
 
 protected:
 	std::vector<std::pair<std::string, std::shared_ptr<RenderPass>>> passes_;   ///< Execution sequence with shared ownership
-	std::unordered_map<std::string, RenderPass*> pass_map_;                     ///< Pass lookup by name (non-owning references)
+	std::unordered_map<std::string, std::weak_ptr<RenderPass>> pass_map_;       ///< Pass lookup by name (non-owning references)
 	std::vector<ResourceEdge> edges_;                                           ///< Dependency definitions
-    std::vector<RenderPass*> pass_execution_queue_;                             ///< Topologically sorted passes (non-owning pointers)
+    std::vector<std::weak_ptr<RenderPass>> pass_execution_queue_;               ///< Topologically sorted passes (non-owning pointers)
 	TextureHandle output_;                                                      ///< Graph output
 };
 

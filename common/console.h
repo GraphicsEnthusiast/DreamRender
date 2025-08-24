@@ -123,6 +123,7 @@ protected:
     ImGuiTextFilter filter_;          ///< Text filter for log display
     bool auto_scroll_;                ///< Automatically scroll to bottom when new log added
     bool scroll_to_bottom_;           ///< Flag to request scroll to bottom on next frame
+    std::mutex log_mutex_;            ///< Thread synchronization primitive for log operations
 };
 
 NAMESPACE_END(dream)

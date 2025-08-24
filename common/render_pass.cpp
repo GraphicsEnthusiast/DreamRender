@@ -48,4 +48,8 @@ TextureHandle RenderPass::GetOutputTexture(const std::string& slot_name) const n
 	return TextureHandle{};
 }
 
+const std::string& RenderPass::GetName() const noexcept {
+	return name_;
+}
+
 NAMESPACE_END(dream)
