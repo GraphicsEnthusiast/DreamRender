@@ -86,6 +86,7 @@ void RenderGraph::Compile() {
 void RenderGraph::Execute() {
 	for (auto& weak_pass : pass_execution_queue_) {
 		if (auto pass = weak_pass.lock()) {
+			INFO("[info] {} execute.", pass->GetName().c_str());
 			pass->Execute();
 		}
 		else {
