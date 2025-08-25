@@ -10,17 +10,71 @@ layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
 // Uniform variable for time-based animation
 uniform float time;
             
-void main() {
+//void main() {
+//    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+//    ivec2 size = imageSize(outputTex);
+//    vec2 uv = vec2(coord) / vec2(size);
+                
+    // Generate animated gradient pattern
+//    vec3 color = vec3(
+//        sin(uv.x * 10.0 + time) * 0.5 + 0.5,
+//        cos(uv.y * 10.0 + time) * 0.5 + 0.5,
+//        uv.x * uv.y
+//    );
+                
+//    imageStore(outputTex, coord, vec4(color, 1.0));
+//}
+
+float GammaCorrect(float c) {
+    if (c <= 0.0031308f) {
+        return 12.92f * c;
+    } else {
+        return 1.055f * pow(c, 1.0f/2.4f) - 0.055f;
+    }
+}
+// 测试案例：白光光谱转RGB验证
+void TestSpectrumToRGBConversion() {
+    // 1. 创建均匀白光光谱（所有波长强度=1）
+    float constantSpectrumValues[NSpectrumSamples];
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        constantSpectrumValues[i] = 1.0f;
+    }
+    SampledSpectrum whiteSpectrum = SampledSpectrumNew(constantSpectrumValues);
+    
+    // 2. 生成均匀波长采样（覆盖整个可见光谱）
+    SampledWavelengths lambda = SampledWavelengthsSampleUniform(
+        0.5f,  // 中点采样
+        LambdaMin, 
+        LambdaMax
+    );
+    
+    // 3. 执行光谱→RGB转换
+    RGB resultRGB = SampledSpectrumToRGB(whiteSpectrum, lambda);
+    vec3 c = vec3(GammaCorrect(resultRGB.r), GammaCorrect(resultRGB.g), GammaCorrect(resultRGB.b));
+    // 4. 验证结果（预期为纯白）
+    const float tolerance = 0.14f;  // 允许误差
+    bool isWhite = 
+        abs(c.r - 1.0f) < tolerance &&
+        abs(c.g - 1.0f) < tolerance &&
+        abs(c.b - 1.0f) < tolerance;
+    
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
     ivec2 size = imageSize(outputTex);
     vec2 uv = vec2(coord) / vec2(size);
-                
-    // Generate animated gradient pattern
-    vec3 color = vec3(
-        sin(uv.x * 10.0 + time) * 0.5 + 0.5,
-        cos(uv.y * 10.0 + time) * 0.5 + 0.5,
-        uv.x * uv.y
-    );
-                
-    imageStore(outputTex, coord, vec4(color, 1.0));
+    
+    
+    // 5. 输出验证结果（实际开发中替换为断言）
+    if (isWhite) {
+        // 验证通过：输出绿色
+        imageStore(outputTex, coord, vec4(0.0, 1.0, 0.0, 1.0));
+    } else {
+        // 验证失败：输出错误RGB值
+        
+        imageStore(outputTex, coord, vec4(c, 1.0));
+    }
+}
+
+// 在片元着色器主函数中调用测试
+void main() {
+    TestSpectrumToRGBConversion();
 }

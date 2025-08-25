@@ -56,8 +56,6 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
     // Initialize platform bindings
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 460");
-
-    thread_pool_ = std::make_unique<ThreadPool>(1);
 }
 
 Interface::~Interface() {
@@ -252,7 +250,7 @@ void Interface::Render() {
 		rendering_active_ = true;
 
 		// Launch rendering in thread pool
-		thread_pool_->Enqueue([this] {
+		ThreadPool::Instance().Enqueue([this] {
             // Make sure we have the correct OpenGL context for this thread
             pipeline_->MakeContextCurrent();
 

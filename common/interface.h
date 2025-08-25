@@ -84,7 +84,6 @@ protected:
     std::unique_ptr<Console> console_;  ///< Console for log display
     unsigned int width_;                ///< Current window width
     unsigned int height_;               ///< Current window height
-    std::unique_ptr<ThreadPool> thread_pool_;
     std::unique_ptr<RenderPipeline> pipeline_;
 	TextureHandle front_buffer_;        ///< Front buffer (accessed by UI thread)
 	TextureHandle back_buffer_;         ///< Back buffer (accessed by render thread)

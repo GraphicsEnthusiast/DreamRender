@@ -2,6 +2,8 @@
 
 NAMESPACE_BEGIN(dream)
 
+std::unique_ptr<ThreadPool> ThreadPool::instance_ = nullptr;
+
 ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
     // Create specified number of worker threads
     for (unsigned int i = 0; i < threads; ++i) {
@@ -36,20 +38,33 @@ ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
     }
 }
 
-ThreadPool::~ThreadPool() {
-    // Lock before modifying shared state
-    std::unique_lock<std::mutex> lock(queue_mutex_);
+ThreadPool& ThreadPool::Instance(unsigned int threads) {
+	static std::once_flag initFlag;
+	std::call_once(initFlag, [threads]() {
+		instance_ = std::unique_ptr<ThreadPool>(new ThreadPool(threads));
+		});
 
-    // Set termination flag
-    stop_ = true;
+	return *instance_;
+}
 
-    // Wake all waiting threads
-    condition_.notify_all();
+void ThreadPool::Release() {
+	if (instance_) {
+		instance_->ReleaseInstance();
+		instance_.reset();
+	}
+}
 
-    // Join all worker threads
-    for (std::thread& worker : workers_) {
-        worker.join();
-    }
+void ThreadPool::ReleaseInstance() {
+	{
+		std::unique_lock<std::mutex> lock(queue_mutex_);
+		stop_ = true;
+	}
+	condition_.notify_all();
+	for (auto& worker : workers_) {
+		if (worker.joinable()) worker.join();
+	}
+	workers_.clear();
+	tasks_ = {};
 }
 
 NAMESPACE_END(dream)
