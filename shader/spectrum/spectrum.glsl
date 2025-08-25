@@ -8,14 +8,14 @@ const int NSpectrumSamples = 8;               // Number of spectral samples per 
 const float LambdaMin = 360.0f;               // Minimum visible wavelength (nanometers)
 const float LambdaMax = 830.0f;               // Maximum visible wavelength (nanometers)
 const float CIEYIntegral = 106.856895f;
-const int NCIESamples = 471;
+const int NCIESamples = int(LambdaMax - LambdaMin) + 1; // 471
 
 /**
  * @struct SampledSpectrum
  * @brief Represents spectral distribution with discrete wavelength samples
  */
 struct SampledSpectrum {
-    float val[NSpectrumSamples];  // Spectral values at sampled wavelengths
+    float values[NSpectrumSamples];  // Spectral values at sampled wavelengths
 };
 
 /**
@@ -26,7 +26,7 @@ struct SampledSpectrum {
 SampledSpectrum SampledSpectrumNew(float c[NSpectrumSamples]) {
     SampledSpectrum s;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        s.val[i] = c[i];
+        s.values[i] = c[i];
     }
 
     return s;
@@ -41,7 +41,7 @@ SampledSpectrum SampledSpectrumNew(float c[NSpectrumSamples]) {
 SampledSpectrum SampledSpectrumAdd(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        r.val[i] = a.val[i] + b.val[i];
+        r.values[i] = a.values[i] + b.values[i];
     }
 
     return r;
@@ -56,7 +56,7 @@ SampledSpectrum SampledSpectrumAdd(SampledSpectrum a, SampledSpectrum b) {
 SampledSpectrum SampledSpectrumSub(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        r.val[i] = a.val[i] - b.val[i];
+        r.values[i] = a.values[i] - b.values[i];
     }
 
     return r;
@@ -71,7 +71,7 @@ SampledSpectrum SampledSpectrumSub(SampledSpectrum a, SampledSpectrum b) {
 SampledSpectrum SampledSpectrumMul(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        r.val[i] = a.val[i] * b.val[i];
+        r.values[i] = a.values[i] * b.values[i];
     }
 
     return r;
@@ -86,7 +86,7 @@ SampledSpectrum SampledSpectrumMul(SampledSpectrum a, SampledSpectrum b) {
 SampledSpectrum SampledSpectrumMulFloat(SampledSpectrum s, float a) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        r.val[i] = s.val[i] * a;
+        r.values[i] = s.values[i] * a;
     }
 
     return r;
@@ -101,7 +101,7 @@ SampledSpectrum SampledSpectrumMulFloat(SampledSpectrum s, float a) {
 SampledSpectrum SampledSpectrumDiv(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        r.val[i] = (b.val[i] != 0.0f) ? (a.val[i] / b.val[i]) : 0.0f;
+        r.values[i] = (b.values[i] != 0.0f) ? (a.values[i] / b.values[i]) : 0.0f;
     }
 
     return r;
@@ -116,7 +116,7 @@ SampledSpectrum SampledSpectrumDiv(SampledSpectrum a, SampledSpectrum b) {
 SampledSpectrum SampledSpectrumDivFloat(SampledSpectrum s, float a) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        r.val[i] = s.val[i] / a;
+        r.values[i] = s.values[i] / a;
     }
 
     return r;
@@ -130,7 +130,7 @@ SampledSpectrum SampledSpectrumDivFloat(SampledSpectrum s, float a) {
 SampledSpectrum SampledSpectrumNegate(SampledSpectrum s) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        r.val[i] = -s.val[i];
+        r.values[i] = -s.values[i];
     }
 
     return r;
@@ -143,7 +143,7 @@ SampledSpectrum SampledSpectrumNegate(SampledSpectrum s) {
  */
 bool SampledSpectrumNonZero(SampledSpectrum s) {
     for (int i = 0; i < NSpectrumSamples; i++) {
-        if (0.0f != s.val[i]) {
+        if (0.0f != s.values[i]) {
             return true;
         }
     }
@@ -157,9 +157,9 @@ bool SampledSpectrumNonZero(SampledSpectrum s) {
  * @return Minimum component value
  */
 float SampledSpectrumMin(SampledSpectrum s) {
-    float m = s.val[0];
+    float m = s.values[0];
     for (int i = 1; i < NSpectrumSamples; i++) {
-        m = min(m, s.val[i]);
+        m = min(m, s.values[i]);
     }
 
     return m;
@@ -171,9 +171,9 @@ float SampledSpectrumMin(SampledSpectrum s) {
  * @return Maximum component value
  */
 float SampledSpectrumMax(SampledSpectrum s) {
-    float m = s.val[0];
+    float m = s.values[0];
     for (int i = 1; i < NSpectrumSamples; i++) {
-        m = max(m, s.val[i]);
+        m = max(m, s.values[i]);
     }
 
     return m;
@@ -185,9 +185,9 @@ float SampledSpectrumMax(SampledSpectrum s) {
  * @return Average value of all spectral samples
  */
 float SampledSpectrumAvg(SampledSpectrum s) {
-    float sum = s.val[0];
+    float sum = s.values[0];
     for (int i = 1; i < NSpectrumSamples; i++) {
-        sum += s.val[i];
+        sum += s.values[i];
     }
 
     return sum / float(NSpectrumSamples);
@@ -268,7 +268,9 @@ void SampledWavelengthsTerminateSecondary(inout SampledWavelengths swl) {
             break;
         }
     }
-    if (terminated) return;
+    if (terminated) {
+        return;
+    }
     
     // Update probabilities
     for (int i = 1; i < NSpectrumSamples; i++) {
@@ -283,10 +285,11 @@ void SampledWavelengthsTerminateSecondary(inout SampledWavelengths swl) {
  */
 bool SampledWavelengthsSecondaryTerminated(SampledWavelengths swl) {
     for (int i = 1; i < NSpectrumSamples; i++) {
-        if (swl.pdf[i] != 0.0) {
+        if (0.0f != swl.pdf[i]) {
             return false;
         }
     }
+
     return true;
 }
 
@@ -297,20 +300,18 @@ bool SampledWavelengthsSecondaryTerminated(SampledWavelengths swl) {
 SampledSpectrum SampledWavelengthsPDF(SampledWavelengths swl) {
     SampledSpectrum s;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        s.val[i] = swl.pdf[i];
+        s.values[i] = swl.pdf[i];
     }
 
     return s;
 }
-
-const int DenselySpectrumSize = int(LambdaMax - LambdaMin) + 1;  // Number of samples (471)
 
 /**
  * @struct DenselySampledSpectrum
  * @brief Stores densely sampled spectral data (1nm intervals)
  */
 struct DenselySampledSpectrum {
-    float values[DenselySpectrumSize];  // Spectral value array
+    float values[NCIESamples];  // Spectral value array
 };
 
 /**
@@ -319,7 +320,7 @@ struct DenselySampledSpectrum {
  */
 DenselySampledSpectrum DenselySampledSpectrumCreate() {
     DenselySampledSpectrum s;
-    for (int i = 0; i < DenselySpectrumSize; i++) {
+    for (int i = 0; i < NCIESamples; i++) {
         s.values[i] = 0.0f;
     }
 
@@ -338,11 +339,11 @@ SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWa
         // Calculate array index (rounded to nearest integer)
         int idx = int(round(lambda.lambda[i]) - int(LambdaMin));
         
-        if (idx < 0 || idx >= DenselySpectrumSize) {
-            s.val[i] = 0.0f;  // Return 0 for out-of-range wavelengths
+        if (idx < 0 || idx >= NCIESamples) {
+            s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
         } 
         else {
-            s.val[i] = d.values[idx];
+            s.values[i] = d.values[idx];
         }
     }
 
@@ -355,7 +356,7 @@ SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWa
  * @param scale Scaling factor
  */
 void DenselySampledSpectrumScale(inout DenselySampledSpectrum d, float scale) {
-    for (int i = 0; i < DenselySpectrumSize; i++) {
+    for (int i = 0; i < NCIESamples; i++) {
         d.values[i] *= scale;
     }
 }
@@ -367,7 +368,7 @@ void DenselySampledSpectrumScale(inout DenselySampledSpectrum d, float scale) {
  */
 float DenselySampledSpectrumMaxValue(DenselySampledSpectrum d) {
     float maxVal = d.values[0];
-    for (int i = 1; i < DenselySpectrumSize; i++) {
+    for (int i = 1; i < NCIESamples; i++) {
         maxVal = max(maxVal, d.values[i]);
     }
 
@@ -382,7 +383,7 @@ float DenselySampledSpectrumMaxValue(DenselySampledSpectrum d) {
  */
 float DenselySampledSpectrumEval(DenselySampledSpectrum d, float lambda) {
     int idx = int(round(lambda) - int(LambdaMin));
-    if (idx < 0 || idx >= DenselySpectrumSize) {
+    if (idx < 0 || idx >= NCIESamples) {
         return 0.0f;
     }
     
@@ -396,7 +397,7 @@ float DenselySampledSpectrumEval(DenselySampledSpectrum d, float lambda) {
  * @return True if all spectral values match
  */
 bool DenselySampledSpectrumEqual(DenselySampledSpectrum a, DenselySampledSpectrum b) {
-    for (int i = 0; i < DenselySpectrumSize; i++) {
+    for (int i = 0; i < NCIESamples; i++) {
         if (a.values[i] != b.values[i]) {
             return false;
         }
@@ -1125,32 +1126,32 @@ const float CIEZ[NCIESamples] = float[NCIESamples](
 );
 
 /**
- * @brief Convert spectrum to XYZ color representation
- * @param s Input spectrum
- * @param lambda Sampled wavelengths
+ * @brief Computes the dot product between a densely sampled spectrum and a CIE array
+ * @param d Input densely sampled spectrum
+ * @param cie CIE array (CIEX, CIEY or CIEZ)
+ * @return Dot product result
+ */
+float DenselySampledSpectrumDotCIE(DenselySampledSpectrum d, const float cie[NCIESamples]) {
+    float sum = 0.0f;
+    for (int i = 0; i < NCIESamples; i++) {
+        sum += d.values[i] * cie[i];
+    }
+
+    return sum;
+}
+
+/**
+ * @brief Converts a densely sampled spectrum to XYZ color representation
+ * @param d Input densely sampled spectrum
  * @return XYZ color
  */
-XYZ SpectrumToXYZ(SampledSpectrum s, SampledWavelengths lambda) {
-    DenselySampledSpectrum cie_x = DenselySampledSpectrumCreate();
-    DenselySampledSpectrum cie_y = DenselySampledSpectrumCreate();
-    DenselySampledSpectrum cie_z = DenselySampledSpectrumCreate();
+XYZ DenselySampledSpectrumToXYZ(DenselySampledSpectrum d) {
+    // Compute unnormalized XYZ components
+    float xyz_x = DenselySampledSpectrumDotCIE(d, CIEX);
+    float xyz_y = DenselySampledSpectrumDotCIE(d, CIEY);
+    float xyz_z = DenselySampledSpectrumDotCIE(d, CIEZ);
     
-    for (int i = 0; i < NCIESamples; i++) {
-        cie_x.values[i] = CIEX[i];
-        cie_y.values[i] = CIEY[i];
-        cie_z.values[i] = CIEZ[i];
-    }
-    
-    SampledSpectrum X = DenselySampledSpectrumSample(cie_x, lambda);
-    SampledSpectrum Y = DenselySampledSpectrumSample(cie_y, lambda);
-    SampledSpectrum Z = DenselySampledSpectrumSample(cie_z, lambda);
-    
-    SampledSpectrum pdf = SampledWavelengthsPDF(lambda);
-    
-    float xyz_x = SampledSpectrumAvg(SampledSpectrumDiv(SampledSpectrumMul(X, s), pdf));
-    float xyz_y = SampledSpectrumAvg(SampledSpectrumDiv(SampledSpectrumMul(Y, s), pdf));
-    float xyz_z = SampledSpectrumAvg(SampledSpectrumDiv(SampledSpectrumMul(Z, s), pdf));
-    
+    // Normalize using CIE Y integral
     xyz_x /= CIEYIntegral;
     xyz_y /= CIEYIntegral;
     xyz_z /= CIEYIntegral;
@@ -1159,15 +1160,14 @@ XYZ SpectrumToXYZ(SampledSpectrum s, SampledWavelengths lambda) {
 }
 
 /**
- * @brief Convert spectrum to RGB
- * @param s Input spectrum
- * @param lambda Sampled wavelengths
+ * @brief Converts a densely sampled spectrum to RGB
+ * @param d Input densely sampled spectrum
  * @return RGB color
  */
-RGB SpectrumToRGB(SampledSpectrum s, SampledWavelengths lambda) {
+RGB DenselySampledSpectrumToRGB(DenselySampledSpectrum d) {
     // Convert to XYZ first
-    XYZ xyz = SpectrumToXYZ(s, lambda);
-
+    XYZ xyz = DenselySampledSpectrumToXYZ(d);
+    
     // Then convert to RGB
     return XYZToRGB(xyz);
 }
