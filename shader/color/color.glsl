@@ -180,23 +180,23 @@ RGB RGBClampZero(RGB rgb) {
 
 // XYZ Definition
 struct XYZ {
-    float X;
-    float Y;
-    float Z;
+    float x;
+    float y;
+    float z;
 };
 
 /**
  * @brief Construct XYZ with values
- * @param X X component
- * @param Y Y component
- * @param Z Z component
+ * @param x x component
+ * @param y y component
+ * @param z z component
  * @return New XYZ struct
  */
-XYZ XYZNew(float X, float Y, float Z) {
+XYZ XYZNew(float x, float y, float z) {
     XYZ color;
-    color.X = X;
-    color.Y = Y;
-    color.Z = Z;
+    color.x = x;
+    color.y = y;
+    color.z = z;
 
     return color;
 }
@@ -207,7 +207,7 @@ XYZ XYZNew(float X, float Y, float Z) {
  * @return Average value
  */
 float XYZAverage(XYZ s) {
-    return (s.X + s.Y + s.Z) / 3.0f;
+    return (s.x + s.y + s.z) / 3.0f;
 }
 
 /**
@@ -216,26 +216,26 @@ float XYZAverage(XYZ s) {
  * @return xy chromaticity
  */
 vec2 XYZxy(XYZ s) {
-    float sum = s.X + s.Y + s.Z;
+    float sum = s.x + s.y + s.z;
 
-    return vec2(s.X / sum, s.Y / sum);
+    return vec2(s.x / sum, s.y / sum);
 }
 
 /**
  * @brief Convert xyY to XYZ color
  * @param xy Chromaticity coordinates
- * @param Y Luminance
+ * @param y Luminance
  * @return XYZ color
  */
-XYZ XYZFromxyY(vec2 xy, float Y) {
+XYZ XYZFromxyY(vec2 xy, float y) {
     if (0.0f == xy.y) {
         return XYZNew(0.0f, 0.0f, 0.0f);
     }
 
     return XYZNew(
-        xy.x * Y / xy.y,
-        Y,
-        (1.0 - xy.x - xy.y) * Y / xy.y
+        xy.x * y / xy.y,
+        y,
+        (1.0f - xy.x - xy.y) * y / xy.y
     );
 }
 
@@ -247,9 +247,9 @@ XYZ XYZFromxyY(vec2 xy, float Y) {
  */
 XYZ XYZAdd(XYZ a, XYZ b) {
     XYZ result;
-    result.X = a.X + b.X;
-    result.Y = a.Y + b.Y;
-    result.Z = a.Z + b.Z;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    result.z = a.z + b.z;
 
     return result;
 }
@@ -262,9 +262,9 @@ XYZ XYZAdd(XYZ a, XYZ b) {
  */
 XYZ XYZSub(XYZ a, XYZ b) {
     XYZ result;
-    result.X = a.X - b.X;
-    result.Y = a.Y - b.Y;
-    result.Z = a.Z - b.Z;
+    result.x = a.x - b.x;
+    result.y = a.y - b.y;
+    result.z = a.z - b.z;
 
     return result;
 }
@@ -277,9 +277,9 @@ XYZ XYZSub(XYZ a, XYZ b) {
  */
 XYZ XYZMul(XYZ a, XYZ b) {
     XYZ result;
-    result.X = a.X * b.X;
-    result.Y = a.Y * b.Y;
-    result.Z = a.Z * b.Z;
+    result.x = a.x * b.x;
+    result.y = a.y * b.y;
+    result.z = a.z * b.z;
 
     return result;
 }
@@ -292,9 +292,9 @@ XYZ XYZMul(XYZ a, XYZ b) {
  */
 XYZ XYZMulFloat(XYZ s, float a) {
     XYZ result;
-    result.X = s.X * a;
-    result.Y = s.Y * a;
-    result.Z = s.Z * a;
+    result.x = s.x * a;
+    result.y = s.y * a;
+    result.z = s.z * a;
 
     return result;
 }
@@ -307,9 +307,9 @@ XYZ XYZMulFloat(XYZ s, float a) {
  */
 XYZ XYZDivFloat(XYZ s, float a) {
     XYZ result;
-    result.X = s.X / a;
-    result.Y = s.Y / a;
-    result.Z = s.Z / a;
+    result.x = s.x / a;
+    result.y = s.y / a;
+    result.z = s.z / a;
 
     return result;
 }
@@ -321,9 +321,9 @@ XYZ XYZDivFloat(XYZ s, float a) {
  */
 XYZ XYZNegate(XYZ s) {
     XYZ result;
-    result.X = -s.X;
-    result.Y = -s.Y;
-    result.Z = -s.Z;
+    result.x = -s.x;
+    result.y = -s.y;
+    result.z = -s.z;
 
     return result;
 }
@@ -348,9 +348,9 @@ XYZ XYZLerp(float t, XYZ s1, XYZ s2) {
  */
 XYZ XYZClamp(XYZ xyz, float min, float max) {
     XYZ result;
-    result.X = clamp(xyz.X, min, max);
-    result.Y = clamp(xyz.Y, min, max);
-    result.Z = clamp(xyz.Z, min, max);
+    result.x = clamp(xyz.x, min, max);
+    result.y = clamp(xyz.y, min, max);
+    result.z = clamp(xyz.z, min, max);
 
     return result;
 }
@@ -362,9 +362,9 @@ XYZ XYZClamp(XYZ xyz, float min, float max) {
  */
 XYZ XYZClampZero(XYZ xyz) {
     XYZ result;
-    result.X = max(xyz.X, 0.0f);
-    result.Y = max(xyz.Y, 0.0f);
-    result.Z = max(xyz.Z, 0.0f);
+    result.x = max(xyz.x, 0.0f);
+    result.y = max(xyz.y, 0.0f);
+    result.z = max(xyz.z, 0.0f);
 
     return result;
 }
@@ -378,9 +378,9 @@ RGB XYZToRGB(XYZ xyz) {
     RGB rgb;
     
     // Apply XYZ to RGB conversion matrix
-    rgb.r = 3.240479f * xyz.X - 1.537150f * xyz.Y - 0.498535f * xyz.Z;
-    rgb.g = -0.969256f * xyz.X + 1.875991f * xyz.Y + 0.041556f * xyz.Z;
-    rgb.b = 0.055648f * xyz.X - 0.204043f * xyz.Y + 1.057311f * xyz.Z;
+    rgb.r = 3.240479f * xyz.x - 1.537150f * xyz.y - 0.498535f * xyz.z;
+    rgb.g = -0.969256f * xyz.x + 1.875991f * xyz.y + 0.041556f * xyz.z;
+    rgb.b = 0.055648f * xyz.x - 0.204043f * xyz.y + 1.057311f * xyz.z;
     
     return rgb;
 }

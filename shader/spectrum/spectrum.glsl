@@ -23,7 +23,7 @@ struct SampledSpectrum {
  * @param c Constant value for all wavelengths
  * @return New SampledSpectrum
  */
-SampledSpectrum SampledSpectrumNew(float c[NSpectrumSamples]) {
+SampledSpectrum SampledSpectrumNew(const float c[NSpectrumSamples]) {
     SampledSpectrum s;
     for (int i = 0; i < NSpectrumSamples; i++) {
         s.values[i] = c[i];
@@ -344,6 +344,29 @@ SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWa
         } 
         else {
             s.values[i] = d.values[idx];
+        }
+    }
+
+    return s;
+}
+
+/**
+ * @brief Samples CIE spectral values at specified wavelengths
+ * @param cie CIE spectral data array (size must be NCIESamples)
+ * @param lambda Target wavelength samples with PDF values
+ * @return SampledSpectrum containing values at queried wavelengths
+ */
+SampledSpectrum CIEDenselySampledSpectrumSample(const float cie[NCIESamples], SampledWavelengths lambda) {
+    SampledSpectrum s;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        // Calculate array index (rounded to nearest integer)
+        int idx = int(round(lambda.lambda[i]) - int(LambdaMin));
+        
+        if (idx < 0 || idx >= NCIESamples) {
+            s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
+        } 
+        else {
+            s.values[i] = cie[idx];
         }
     }
 
@@ -1126,49 +1149,83 @@ const float CIEZ[NCIESamples] = float[NCIESamples](
 );
 
 /**
- * @brief Computes the dot product between a densely sampled spectrum and a CIE array
- * @param d Input densely sampled spectrum
- * @param cie CIE array (CIEX, CIEY or CIEZ)
- * @return Dot product result
+ * @brief Safely divides two floats with zero-division protection
+ * @param a Dividend
+ * @param b Divisor
+ * @return Division result (returns 0 when divisor is 0)
  */
-float DenselySampledSpectrumDotCIE(DenselySampledSpectrum d, const float cie[NCIESamples]) {
-    float sum = 0.0f;
-    for (int i = 0; i < NCIESamples; i++) {
-        sum += d.values[i] * cie[i];
+float SafeDiv(float a, float b) {
+    return (0.0f != b) ? (a / b) : 0.0f;
+}
+
+/**
+ * @brief Converts a sampled spectrum to XYZ color using Monte Carlo integration
+ * @param s Input sampled spectrum (NSpectrumSamples components)
+ * @param lambda Sampled wavelengths with PDF values
+ * @return XYZ color in CIE 1931 space
+ */
+XYZ SampledSpectrumToXYZ(SampledSpectrum s, SampledWavelengths lambda) {
+    // Sample CIE matching functions at given wavelengths
+    SampledSpectrum xs = CIEDenselySampledSpectrumSample(CIEX, lambda);
+    SampledSpectrum ys = CIEDenselySampledSpectrumSample(CIEY, lambda);
+    SampledSpectrum zs = CIEDenselySampledSpectrumSample(CIEZ, lambda);
+    
+    // Retrieve PDF spectrum for importance sampling
+    SampledSpectrum pdf = SampledWavelengthsPDF(lambda);
+    
+    // Compute weighted averages with PDF normalization
+    float sumx = 0.0f;
+    float sumy = 0.0f;
+    float sumz = 0.0f;
+    
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        sumx += SafeDiv(xs.values[i] * s.values[i], pdf.values[i]);
+        sumy += SafeDiv(ys.values[i] * s.values[i], pdf.values[i]);
+        sumz += SafeDiv(zs.values[i] * s.values[i], pdf.values[i]);
     }
-
-    return sum;
+    
+    // Compute averages and normalize by CIE Y integral
+    float invn = 1.0f / float(NSpectrumSamples);
+    float x = sumx * invn / CIEYIntegral;
+    float y = sumy * invn / CIEYIntegral;
+    float z = sumz * invn / CIEYIntegral;
+    
+    return XYZNew(x, y, z);
 }
 
 /**
- * @brief Converts a densely sampled spectrum to XYZ color representation
- * @param d Input densely sampled spectrum
- * @return XYZ color
+ * @brief Computes luminance (Y component) of a sampled spectrum
+ * @param s Input sampled spectrum
+ * @param lambda Sampled wavelengths with PDF values
+ * @return Luminance value (CIE Y component)
  */
-XYZ DenselySampledSpectrumToXYZ(DenselySampledSpectrum d) {
-    // Compute unnormalized XYZ components
-    float xyz_x = DenselySampledSpectrumDotCIE(d, CIEX);
-    float xyz_y = DenselySampledSpectrumDotCIE(d, CIEY);
-    float xyz_z = DenselySampledSpectrumDotCIE(d, CIEZ);
+float SampledSpectrumY(SampledSpectrum s, SampledWavelengths lambda) {
+    // Sample CIE Y matching function
+    SampledSpectrum ys = CIEDenselySampledSpectrumSample(CIEY, lambda);
     
-    // Normalize using CIE Y integral
-    xyz_x /= CIEYIntegral;
-    xyz_y /= CIEYIntegral;
-    xyz_z /= CIEYIntegral;
+    // Retrieve PDF spectrum
+    SampledSpectrum pdf = SampledWavelengthsPDF(lambda);
     
-    return XYZNew(xyz_x, xyz_y, xyz_z);
+    // Compute weighted average with PDF normalization
+    float sumy = 0.0f;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        sumy += SafeDiv(ys.values[i] * s.values[i], pdf.values[i]);
+    }
+    
+    // Normalize by sample count and CIE Y integral
+    return (sumy / float(NSpectrumSamples)) / CIEYIntegral;
 }
 
 /**
- * @brief Converts a densely sampled spectrum to RGB
- * @param d Input densely sampled spectrum
- * @return RGB color
+ * @brief Converts a sampled spectrum to RGB via XYZ intermediate
+ * @param s Input sampled spectrum
+ * @param lambda Sampled wavelengths with PDF values
+ * @return Linear RGB color
  */
-RGB DenselySampledSpectrumToRGB(DenselySampledSpectrum d) {
-    // Convert to XYZ first
-    XYZ xyz = DenselySampledSpectrumToXYZ(d);
-    
-    // Then convert to RGB
+RGB SampledSpectrumToRGB(SampledSpectrum s, SampledWavelengths lambda) {
+    // Convert through XYZ color space
+    XYZ xyz = SampledSpectrumToXYZ(s, lambda);
+
     return XYZToRGB(xyz);
 }
 
