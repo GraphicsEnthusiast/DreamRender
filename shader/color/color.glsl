@@ -1,6 +1,8 @@
 #ifndef _COLOR__GLSL__
 #define _COLOR__GLSL__
 
+#include "color/sigmoid_polynomial.glsl"
+
 // RGB Definition
 struct RGB {
     float r;
@@ -370,7 +372,7 @@ XYZ XYZClampZero(XYZ xyz) {
 }
 
 /**
- * @brief Convert XYZ color to RGB
+ * @brief Convert XYZ color to RGB (SRGB color gamut coordinates and D65 white point)
  * @param xyz Input XYZ color
  * @return RGB color
  */
