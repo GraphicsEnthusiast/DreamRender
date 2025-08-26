@@ -383,12 +383,12 @@ void DenselySampledSpectrumScale(inout DenselySampledSpectrum d, float scale) {
  * @return Maximum spectral value
  */
 float DenselySampledSpectrumMaxValue(DenselySampledSpectrum d) {
-    float maxVal = d.values[0];
+    float max_val = d.values[0];
     for (int i = 1; i < NCIESamples; i++) {
-        maxVal = max(maxVal, d.values[i]);
+        max_val = max(max_val, d.values[i]);
     }
 
-    return maxVal;
+    return max_val;
 }
 
 /**
