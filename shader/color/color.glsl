@@ -1,7 +1,7 @@
 #ifndef _COLOR__GLSL__
 #define _COLOR__GLSL__
 
-#include "color/sigmoid_polynomial.glsl"
+#include "color/cie.glsl"
 
 // RGB Definition
 struct RGB {
