@@ -250,6 +250,57 @@ SampledWavelengths SampledWavelengthsSampleUniform(float u, float lambda_min, fl
 }
 
 /**
+ * @brief Computes wavelength using inverse CDF of visible spectrum
+ * @param u Random value [0, 1)
+ * @return Wavelength in nanometers
+ */
+float SampleVisibleWavelengths(float u) {
+    // Inverse CDF approximation for visible spectrum (360-830nm)
+    return 538.0f - 138.888889f * atanh(0.85691062f - 1.82750197f * u);
+}
+
+/**
+ * @brief Computes PDF for given wavelength in visible spectrum
+ * @param lambda Query wavelength in nanometers
+ * @return Probability density value
+ */
+float VisibleWavelengthsPDF(float lambda) {
+    // Return 0 for out-of-range wavelengths
+    if (lambda < 360.0f || lambda > 830.0f) {
+        return 0.0f;
+    }
+    
+    // PDF formula for visible wavelengths
+    float x = 0.0072f * (lambda - 538.0f);
+    float cosh_x = cosh(x);
+
+    return 0.0039398042f / (cosh_x * cosh_x);
+}
+
+/**
+ * @brief Samples visible wavelengths using importance sampling
+ * @param u Random seed value [0, 1)
+ * @return SampledWavelengths with wavelengths and PDFs
+ */
+SampledWavelengths SampledWavelengthsSampleVisible(float u) {
+    SampledWavelengths swl;
+    
+    for (int i = 0; i < NSpectrumSamples; ++i) {
+        // Compute offset for i-th wavelength sample
+        float up = u + float(i) / float(NSpectrumSamples);
+        if (up > 1.0f) {
+            up -= 1.0f;
+        }
+        
+        // Sample wavelength and compute PDF
+        swl.lambda[i] = SampleVisibleWavelengths(up);
+        swl.pdf[i] = VisibleWavelengthsPDF(swl.lambda[i]);
+    }
+    
+    return swl;
+}
+
+/**
  * @brief Terminates secondary wavelengths (keeps only primary)
  * @param swl Inout reference to SampledWavelengths instance
  */
