@@ -39,8 +39,8 @@ ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
 }
 
 ThreadPool& ThreadPool::Instance(unsigned int threads) {
-	static std::once_flag initFlag;
-	std::call_once(initFlag, [threads]() {
+	static std::once_flag init_flag;
+	std::call_once(init_flag, [threads]() {
 		instance_ = std::unique_ptr<ThreadPool>(new ThreadPool(threads));
 		});
 
