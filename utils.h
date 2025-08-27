@@ -48,3 +48,29 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/callback_sink.h>
 #include <fmt/core.h>
+
+NAMESPACE_BEGIN(dream)
+
+using Vector2u = glm::uvec2;
+using Vector2i = glm::ivec2;
+using Vector2f = glm::vec2;
+using Vector3u = glm::uvec3;
+using Vector3i = glm::ivec3;
+using Vector3f = glm::vec3;
+using Vector4u = glm::uvec4;
+using Vector4i = glm::ivec4;
+using Vector4f = glm::vec4;
+using Matrix3f = glm::mat3x3;
+using Matrix4f = glm::mat4x4;
+
+using Point2f = Vector2f;
+using Point3f = Vector3f;
+using Point4f = Vector4f;
+using Point2i = Vector2i;
+using Point3i = Vector3i;
+using Point4i = Vector4i;
+using Point2u = Vector2u;
+using Point3u = Vector3u;
+using Point4u = Vector4u;
+
+NAMESPACE_END(dream)

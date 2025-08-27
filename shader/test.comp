@@ -48,7 +48,7 @@ void TestSpectrumToRGBConversion() {
     
     // 3. 执行光谱→RGB转换
     RGB resultRGB = SampledSpectrumToRGB(whiteSpectrum, lambda);
-    vec3 c = vec3(GammaCorrect(resultRGB.r), GammaCorrect(resultRGB.g), GammaCorrect(resultRGB.b));
+    vec3 c = vec3(resultRGB.r, resultRGB.g, resultRGB.b);
     // 4. 验证结果（预期为纯白）
     const float tolerance = 0.01f;  // 允许误差
     bool isWhite = 
