@@ -307,7 +307,7 @@ SampledWavelengths SampledWavelengthsSampleVisible(float u) {
 void SampledWavelengthsTerminateSecondary(inout SampledWavelengths swl) {
     bool terminated = true;
     for (int i = 1; i < NSpectrumSamples; i++) {
-        if (swl.pdf[i] != 0.0f) {
+        if (0.0f != swl.pdf[i]) {
             terminated = false;
             break;
         }
