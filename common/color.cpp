@@ -55,13 +55,13 @@ RGBColorSpace::RGBColorSpace(const Point2f& r, const Point2f& g, const Point2f& 
 
 void RGBColorSpace::InitializeConversionMatrices() {
 	// For SRGB with D65, use precomputed matrices for accuracy and performance
-	xyz_from_rgb = Matrix3f(
+	xyz_from_rgb_ = Matrix3f(
 		RGB_TO_XYZ[0][0], RGB_TO_XYZ[0][1], RGB_TO_XYZ[0][2],
 		RGB_TO_XYZ[1][0], RGB_TO_XYZ[1][1], RGB_TO_XYZ[1][2],
 		RGB_TO_XYZ[2][0], RGB_TO_XYZ[2][1], RGB_TO_XYZ[2][2]
 	);
 
-	rgb_from_xyz = Matrix3f(
+	rgb_from_xyz_ = Matrix3f(
 		XYZ_TO_RGB[0][0], XYZ_TO_RGB[0][1], XYZ_TO_RGB[0][2],
 		XYZ_TO_RGB[1][0], XYZ_TO_RGB[1][1], XYZ_TO_RGB[1][2],
 		XYZ_TO_RGB[2][0], XYZ_TO_RGB[2][1], XYZ_TO_RGB[2][2]
@@ -78,15 +78,15 @@ RGBSigmoidPolynomial RGBColorSpace::ToRGBCoeffs(const RGB& rgb) const {
 }
 
 RGB RGBColorSpace::ToRGB(const XYZ& xyz) const {
-	return rgb_from_xyz * xyz;
+	return rgb_from_xyz_ * xyz;
 }
 
 XYZ RGBColorSpace::ToXYZ(const RGB& rgb) const {
-	return xyz_from_rgb * rgb;
+	return xyz_from_rgb_ * rgb;
 }
 
 RGB RGBColorSpace::Luminance() const {
-	return RGB(xyz_from_rgb[1][0], xyz_from_rgb[1][1], xyz_from_rgb[1][2]);
+	return RGB(xyz_from_rgb_[1][0], xyz_from_rgb_[1][1], xyz_from_rgb_[1][2]);
 }
 
 const RGBColorSpace* RGBColorSpace::Lookup(const Point2f& r, const Point2f& g, const Point2f& b, const Point2f& w) {

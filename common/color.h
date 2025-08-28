@@ -126,10 +126,10 @@ public:
     static const RGBColorSpace* SRGB;
 
     // Color space properties
-    Point2f r_, g_, b_, w_;                                     ///< Primary and white point chromaticities
-    std::shared_ptr<DenselySampledSpectrum> illuminant_;        ///< Reference illuminant spectrum
-    Matrix3f xyz_from_rgb;                                      ///< Conversion matrix from RGB to XYZ
-    Matrix3f rgb_from_xyz;                                      ///< Conversion matrix from XYZ to RGB
+    Point2f r_, g_, b_, w_;                                      ///< Primary and white point chromaticities
+    std::shared_ptr<DenselySampledSpectrum> illuminant_;         ///< Reference illuminant spectrum
+    Matrix3f xyz_from_rgb_;                                      ///< Conversion matrix from RGB to XYZ
+    Matrix3f rgb_from_xyz_;                                      ///< Conversion matrix from XYZ to RGB
 
 protected:
     /**
