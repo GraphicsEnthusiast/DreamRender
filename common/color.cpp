@@ -29,7 +29,7 @@ float RGBSigmoidPolynomial::Sigmoid(float x) {
 	if (std::isinf(x)) {
 		return x > 0.0f ? 1.0f : 0.0f;
 	}
-	const float denom = 2.0f * std::sqrt(1 + x * x);
+	const float denom = 2.0f * std::sqrt(1.0f + x * x);
 
 	return 0.5f + x / denom;
 }
