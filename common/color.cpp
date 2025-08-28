@@ -77,11 +77,11 @@ RGBSigmoidPolynomial RGBColorSpace::ToRGBCoeffs(const RGB& rgb) const {
 	return RGBSigmoidPolynomial(0.5f, 0.5f, 0.5f);
 }
 
-RGB RGBColorSpace::ToRGB(const RGB& xyz) const {
+RGB RGBColorSpace::ToRGB(const XYZ& xyz) const {
 	return rgb_from_xyz * xyz;
 }
 
-RGB RGBColorSpace::ToXYZ(const RGB& rgb) const {
+XYZ RGBColorSpace::ToXYZ(const RGB& rgb) const {
 	return xyz_from_rgb * rgb;
 }
 

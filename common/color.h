@@ -4,6 +4,7 @@
 
 NAMESPACE_BEGIN(dream)
 
+using XYZ = Vector3f;
 using RGB = Vector3f;
 
 /**
@@ -96,14 +97,14 @@ public:
      * @param xyz Input XYZ color values
      * @return RGB color values in this color space
      */
-    RGB ToRGB(const RGB& xyz) const;
+    RGB ToRGB(const XYZ& xyz) const;
 
     /**
      * @brief Converts RGB values to CIE XYZ color space
      * @param rgb Input RGB color values
      * @return XYZ color values
      */
-    RGB ToXYZ(const RGB& rgb) const;
+    XYZ ToXYZ(const RGB& rgb) const;
 
     /**
      * @brief Retrieves the luminance for this color space

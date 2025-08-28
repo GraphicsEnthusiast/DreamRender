@@ -19,6 +19,10 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/color.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/spectrum.h
     ${CMAKE_CURRENT_SOURCE_DIR}/spectrum.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/shape.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/shape.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/transform.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/transform.cpp
 )
 
 include_directories(
@@ -30,6 +34,8 @@ include_directories(
     ${SPDLOG_INCLUDE_DIR}
     ${IMGUI_INCLUDE_DIR}
     ${FMT_INCLUDE_DIR}
+    ${STB_INCLUDE_DIR}
+    ${TINY_INCLUDE_DIR}
 )
 
 add_library(${PROJECT_NAME} ${COMMON_SRCS})
