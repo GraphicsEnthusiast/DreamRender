@@ -6,29 +6,6 @@ DenselySampledSpectrum::DenselySampledSpectrum(int lambda_min, int lambda_max)
 	: lambda_min_(lambda_min), lambda_max_(lambda_max),
 	values_(lambda_max - lambda_min + 1, 0.0f) {}
 
-float DenselySampledSpectrum::operator()(float lambda) const {
-	int offset = std::lround(lambda) - lambda_min_;
-	if (offset < 0.0f || offset >= values_.size()) {
-		return 0.0f;
-	}
-
-	return values_[offset];
-}
-
-bool DenselySampledSpectrum::operator==(const DenselySampledSpectrum& d) const {
-	if (lambda_min_ != d.lambda_min_ || lambda_max_ != d.lambda_max_ ||
-		values_.size() != d.values_.size()) {
-		return false;
-	}
-	for (unsigned int i = 0; i < values_.size(); ++i) {
-		if (values_[i] != d.values_[i]) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 template <typename Func>
 DenselySampledSpectrum::DenselySampledSpectrum(Func func, int lambda_min, int lambda_max)
 	: lambda_min_(lambda_min), lambda_max_(lambda_max),
@@ -38,26 +15,13 @@ DenselySampledSpectrum::DenselySampledSpectrum(Func func, int lambda_min, int la
 	}
 }
 
-std::vector<float> DenselySampledSpectrum::Sample(const std::vector<float>& wavelengths) const {
-	std::vector<float> result;
-	result.reserve(wavelengths.size());
-
-	for (float lambda : wavelengths) {
-		// Calculate index with rounding
-		int index = static_cast<int>(std::lround(lambda)) - lambda_min_;
-
-		// Handle out-of-range wavelengths
-		if (index < 0) {
-			result.push_back(values_.front());
-		}
-		else if (static_cast<size_t>(index) >= values_.size()) {
-			result.push_back(values_.back());
-		}
-		else {
-			result.push_back(values_[index]);
-		}
+float DenselySampledSpectrum::operator()(float lambda) const {
+	int offset = std::lround(lambda) - lambda_min_;
+	if (offset < 0.0f || offset >= values_.size()) {
+		return 0.0f;
 	}
-	return result;
+
+	return values_[offset];
 }
 
 void DenselySampledSpectrum::Scale(float s) {

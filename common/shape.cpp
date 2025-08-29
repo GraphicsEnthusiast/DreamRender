@@ -64,7 +64,7 @@ TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans) : tr
 			}
 
 			// if normals is empty, add geometric normal
-			if (normals.size() == 0) {
+			if (0 == normals.size()) {
 				const Point3f v1 = glm::normalize(vertices[1] - vertices[0]);
 				const Point3f v2 = glm::normalize(vertices[2] - vertices[0]);
 				const Vector3f n = glm::normalize(glm::cross(v1, v2));
@@ -74,7 +74,7 @@ TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans) : tr
 			}
 
 			// if texcoords is empty, add barycentric coords
-			if (texcoords.size() == 0) {
+			if (0 == texcoords.size()) {
 				texcoords.push_back(Point2f(0.0f));
 				texcoords.push_back(Point2f(1.0f, 0.0f));
 				texcoords.push_back(Point2f(0.0f, 1.0f));
@@ -98,6 +98,63 @@ TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans) : tr
 			index_offset += fv;
 		}
 	}
+
+	// Initialize TBOs after loading all data
+	InitializeTBOs();
+}
+
+const TBO& TriangleMesh::GetVertexTBO() const noexcept {
+	return *vertex_tbo_;
+}
+
+const TBO& TriangleMesh::GetNormalTBO() const noexcept {
+	return *normal_tbo_;
+}
+
+const TBO& TriangleMesh::GetTexCoordTBO() const noexcept {
+	return *texcoord_tbo_;
+}
+
+const TBO& TriangleMesh::GetIndexTBO() const noexcept {
+	return *index_tbo_;
+}
+
+unsigned int TriangleMesh::GetNumTriangles() const noexcept {
+	return indices.size() / 3;
+}
+
+unsigned int TriangleMesh::GetNumVertices() const noexcept {
+	return vertices.size() / 3;
+}
+
+void TriangleMesh::InitializeTBOs() {
+	// Create TBO for vertices (vec3 per vertex)
+	vertex_tbo_ = std::make_unique<TBO>(
+		vertices.data(),
+		vertices.size() * sizeof(float),
+		GL_RGB32F
+		);
+
+	// Create TBO for normals (vec3 per vertex)
+	normal_tbo_ = std::make_unique<TBO>(
+		normals.data(),
+		normals.size() * sizeof(float),
+		GL_RGB32F
+		);
+
+	// Create TBO for texture coordinates (vec2 per vertex)
+	texcoord_tbo_ = std::make_unique<TBO>(
+		texcoords.data(),
+		texcoords.size() * sizeof(float),
+		GL_RG32F
+		);
+
+	// Create TBO for indices (uint per vertex)
+	index_tbo_ = std::make_unique<TBO>(
+		indices.data(),
+		indices.size() * sizeof(unsigned int),
+		GL_R32UI
+		);
 }
 
 NAMESPACE_END(dream)

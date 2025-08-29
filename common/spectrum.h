@@ -41,13 +41,6 @@ public:
     bool operator==(const DenselySampledSpectrum& d) const;
 
     /**
-     * @brief Samples the spectrum at specified wavelengths
-     * @param wavelengths Array of wavelengths to sample
-     * @return Sampled spectrum values at input wavelengths
-     */
-    std::vector<float> Sample(const std::vector<float>& wavelengths) const;
-
-    /**
      * @brief Scales all spectral values by a constant factor
      * @param s Scaling factor
      */

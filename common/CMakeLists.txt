@@ -23,6 +23,8 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/shape.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/transform.h
     ${CMAKE_CURRENT_SOURCE_DIR}/transform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/buffer_object.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/buffer_object.cpp
 )
 
 include_directories(
