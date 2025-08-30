@@ -111,15 +111,6 @@ public:
     ~TextureBufferObject() override;
 
     /**
-     * @brief Initializes the TBO with data and format
-     * @param data Pointer to the data to populate the buffer with
-     * @param size Size of the data in bytes
-     * @param internalFormat Internal texture format
-     * @param usage Buffer usage pattern
-     */
-    void Initialize(const void* data, GLsizeiptr size, GLenum internalFormat = GL_RGB32F, GLenum usage = GL_STATIC_DRAW);
-
-    /**
      * @brief Binds the texture buffer to a texture unit
      * @param unit Texture unit to bind to (defaults to 0)
      */
@@ -130,6 +121,16 @@ public:
      * @param unit Texture unit to unbind from
      */
     void UnbindTexture(GLuint unit = 0) const;
+
+protected:
+    /**
+     * @brief Initializes the TBO with data and format
+     * @param data Pointer to the data to populate the buffer with
+     * @param size Size of the data in bytes
+     * @param internalFormat Internal texture format
+     * @param usage Buffer usage pattern
+     */
+    void Initialize(const void* data, GLsizeiptr size, GLenum internalFormat = GL_RGB32F, GLenum usage = GL_STATIC_DRAW);
 
 protected:
     GLuint texture_id_;           ///< OpenGL texture object ID
