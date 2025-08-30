@@ -15,7 +15,7 @@ public:
      * @param target OpenGL buffer target (e.g., GL_ARRAY_BUFFER, GL_TEXTURE_BUFFER)
      * @param usage Buffer usage pattern (e.g., GL_STATIC_DRAW)
      */
-    BufferObject(GLenum target, GLenum usage = GL_STATIC_DRAW) : id_(0), target_(target), usage_(usage), size_(0) {}
+    BufferObject(GLenum target, GLenum usage = GL_STATIC_DRAW);
 
     /**
      * @brief Virtual destructor for proper cleanup in derived classes

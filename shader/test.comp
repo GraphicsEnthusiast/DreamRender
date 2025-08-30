@@ -2,6 +2,7 @@
 
 #extension GL_ARB_shading_language_include : require
 
+#include "shape/shape.glsl"
 #include "spectrum/spectrum.glsl"
 
 layout(local_size_x = 16, local_size_y = 16) in;
@@ -73,6 +74,69 @@ void TestSpectrumToRGBConversion() {
 }
 
 // 在片元着色器主函数中调用测试
+//void main() {
+//    TestSpectrumToRGBConversion();
+//}
+
+// 三角形数据结构（需与CPU端TriangleEncoded匹配）
+struct Triangle {
+    vec3 p1, p2, p3;
+    vec3 n1, n2, n3;
+};
+
+// 从TBO读取三角形数据
+Triangle FetchTriangle(int index) {
+    int base = index * 9; // 每个三角形9个vec3
+    Triangle tri;
+    tri.p1 = texelFetch(triangles, base + 0).xyz;
+    tri.p2 = texelFetch(triangles, base + 1).xyz;
+    tri.p3 = texelFetch(triangles, base + 2).xyz;
+    tri.n1 = texelFetch(triangles, base + 3).xyz;
+    tri.n2 = texelFetch(triangles, base + 4).xyz;
+    tri.n3 = texelFetch(triangles, base + 5).xyz;
+    return tri;
+}
+
+// 点是否在三角形内（重心坐标法）
+bool PointInTriangle(vec2 p, vec2 a, vec2 b, vec2 c) {
+    vec2 v0 = b - a, v1 = c - a, v2 = p - a;
+    float d00 = dot(v0, v0);
+    float d01 = dot(v0, v1);
+    float d11 = dot(v1, v1);
+    float d20 = dot(v2, v0);
+    float d21 = dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    float v = (d11 * d20 - d01 * d21) / denom;
+    float w = (d00 * d21 - d01 * d20) / denom;
+    return (v >= 0) && (w >= 0) && (v + w <= 1);
+}
+
+// 三角形光栅化测试
+void TestTriangleRasterization() {
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(outputTex);
+    vec2 uv = vec2(coord) / vec2(size);
+    
+    // 测试用三角形（实际项目应使用TBO数据）
+    //vec2 triA = vec2(0.3, 0.2);
+    //vec2 triB = vec2(0.7, 0.2);
+    //vec2 triC = vec2(0.5, 0.8);
+    
+    // 从TBO读取实际三角形（示例读取索引0）
+    Triangle tri = FetchTriangle(5); 
+    // 实际使用时替换为：
+    vec2 triA = tri.p1.xy;
+    vec2 triB = tri.p2.xy;
+    vec2 triC = tri.p3.xy;
+    
+    // 光栅化判断
+    if (PointInTriangle(uv, triA, triB, triC)) {
+        imageStore(outputTex, coord, vec4(0.9, 0.2, 0.1, 1.0)); // 红色三角形
+    } else {
+        imageStore(outputTex, coord, vec4(0.1, 0.1, 0.1, 1.0));  // 深灰背景
+    }
+}
+
 void main() {
-    TestSpectrumToRGBConversion();
+    TestTriangleRasterization();
 }

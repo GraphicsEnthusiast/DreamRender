@@ -86,9 +86,15 @@ struct TriangleEncoded {
 class TriangleMeshManager {
 public:
     /**
-     * @brief Default constructor
+     * @brief Get the singleton instance
+     * @return TriangleMeshManager& Reference to the singleton instance
      */
-    TriangleMeshManager() = default;
+    static TriangleMeshManager& Instance();
+
+    /**
+     * @brief Releases all resources and destroys the singleton instance
+     */
+    static void Release();
 
     /**
      * @brief Encodes mesh data from TriangleMesh array into GPU-friendly format
@@ -103,14 +109,41 @@ public:
     void CreateTBO();
 
     /**
+     * @brief Gets GPU buffers
+     */
+    const TBO& GetTBO() const noexcept;
+
+    /**
      * @brief Gets the number of triangles
      * @return Number of triangles
      */
     unsigned int GetNumTriangles() const noexcept;
 
+    /**
+     * @brief Deleted copy constructor
+     */
+    TriangleMeshManager(const TriangleMeshManager&) = delete;
+
+    /**
+     * @brief Deleted copy assignment operator
+     */
+    TriangleMeshManager& operator=(const TriangleMeshManager&) = delete;
+
 protected:
-    std::vector<TriangleEncoded> triangles_encoded_; ///< Encoded triangle data
-    std::unique_ptr<TextureBufferObject> tbo_;       ///< Texture buffer object for GPU storage
+    /**
+     * @brief Default constructor
+     */
+    TriangleMeshManager() = default;
+
+    /**
+     * @brief Internal resource cleanup method
+     */
+    void ReleaseInstance();
+
+protected:
+    std::vector<TriangleEncoded> triangles_encoded_;       ///< Encoded triangle data
+    std::unique_ptr<TBO> tbo_;                             ///< Texture buffer object for GPU storage
+    static std::unique_ptr<TriangleMeshManager> instance_; ///< Singleton instance pointer
 };
 
 NAMESPACE_END(dream)

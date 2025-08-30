@@ -727,5 +727,4 @@ const float CIEZ[NCIESamples] = float[NCIESamples](
     0.0f
 );
 
-
 #endif

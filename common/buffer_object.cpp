@@ -2,6 +2,10 @@
 
 NAMESPACE_BEGIN(dream)
 
+BufferObject::BufferObject(GLenum target, GLenum usage) : id_(0), target_(target), usage_(usage), size_(0) { 
+	Generate(); 
+}
+
 BufferObject::~BufferObject() {
 	if (0 != id_) {
 		Delete();
@@ -53,9 +57,9 @@ GLsizeiptr BufferObject::GetSize() const noexcept {
 	return size_;
 }
 
-TextureBufferObject::TextureBufferObject(const void* data, GLsizeiptr size, GLenum internalFormat, GLenum usage)
-	: BufferObject(GL_TEXTURE_BUFFER, usage), texture_id_(0), internal_format_(internalFormat) {
-	Initialize(data, size, internalFormat, usage);
+TextureBufferObject::TextureBufferObject(const void* data, GLsizeiptr size, GLenum internal_format, GLenum usage)
+	: BufferObject(GL_TEXTURE_BUFFER, usage), texture_id_(0), internal_format_(internal_format) {
+	Initialize(data, size, internal_format, usage);
 }
 
 TextureBufferObject::~TextureBufferObject() {
@@ -69,8 +73,6 @@ void TextureBufferObject::Initialize(const void* data, GLsizeiptr size, GLenum i
 	internal_format_ = internal_format;
 	usage_ = usage;
 
-	// Generate and initialize the buffer
-	Generate();
 	Bind();
 	BufferData(size, data);
 

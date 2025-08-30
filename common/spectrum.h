@@ -15,7 +15,8 @@ public:
      * @param lambda_min Minimum wavelength (default: 360nm)
      * @param lambda_max Maximum wavelength (default: 830nm)
      */
-    DenselySampledSpectrum(int lambda_min = 360, int lambda_max = 830);
+	DenselySampledSpectrum::DenselySampledSpectrum(int lambda_min = 360, int lambda_max = 830)
+		: lambda_min_(lambda_min), lambda_max_(lambda_max), values_(lambda_max - lambda_min + 1, 0.0f) {}
 
     /**
      * @brief Constructs by sampling a spectral function

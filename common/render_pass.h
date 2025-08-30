@@ -1,6 +1,7 @@
 #pragma once
 
 #include <shader.h>
+#include <shape.h>
 
 NAMESPACE_BEGIN(dream)
 
@@ -137,15 +138,18 @@ public:
         static float time = 0.0f;
         time += 0.01f;
         shader_->SetFloat("time", time);
+        TriangleMeshManager::Instance().GetTBO().BindTexture(0);
+        shader_->SetInt("triangles", 0);
 
         // Dispatch compute shader
         glDispatchCompute(512 / 16, 512 / 16, 1);
 
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |
-			GL_TEXTURE_FETCH_BARRIER_BIT);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+
+        //TriangleMeshManager::Instance().GetTBO().UnbindTexture(GL_TEXTURE1);
     }
 
-private:
+protected:
     std::unique_ptr<ComputationShader> shader_;
 };
 

@@ -2,10 +2,6 @@
 
 NAMESPACE_BEGIN(dream)
 
-DenselySampledSpectrum::DenselySampledSpectrum(int lambda_min, int lambda_max)
-	: lambda_min_(lambda_min), lambda_max_(lambda_max),
-	values_(lambda_max - lambda_min + 1, 0.0f) {}
-
 template <typename Func>
 DenselySampledSpectrum::DenselySampledSpectrum(Func func, int lambda_min, int lambda_max)
 	: lambda_min_(lambda_min), lambda_max_(lambda_max),

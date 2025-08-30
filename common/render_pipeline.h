@@ -85,7 +85,8 @@ protected:
     TextureHandle CreateTexture(int width, int height);
 
 protected:
-    std::unique_ptr<RenderGraph> graph_;  ///< Managed render graph instance
+    std::unique_ptr<TriangleMeshManager> mesh_manager_;
+    std::unique_ptr<RenderGraph> graph_;
     GLFWwindow* render_context_;          ///< Dedicated OpenGL context
 };
 

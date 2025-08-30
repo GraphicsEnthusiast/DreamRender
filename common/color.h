@@ -75,6 +75,8 @@ class DenselySampledSpectrum;
  * @brief Represents an RGB color space with conversion capabilities to/from CIE XYZ
  */
 class RGBColorSpace {
+    friend class RGBIlluminantSpectrum;
+
 public:
     /**
      * @brief Constructs an RGB color space from chromaticity coordinates
@@ -125,17 +127,18 @@ public:
     // Predefined color space instances
     static const RGBColorSpace* SRGB;
 
-    // Color space properties
-    Point2f r_, g_, b_, w_;                                      ///< Primary and white point chromaticities
-    std::shared_ptr<DenselySampledSpectrum> illuminant_;         ///< Reference illuminant spectrum
-    Matrix3f xyz_from_rgb_;                                      ///< Conversion matrix from RGB to XYZ
-    Matrix3f rgb_from_xyz_;                                      ///< Conversion matrix from XYZ to RGB
-
 protected:
     /**
      * @brief Initializes the conversion matrices based on primary chromaticities
      */
     void InitializeConversionMatrices();
+
+protected:
+    // Color space properties
+    Point2f r_, g_, b_, w_;                                      ///< Primary and white point chromaticities
+    std::shared_ptr<DenselySampledSpectrum> illuminant_;         ///< Reference illuminant spectrum
+    Matrix3f xyz_from_rgb_;                                      ///< Conversion matrix from RGB to XYZ
+    Matrix3f rgb_from_xyz_;                                      ///< Conversion matrix from XYZ to RGB
 };
 
 NAMESPACE_END(dream)

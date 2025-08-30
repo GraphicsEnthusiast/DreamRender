@@ -124,6 +124,28 @@ const std::vector<float>& TriangleMesh::GetTexCoords() const noexcept {
 	return texcoords_;
 }
 
+std::unique_ptr<TriangleMeshManager> TriangleMeshManager::instance_ = nullptr;
+
+TriangleMeshManager& TriangleMeshManager::Instance() {
+	static std::once_flag init_flag;
+	std::call_once(init_flag, []() {
+		instance_ = std::unique_ptr<TriangleMeshManager>(new TriangleMeshManager());
+		});
+
+	return *instance_;
+}
+
+void TriangleMeshManager::Release() {
+	if (instance_) {
+		instance_->ReleaseInstance();
+		instance_.reset();
+	}
+}
+
+void TriangleMeshManager::ReleaseInstance() {
+	triangles_encoded_.clear();
+}
+
 void TriangleMeshManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/) {
 	unsigned int total_triangle_count = 0;
 	for (const auto& mesh : meshes) {
@@ -222,6 +244,10 @@ void TriangleMeshManager::CreateTBO() {
 		GL_RGB32F,
 		GL_STATIC_DRAW
 	);
+}
+
+const TBO& TriangleMeshManager::GetTBO() const noexcept {
+	return *tbo_;
 }
 
 unsigned int TriangleMeshManager::GetNumTriangles() const noexcept {

@@ -10,7 +10,7 @@ RenderPipeline::RenderPipeline(GLFWwindow* share_window) {
 	render_context_ = glfwCreateWindow(1, 1, "Pipeline Context", nullptr, share_window);
 
 	if (!render_context_) {
-		ERROR("Failed to create pipeline OpenGL context.");
+		ERROR("[error] Failed to create pipeline OpenGL context.");
 	}
 }
 
