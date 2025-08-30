@@ -110,7 +110,7 @@ public:
 
 protected:
     std::vector<TriangleEncoded> triangles_encoded_; ///< Encoded triangle data
-    TextureBufferObject tbo_;                        ///< Texture buffer object for GPU storage
+    std::unique_ptr<TextureBufferObject> tbo_;       ///< Texture buffer object for GPU storage
 };
 
 NAMESPACE_END(dream)

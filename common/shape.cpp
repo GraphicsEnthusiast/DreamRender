@@ -216,7 +216,7 @@ void TriangleMeshManager::EncodeTriangles(const std::vector<TriangleMesh>& meshe
 
 void TriangleMeshManager::CreateTBO() {
 	// Create and initialize texture buffer object
-	tbo_.Initialize(
+	tbo_ = std::make_unique<TextureBufferObject>(
 		triangles_encoded_.data(),
 		triangles_encoded_.size() * sizeof(TriangleEncoded),
 		GL_RGB32F,
