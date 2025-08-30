@@ -103,7 +103,7 @@ public:
      * @param internalFormat Internal texture format (e.g., GL_RGB32F)
      * @param usage Buffer usage pattern
      */
-    TextureBufferObject(const void* data, GLsizeiptr size, GLenum internalFormat = GL_RGB32F, GLenum usage = GL_STATIC_DRAW);
+    TextureBufferObject(const void* data, GLsizeiptr size, GLenum internal_format = GL_RGB32F, GLenum usage = GL_STATIC_DRAW);
 
     /**
      * @brief Destructor (cleans up both buffer and texture)
@@ -130,18 +130,6 @@ public:
      * @param unit Texture unit to unbind from
      */
     void UnbindTexture(GLuint unit = 0) const;
-
-    /**
-     * @brief Gets the internal texture format
-     * @return The OpenGL internal format used for the texture
-     */
-    GLenum InternalFormat() const { return internal_format_; }
-
-    /**
-     * @brief Gets the texture ID
-     * @return The OpenGL texture ID
-     */
-    GLuint TextureID() const { return texture_id_; }
 
 protected:
     GLuint texture_id_;           ///< OpenGL texture object ID

@@ -65,8 +65,8 @@ TextureBufferObject::~TextureBufferObject() {
 	}
 }
 
-void TextureBufferObject::Initialize(const void* data, GLsizeiptr size, GLenum internalFormat, GLenum usage) {
-	internal_format_ = internalFormat;
+void TextureBufferObject::Initialize(const void* data, GLsizeiptr size, GLenum internal_format, GLenum usage) {
+	internal_format_ = internal_format;
 	usage_ = usage;
 
 	// Generate and initialize the buffer

@@ -14,67 +14,103 @@ public:
     /**
      * @brief Constructs a triangle mesh from a file with optional transformation
      * @param file Path to the mesh file to load
-     * @param trans Transformation to apply to the mesh vertices during loading[1,4](@ref)
+     * @param trans Transformation to apply to the mesh vertices during loading
      */
     TriangleMesh(const std::string& file, const Transform& trans);
 
     /**
-     * @brief Gets the vertex buffer object for compute shader access
-     * @return Const reference to the vertex texture buffer object (TBO)[1,4](@ref)
-     */
-    const TBO& GetVertexTBO() const noexcept;
-
-    /**
-     * @brief Gets the normal buffer object for compute shader access
-     * @return Const reference to the normal texture buffer object (TBO)[1,4](@ref)
-     */
-    const TBO& GetNormalTBO() const noexcept;
-
-    /**
-     * @brief Gets the texture coordinate buffer object for compute shader access
-     * @return Const reference to the texture coordinate texture buffer object (TBO)[1,4](@ref)
-     */
-    const TBO& GetTexCoordTBO() const noexcept;
-
-    /**
-     * @brief Gets the index buffer object for compute shader access
-     * @return Const reference to the index texture buffer object (TBO)[1,4](@ref)
-     */
-    const TBO& GetIndexTBO() const noexcept;
-
-    /**
      * @brief Gets the number of triangles in the mesh
-     * @return Count of triangles in the mesh[1,4](@ref)
+     * @return Count of triangles in the mesh
      */
     unsigned int GetNumTriangles() const noexcept;
 
     /**
      * @brief Gets the number of vertices in the mesh
-     * @return Count of vertices in the mesh[1,4](@ref)
+     * @return Count of vertices in the mesh
      */
     unsigned int GetNumVertices() const noexcept;
 
-protected:
     /**
-     * @brief Initializes texture buffer objects (TBOs) for GPU access
-     *
-     * This method creates and configures TBOs for vertex data, normals,
-     * texture coordinates, and indices for use in compute shaders[1,3](@ref).
+     * @brief Gets the array of vertex positions (x, y, z coordinates)
+     * @return Const reference to the vector of vertex positions
      */
-    void InitializeTBOs();
+    const std::vector<float>& GetVertices() const noexcept;
+
+    /**
+     * @brief Gets the array of vertex indices forming triangles
+     * @return Const reference to the vector of vertex indices
+     */
+    const std::vector<unsigned int>& GetIndices() const noexcept;
+
+    /**
+     * @brief Gets the array of vertex normal vectors (nx, ny, nz)
+     * @return Const reference to the vector of vertex normals
+     */
+    const std::vector<float>& GetNormals() const noexcept;
+
+    /**
+     * @brief Gets the array of texture coordinates (u, v)
+     * @return Const reference to the vector of texture coordinates
+     */
+    const std::vector<float>& GetTexCoords() const noexcept;
 
 protected:
-    Transform transform;                     ///< Transformation applied to the mesh vertices
-    std::vector<float> vertices;            ///< Array of vertex positions (x, y, z coordinates)
-    std::vector<unsigned int> indices;      ///< Array of vertex indices forming triangles
-    std::vector<float> normals;             ///< Array of vertex normal vectors (nx, ny, nz)
-    std::vector<float> texcoords;           ///< Array of texture coordinates (u, v)
+    Transform transform_;                     ///< Transformation applied to the mesh vertices
+    std::vector<float> vertices_;            ///< Array of vertex positions (x, y, z coordinates)
+    std::vector<unsigned int> indices_;      ///< Array of vertex indices forming triangles
+    std::vector<float> normals_;             ///< Array of vertex normal vectors (nx, ny, nz)
+    std::vector<float> texcoords_;           ///< Array of texture coordinates (u, v)
+};
 
-    // TBOs for compute shader access
-    std::unique_ptr<TBO> vertex_tbo_;       ///< Texture buffer object for vertex data
-    std::unique_ptr<TBO> normal_tbo_;       ///< Texture buffer object for normal data
-    std::unique_ptr<TBO> texcoord_tbo_;     ///< Texture buffer object for texture coordinate data
-    std::unique_ptr<TBO> index_tbo_;        ///< Texture buffer object for index data
+/**
+ * @struct TriangleEncoded
+ * @brief Encoded triangle structure for GPU storage
+ */
+struct TriangleEncoded {
+    Point3f p1, p2, p3;       // Vertex positions
+    Vector3f n1, n2, n3;      // Vertex normals
+    Point3f uv1, uv2, uv3;    // UV coordinates (z-component unused)
+	//glm::vec3 emissive;       // Emissive parameters
+	//glm::vec3 baseColor;      // Base color
+	//glm::vec3 param1;         // (subsurface, metallic, specular)
+	//glm::vec3 param2;         // (specularTint, roughness, anisotropic)
+	//glm::vec3 param3;         // (sheen, sheenTint, clearcoat)
+	//glm::vec3 param4;         // (clearcoatGloss, IOR, transmission)
+	//glm::vec3 tex;            // (isTex, texID, lightID)
+};
+
+/**
+ * @class TriangleMeshManager
+ * @brief Manages triangle mesh data and GPU resources
+ */
+class TriangleMeshManager {
+public:
+    /**
+     * @brief Default constructor
+     */
+    TriangleMeshManager() = default;
+
+    /**
+     * @brief Encodes mesh data from TriangleMesh array into GPU-friendly format
+     * @param meshes Array of TriangleMesh objects
+     * @param materials Material properties array (one per mesh)
+     */
+    void EncodeTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/);
+
+    /**
+     * @brief Creates GPU buffers for encoded data
+     */
+    void CreateTBO();
+
+    /**
+     * @brief Gets the number of triangles
+     * @return Number of triangles
+     */
+    unsigned int GetNumTriangles() const noexcept;
+
+protected:
+    std::vector<TriangleEncoded> triangles_encoded_; ///< Encoded triangle data
+    TextureBufferObject tbo_;                        ///< Texture buffer object for GPU storage
 };
 
 NAMESPACE_END(dream)
