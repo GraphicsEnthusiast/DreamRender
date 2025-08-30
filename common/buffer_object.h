@@ -127,7 +127,7 @@ protected:
      * @brief Initializes the TBO with data and format
      * @param data Pointer to the data to populate the buffer with
      * @param size Size of the data in bytes
-     * @param internalFormat Internal texture format
+     * @param internal_format Internal texture format
      * @param usage Buffer usage pattern
      */
     void Initialize(const void* data, GLsizeiptr size, GLenum internalFormat = GL_RGB32F, GLenum usage = GL_STATIC_DRAW);
