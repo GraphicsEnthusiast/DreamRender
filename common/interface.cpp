@@ -117,31 +117,32 @@ void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int
     ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
     // Initialize layout on first execution
-    static bool first_run = true;
-    if (first_run) {
-        first_run = false;
+	static bool first_run = true;
+	if (first_run) {
+		first_run = false;
 
-        // Rebuild docking hierarchy
-        ImGui::DockBuilderRemoveNode(dockspace_id);
-        ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-        ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
+		ImGui::DockBuilderRemoveNode(dockspace_id);
+		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
 
-        // Partition dock space regions
-        ImGuiID top_node, bottom_node;
-        bottom_node = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.37f, nullptr, &top_node);
-        ImGuiID left_node, right_node;
-        right_node = ImGui::DockBuilderSplitNode(top_node, ImGuiDir_Right, 0.214f, nullptr, &left_node);
+		// 首先将空间分为左右两部分
+		ImGuiID left_node, right_node;
+		right_node = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2139f, nullptr, &left_node);
 
-        // Assign windows to dock nodes
-        ImGui::DockBuilderDockWindow("Rendering Window", left_node);
-        ImGui::DockBuilderDockWindow("Dear ImGui Demo", right_node);
-        ImGui::DockBuilderDockWindow("Console", bottom_node);
-        ImGui::DockBuilderFinish(dockspace_id);
+		// 将右侧空间分为上下两部分
+		ImGuiID demo_node, console_node;
+		console_node = ImGui::DockBuilderSplitNode(right_node, ImGuiDir_Down, 0.37f, nullptr, &demo_node);
 
-        // Set default floating window properties
-        ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
-    }
+		// 停靠窗口到指定区域
+		ImGui::DockBuilderDockWindow("Rendering Window", left_node);
+		ImGui::DockBuilderDockWindow("Dear ImGui Demo", demo_node);
+		ImGui::DockBuilderDockWindow("Console", console_node);
+
+		ImGui::DockBuilderFinish(dockspace_id);
+
+		ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
+	}
 
     ImGui::End();
     ImGui::PopStyleVar(3);

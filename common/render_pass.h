@@ -144,9 +144,9 @@ public:
         // Dispatch compute shader
         glDispatchCompute(512 / 16, 512 / 16, 1);
 
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
-
         TriangleMeshManager::Instance().GetTBO().UnbindTexture(0);
+
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
     }
 
 protected:
