@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(dream)
  * @class Interface
  * @brief Main GUI management class for the application
  */
-class Interface : public std::enable_shared_from_this<Interface> {
+class Interface {
 public:
     /**
      * @brief Creates an Interface instance
