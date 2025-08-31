@@ -92,12 +92,6 @@ public:
      */
     void BindTexture(GLuint unit = 0) const;
 
-    /**
-     * @brief Unbinds the texture buffer from a texture unit
-     * @param unit Texture unit to unbind from
-     */
-    void UnbindTexture(GLuint unit = 0) const;
-
 protected:
     /**
      * @brief Initializes the TBO with data and format

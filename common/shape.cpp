@@ -101,11 +101,11 @@ TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans) : tr
 }
 
 unsigned int TriangleMesh::GetNumTriangles() const noexcept {
-	return indices_.size() / 3;
+	return static_cast<unsigned int>(indices_.size() / 3);
 }
 
 unsigned int TriangleMesh::GetNumVertices() const noexcept {
-	return vertices_.size() / 3;
+	return static_cast<unsigned int>(vertices_.size() / 3);
 }
 
 const std::vector<float>& TriangleMesh::GetVertices() const noexcept {
@@ -251,7 +251,7 @@ const TBO& TriangleMeshManager::GetTBO() const noexcept {
 }
 
 unsigned int TriangleMeshManager::GetNumTriangles() const noexcept {
-	return triangles_encoded_.size();
+	return static_cast<unsigned int>(triangles_encoded_.size());
 }
 
 NAMESPACE_END(dream)

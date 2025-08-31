@@ -74,9 +74,4 @@ void TextureBufferObject::BindTexture(GLuint unit) const {
 	glBindTexture(GL_TEXTURE_BUFFER, texture_id_);
 }
 
-void TextureBufferObject::UnbindTexture(GLuint unit) const {
-	glActiveTexture(GL_TEXTURE0 + unit);
-	glBindTexture(GL_TEXTURE_BUFFER, 0);
-}
-
 NAMESPACE_END(dream)
