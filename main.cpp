@@ -13,7 +13,6 @@ void ReleaseSingleton() {
 int main() {
 	CreateSingleton();
 	auto gui = dream::Interface::Create(1280, 720);
-	dream::TriangleMeshManager::Instance();
 	auto pipeline = std::make_unique<dream::TestPipeline>(gui->GetMainWindow());
 	pipeline->Init();
 	gui->SetRenderPipeline(std::move(pipeline));

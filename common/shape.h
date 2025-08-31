@@ -55,7 +55,7 @@ public:
     const std::vector<float>& GetTexCoords() const noexcept;
 
 protected:
-    Transform transform_;                     ///< Transformation applied to the mesh vertices
+    Transform transform_;                    ///< Transformation applied to the mesh vertices
     std::vector<float> vertices_;            ///< Array of vertex positions (x, y, z coordinates)
     std::vector<unsigned int> indices_;      ///< Array of vertex indices forming triangles
     std::vector<float> normals_;             ///< Array of vertex normal vectors (nx, ny, nz)

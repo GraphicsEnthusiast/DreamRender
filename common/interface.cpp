@@ -32,6 +32,10 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 		glfwTerminate();
 		exit(0);
 	}
+
+	glfwSetWindowAttrib(window_, GLFW_RESIZABLE, GLFW_FALSE);
+	glfwSetWindowAttrib(window_, GLFW_MAXIMIZED, GLFW_FALSE);
+
 	glfwMakeContextCurrent(window_);
 	glfwSwapInterval(1);  // Enable vertical synchronization
 
@@ -82,7 +86,10 @@ void Interface::RegisterLogCallback() {
 
 void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int display_h) {
 	ImGuiIO& io = ImGui::GetIO();
-	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode |
+		ImGuiDockNodeFlags_NoWindowMenuButton |
+		ImGuiDockNodeFlags_NoCloseButton |
+		ImGuiDockNodeFlags_NoResize;
 
 	// Synchronize viewport dimensions with window size
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -101,18 +108,18 @@ void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 	// Set dock space window attributes
-	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;
-	windowFlags |= ImGuiWindowFlags_NoTitleBar;
-	windowFlags |= ImGuiWindowFlags_NoCollapse;
-	windowFlags |= ImGuiWindowFlags_NoResize;
-	windowFlags |= ImGuiWindowFlags_NoMove;
-	windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-	windowFlags |= ImGuiWindowFlags_NoNavFocus;
-	windowFlags |= ImGuiWindowFlags_NoBackground;
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+	window_flags |= ImGuiWindowFlags_NoTitleBar;
+	window_flags |= ImGuiWindowFlags_NoCollapse;
+	window_flags |= ImGuiWindowFlags_NoResize;
+	window_flags |= ImGuiWindowFlags_NoMove;
+	window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+	window_flags |= ImGuiWindowFlags_NoNavFocus;
+	window_flags |= ImGuiWindowFlags_NoBackground;
 
 	// Create dock space container
 	bool p;
-	ImGui::Begin("DockSpace", &p, windowFlags);
+	ImGui::Begin("DockSpace", &p, window_flags);
 	ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
@@ -125,15 +132,12 @@ void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int
 		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
 
-		// ���Ƚ��ռ��Ϊ����������
 		ImGuiID left_node, right_node;
-		right_node = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2139f, nullptr, &left_node);
+		right_node = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.28f, nullptr, &left_node);
 
-		// ���Ҳ�ռ��Ϊ����������
 		ImGuiID demo_node, console_node;
-		console_node = ImGui::DockBuilderSplitNode(right_node, ImGuiDir_Down, 0.37f, nullptr, &demo_node);
+		console_node = ImGui::DockBuilderSplitNode(right_node, ImGuiDir_Down, 0.35f, nullptr, &demo_node);
 
-		// ͣ�����ڵ�ָ������
 		ImGui::DockBuilderDockWindow("Rendering Window", left_node);
 		ImGui::DockBuilderDockWindow("Dear ImGui Demo", demo_node);
 		ImGui::DockBuilderDockWindow("Console", console_node);
