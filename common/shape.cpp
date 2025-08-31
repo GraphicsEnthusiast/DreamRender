@@ -333,16 +333,7 @@ int BVH::BuildBVHwithSAH(int l, int r, int n) {
 	auto& triangles_encoded = mesh_manager.GetTriangleEncoded();
 
 	// Sort triangles along best axis 
-	std::vector<int> indices(r - l + 1);
-	std::iota(indices.begin(), indices.end(), l);
-	std::sort(indices.begin(), indices.end(), TriangleSorter(best_axis, triangles_encoded));
-
-	// Reorder triangles
-	std::vector<TriangleEncoded> sorted(r - l + 1);
-	for (unsigned int i = 0; i < indices.size(); i++) {
-		sorted[i] = triangles_encoded[indices[i]];
-	}
-	std::copy(sorted.begin(), sorted.end(), triangles_encoded.begin() + l);
+	std::sort(triangles_encoded.begin() + l, triangles_encoded.begin() + r + 1, TriangleSorter(best_axis, triangles_encoded));
 
 	// Find split position
 	int split = l + best_split;

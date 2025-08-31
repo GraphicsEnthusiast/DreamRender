@@ -183,14 +183,14 @@ struct BVHNodeEncoded {
  */
 struct TriangleSorter {
     int axis;                                   ///< Axis along which to sort (0=x, 1=y, 2=z)
-    const std::vector<TriangleEncoded>& triangles;     ///< Reference to the triangle data array
+    std::vector<TriangleEncoded>& triangles;     ///< Reference to the triangle data array
 
     /**
      * @brief Constructs a TriangleSorter functor
      * @param axis Sorting axis (0=x, 1=y, 2=z)
      * @param triangles Reference to the triangle data vector
      */
-    TriangleSorter(int axis, const std::vector<TriangleEncoded>& triangles)
+    TriangleSorter(int axis, std::vector<TriangleEncoded>& triangles)
         : axis(axis), triangles(triangles) {}
 
     /**
@@ -200,10 +200,23 @@ struct TriangleSorter {
      * @return True if triangle a's centroid is less than triangle b's centroid on the specified axis
      */
     inline bool operator()(int a, int b) const {
-		Point3f centerA = (triangles[a].p1 + triangles[a].p2 + triangles[a].p3) / 3.0f;
-		Point3f centerB = (triangles[b].p1 + triangles[b].p2 + triangles[b].p3) / 3.0f;
+		Point3f center_a = (triangles[a].p1 + triangles[a].p2 + triangles[a].p3) / 3.0f;
+		Point3f center_b = (triangles[b].p1 + triangles[b].p2 + triangles[b].p3) / 3.0f;
 
-        return centerA[axis] < centerB[axis];
+        return center_a[axis] < center_b[axis];
+    }
+
+    /**
+     * @brief Compares two triangles by their centroid coordinates along the specified axis
+     * @param a Index of the first triangle
+     * @param b Index of the second triangle
+     * @return True if triangle a's centroid is less than triangle b's centroid on the specified axis
+     */
+    inline bool operator()(const TriangleEncoded& a, const TriangleEncoded& b) const {
+        Point3f center_a = (a.p1 + a.p2 + a.p3) / 3.0f;
+        Point3f center_b = (b.p1 + b.p2 + b.p3) / 3.0f;
+
+        return center_a[axis] < center_b[axis];
     }
 };
 
