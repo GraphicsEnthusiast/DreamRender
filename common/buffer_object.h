@@ -22,30 +22,6 @@ public:
      */
     virtual ~BufferObject();
 
-    /**
-     * @brief Checks if the buffer is valid (has been generated)
-     * @return True if the buffer has a non-zero ID
-     */
-    bool IsValid() const noexcept;
-
-    /**
-     * @brief Gets the OpenGL buffer ID
-     * @return The buffer object ID
-     */
-    GLuint GetID() const noexcept;
-
-    /**
-     * @brief Gets the buffer target type
-     * @return The OpenGL target this buffer is bound to
-     */
-    GLenum GetTarget() const noexcept;
-
-    /**
-     * @brief Gets the buffer size in bytes
-     * @return Size of the buffer data allocation
-     */
-    GLsizeiptr GetSize() const noexcept;
-
 protected:
     /**
      * @brief Generates a new OpenGL buffer object

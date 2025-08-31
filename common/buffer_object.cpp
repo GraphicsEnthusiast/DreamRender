@@ -41,22 +41,6 @@ void BufferObject::Delete() {
 	}
 }
 
-bool BufferObject::IsValid() const noexcept {
-	return 0 != id_;
-}
-
-GLuint BufferObject::GetID() const noexcept {
-	return id_;
-}
-
-GLenum BufferObject::GetTarget() const noexcept {
-	return target_;
-}
-
-GLsizeiptr BufferObject::GetSize() const noexcept {
-	return size_;
-}
-
 TextureBufferObject::TextureBufferObject(const void* data, GLsizeiptr size, GLenum internal_format, GLenum usage)
 	: BufferObject(GL_TEXTURE_BUFFER, usage), texture_id_(0), internal_format_(internal_format) {
 	Initialize(data, size, internal_format, usage);
