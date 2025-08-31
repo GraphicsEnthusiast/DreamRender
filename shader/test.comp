@@ -78,25 +78,6 @@ void TestSpectrumToRGBConversion() {
 //    TestSpectrumToRGBConversion();
 //}
 
-// 三角形数据结构（需与CPU端TriangleEncoded匹配）
-struct Triangle {
-    vec3 p1, p2, p3;
-    vec3 n1, n2, n3;
-};
-
-// 从TBO读取三角形数据
-Triangle FetchTriangle(int index) {
-    int base = index * 9; // 每个三角形9个vec3
-    Triangle tri;
-    tri.p1 = texelFetch(triangles, base + 0).xyz;
-    tri.p2 = texelFetch(triangles, base + 1).xyz;
-    tri.p3 = texelFetch(triangles, base + 2).xyz;
-    tri.n1 = texelFetch(triangles, base + 3).xyz;
-    tri.n2 = texelFetch(triangles, base + 4).xyz;
-    tri.n3 = texelFetch(triangles, base + 5).xyz;
-    return tri;
-}
-
 // 点是否在三角形内（重心坐标法）
 bool PointInTriangle(vec2 p, vec2 a, vec2 b, vec2 c) {
     vec2 v0 = b - a, v1 = c - a, v2 = p - a;

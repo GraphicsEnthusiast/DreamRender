@@ -146,7 +146,7 @@ public:
 
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 
-        //TriangleMeshManager::Instance().GetTBO().UnbindTexture(GL_TEXTURE1);
+        TriangleMeshManager::Instance().GetTBO().UnbindTexture(0);
     }
 
 protected:

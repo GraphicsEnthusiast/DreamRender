@@ -90,7 +90,7 @@ protected:
 	std::mutex buffer_mutex_;           ///< Mutex protecting buffer swapping
 	bool buffer_updated_ = false;       ///< Flag indicating back buffer update
 	bool rendering_active_ = false;     ///< Render thread activity status
-	unsigned int frame_counter_;        ///< Frame counter (for debugging)
+	unsigned int frame_counter_;        ///< Frame counter
 };
 
 NAMESPACE_END(dream)
