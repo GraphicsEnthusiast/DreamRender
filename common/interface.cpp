@@ -33,8 +33,8 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 		exit(0);
 	}
 
-	glfwSetWindowAttrib(window_, GLFW_RESIZABLE, GLFW_FALSE);
-	glfwSetWindowAttrib(window_, GLFW_MAXIMIZED, GLFW_FALSE);
+	//glfwSetWindowAttrib(window_, GLFW_RESIZABLE, GLFW_FALSE);
+	//glfwSetWindowAttrib(window_, GLFW_MAXIMIZED, GLFW_FALSE);
 
 	glfwMakeContextCurrent(window_);
 	glfwSwapInterval(1);  // Enable vertical synchronization
@@ -86,10 +86,11 @@ void Interface::RegisterLogCallback() {
 
 void Interface::ConfigureAndSubmitDockspace(unsigned int display_w, unsigned int display_h) {
 	ImGuiIO& io = ImGui::GetIO();
-	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode |
-		ImGuiDockNodeFlags_NoWindowMenuButton |
-		ImGuiDockNodeFlags_NoCloseButton |
-		ImGuiDockNodeFlags_NoResize;
+	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+	//static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode |
+	//	ImGuiDockNodeFlags_NoWindowMenuButton |
+	//	ImGuiDockNodeFlags_NoCloseButton |
+	//	ImGuiDockNodeFlags_NoResize;
 
 	// Synchronize viewport dimensions with window size
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -297,7 +298,9 @@ void Interface::Render() {
 	// Render output
 	auto RenderOutput = [this]() {
 		ImGui::Begin("Rendering Window");
-		ImVec2 size = ImGui::GetContentRegionAvail();
+		//ImVec2 size = ImGui::GetContentRegionAvail();
+		const Point2i& rendering_size = pipeline_->GetRenderingSize();
+		ImVec2 size(rendering_size.x, rendering_size.y);
 
 		// Check if we have a new frame to display
 		bool new_frame_available = false;

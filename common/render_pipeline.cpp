@@ -2,7 +2,7 @@
 
 NAMESPACE_BEGIN(dream)
 
-RenderPipeline::RenderPipeline(GLFWwindow* share_window) {
+RenderPipeline::RenderPipeline(GLFWwindow* share_window) : rendering_size_(Point2i(0)) {
 	graph_ = std::make_unique<RenderGraph>();
 
 	// Create dedicated OpenGL context sharing resources with main window
@@ -39,6 +39,14 @@ void RenderPipeline::MakeContextCurrent() {
 	else {
 		ERROR("Attempted to make invalid context current.");
 	}
+}
+
+const glm::ivec2& RenderPipeline::GetRenderingSize() const noexcept {
+	return rendering_size_;
+}
+
+void RenderPipeline::SetRenderingSize(const glm::ivec2& size) {
+	rendering_size_ = size;
 }
 
 void RenderPipeline::AddPass(const std::string& name, std::shared_ptr<RenderPass> pass) {

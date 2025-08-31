@@ -52,6 +52,18 @@ public:
      */
     void MakeContextCurrent();
 
+    /**
+     * @brief Gets the current rendering size (width and height) for the pipeline.
+     * @return const glm::ivec2& The current rendering size.
+     */
+    const glm::ivec2& GetRenderingSize() const noexcept;
+
+    /**
+     * @brief Sets the rendering size for the pipeline.
+     * @param size The new rendering size (width and height).
+     */
+    void SetRenderingSize(const glm::ivec2& size);
+
 protected:
     /**
      * @brief Adds a pass to the pipeline with ownership transfer
@@ -88,6 +100,7 @@ protected:
     std::unique_ptr<TriangleMeshManager> mesh_manager_;
     std::unique_ptr<RenderGraph> graph_;
     GLFWwindow* render_context_;          ///< Dedicated OpenGL context
+    Point2i rendering_size_;              ///< The rendering size (width and height) for the pipeline
 };
 
 /**
@@ -99,8 +112,8 @@ public:
     TestPipeline(GLFWwindow* share_window = nullptr) : RenderPipeline(share_window) {}
 
     /**
-         * @brief Configures the test pipeline with processing and presentation passes
-         */
+      * @brief Configures the test pipeline with processing and presentation passes
+      */
 	void Init() override {
 		auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj", Transform());
 		std::vector<TriangleMesh> meshes;
@@ -108,7 +121,7 @@ public:
 		TriangleMeshManager::Instance().EncodeTriangles(meshes);
 		TriangleMeshManager::Instance().CreateTBO();
 
-		TextureHandle compute_output = CreateTexture(512, 512);
+		TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 
 		auto compute_pass = std::make_shared<SimpleComputePass>();
 
