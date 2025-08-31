@@ -66,7 +66,6 @@ link_directories(
 )
 
 include_directories(
-
     ${ROOT_INCLUDE_DIR}
     ${GLAD_INCLUDE_DIR}
     ${GLFW_INCLUDE_DIR}

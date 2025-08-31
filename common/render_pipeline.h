@@ -102,6 +102,12 @@ public:
          * @brief Configures the test pipeline with processing and presentation passes
          */
 	void Init() override {
+		auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj", Transform());
+		std::vector<TriangleMesh> meshes;
+		meshes.emplace_back(mesh);
+		TriangleMeshManager::Instance().EncodeTriangles(meshes);
+		TriangleMeshManager::Instance().CreateTBO();
+
 		TextureHandle compute_output = CreateTexture(512, 512);
 
 		auto compute_pass = std::make_shared<SimpleComputePass>();
