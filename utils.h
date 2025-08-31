@@ -20,6 +20,7 @@
 #include <iostream>
 #include <cctype>
 #include <functional>
+#include <numeric>
 #include <memory>
 #include <mutex>
 #include <condition_variable>
@@ -73,5 +74,9 @@ using Point4i = Vector4i;
 using Point2u = Vector2u;
 using Point3u = Vector3u;
 using Point4u = Vector4u;
+
+constexpr float MaxFloat = FLT_MAX;
+constexpr float MinFloat = FLT_MIN;
+constexpr float InfFloat = std::numeric_limits<float>::infinity();
 
 NAMESPACE_END(dream)

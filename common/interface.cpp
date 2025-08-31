@@ -256,7 +256,8 @@ void Interface::Render() {
 		rendering_active_ = true;
 
 		// Launch rendering in thread pool
-		ThreadPool::Instance().Enqueue([this] {
+		auto& pool = ThreadPool::Instance();
+		pool.Enqueue([this] {
 			// Make sure we have the correct OpenGL context for this thread
 			pipeline_->MakeContextCurrent();
 

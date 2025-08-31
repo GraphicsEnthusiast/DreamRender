@@ -1,7 +1,7 @@
 #include <interface.h>
 
 void CreateSingleton() {
-	dream::ThreadPool::Instance(1);
+	dream::ThreadPool::Instance();
 	dream::TriangleMeshManager::Instance();
 }
 

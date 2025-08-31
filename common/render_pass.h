@@ -138,7 +138,8 @@ public:
         static float time = 0.0f;
         time += 0.01f;
         shader_->SetFloat("time", time);
-        TriangleMeshManager::Instance().GetTBO().BindTexture(0);
+        auto& mesh_manager = TriangleMeshManager::Instance();
+        mesh_manager.GetTBO().BindTexture(0);
         shader_->SetInt("triangles", 0);
 
         // Dispatch compute shader

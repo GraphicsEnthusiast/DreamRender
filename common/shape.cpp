@@ -238,7 +238,7 @@ void TriangleMeshManager::EncodeTriangles(const std::vector<TriangleMesh>& meshe
 
 void TriangleMeshManager::CreateTBO() {
 	// Create and initialize texture buffer object
-	tbo_ = std::make_unique<TextureBufferObject>(
+	tbo_ = std::make_unique<TBO>(
 		triangles_encoded_.data(),
 		triangles_encoded_.size() * sizeof(TriangleEncoded),
 		GL_RGB32F,
@@ -252,6 +252,223 @@ const TBO& TriangleMeshManager::GetTBO() const noexcept {
 
 unsigned int TriangleMeshManager::GetNumTriangles() const noexcept {
 	return static_cast<unsigned int>(triangles_encoded_.size());
+}
+
+std::vector<TriangleEncoded>& TriangleMeshManager::GetTriangleEncoded() {
+	return triangles_encoded_;
+}
+
+std::unique_ptr<BVH> BVH::instance_ = nullptr;
+
+BVH& BVH::Instance() {
+	static std::once_flag init_flag;
+	std::call_once(init_flag, []() {
+		instance_ = std::unique_ptr<BVH>(new BVH());
+		});
+
+	return *instance_;
+}
+
+void BVH::Release() {
+	if (instance_) {
+		instance_->ReleaseResources();
+		instance_.reset();
+	}
+}
+
+void BVH::ReleaseResources() {
+	nodes_.clear();
+	nodes_encoded_.clear();
+}
+
+int BVH::BuildBVHwithSAH(int l, int r, int n) {
+	if (l > r) {
+		return -1;
+	}
+
+	// Create new node
+	nodes_.push_back(BVHNode());
+	int id = nodes_.size() - 1;
+	nodes_[id].aa = Point3f(MaxFloat);
+	nodes_[id].bb = Point3f(MinFloat);
+
+	// Compute AABB
+	ComputeAABB(l, r, nodes_[id].aa, nodes_[id].bb);
+
+	// Leaf node condition
+	if ((r - l + 1) <= n) {
+		nodes_[id].n = r - l + 1;
+		nodes_[id].index = l;
+
+		return id;
+	}
+
+	float min_cost = MaxFloat;
+	int best_axis = 0;
+	int best_split = -1;
+
+	// Evaluate SAH cost for each axis in sequence (single-threaded)
+	for (int axis = 0; axis < 3; axis++) {
+		float axis_cost = MaxFloat;
+		int axis_split = -1;
+
+		ComputeSAHForAxis(l, r, axis, axis_cost, axis_split);
+
+		if (axis_cost < min_cost) {
+			min_cost = axis_cost;
+			best_axis = axis;
+			best_split = axis_split;
+		}
+	}
+
+	// If no valid split found, create leaf node
+	if (-1 == best_split) {
+		nodes_[id].n = r - l + 1;
+		nodes_[id].index = l;
+
+		return id;
+	}
+
+	auto& mesh_manager = TriangleMeshManager::Instance();
+	auto& triangles_encoded = mesh_manager.GetTriangleEncoded();
+
+	// Sort triangles along best axis 
+	std::vector<int> indices(r - l + 1);
+	std::iota(indices.begin(), indices.end(), l);
+	std::sort(indices.begin(), indices.end(), TriangleSorter(best_axis, triangles_encoded));
+
+	// Reorder triangles
+	std::vector<TriangleEncoded> sorted(r - l + 1);
+	for (unsigned int i = 0; i < indices.size(); i++) {
+		sorted[i] = triangles_encoded[indices[i]];
+	}
+	std::copy(sorted.begin(), sorted.end(), triangles_encoded.begin() + l);
+
+	// Find split position
+	int split = l + best_split;
+
+	// Recursively build left and right subtrees
+	int left = BuildBVHwithSAH(l, split, n);
+	int right = BuildBVHwithSAH(split + 1, r, n);
+
+	// Update node with children
+	nodes_[id].left = left;
+	nodes_[id].right = right;
+
+	return id;
+}
+
+void BVH::ComputeAABB(int start, int end, Point3f& aabb_min, Point3f& aabb_max) {
+	auto& mesh_manager = TriangleMeshManager::Instance();
+	auto& triangles_encoded = mesh_manager.GetTriangleEncoded();
+
+	aabb_min = Point3f(MaxFloat);
+	aabb_max = Point3f(MinFloat);
+
+	for (int i = start; i <= end; ++i) {
+		// Expand AABB to contain all three vertices of the triangle
+		const TriangleEncoded& tri = triangles_encoded[i];
+
+		aabb_min = glm::min(aabb_min, tri.p1);
+		aabb_min = glm::min(aabb_min, tri.p2);
+		aabb_min = glm::min(aabb_min, tri.p3);
+
+		aabb_max = glm::max(aabb_max, tri.p1);
+		aabb_max = glm::max(aabb_max, tri.p2);
+		aabb_max = glm::max(aabb_max, tri.p3);
+	}
+}
+
+void BVH::ComputeSAHForAxis(int start, int end, int axis, float& best_cost, int& best_split) {
+	const int num_triangles = end - start + 1;
+	auto& mesh_manager = TriangleMeshManager::Instance();
+	auto& triangles_encoded = mesh_manager.GetTriangleEncoded();
+
+	// Create and sort indices along the specified axis
+	std::vector<int> indices(num_triangles);
+	std::iota(indices.begin(), indices.end(), start);
+	std::sort(indices.begin(), indices.end(), TriangleSorter(axis, triangles_encoded));
+
+	// Initialize best cost and split
+	best_cost = MaxFloat;
+	best_split = -1;
+
+	// Calculate SAH cost for all possible split positions
+	for (int i = 0; i < num_triangles - 1; ++i) {
+		// Compute AABB for left partition
+		Point3f left_min(MaxFloat), left_max(MinFloat);
+		for (int j = 0; j <= i; ++j) {
+			const TriangleEncoded& tri = triangles_encoded[indices[j]];
+
+			left_min = glm::min(left_min, tri.p1);
+			left_min = glm::min(left_min, tri.p2);
+			left_min = glm::min(left_min, tri.p3);
+			left_max = glm::max(left_max, tri.p1);
+			left_max = glm::max(left_max, tri.p2);
+			left_max = glm::max(left_max, tri.p3);
+		}
+
+		// Compute AABB for right partition
+		Point3f right_min(MaxFloat), right_max(MinFloat);
+		for (int j = i + 1; j < num_triangles; ++j) {
+			const TriangleEncoded& tri = triangles_encoded[indices[j]];
+
+			right_min = glm::min(right_min, tri.p1);
+			right_min = glm::min(right_min, tri.p2);
+			right_min = glm::min(right_min, tri.p3);
+			right_max = glm::max(right_max, tri.p1);
+			right_max = glm::max(right_max, tri.p2);
+			right_max = glm::max(right_max, tri.p3);
+		}
+
+		// Calculate surface areas
+		Vector3f left_size = left_max - left_min;
+		Vector3f right_size = right_max - right_min;
+
+		float left_area = 2.0f * (left_size.x * left_size.y +
+			left_size.x * left_size.z +
+			left_size.y * left_size.z);
+
+		float right_area = 2.0f * (right_size.x * right_size.y +
+			right_size.x * right_size.z +
+			right_size.y * right_size.z);
+
+		// SAH cost calculation: 0.125 is the cost of traversing an internal node
+		float cost = 0.125f + (left_area * (i + 1) + right_area * (num_triangles - i - 1));
+		if (cost < best_cost) {
+			best_cost = cost;
+			best_split = i;
+		}
+	}
+}
+
+void BVH::TransformBVHNode() {
+	num_nodes_ = nodes_.size();
+	nodes_encoded_.resize(num_nodes_);
+
+	for (int i = 0; i < num_nodes_; i++) {
+		nodes_encoded_[i].children = Point3f(nodes_[i].left, nodes_[i].right, 0.0f);
+		nodes_encoded_[i].leaf_info = Point3f(nodes_[i].n, nodes_[i].index, 0.0f);
+		nodes_encoded_[i].aa = nodes_[i].aa;
+		nodes_encoded_[i].bb = nodes_[i].bb;
+	}
+}
+
+void BVH::CreateTBO() {
+	tbo_ = std::make_unique<TBO>(
+		nodes_encoded_.data(),
+		nodes_encoded_.size() * sizeof(BVHNodeEncoded),
+		GL_RGB32F,
+		GL_STATIC_DRAW
+		);
+}
+
+int BVH::GetNumNodes() const noexcept {
+	return num_nodes_;
+}
+
+const TBO& BVH::GetTBO() const noexcept {
+	return *tbo_;
 }
 
 NAMESPACE_END(dream)

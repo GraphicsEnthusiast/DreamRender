@@ -118,8 +118,10 @@ public:
 		auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj", Transform());
 		std::vector<TriangleMesh> meshes;
 		meshes.emplace_back(mesh);
-		TriangleMeshManager::Instance().EncodeTriangles(meshes);
-		TriangleMeshManager::Instance().CreateTBO();
+
+        auto& mesh_manager = TriangleMeshManager::Instance();
+		mesh_manager.EncodeTriangles(meshes);
+		mesh_manager.CreateTBO();
 
 		TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 
