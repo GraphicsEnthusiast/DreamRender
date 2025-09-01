@@ -76,7 +76,7 @@ using Point3u = Vector3u;
 using Point4u = Vector4u;
 
 constexpr float MaxFloat = FLT_MAX;
-constexpr float MinFloat = FLT_MIN;
+constexpr float MinFloat = -MaxFloat;
 constexpr float InfFloat = std::numeric_limits<float>::infinity();
 
 NAMESPACE_END(dream)

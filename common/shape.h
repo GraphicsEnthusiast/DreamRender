@@ -158,12 +158,12 @@ protected:
  * @brief Represents a node in a Bounding Volume Hierarchy (BVH) acceleration structure
  */
 struct BVHNode {
-    int left = -1;                ///< Left child index (-1 indicates a leaf node)
-    int right = -1;               ///< Right child index (-1 indicates a leaf node)
-    int n = 0;                    ///< Number of triangles stored in this leaf node (0 for internal nodes)
-    int index = 0;                ///< First triangle index in the leaf (only valid for leaf nodes)
-	Point3f aa = Point3f(MaxFloat);         ///< Minimum point (x, y, z) of the axis-aligned bounding box (AABB)
-	Point3f bb = Point3f(MinFloat);         ///< Maximum point (x, y, z) of the axis-aligned bounding box (AABB)
+    int left;           ///< Left child index (-1 indicates a leaf node)
+    int right;          ///< Right child index (-1 indicates a leaf node)
+    int n;              ///< Number of triangles stored in this leaf node (0 for internal nodes)
+    int index;          ///< First triangle index in the leaf (only valid for leaf nodes)
+	Point3f aa;         ///< Minimum point (x, y, z) of the axis-aligned bounding box (AABB)
+	Point3f bb;         ///< Maximum point (x, y, z) of the axis-aligned bounding box (AABB)
 };
 
 /**
@@ -178,48 +178,9 @@ struct BVHNodeEncoded {
 };
 
 /**
- * @struct TriangleSorter
- * @brief Functor for sorting triangles along a specific axis based on their centroids
+ * @class BVH
+ * @brief Manages a Bounding Volume Hierarchy acceleration structure, built using the Surface Area Heuristic (SAH), for efficient ray-scene intersection tests.
  */
-struct TriangleSorter {
-    int axis;                                   ///< Axis along which to sort (0=x, 1=y, 2=z)
-    std::vector<TriangleEncoded>& triangles;     ///< Reference to the triangle data array
-
-    /**
-     * @brief Constructs a TriangleSorter functor
-     * @param axis Sorting axis (0=x, 1=y, 2=z)
-     * @param triangles Reference to the triangle data vector
-     */
-    TriangleSorter(int axis, std::vector<TriangleEncoded>& triangles)
-        : axis(axis), triangles(triangles) {}
-
-    /**
-     * @brief Compares two triangles by their centroid coordinates along the specified axis
-     * @param a Index of the first triangle in the triangles array
-     * @param b Index of the second triangle in the triangles array
-     * @return True if triangle a's centroid is less than triangle b's centroid on the specified axis
-     */
-    inline bool operator()(int a, int b) const {
-		Point3f center_a = (triangles[a].p1 + triangles[a].p2 + triangles[a].p3) / 3.0f;
-		Point3f center_b = (triangles[b].p1 + triangles[b].p2 + triangles[b].p3) / 3.0f;
-
-        return center_a[axis] < center_b[axis];
-    }
-
-    /**
-     * @brief Compares two triangles by their centroid coordinates along the specified axis
-     * @param a Index of the first triangle
-     * @param b Index of the second triangle
-     * @return True if triangle a's centroid is less than triangle b's centroid on the specified axis
-     */
-    inline bool operator()(const TriangleEncoded& a, const TriangleEncoded& b) const {
-        Point3f center_a = (a.p1 + a.p2 + a.p3) / 3.0f;
-        Point3f center_b = (b.p1 + b.p2 + b.p3) / 3.0f;
-
-        return center_a[axis] < center_b[axis];
-    }
-};
-
 class BVH {
 public:
     /**
@@ -234,10 +195,21 @@ public:
     static void Release();
 
     /**
+     * @brief Initiates the build process of the BVH from the managed triangles.
+     * @param n Maximum number of triangles allowed in a leaf node.
+     */
+    void Build(unsigned int n);
+
+    /**
      * @brief Gets the number of nodes in the BVH
      * @return Number of nodes
      */
     int GetNumNodes() const noexcept;
+
+    /**
+     * @brief Creates GPU texture buffer objects
+     */
+    void CreateTBO();
 
     /**
      * @brief Gets GPU buffers
@@ -272,45 +244,18 @@ protected:
      * @param n Maximum triangles per leaf node
      * @return Node index of constructed subtree
      */
-    int BuildBVHwithSAH(int l, int r, int n);
-
-    /**
-     * @brief Computes bounding box for triangle range
-     * @param start Start index
-     * @param end End index
-     * @param[out] aabbMin Output min point
-     * @param[out] aabbMax Output max point
-     */
-    void ComputeAABB(int start, int end, Point3f& aabb_min, Point3f& aabb_max);
-
-    /**
-     * @brief SAH cost calculation for an axis in single-threaded mode
-     * @param start Start index of triangle range
-     * @param end End index of triangle range
-     * @param axis Axis to evaluate (0=x, 1=y, 2=z)
-     * @param best_cost Output best cost found
-     * @param best_split Output best split position found
-     */
-    void ComputeSAHForAxis(int start, int end, int axis, float& best_cost, int& best_split);
+    int BuildBVHWithSAH(int l, int r, int n);
 
     /**
      * @brief Transforms data to GPU-friendly format
      */
     void TransformBVHNode();
 
-    /**
-     * @brief Creates GPU texture buffer objects
-     */
-    void CreateTBO();
-
 protected:
-	int num_triangles_;                                  ///< Number of triangles in the BVH
-	int num_nodes_;                                      ///< Number of nodes in the BVH hierarchy
 	std::vector<BVHNode> nodes_;                         ///< CPU storage for BVH nodes
 	std::vector<BVHNodeEncoded> nodes_encoded_;          ///< GPU-encoded BVH node data
     std::unique_ptr<TBO> tbo_;                           ///< Texture buffer object for GPU storage
 	static std::unique_ptr<BVH> instance_;               ///< Singleton instance pointer
 };
-
 
 NAMESPACE_END(dream)

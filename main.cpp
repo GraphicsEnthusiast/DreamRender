@@ -3,11 +3,13 @@
 void CreateSingleton() {
 	dream::ThreadPool::Instance();
 	dream::TriangleMeshManager::Instance();
+	dream::BVH::Instance();
 }
 
 void ReleaseSingleton() {
 	dream::ThreadPool::Release();
 	dream::TriangleMeshManager::Release();
+	dream::BVH::Release();
 }
 
 int main() {
