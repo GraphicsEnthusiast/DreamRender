@@ -38,6 +38,7 @@ include_directories(
     ${FMT_INCLUDE_DIR}
     ${STB_INCLUDE_DIR}
     ${TINY_INCLUDE_DIR}
+    ${BVH_INCLUDE_DIR}
 )
 
 add_library(${PROJECT_NAME} ${COMMON_SRCS})

@@ -57,6 +57,9 @@ set(STB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/stb)
 # Add tiny
 set(TINY_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny)
 
+# Add bvh
+set(BVH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/bvh)
+
 # Add common utils
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/common)
 set(COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/common)
@@ -76,6 +79,7 @@ include_directories(
     ${NLOHMANN_INCLUDE_DIR}
     ${STB_INCLUDE_DIR}
     ${TINY_INCLUDE_DIR}
+    ${BVH_INCLUDE_DIR}
     ${COMMON_INCLUDE_DIR}
 )
 
