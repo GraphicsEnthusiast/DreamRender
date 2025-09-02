@@ -138,9 +138,17 @@ public:
         static float time = 0.0f;
         time += 0.01f;
         shader_->SetFloat("time", time);
+
         auto& mesh_manager = TriangleMeshManager::Instance();
+
         mesh_manager.GetTriangleTBO().BindTexture(0);
-        shader_->SetInt("triangles", 0);
+        shader_->SetInt("Triangles", 0);
+
+		mesh_manager.GetIndiceTBO().BindTexture(1);
+		shader_->SetInt("Indices", 1);
+
+		mesh_manager.GetBVHNodeTBO().BindTexture(2);
+		shader_->SetInt("BVHNodes", 2);
 
         // Dispatch compute shader
         glDispatchCompute(512 / 16, 512 / 16, 1);

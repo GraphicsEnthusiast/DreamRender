@@ -134,19 +134,13 @@ public:
      * @brief Gets the TBO containing BVH node data
      * @return Reference to the Texture Buffer Object
      */
-    const TBO& GetBVHTBO() const noexcept;
+    const TBO& GetBVHNodeTBO() const noexcept;
 
     /**
-     * @brief Gets the number of triangles
-     * @return Number of triangles
+     * @brief Gets the TBO containing triangle index data
+     * @return Reference to the Texture Buffer Object
      */
-    unsigned int GetNumTriangles() const noexcept;
-
-    /**
-     * @brief Gets the number of BVH nodes
-     * @return Number of BVH nodes
-     */
-    unsigned int GetNumBVHNodes() const noexcept;
+    const TBO& TriangleMeshManager::GetIndiceTBO() const noexcept;
 
     /**
      * @brief Deleted copy constructor
@@ -170,10 +164,12 @@ protected:
     void ReleaseInstance();
 
 protected:
+    std::vector<unsigned int> indices_encoded_;   ///< Encoded triangle indice data
     std::vector<TriangleEncoded> triangles_encoded_;   ///< Encoded triangle data
     std::vector<BVHNodeEncoded> bvh_nodes_;            ///< BVH nodes in GPU-friendly format
     std::unique_ptr<TBO> triangle_tbo_;               ///< TBO for triangle data
-    std::unique_ptr<TBO> bvh_tbo_;                    ///< TBO for BVH node data
+    std::unique_ptr<TBO> bvh_node_tbo_;                    ///< TBO for BVH node data
+    std::unique_ptr<TBO> indice_tbo_;                    ///< TBO for triangle index data
     static std::unique_ptr<TriangleMeshManager> instance_; ///< Singleton instance pointer
 };
 

@@ -146,18 +146,30 @@ void TriangleMeshManager::Release() {
 void TriangleMeshManager::ReleaseInstance() {
 	triangles_encoded_.clear();
 	bvh_nodes_.clear();
+	indices_encoded_.clear();
 	triangle_tbo_.reset();
-	bvh_tbo_.reset();
+	bvh_node_tbo_.reset();
+	indice_tbo_.reset();
 }
 
 void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/) {
 	unsigned int total_triangle_count = 0;
+	unsigned int total_index_count = 0;
+	unsigned int total_vertex_count = 0;
+
 	for (const auto& mesh : meshes) {
 		total_triangle_count += mesh.GetNumTriangles();
+		total_index_count += mesh.GetIndices().size();
+		total_vertex_count += mesh.GetNumVertices();
 	}
 
 	triangles_encoded_.resize(total_triangle_count);
+	indices_encoded_.resize(total_index_count);
+
+	unsigned int global_index_offset = 0;
+	unsigned int vertex_offset = 0;
 	unsigned int triangle_index = 0;
+
 	for (unsigned int mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
 		const auto& mesh = meshes[mesh_idx];
 		//const auto& material = materials[meshIdx];
@@ -167,6 +179,12 @@ void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes
 		const auto& normals = mesh.GetNormals();
 		const auto& texcoords = mesh.GetTexCoords();
 		const auto& indices = mesh.GetIndices();
+
+		for (unsigned int i = 0; i < indices.size(); ++i) {
+			indices_encoded_[global_index_offset + i] = indices[i] + vertex_offset;
+		}
+		global_index_offset += indices.size();
+		vertex_offset += mesh.GetNumVertices();
 
 		for (unsigned int i = 0; i < mesh_triangle_count; ++i) {
 			const unsigned int idx0 = indices[i * 3];
@@ -259,12 +277,12 @@ void TriangleMeshManager::BuildBVH() {
 	tinybvh::BVH_GPU bvh;
 	bvh.Build(vertices.data(), triangles_encoded_.size());
 
-	unsigned int usedNodes = bvh.usedNodes;
-	bvh_nodes_.resize(usedNodes);
+	unsigned int used_nodes = bvh.usedNodes;
+	bvh_nodes_.resize(used_nodes);
 
 	const tinybvh::BVH_GPU::BVHNode* src_nodes = bvh.bvhNode;
 
-	for (unsigned int i = 0; i < usedNodes; ++i) {
+	for (unsigned int i = 0; i < used_nodes; ++i) {
 		const auto& src_node = src_nodes[i];
 		auto& dst_node = bvh_nodes_[i];
 
@@ -288,10 +306,17 @@ void TriangleMeshManager::CreateGPUBuffers() {
 		GL_STATIC_DRAW
 		);
 
-	bvh_tbo_ = std::make_unique<TBO>(
+	bvh_node_tbo_ = std::make_unique<TBO>(
 		bvh_nodes_.data(),
 		bvh_nodes_.size() * sizeof(BVHNodeEncoded),
 		GL_RGBA32F,
+		GL_STATIC_DRAW
+		);
+
+	indice_tbo_ = std::make_unique<TBO>(
+		indices_encoded_.data(),
+		indices_encoded_.size() * sizeof(unsigned int),
+		GL_R32UI,
 		GL_STATIC_DRAW
 		);
 }
@@ -300,16 +325,12 @@ const TBO& TriangleMeshManager::GetTriangleTBO() const noexcept {
 	return *triangle_tbo_;
 }
 
-const TBO& TriangleMeshManager::GetBVHTBO() const noexcept {
-	return *bvh_tbo_;
+const TBO& TriangleMeshManager::GetBVHNodeTBO() const noexcept {
+	return *bvh_node_tbo_;
 }
 
-unsigned int TriangleMeshManager::GetNumTriangles() const noexcept {
-	return static_cast<unsigned int>(triangles_encoded_.size());
-}
-
-unsigned int TriangleMeshManager::GetNumBVHNodes() const noexcept {
-	return static_cast<unsigned int>(bvh_nodes_.size());
+const TBO& TriangleMeshManager::GetIndiceTBO() const noexcept {
+	return *indice_tbo_;
 }
 
 NAMESPACE_END(dream)
