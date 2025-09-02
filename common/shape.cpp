@@ -1,4 +1,5 @@
 #include <shape.h>
+#include <tiny_bvh.h>
 #include <tiny_obj_loader.h>
 
 NAMESPACE_BEGIN(dream)
@@ -144,9 +145,12 @@ void TriangleMeshManager::Release() {
 
 void TriangleMeshManager::ReleaseInstance() {
 	triangles_encoded_.clear();
+	bvh_nodes_.clear();
+	triangle_tbo_.reset();
+	bvh_tbo_.reset();
 }
 
-void TriangleMeshManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/) {
+void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/) {
 	unsigned int total_triangle_count = 0;
 	for (const auto& mesh : meshes) {
 		total_triangle_count += mesh.GetNumTriangles();
@@ -236,26 +240,76 @@ void TriangleMeshManager::EncodeTriangles(const std::vector<TriangleMesh>& meshe
 	}
 }
 
-void TriangleMeshManager::CreateTBO() {
-	// Create and initialize texture buffer object
-	tbo_ = std::make_unique<TBO>(
+void TriangleMeshManager::BuildBVH() {
+	if (triangles_encoded_.empty()) {
+		ERROR("[error] No triangles to build BVH!");
+
+		return;
+	}
+
+	std::vector<tinybvh::bvhvec4> vertices;
+	vertices.reserve(triangles_encoded_.size() * 3);
+
+	for (const auto& tri : triangles_encoded_) {
+		vertices.push_back(tinybvh::bvhvec4{ tri.p1.x, tri.p1.y, tri.p1.z, 0.0f });
+		vertices.push_back(tinybvh::bvhvec4{ tri.p2.x, tri.p2.y, tri.p2.z, 0.0f });
+		vertices.push_back(tinybvh::bvhvec4{ tri.p3.x, tri.p3.y, tri.p3.z, 0.0f });
+	}
+
+	tinybvh::BVH_GPU bvh;
+	bvh.Build(vertices.data(), triangles_encoded_.size());
+
+	unsigned int usedNodes = bvh.usedNodes;
+	bvh_nodes_.resize(usedNodes);
+
+	const tinybvh::BVH_GPU::BVHNode* src_nodes = bvh.bvhNode;
+
+	for (unsigned int i = 0; i < usedNodes; ++i) {
+		const auto& src_node = src_nodes[i];
+		auto& dst_node = bvh_nodes_[i];
+
+		dst_node.lmin = Point4f(src_node.lmin.x, src_node.lmin.y, src_node.lmin.z, 0.0f);
+		dst_node.lmax = Point4f(src_node.lmax.x, src_node.lmax.y, src_node.lmax.z, 0.0f);
+		dst_node.rmin = Point4f(src_node.rmin.x, src_node.rmin.y, src_node.rmin.z, 0.0f);
+		dst_node.rmax = Point4f(src_node.rmax.x, src_node.rmax.y, src_node.rmax.z, 0.0f);
+
+		dst_node.lmin.w = *reinterpret_cast<const float*>(&src_node.left);
+		dst_node.lmax.w = *reinterpret_cast<const float*>(&src_node.right);
+		dst_node.rmin.w = *reinterpret_cast<const float*>(&src_node.triCount);
+		dst_node.rmax.w = *reinterpret_cast<const float*>(&src_node.firstTri);
+	}
+}
+
+void TriangleMeshManager::CreateGPUBuffers() {
+	triangle_tbo_ = std::make_unique<TBO>(
 		triangles_encoded_.data(),
 		triangles_encoded_.size() * sizeof(TriangleEncoded),
 		GL_RGB32F,
 		GL_STATIC_DRAW
-	);
+		);
+
+	bvh_tbo_ = std::make_unique<TBO>(
+		bvh_nodes_.data(),
+		bvh_nodes_.size() * sizeof(BVHNodeEncoded),
+		GL_RGBA32F,
+		GL_STATIC_DRAW
+		);
 }
 
-const TBO& TriangleMeshManager::GetTBO() const noexcept {
-	return *tbo_;
+const TBO& TriangleMeshManager::GetTriangleTBO() const noexcept {
+	return *triangle_tbo_;
+}
+
+const TBO& TriangleMeshManager::GetBVHTBO() const noexcept {
+	return *bvh_tbo_;
 }
 
 unsigned int TriangleMeshManager::GetNumTriangles() const noexcept {
 	return static_cast<unsigned int>(triangles_encoded_.size());
 }
 
-std::vector<TriangleEncoded>& TriangleMeshManager::GetTriangleEncoded() {
-	return triangles_encoded_;
+unsigned int TriangleMeshManager::GetNumBVHNodes() const noexcept {
+	return static_cast<unsigned int>(bvh_nodes_.size());
 }
 
 NAMESPACE_END(dream)

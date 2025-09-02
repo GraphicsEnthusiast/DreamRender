@@ -139,13 +139,13 @@ public:
         time += 0.01f;
         shader_->SetFloat("time", time);
         auto& mesh_manager = TriangleMeshManager::Instance();
-        mesh_manager.GetTBO().BindTexture(0);
+        mesh_manager.GetTriangleTBO().BindTexture(0);
         shader_->SetInt("triangles", 0);
 
         // Dispatch compute shader
         glDispatchCompute(512 / 16, 512 / 16, 1);
 
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+        BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
     }
 
 protected:

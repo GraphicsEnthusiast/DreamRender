@@ -120,8 +120,9 @@ public:
 		meshes.emplace_back(mesh);
 
         auto& mesh_manager = TriangleMeshManager::Instance();
-		mesh_manager.EncodeTriangles(meshes);
-		mesh_manager.CreateTBO();
+		mesh_manager.BuildTriangles(meshes);
+        mesh_manager.BuildBVH();
+        mesh_manager.CreateGPUBuffers();
 
 		TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 

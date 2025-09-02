@@ -81,8 +81,19 @@ struct TriangleEncoded {
 };
 
 /**
+ * @struct BVHNodeGPU
+ * @brief GPU-friendly BVH node structure for efficient traversal
+ */
+struct BVHNodeEncoded {
+	Point4f lmin; // unsigned left child index in w component
+	Point4f lmax; // unsigned right child index in w component
+	Point4f rmin; // unsigned triangle count in w component
+	Point4f rmax; // unsigned first triangle index in w component
+};
+
+/**
  * @class TriangleMeshManager
- * @brief Manages triangle mesh data and GPU resources
+ * @brief Manages triangle mesh data, BVH acceleration structure and GPU resources
  */
 class TriangleMeshManager {
 public:
@@ -100,19 +111,30 @@ public:
     /**
      * @brief Encodes mesh data from TriangleMesh array into GPU-friendly format
      * @param meshes Array of TriangleMesh objects
-     * @param materials Material properties array (one per mesh)
      */
-    void EncodeTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/);
+    void BuildTriangles(const std::vector<TriangleMesh>& meshes);
 
     /**
-     * @brief Creates GPU buffers for encoded data
+     * @brief Builds BVH acceleration structure for the encoded triangles
      */
-    void CreateTBO();
+    void BuildBVH();
 
     /**
-     * @brief Gets GPU buffers
+     * @brief Creates GPU buffers for encoded data and BVH structure
      */
-    const TBO& GetTBO() const noexcept;
+    void CreateGPUBuffers();
+
+    /**
+     * @brief Gets the TBO containing triangle data
+     * @return Reference to the Texture Buffer Object
+     */
+    const TBO& GetTriangleTBO() const noexcept;
+
+    /**
+     * @brief Gets the TBO containing BVH node data
+     * @return Reference to the Texture Buffer Object
+     */
+    const TBO& GetBVHTBO() const noexcept;
 
     /**
      * @brief Gets the number of triangles
@@ -121,10 +143,10 @@ public:
     unsigned int GetNumTriangles() const noexcept;
 
     /**
-     * @brief Gets the encoded triangles
-     * @return Encoded triangles vector
+     * @brief Gets the number of BVH nodes
+     * @return Number of BVH nodes
      */
-    std::vector<TriangleEncoded>& GetTriangleEncoded();
+    unsigned int GetNumBVHNodes() const noexcept;
 
     /**
      * @brief Deleted copy constructor
@@ -148,8 +170,10 @@ protected:
     void ReleaseInstance();
 
 protected:
-    std::vector<TriangleEncoded> triangles_encoded_;       ///< Encoded triangle data
-    std::unique_ptr<TBO> tbo_;                             ///< Texture buffer object for GPU storage
+    std::vector<TriangleEncoded> triangles_encoded_;   ///< Encoded triangle data
+    std::vector<BVHNodeEncoded> bvh_nodes_;            ///< BVH nodes in GPU-friendly format
+    std::unique_ptr<TBO> triangle_tbo_;               ///< TBO for triangle data
+    std::unique_ptr<TBO> bvh_tbo_;                    ///< TBO for BVH node data
     static std::unique_ptr<TriangleMeshManager> instance_; ///< Singleton instance pointer
 };
 
