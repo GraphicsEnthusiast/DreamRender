@@ -12,6 +12,10 @@ BufferObject::~BufferObject() {
 	}
 }
 
+void BufferObject::Barrier(GLbitfield barriers) {
+	glMemoryBarrier(barriers);
+}
+
 void BufferObject::Generate() {
 	glGenBuffers(1, &id_);
 }
@@ -43,7 +47,9 @@ void BufferObject::Delete() {
 
 TextureBufferObject::TextureBufferObject(const void* data, GLsizeiptr size, GLenum internal_format, GLenum usage)
 	: BufferObject(GL_TEXTURE_BUFFER, usage), texture_id_(0), internal_format_(internal_format) {
+	Bind();
 	Initialize(data, size, internal_format, usage);
+	Unbind();
 }
 
 TextureBufferObject::~TextureBufferObject() {
@@ -57,7 +63,6 @@ void TextureBufferObject::Initialize(const void* data, GLsizeiptr size, GLenum i
 	internal_format_ = internal_format;
 	usage_ = usage;
 
-	Bind();
 	BufferData(size, data);
 
 	// Generate and configure the texture
@@ -65,13 +70,45 @@ void TextureBufferObject::Initialize(const void* data, GLsizeiptr size, GLenum i
 	glBindTexture(GL_TEXTURE_BUFFER, texture_id_);
 	glTexBuffer(GL_TEXTURE_BUFFER, internal_format_, id_);
 	glBindTexture(GL_TEXTURE_BUFFER, 0);
-
-	Unbind();
 }
 
 void TextureBufferObject::BindTexture(GLuint unit) const {
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_BUFFER, texture_id_);
+}
+
+ShaderStorageBufferObject::ShaderStorageBufferObject(GLsizeiptr size, const void* data, GLenum usage, GLbitfield flags)
+	: BufferObject(GL_SHADER_STORAGE_BUFFER, usage), flags_(flags) {
+	Bind();
+	InitializeStorage(size, data, flags_);
+	Unbind();
+}
+
+void ShaderStorageBufferObject::BindBase(GLuint index) const {
+	if (0 != id_) {
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, id_);
+	}
+}
+
+void* ShaderStorageBufferObject::MapBuffer(GLenum access) const {
+	if (0 == id_) {
+		return nullptr;
+	}
+
+	return glMapBuffer(target_, access);
+}
+
+bool ShaderStorageBufferObject::UnmapBuffer() const {
+	if (0 == id_) {
+		return false;
+	}
+
+	return GL_TRUE == glUnmapBuffer(target_);
+}
+
+void ShaderStorageBufferObject::InitializeStorage(GLsizeiptr size, const void* data, GLbitfield flags) {
+	size_ = size;
+	glBufferStorage(target_, size_, data, flags);
 }
 
 NAMESPACE_END(dream)

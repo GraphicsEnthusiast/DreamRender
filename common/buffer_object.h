@@ -22,6 +22,12 @@ public:
      */
     virtual ~BufferObject();
 
+    /**
+     * @brief Issues a memory barrier for buffer operations
+     * @param barriers Bitfield specifying the types of operations to barrier against
+     */
+    static void Barrier(GLbitfield barriers);
+
 protected:
     /**
      * @brief Generates a new OpenGL buffer object
@@ -107,5 +113,62 @@ protected:
     GLenum internal_format_;      ///< Internal texture format
 };
 using TBO = TextureBufferObject;
+
+/**
+ * @class ShaderStorageBufferObject
+ * @brief Represents an OpenGL Shader Storage Buffer Object (SSBO)(SSBOs allow shaders to read from and write to 
+ *  a buffer object. They are commonly used for complex data sharing between shader stages or between the 
+ *  application and shaders, and are essential for GPGPU.)
+ */
+class ShaderStorageBufferObject : public BufferObject {
+public:
+    /**
+     * @brief Constructs an SSBO with optional initial data
+     * @param size Size of the buffer in bytes
+     * @param data Pointer to initial data (nullptr for uninitialized)
+     * @param usage Buffer usage pattern (e.g., GL_DYNAMIC_DRAW)
+     * @param flags Buffer storage flags (e.g., GL_MAP_READ_BIT | GL_MAP_WRITE_BIT)
+     */
+    ShaderStorageBufferObject(GLsizeiptr size, const void* data = nullptr,
+        GLenum usage = GL_DYNAMIC_DRAW, GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT);
+
+    /**
+     * @brief Destructor
+     */
+    ~ShaderStorageBufferObject() override = default;
+
+    /**
+     * @brief Binds the SSBO to a specific binding point index
+     * @param index The binding point index (corresponds to 'binding' in shader layout)
+     */
+    void BindBase(GLuint index) const;
+
+     /**
+      * @brief Maps the buffer's data store to the client's address space
+      * @param access Access policy (e.g., GL_READ_ONLY, GL_WRITE_ONLY, GL_READ_WRITE)
+      * @return Pointer to the mapped data, or nullptr if failed
+      */
+    void* MapBuffer(GLenum access) const;
+
+    /**
+     * @brief Unmaps the previously mapped data store
+     * @return True if successful, false otherwise
+     */
+    bool UnmapBuffer() const;
+
+protected:
+    /**
+     * @brief Initializes the SSBO with immutable storage
+     * @param size Size of the buffer in bytes
+     * @param data Pointer to initial data
+     * @param flags Buffer storage flags
+     */
+    void InitializeStorage(GLsizeiptr size, const void* data, GLbitfield flags);
+
+protected:
+    GLbitfield flags_; ///< Buffer storage creation flags
+};
+
+using SSBO = ShaderStorageBufferObject;
 
 NAMESPACE_END(dream)
