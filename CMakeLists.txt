@@ -59,7 +59,6 @@ set(TINY_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny)
 
 # Add bvh
 set(BVH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/bvh)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/bvh)
 
 # Add common utils
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/common)
