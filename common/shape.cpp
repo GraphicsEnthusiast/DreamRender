@@ -181,7 +181,7 @@ void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes
 		const auto& indices = mesh.GetIndices();
 
 		for (unsigned int i = 0; i < indices.size(); ++i) {
-			indices_encoded_[global_index_offset + i] = static_cast<uint32_t>(indices[i] + vertex_offset);
+			indices_encoded_[global_index_offset + i] = static_cast<int32_t>(indices[i] + vertex_offset);
 		}
 		global_index_offset += indices.size();
 		vertex_offset += mesh.GetNumVertices();
@@ -291,10 +291,10 @@ void TriangleMeshManager::BuildBVH() {
 		dst_node.rmin = Point4f(src_node.rmin.x, src_node.rmin.y, src_node.rmin.z, 0.0f);
 		dst_node.rmax = Point4f(src_node.rmax.x, src_node.rmax.y, src_node.rmax.z, 0.0f);
 
-		dst_node.lmin.w = *reinterpret_cast<const float*>(&src_node.left);
-		dst_node.lmax.w = *reinterpret_cast<const float*>(&src_node.right);
-		dst_node.rmin.w = *reinterpret_cast<const float*>(&src_node.triCount);
-		dst_node.rmax.w = *reinterpret_cast<const float*>(&src_node.firstTri);
+		dst_node.lmin.w = static_cast<float>(src_node.left);
+		dst_node.lmax.w = static_cast<float>(src_node.right);
+		dst_node.rmin.w = static_cast<float>(src_node.triCount);
+		dst_node.rmax.w = static_cast<float>(src_node.firstTri);
 	}
 }
 
@@ -315,8 +315,8 @@ void TriangleMeshManager::CreateGPUBuffers() {
 
 	indice_tbo_ = std::make_unique<TBO>(
 		indices_encoded_.data(),
-		indices_encoded_.size() * sizeof(uint32_t),
-		GL_R32UI,
+		indices_encoded_.size() * sizeof(int32_t),
+		GL_R32I,
 		GL_STATIC_DRAW
 		);
 }

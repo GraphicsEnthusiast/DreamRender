@@ -140,7 +140,7 @@ public:
      * @brief Gets the TBO containing triangle index data
      * @return Reference to the Texture Buffer Object
      */
-    const TBO& TriangleMeshManager::GetIndiceTBO() const noexcept;
+    const TBO& GetIndiceTBO() const noexcept;
 
     /**
      * @brief Deleted copy constructor
@@ -164,7 +164,7 @@ protected:
     void ReleaseInstance();
 
 protected:
-    std::vector<uint32_t> indices_encoded_;                ///< Encoded triangle indice data
+    std::vector<int32_t> indices_encoded_;                ///< Encoded triangle indice data
     std::vector<TriangleEncoded> triangles_encoded_;       ///< Encoded triangle data
     std::vector<BVHNodeEncoded> bvh_nodes_;                ///< BVH nodes in GPU-friendly format
     std::unique_ptr<TBO> triangle_tbo_;                    ///< TBO for triangle data
