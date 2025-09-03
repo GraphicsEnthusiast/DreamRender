@@ -286,15 +286,10 @@ void TriangleMeshManager::BuildBVH() {
 		const auto& src_node = src_nodes[i];
 		auto& dst_node = bvh_nodes_[i];
 
-		dst_node.lmin = Point4f(src_node.lmin.x, src_node.lmin.y, src_node.lmin.z, 0.0f);
-		dst_node.lmax = Point4f(src_node.lmax.x, src_node.lmax.y, src_node.lmax.z, 0.0f);
-		dst_node.rmin = Point4f(src_node.rmin.x, src_node.rmin.y, src_node.rmin.z, 0.0f);
-		dst_node.rmax = Point4f(src_node.rmax.x, src_node.rmax.y, src_node.rmax.z, 0.0f);
-
-		dst_node.lmin.w = static_cast<float>(src_node.left);
-		dst_node.lmax.w = static_cast<float>(src_node.right);
-		dst_node.rmin.w = static_cast<float>(src_node.triCount);
-		dst_node.rmax.w = static_cast<float>(src_node.firstTri);
+		dst_node.lmin = Point4f(src_node.lmin.x, src_node.lmin.y, src_node.lmin.z, static_cast<float>(src_node.left));
+		dst_node.lmax = Point4f(src_node.lmax.x, src_node.lmax.y, src_node.lmax.z, static_cast<float>(src_node.right));
+		dst_node.rmin = Point4f(src_node.rmin.x, src_node.rmin.y, src_node.rmin.z, static_cast<float>(src_node.triCount));
+		dst_node.rmax = Point4f(src_node.rmax.x, src_node.rmax.y, src_node.rmax.z, static_cast<float>(src_node.firstTri));
 	}
 }
 

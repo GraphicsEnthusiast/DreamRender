@@ -24,7 +24,7 @@ struct Hit {
     float distance; ///< Intersection distance along the ray
     float u;        ///< Barycentric u coordinate
     float v;        ///< Barycentric v coordinate
-    int tri_index; ///< Intersected triangle index
+    int tri_index;  ///< Intersected triangle index
 };
 
 /**
