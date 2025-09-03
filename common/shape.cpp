@@ -181,7 +181,7 @@ void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes
 		const auto& indices = mesh.GetIndices();
 
 		for (unsigned int i = 0; i < indices.size(); ++i) {
-			indices_encoded_[global_index_offset + i] = indices[i] + vertex_offset;
+			indices_encoded_[global_index_offset + i] = static_cast<uint32_t>(indices[i] + vertex_offset);
 		}
 		global_index_offset += indices.size();
 		vertex_offset += mesh.GetNumVertices();
@@ -315,7 +315,7 @@ void TriangleMeshManager::CreateGPUBuffers() {
 
 	indice_tbo_ = std::make_unique<TBO>(
 		indices_encoded_.data(),
-		indices_encoded_.size() * sizeof(unsigned int),
+		indices_encoded_.size() * sizeof(uint32_t),
 		GL_R32UI,
 		GL_STATIC_DRAW
 		);

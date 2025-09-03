@@ -164,12 +164,12 @@ protected:
     void ReleaseInstance();
 
 protected:
-    std::vector<unsigned int> indices_encoded_;   ///< Encoded triangle indice data
-    std::vector<TriangleEncoded> triangles_encoded_;   ///< Encoded triangle data
-    std::vector<BVHNodeEncoded> bvh_nodes_;            ///< BVH nodes in GPU-friendly format
-    std::unique_ptr<TBO> triangle_tbo_;               ///< TBO for triangle data
+    std::vector<uint32_t> indices_encoded_;                ///< Encoded triangle indice data
+    std::vector<TriangleEncoded> triangles_encoded_;       ///< Encoded triangle data
+    std::vector<BVHNodeEncoded> bvh_nodes_;                ///< BVH nodes in GPU-friendly format
+    std::unique_ptr<TBO> triangle_tbo_;                    ///< TBO for triangle data
     std::unique_ptr<TBO> bvh_node_tbo_;                    ///< TBO for BVH node data
-    std::unique_ptr<TBO> indice_tbo_;                    ///< TBO for triangle index data
+    std::unique_ptr<TBO> indice_tbo_;                      ///< TBO for triangle index data
     static std::unique_ptr<TriangleMeshManager> instance_; ///< Singleton instance pointer
 };
 
