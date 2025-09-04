@@ -122,7 +122,7 @@ public:
         name_ = "Simple compute pass";
 
         // Create compute shader
-        const char* compute_path = "../shader/test.comp";
+        const char* compute_path = "shader/test.comp";
 
         shader_ = std::make_unique<ComputationShader>(compute_path);
     }

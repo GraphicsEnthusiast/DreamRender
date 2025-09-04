@@ -192,52 +192,58 @@ void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes
 			const unsigned int idx2 = indices[i * 3 + 2];
 
 			// Extract vertex positions using indices
-			triangles_encoded_[triangle_index].p1 = glm::vec3(
+			triangles_encoded_[triangle_index].p1 = Point4f(
 				vertices[idx0 * 3],
 				vertices[idx0 * 3 + 1],
-				vertices[idx0 * 3 + 2]);
+				vertices[idx0 * 3 + 2],
+				0.0f);
 
-			triangles_encoded_[triangle_index].p2 = glm::vec3(
+			triangles_encoded_[triangle_index].p2 = Point4f(
 				vertices[idx1 * 3],
 				vertices[idx1 * 3 + 1],
-				vertices[idx1 * 3 + 2]);
+				vertices[idx1 * 3 + 2],
+				0.0f);
 
-			triangles_encoded_[triangle_index].p3 = glm::vec3(
+			triangles_encoded_[triangle_index].p3 = Point4f(
 				vertices[idx2 * 3],
 				vertices[idx2 * 3 + 1],
-				vertices[idx2 * 3 + 2]);
+				vertices[idx2 * 3 + 2],
+				0.0f);
 
 			// Extract normals using indices
-			triangles_encoded_[triangle_index].n1 = glm::vec3(
+			triangles_encoded_[triangle_index].n1 = Vector4f(
 				normals[idx0 * 3],
 				normals[idx0 * 3 + 1],
-				normals[idx0 * 3 + 2]);
+				normals[idx0 * 3 + 2],
+				0.0f);
 
-			triangles_encoded_[triangle_index].n2 = glm::vec3(
+			triangles_encoded_[triangle_index].n2 = Vector4f(
 				normals[idx1 * 3],
 				normals[idx1 * 3 + 1],
-				normals[idx1 * 3 + 2]);
+				normals[idx1 * 3 + 2],
+				0.0f);
 
-			triangles_encoded_[triangle_index].n3 = glm::vec3(
+			triangles_encoded_[triangle_index].n3 = Vector4f(
 				normals[idx2 * 3],
 				normals[idx2 * 3 + 1],
-				normals[idx2 * 3 + 2]);
+				normals[idx2 * 3 + 2],
+				0.0f);
 
 			// Extract UV coordinates using indices (z-component set to 0)
-			triangles_encoded_[triangle_index].uv1 = glm::vec3(
+			triangles_encoded_[triangle_index].uv1 = Point4f(
 				texcoords[idx0 * 2],
 				texcoords[idx0 * 2 + 1],
-				0.0f);
+				0.0f, 0.0f);
 
-			triangles_encoded_[triangle_index].uv2 = glm::vec3(
+			triangles_encoded_[triangle_index].uv2 = Point4f(
 				texcoords[idx1 * 2],
 				texcoords[idx1 * 2 + 1],
-				0.0f);
+				0.0f, 0.0f);
 
-			triangles_encoded_[triangle_index].uv3 = glm::vec3(
+			triangles_encoded_[triangle_index].uv3 = Point4f(
 				texcoords[idx2 * 2],
 				texcoords[idx2 * 2 + 1],
-				0.0f);
+				0.0f, 0.0f);
 
 			// Copy material properties
 			//triangles_encoded_[triangleIndex].emissive = material.emissive;

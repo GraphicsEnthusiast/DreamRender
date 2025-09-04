@@ -66,29 +66,27 @@ protected:
  * @struct TriangleEncoded
  * @brief Encoded triangle structure for GPU storage
  */
-struct TriangleEncoded {
-    Point3f p1, p2, p3;       ///< Vertex positions
-    Vector3f n1, n2, n3;      ///< Vertex normals
-    Point3f uv1, uv2, uv3;    ///< UV coordinates (z-component unused)
-
-	//glm::vec3 emissive;       // Emissive parameters
-	//glm::vec3 baseColor;      // Base color
-	//glm::vec3 param1;         // (subsurface, metallic, specular)
-	//glm::vec3 param2;         // (specularTint, roughness, anisotropic)
-	//glm::vec3 param3;         // (sheen, sheenTint, clearcoat)
-	//glm::vec3 param4;         // (clearcoatGloss, IOR, transmission)
-	//glm::vec3 tex;            // (isTex, texID, lightID)
+struct alignas(16) TriangleEncoded {
+    alignas(16) Point4f p1;    ///< Vertex positions
+    alignas(16) Point4f p2;
+    alignas(16) Point4f p3;
+    alignas(16) Vector4f n1;   ///< Vertex normals
+    alignas(16) Vector4f n2;
+    alignas(16) Vector4f n3;
+    alignas(16) Point4f uv1;   ///< UV coordinates (z-component unused)
+    alignas(16) Point4f uv2;
+    alignas(16) Point4f uv3;
 };
 
 /**
  * @struct BVHNodeGPU
  * @brief GPU-friendly BVH node structure for efficient traversal
  */
-struct BVHNodeEncoded {
-	Point4f lmin; // unsigned left child index in w component
-	Point4f lmax; // unsigned right child index in w component
-	Point4f rmin; // unsigned triangle count in w component
-	Point4f rmax; // unsigned first triangle index in w component
+struct alignas(16) BVHNodeEncoded {
+    alignas(16) Point4f lmin; // unsigned left child index in w component
+    alignas(16) Point4f lmax; // unsigned right child index in w component
+    alignas(16) Point4f rmin; // unsigned triangle count in w component
+    alignas(16) Point4f rmax; // unsigned first triangle index in w component
 };
 
 /**
