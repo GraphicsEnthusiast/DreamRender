@@ -33,7 +33,7 @@ struct Hit {
 struct Triangle {
     vec3 p1, p2, p3; ///< Vertex positions
     vec3 n1, n2, n3; ///< Vertex normals
-    vec3 t1, t2, t3; ///< Vertex texcoords(z=0.0f)
+    vec2 t1, t2, t3; ///< Vertex texcoords
 };
 
 /**
@@ -63,9 +63,9 @@ Triangle FetchTriangle(int index) {
     tri.n2 = texelFetch(Triangles, base + 4).xyz;
     tri.n3 = texelFetch(Triangles, base + 5).xyz;
     // Fetch vertex texcoords
-    tri.t1 = texelFetch(Triangles, base + 6).xyz;
-    tri.t2 = texelFetch(Triangles, base + 7).xyz;
-    tri.t3 = texelFetch(Triangles, base + 8).xyz;
+    tri.t1 = texelFetch(Triangles, base + 6).xy;
+    tri.t2 = texelFetch(Triangles, base + 7).xy;
+    tri.t3 = texelFetch(Triangles, base + 8).xy;
     
     return tri;
 }
