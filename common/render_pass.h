@@ -118,11 +118,14 @@ protected:
  */
 class SimpleComputePass : public RenderPass {
 public:
-    SimpleComputePass() {
+    SimpleComputePass(unsigned int width, unsigned int height) {
         name_ = "Simple compute pass";
 
+        width_ = width;
+        height_ = height;
+
         // Create compute shader
-        const char* compute_path = "shader/test.comp";
+        const char* compute_path = "../shader/test.comp";
 
         shader_ = std::make_unique<ComputationShader>(compute_path);
     }
@@ -133,11 +136,6 @@ public:
 
         // Bind output texture
         glBindImageTexture(0, GetOutputTexture("Output").id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
-        // Set time uniform variable
-        static float time = 0.0f;
-        time += 0.01f;
-        shader_->SetFloat("time", time);
 
         auto& mesh_manager = TriangleMeshManager::Instance();
 
@@ -151,13 +149,15 @@ public:
 		shader_->SetInt("BVHNodes", 2);
 
         // Dispatch compute shader
-        glDispatchCompute(512 / 16, 512 / 16, 1);
+        glDispatchCompute(width_ / 16, height_ / 16, 1);
 
         BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
     }
 
 protected:
     std::unique_ptr<ComputationShader> shader_;
+    unsigned int width_;
+    unsigned int height_;
 };
 
 NAMESPACE_END(dream)

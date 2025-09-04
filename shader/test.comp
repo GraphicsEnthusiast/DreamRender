@@ -15,33 +15,32 @@ float camera_fov = radians(60.0);           // 视野角度（弧度）
 
 void main()
 {
-    ivec2 pixel_coord = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 size = imageSize(outputTex);
-    vec2 uv = vec2(pixel_coord) / vec2(size);
-    
-    // 1. 构建相机坐标系并生成射线方向
-    vec3 camera_dir = normalize(camera_target - camera_position);
-    vec3 camera_right = normalize(cross(vec3(0.0, 1.0, 0.0), camera_dir));
-    vec3 camera_up = cross(camera_dir, camera_right);
-    
-    // 计算射线方向 (透视投影)
-    float aspect_ratio = float(size.x) / float(size.y);
-    vec2 screen_pos = uv * 2.0 - 1.0; // 转换为NDC坐标 (-1到1)
-    screen_pos.x *= aspect_ratio * tan(camera_fov * 0.5);
-    screen_pos.y *= tan(camera_fov * 0.5);
-    
-    vec3 ray_dir = normalize(camera_dir + camera_right * screen_pos.x + camera_up * screen_pos.y);
-    
-    // 2. 创建测试射线
+    uint id = gl_GlobalInvocationID.x;
+	if (id >= 1280 * 720) return; // out of bounds
+
+	// convert thread id into screen coordinates
+	uint px = id % 1280, py = id / 1280;
+	float u = float( px ) / 1280.0f, v = float( py ) / 720.0f;
+
+	// construct primary ray
+	const vec3 eye = vec3( 0.5, 0.5, -4 );
+	const vec3 view = vec3( 0, 0, 1 );
+	const vec3 C = eye + view;
+	const vec3 p1 = C + vec3( -1.6f, 1, 0 );
+	const vec3 p2 = C + vec3( 1.6f, 1, 0 );
+	const vec3 p3 = C + vec3( -1.6f, -1, 0 );
+	const vec3 P = p1 + u * (p2 - p1) + v * (p3 - p1);
+	const vec3 D = normalize( P - eye );
+	const vec3 rD = vec3( 1.0f / D.x, 1.0f / D.y, 1.0f / D.z );
     Ray test_ray;
-    test_ray.origin = camera_position;
-    test_ray.direction = ray_dir;
-    test_ray.tmin = 0.001;   // 避免自相交
-    test_ray.tmax = MaxFloat; // 最大距离
+    test_ray.tmin = 0.001f;
+    test_ray.tmax = MaxFloat;
+    test_ray.origin = eye;
+    test_ray.direction = D;
     
     Hit hit = BVHTraverse(test_ray);
 
     vec4 color = vec4(hit.distance < MaxFloat ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), 1.0);
     
-    imageStore(outputTex, pixel_coord, color);
+    imageStore(outputTex, ivec2(gl_GlobalInvocationID.xy), color);
 }
