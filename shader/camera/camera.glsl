@@ -33,7 +33,7 @@ struct Camera {
 struct SampleCameraResult {
     Ray ray;              ///< Ray from position to camera
     float weight;         ///< Sampling weight
-    float pdf;            ///< Probability density function
+    float pdf;            ///< Probability density function(lens area to solid angle)
     int raster;           ///< Raster index
 };
 
@@ -194,9 +194,9 @@ SampleCameraResult SampleCamera(Camera cam, vec3 sample_pos, float epsilon) {
     int pixel_y = int(floor(plane.y * (cam.resolution.y - 1.0f) + 0.5f));
     result.raster = pixel_y * int(cam.resolution.x) + pixel_x;
     
-    // Calculate PDF: p(ω) = p(A) * (r² / cosθ) = (1 / (cam.area * cam.lens_area)) * (r² / cosθ)
+    // Calculate PDF: p(ω) = p(A) * (r² / cosθ) = (1 / cam.lens_area) * (r² / cosθ)
     // where r² = dot(dir, dir)
-    result.pdf = dot(dir, dir) / (cos_theta * cam.sensor_area * cam.lens_area);
+    result.pdf = dot(dir, dir) / (cos_theta * cam.lens_area);
     
     result.weight = CalculateCameraWeight(cam, cos_theta);
     
