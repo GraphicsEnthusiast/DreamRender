@@ -1,12 +1,7 @@
 #ifndef _CIE__GLSL__
 #define _CIE__GLSL__
 
-// Spectral rendering constants
-const int NSpectrumSamples = 8;               // Number of spectral samples per calculation
-const float LambdaMin = 360.0f;               // Minimum visible wavelength (nanometers)
-const float LambdaMax = 830.0f;               // Maximum visible wavelength (nanometers)
-const float CIEYIntegral = 106.856895f;
-const int NCIESamples = int(LambdaMax - LambdaMin) + 1; // 471
+#include "util/util.glsl"
 
 const float CIEX[NCIESamples] = float[NCIESamples](
     // CIE X function values
@@ -727,4 +722,4 @@ const float CIEZ[NCIESamples] = float[NCIESamples](
     0.0f
 );
 
-#endif
+#endif // _CIE__GLSL__

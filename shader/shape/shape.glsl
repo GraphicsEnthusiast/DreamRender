@@ -5,7 +5,7 @@ uniform samplerBuffer Triangles;
 uniform samplerBuffer Indices;
 uniform samplerBuffer BVHNodes;
 
-const float MaxFloat = 3.402823466e+38f;
+#include "util/util.glsl"
 
 /**
  * @brief Ray structure for ray tracing parameters
@@ -223,4 +223,4 @@ Hit BVHTraverse(const Ray ray) {
     return hit;
 }
 
-#endif
+#endif // _SHAPE__GLSL__

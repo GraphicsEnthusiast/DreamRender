@@ -554,4 +554,4 @@ RGB SampledSpectrumToRGB(SampledSpectrum s, SampledWavelengths lambda) {
     return XYZToRGB(xyz);
 }
 
-#endif
+#endif // _SPECTRUM__GLSL__

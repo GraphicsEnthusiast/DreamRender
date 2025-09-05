@@ -387,4 +387,4 @@ RGB XYZToRGB(XYZ xyz) {
     return rgb;
 }
 
-#endif
+#endif // _COLOR__GLSL__
