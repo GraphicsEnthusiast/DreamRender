@@ -4,7 +4,6 @@
 #include "camera/camera.glsl"
 
 uniform samplerBuffer Triangles;
-uniform samplerBuffer Indices;
 uniform samplerBuffer BVHNodes;
 
 /**
@@ -45,7 +44,7 @@ Triangle FetchTriangle(int index) {
     int base = index * 6; // 6 vec4
     Triangle tri;
     
-    // Fetch vertex positions and extract UV.x from w component
+    // Fetch vertex positions and extract uv.x from w component
     vec4 pos1 = texelFetch(Triangles, base + 0);
     vec4 pos2 = texelFetch(Triangles, base + 1);
     vec4 pos3 = texelFetch(Triangles, base + 2);
@@ -54,7 +53,7 @@ Triangle FetchTriangle(int index) {
     tri.p2 = pos2.xyz;
     tri.p3 = pos3.xyz;
     
-    // Fetch vertex normals and extract UV.y from w component
+    // Fetch vertex normals and extract uv.y from w component
     vec4 norm1 = texelFetch(Triangles, base + 3);
     vec4 norm2 = texelFetch(Triangles, base + 4);
     vec4 norm3 = texelFetch(Triangles, base + 5);
@@ -63,21 +62,12 @@ Triangle FetchTriangle(int index) {
     tri.n2 = norm2.xyz;
     tri.n3 = norm3.xyz;
     
-    // Reconstruct UV coordinates from w components
+    // Reconstruct uv coordinates from w components
     tri.t1 = vec2(pos1.w, norm1.w);
     tri.t2 = vec2(pos2.w, norm2.w);
     tri.t3 = vec2(pos3.w, norm3.w);
     
     return tri;
-}
-
-/**
- * @brief Fetches triangle index data from the indices TBO
- * @param index Index position in the indices buffer
- * @return Triangle index value that points to the actual triangle data
- */
-int FetchIndex(int index) {
-    return int(texelFetch(Indices, index).r);
 }
 
 /**
@@ -128,7 +118,7 @@ Hit BVHTraverse(const Ray ray) {
         // Leaf node: test triangles
         if (tri_count > 0) {
             for (int i = 0; i < tri_count; i++) {
-                int tri_idx = FetchIndex(first_tri + i);
+                int tri_idx = first_tri + i;
                 Triangle tri = FetchTriangle(tri_idx);
                 
                 // Möller–Trumbore intersection algorithm

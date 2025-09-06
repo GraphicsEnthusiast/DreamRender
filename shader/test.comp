@@ -7,40 +7,64 @@
 
 layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
-            
-// 相机参数 (您可以通过Uniform传递这些值，这里先写死用于测试)
-vec3 camera_position = vec3(0.0, 0.0, 5.0); // 相机位置
-vec3 camera_target = vec3(0.0, 0.0, 0.0);  // 相机目标点
-float camera_fov = radians(60.0);           // 视野角度（弧度）
+
+uniform vec3 camera_position = vec3(10.0, 10.0, 10.0);
+uniform vec3 camera_target = vec3(0.0, 0.0, 0.0);
+uniform vec3 camera_up = vec3(0.0, 1.0, 0.0);
+uniform vec2 resolution = vec2(1280.0, 720.0);
+uniform float camera_fov = 60.0;
+uniform float camera_distance = 1.0;
+uniform float camera_aperture = 0.1;
+uniform float camera_focal_distance = 10.0;
 
 void main()
 {
-    uint id = gl_GlobalInvocationID.x;
-	if (id >= 1280 * 720) return; // out of bounds
-
-	// convert thread id into screen coordinates
-	uint px = id % 1280, py = id / 1280;
-	float u = float( px ) / 1280.0f;
-	float v = float( py ) / 720.0f;
-
-	// construct primary ray
-	const vec3 eye = vec3( 0.5, 0.5, -4 );
-	const vec3 view = vec3( 0, 0, 1 );
-	const vec3 C = eye + view;
-	const vec3 p1 = C + vec3( -1.6f, 1, 0 );
-	const vec3 p2 = C + vec3( 1.6f, 1, 0 );
-	const vec3 p3 = C + vec3( -1.6f, -1, 0 );
-	const vec3 P = p1 + u * (p2 - p1) + v * (p3 - p1);
-	const vec3 D = normalize( P - eye );
-    Ray test_ray;
-    test_ray.tmin = 0.001f;
-    test_ray.tmax = MaxFloat;
-    test_ray.origin = eye;
-    test_ray.direction = D;
+    // 获取全局线程ID
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     
-    Hit hit = BVHTraverse(test_ray);
-
-    vec4 color = vec4(hit.distance < MaxFloat ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), 1.0);
+    // 边界检查
+    if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >=int(resolution.y)) {
+        return;
+    }
     
-    imageStore(outputTex, ivec2(gl_GlobalInvocationID.xy), color);
+    // 创建相机
+    Camera cam = CreateCamera(camera_position, camera_target, camera_up, 
+                             resolution, camera_distance, camera_fov, 
+                             camera_aperture, camera_focal_distance, false, 0);
+    
+    // 生成像素坐标
+    vec2 pixel_center = vec2(pixel_coords) + vec2(0.5);
+    vec2 random_offset = vec2(0.0); // 无随机偏移，确保确定性测试
+    
+    // 生成主光线
+    Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, random_offset);
+    
+    // 使用BVH遍历寻找交点
+    Hit hit = BVHTraverse(ray);
+    
+    vec4 color;
+    if (hit.distance < MaxFloat) {
+        // 命中几何体：获取三角形并计算法线
+        Triangle tri = FetchTriangle(hit.tri_index);
+        
+        // 插值计算法线
+        vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + 
+                               hit.u * tri.n2 + 
+                               hit.v * tri.n3);
+        
+        // 法线着色：将法线从[-1,1]映射到[0,1]
+        color = vec4(normal * 0.5 + 0.5, 1.0);
+    } else {
+        // 未命中：使用背景色
+        // 使用《Ray Tracing in One Weekend》中的背景色计算方法
+        vec3 unit_direction = normalize(ray.direction);
+        float t = 0.5 * (unit_direction.y + 1.0); // 将y分量从[-1,1]映射到[0,1]
+        vec3 bg_color = mix(vec3(1.0, 1.0, 1.0), // 白色
+                            vec3(0.5, 0.7, 1.0), // 浅蓝色
+                            t);
+        color = vec4(bg_color, 1.0);
+    }
+    
+    // 输出到图像
+    imageStore(outputTex, pixel_coords, color);
 }
