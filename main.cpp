@@ -82,7 +82,6 @@ void TestRGBToSpectrum() {
 }
 
 int main() {
-	RGBToSpectrumTable::Init(); // 初始化转换表
 	TestRGBToSpectrum();
 	return 0;
 }

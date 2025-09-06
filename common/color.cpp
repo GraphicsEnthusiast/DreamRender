@@ -34,7 +34,7 @@ float RGBSigmoidPolynomial::Sigmoid(float x) {
 	return 0.5f + x / denom;
 }
 
-std::unique_ptr<RGBToSpectrumTable> RGBToSpectrumTable::SRGB_ = nullptr;
+std::unique_ptr<RGBToSpectrumTable> RGBToSpectrumTable::SRGBToSpectrumTable_ = nullptr;
 
 // RGBToSpectrumTable method implementations
 RGBSigmoidPolynomial RGBToSpectrumTable::operator()(RGB rgb) const {
@@ -101,7 +101,7 @@ RGBSigmoidPolynomial RGBToSpectrumTable::operator()(RGB rgb) const {
 }
 
 void RGBToSpectrumTable::Init() {
-	SRGB_ = std::make_unique<RGBToSpectrumTable>(reinterpret_cast<const CoefficientArray*>(SRGBToSpectrumTableData));
+	SRGBToSpectrumTable_ = std::make_unique<RGBToSpectrumTable>(reinterpret_cast<const CoefficientArray*>(SRGBToSpectrumTableData));
 }
 
 // Predefined RGB to XYZ conversion matrix (D65 white point)
@@ -237,11 +237,11 @@ void RGBColorSpace::InitializeConversionMatrices() {
 }
 
 RGBSigmoidPolynomial RGBColorSpace::ToRGBCoeffs(const RGB& rgb) const {
-	if (!RGBToSpectrumTable::SRGB_) {
+	if (!RGBToSpectrumTable::SRGBToSpectrumTable_) {
 		RGBToSpectrumTable::Init();
 	}
 
-	return (*RGBToSpectrumTable::SRGB_)(rgb);
+	return (*RGBToSpectrumTable::SRGBToSpectrumTable_)(rgb);
 }
 
 RGB RGBColorSpace::ToRGB(const XYZ& xyz) const {

@@ -80,7 +80,7 @@ public:
     static void Init();
 
 public:
-    static std::unique_ptr<RGBToSpectrumTable> SRGB_; ///< Predefined sRGB to spectrum conversion table
+    static std::unique_ptr<RGBToSpectrumTable> SRGBToSpectrumTable_; ///< Predefined sRGB to spectrum conversion table
 
 protected:
     const CoefficientArray* coeffs_; ///< Coefficient data for RGB to spectrum conversion
