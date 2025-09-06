@@ -131,7 +131,7 @@ TriangleMeshManager& TriangleMeshManager::Instance() {
 	static std::once_flag init_flag;
 	std::call_once(init_flag, []() {
 		instance_ = std::unique_ptr<TriangleMeshManager>(new TriangleMeshManager());
-		});
+	});
 
 	return *instance_;
 }

@@ -4,6 +4,12 @@
 
 NAMESPACE_BEGIN(dream)
 
+// Spectral rendering constants
+const int NSpectrumSamples = 8;
+const int LambdaMin = 360;
+const int LambdaMax = 830;
+const int NCIESamples = LambdaMax - LambdaMin + 1; // 471
+
 /**
  * @class DenselySampledSpectrum
  * @brief Represents a densely sampled spectral power distribution
@@ -15,8 +21,17 @@ public:
      * @param lambda_min Minimum wavelength (default: 360nm)
      * @param lambda_max Maximum wavelength (default: 830nm)
      */
-	DenselySampledSpectrum::DenselySampledSpectrum(int lambda_min = 360, int lambda_max = 830)
+	DenselySampledSpectrum::DenselySampledSpectrum(int lambda_min = LambdaMin, int lambda_max = LambdaMax)
 		: lambda_min_(lambda_min), lambda_max_(lambda_max), values_(lambda_max - lambda_min + 1, 0.0f) {}
+
+    /**
+     * @brief Constructs from a precomputed array of spectral values
+     * @param values Array of spectral values (must cover [lambda_min, lambda_max])
+     * @param lambda_min Minimum wavelength (default: 360nm)
+     * @param lambda_max Maximum wavelength (default: 830nm)
+     */
+    DenselySampledSpectrum(const float* values, int lambda_min = LambdaMin, int lambda_max = LambdaMax)
+        : lambda_min_(lambda_min), lambda_max_(lambda_max), values_(values, values + (lambda_max - lambda_min + 1)) {}
 
     /**
      * @brief Constructs by sampling a spectral function
@@ -70,7 +85,8 @@ public:
      * @param cs RGB color space definition
      * @param rgb Input RGB color (components in [0,1])
      */
-    RGBAlbedoSpectrum(const RGBColorSpace& cs, const RGB& rgb);
+	RGBAlbedoSpectrum::RGBAlbedoSpectrum(const RGBColorSpace& cs, const RGB& rgb)
+		: rsp_(cs.ToRGBCoeffs(rgb)) {}
 
     /**
      * @brief Evaluates spectrum at given wavelength

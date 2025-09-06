@@ -25,6 +25,7 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/transform.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/buffer_object.h
     ${CMAKE_CURRENT_SOURCE_DIR}/buffer_object.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/srgb_to_spectrum.h
 )
 
 include_directories(

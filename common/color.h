@@ -15,13 +15,13 @@ class RGBSigmoidPolynomial {
 public:
     /**
      * @brief Default constructor (zero-initialize coefficients)
-     */ 
-    RGBSigmoidPolynomial() : c2(0), c1(0), c0(0) {}
+     */
+    RGBSigmoidPolynomial() : c0_(0), c1_(0), c2_(0) {}
 
     /**
      * @brief Initialize with specific polynomial coefficients
      */
-    RGBSigmoidPolynomial(float c0, float c1, float c2) : c2(c2), c1(c1), c0(c0) {}
+    RGBSigmoidPolynomial(float c0, float c1, float c2) : c0_(c0), c1_(c1), c2_(c2) {}
 
     /**
      * @brief Evaluate polynomial at given wavelength
@@ -45,47 +45,62 @@ protected:
     static float Sigmoid(float x);
 
 protected:
-	// f(λ) = s(c₂λ² + c₁λ + c₀), Coefficients storage (c₂, c₁, c₀ for λ², λ, constant terms)
-	float c2, c1, c0;
+    // f(λ) = s(c₀λ² + c₁λ + c₂), Coefficients storage (c₀, c₁, c₂ for λ², λ, constant terms)
+    float c0_, c1_, c2_;
 };
 
 /**
- * @brief Evaluates polynomial using Horner's method
- * @tparam T Floating-point type
- * @param t Input value
- * @param coefficients Polynomial coefficients (highest degree first)
- * @return Σ coefficients[i]·tⁱ (Example: EvaluatePolynomial(x, {c2, c1, c0}) = c₂x² + c₁x + c₀)
+ * @class RGBToSpectrumTable
+ * @brief Table for converting RGB values to spectral coefficients using sigmoid polynomials
  */
-template <typename T, typename... Coeffs>
-constexpr T EvaluatePolynomial(T t, Coeffs... coefficients) {
-    const T coeffs[] = { static_cast<T>(coefficients)... };
-    T result = 0;
-    for (auto c : coeffs) {
-        result = result * t + c;
-    }
+class RGBToSpectrumTable {
+public:
+    ///< Resolution of the conversion table in each dimension
+    static const int res = 64;
 
-    return result;
-}
+    ///< Type definition for the coefficient array structure
+    using CoefficientArray = float[3][res][res][res][4];
+
+    /**
+     * @brief Constructs a new RGB to spectrum conversion table
+     * @param coeffs Pointer to the coefficient array data
+     */
+    RGBToSpectrumTable(const CoefficientArray* coeffs) : coeffs_(coeffs) {}
+
+    /**
+     * @brief Convert RGB color to spectral coefficients
+     * @param rgb Input RGB color (components should be in [0,1] range)
+     * @return RGBSigmoidPolynomial coefficients for spectral representation
+     */
+    RGBSigmoidPolynomial operator()(RGB rgb) const;
+
+    /**
+     * @brief Initialize the RGB to spectrum conversion tables
+     */
+    static void Init();
+
+public:
+    static std::unique_ptr<RGBToSpectrumTable> SRGB_; ///< Predefined sRGB to spectrum conversion table
+
+protected:
+    const CoefficientArray* coeffs_; ///< Coefficient data for RGB to spectrum conversion
+};
 
 // Forward declarations
 class DenselySampledSpectrum;
 
 /**
  * @class RGBColorSpace
- * @brief Represents an RGB color space with conversion capabilities to/from CIE XYZ
+ * @brief Represents an RGB color space with conversion capabilities to/from CIE XYZ(only support SRGB)
  */
 class RGBColorSpace {
     friend class RGBIlluminantSpectrum;
 
 public:
     /**
-     * @brief Constructs an RGB color space from chromaticity coordinates
-     * @param r Red primary chromaticity coordinates (x, y)
-     * @param g Green primary chromaticity coordinates (x, y)
-     * @param b Blue primary chromaticity coordinates (x, y)
-     * @param illuminant Reference illuminant spectrum (e.g., D65)
+     * @brief Constructs an RGB color space from chromaticity coordinates(only support srgb and d65)
      */
-    RGBColorSpace(const Point2f& r, const Point2f& g, const Point2f& b, std::shared_ptr<DenselySampledSpectrum> illuminant);
+    RGBColorSpace();
 
     /**
      * @brief Converts RGB values to spectral coefficients using sigmoid polynomials
@@ -114,19 +129,6 @@ public:
      */
     RGB Luminance() const;
 
-    /**
-     * @brief Finds a color space matching the given chromaticities
-     * @param r Red primary chromaticity
-     * @param g Green primary chromaticity
-     * @param b Blue primary chromaticity
-     * @param w White point chromaticity
-     * @return Matching color space or nullptr if no match found
-     */
-    static const RGBColorSpace* Lookup(const Point2f& r, const Point2f& g, const Point2f& b, const Point2f& w);
-
-    // Predefined color space instances
-    static const RGBColorSpace* SRGB;
-
 protected:
     /**
      * @brief Initializes the conversion matrices based on primary chromaticities
@@ -135,7 +137,6 @@ protected:
 
 protected:
     // Color space properties
-    Point2f r_, g_, b_, w_;                                      ///< Primary and white point chromaticities
     std::shared_ptr<DenselySampledSpectrum> illuminant_;         ///< Reference illuminant spectrum
     Matrix3f xyz_from_rgb_;                                      ///< Conversion matrix from RGB to XYZ
     Matrix3f rgb_from_xyz_;                                      ///< Conversion matrix from XYZ to RGB

@@ -30,15 +30,6 @@ float DenselySampledSpectrum::MaxValue() const {
 	return *std::max_element(values_.begin(), values_.end());
 }
 
-// RGBAlbedoSpectrum implementation
-RGBAlbedoSpectrum::RGBAlbedoSpectrum(const RGBColorSpace& cs, const RGB& rgb)
-	: rsp_(cs.ToRGBCoeffs(rgb)) {
-	// Validate reflectance constraints (0 <= RGB <= 1)
-	assert(rgb.x >= 0.0f && rgb.x <= 1.0f &&
-		rgb.y >= 0.0f && rgb.y <= 1.0f &&
-		rgb.z >= 0.0f && rgb.z <= 1.0f);
-}
-
 float RGBAlbedoSpectrum::operator()(float lambda) const {
 	return rsp_(lambda);
 }
