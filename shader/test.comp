@@ -20,7 +20,8 @@ void main()
 
 	// convert thread id into screen coordinates
 	uint px = id % 1280, py = id / 1280;
-	float u = float( px ) / 1280.0f, v = float( py ) / 720.0f;
+	float u = float( px ) / 1280.0f;
+	float v = float( py ) / 720.0f;
 
 	// construct primary ray
 	const vec3 eye = vec3( 0.5, 0.5, -4 );
@@ -31,7 +32,6 @@ void main()
 	const vec3 p3 = C + vec3( -1.6f, -1, 0 );
 	const vec3 P = p1 + u * (p2 - p1) + v * (p3 - p1);
 	const vec3 D = normalize( P - eye );
-	const vec3 rD = vec3( 1.0f / D.x, 1.0f / D.y, 1.0f / D.z );
     Ray test_ray;
     test_ray.tmin = 0.001f;
     test_ray.tmax = MaxFloat;

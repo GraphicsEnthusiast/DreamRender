@@ -64,18 +64,15 @@ protected:
 
 /**
  * @struct TriangleEncoded
- * @brief Encoded triangle structure for GPU storage
+ * @brief Encoded triangle structure for GPU storage with packed UV coordinates
  */
 struct alignas(16) TriangleEncoded {
-    alignas(16) Point4f p1;    ///< Vertex positions
-    alignas(16) Point4f p2;
-    alignas(16) Point4f p3;
-    alignas(16) Vector4f n1;   ///< Vertex normals
-    alignas(16) Vector4f n2;
-    alignas(16) Vector4f n3;
-    alignas(16) Point4f uv1;   ///< UV coordinates (z-component unused)
-    alignas(16) Point4f uv2;
-    alignas(16) Point4f uv3;
+	alignas(16) Point4f p1;    ///< Vertex positions (w stores uv1.x)
+	alignas(16) Point4f p2;    ///< Vertex positions (w stores uv2.x)
+	alignas(16) Point4f p3;    ///< Vertex positions (w stores uv3.x)
+	alignas(16) Vector4f n1;   ///< Vertex normals (w stores uv1.y)
+	alignas(16) Vector4f n2;   ///< Vertex normals (w stores uv2.y)
+	alignas(16) Vector4f n3;   ///< Vertex normals (w stores uv3.y)
 };
 
 /**
@@ -83,10 +80,10 @@ struct alignas(16) TriangleEncoded {
  * @brief GPU-friendly BVH node structure for efficient traversal
  */
 struct alignas(16) BVHNodeEncoded {
-    alignas(16) Point4f lmin; // unsigned left child index in w component
-    alignas(16) Point4f lmax; // unsigned right child index in w component
-    alignas(16) Point4f rmin; // unsigned triangle count in w component
-    alignas(16) Point4f rmax; // unsigned first triangle index in w component
+    alignas(16) Point4f lmin;  ///< unsigned left child index in w component
+    alignas(16) Point4f lmax;  ///< unsigned right child index in w component
+    alignas(16) Point4f rmin;  ///< unsigned triangle count in w component
+    alignas(16) Point4f rmax;  ///< unsigned first triangle index in w component
 };
 
 /**

@@ -191,73 +191,43 @@ void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes
 			const unsigned int idx1 = indices[i * 3 + 1];
 			const unsigned int idx2 = indices[i * 3 + 2];
 
-			// Extract vertex positions using indices
+			// Extract vertex positions using indices and pack UV.x in w component
 			triangles_encoded_[triangle_index].p1 = Point4f(
 				vertices[idx0 * 3],
 				vertices[idx0 * 3 + 1],
 				vertices[idx0 * 3 + 2],
-				0.0f);
+				texcoords[idx0 * 2]);  // uv1.x in w
 
 			triangles_encoded_[triangle_index].p2 = Point4f(
 				vertices[idx1 * 3],
 				vertices[idx1 * 3 + 1],
 				vertices[idx1 * 3 + 2],
-				0.0f);
+				texcoords[idx1 * 2]);  // uv2.x in w
 
 			triangles_encoded_[triangle_index].p3 = Point4f(
 				vertices[idx2 * 3],
 				vertices[idx2 * 3 + 1],
 				vertices[idx2 * 3 + 2],
-				0.0f);
+				texcoords[idx2 * 2]);  // uv3.x in w
 
-			// Extract normals using indices
+			// Extract normals using indices and pack UV.y in w component
 			triangles_encoded_[triangle_index].n1 = Vector4f(
 				normals[idx0 * 3],
 				normals[idx0 * 3 + 1],
 				normals[idx0 * 3 + 2],
-				0.0f);
+				texcoords[idx0 * 2 + 1]);  // uv1.y in w
 
 			triangles_encoded_[triangle_index].n2 = Vector4f(
 				normals[idx1 * 3],
 				normals[idx1 * 3 + 1],
 				normals[idx1 * 3 + 2],
-				0.0f);
+				texcoords[idx1 * 2 + 1]);  // uv2.y in w
 
 			triangles_encoded_[triangle_index].n3 = Vector4f(
 				normals[idx2 * 3],
 				normals[idx2 * 3 + 1],
 				normals[idx2 * 3 + 2],
-				0.0f);
-
-			// Extract UV coordinates using indices (z-component set to 0)
-			triangles_encoded_[triangle_index].uv1 = Point4f(
-				texcoords[idx0 * 2],
-				texcoords[idx0 * 2 + 1],
-				0.0f, 0.0f);
-
-			triangles_encoded_[triangle_index].uv2 = Point4f(
-				texcoords[idx1 * 2],
-				texcoords[idx1 * 2 + 1],
-				0.0f, 0.0f);
-
-			triangles_encoded_[triangle_index].uv3 = Point4f(
-				texcoords[idx2 * 2],
-				texcoords[idx2 * 2 + 1],
-				0.0f, 0.0f);
-
-			// Copy material properties
-			//triangles_encoded_[triangleIndex].emissive = material.emissive;
-			//triangles_encoded_[triangleIndex].baseColor = material.baseColor;
-			//triangles_encoded_[triangleIndex].param1 = glm::vec3(
-			//	material.subsurface, material.metallic, material.specular);
-			//triangles_encoded_[triangleIndex].param2 = glm::vec3(
-			//	material.specularTint, material.roughness, material.anisotropic);
-			//triangles_encoded_[triangleIndex].param3 = glm::vec3(
-			//	material.sheen, material.sheenTint, material.clearcoat);
-			//triangles_encoded_[triangleIndex].param4 = glm::vec3(
-			//	material.clearcoatGloss, material.IOR, material.transmission);
-			//triangles_encoded_[triangleIndex].tex = glm::vec3(
-			//	material.isTex, material.texID, material.lightID);
+				texcoords[idx2 * 2 + 1]);  // uv3.y in w
 
 			triangle_index++;
 		}

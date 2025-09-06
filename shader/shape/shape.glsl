@@ -1,21 +1,11 @@
 #ifndef _SHAPE__GLSL__
 #define _SHAPE__GLSL__
 
+#include "camera/camera.glsl"
+
 uniform samplerBuffer Triangles;
 uniform samplerBuffer Indices;
 uniform samplerBuffer BVHNodes;
-
-#include "util/util.glsl"
-
-/**
- * @brief Ray structure for ray tracing parameters
- */
-struct Ray {
-    vec3 origin;    ///< Ray origin point
-    vec3 direction; ///< Ray direction vector (normalized)
-    float tmin;     ///< Minimum ray distance (avoid self-intersection)
-    float tmax;     ///< Maximum ray distance
-};
 
 /**
  * @brief Hit information structure for ray intersection results
@@ -52,20 +42,31 @@ struct BVHNode {
  * @return Fetched Triangle structure with position and normal data
  */
 Triangle FetchTriangle(int index) {
-    int base = index * 9; // Each triangle occupies 9 vec3s in the buffer (3 for positions + 3 for normals + 3 for texcoords)
+    int base = index * 6; // 6 vec4
     Triangle tri;
-    // Fetch vertex positions
-    tri.p1 = texelFetch(Triangles, base + 0).xyz;
-    tri.p2 = texelFetch(Triangles, base + 1).xyz;
-    tri.p3 = texelFetch(Triangles, base + 2).xyz;
-    // Fetch vertex normals
-    tri.n1 = texelFetch(Triangles, base + 3).xyz;
-    tri.n2 = texelFetch(Triangles, base + 4).xyz;
-    tri.n3 = texelFetch(Triangles, base + 5).xyz;
-    // Fetch vertex texcoords
-    tri.t1 = texelFetch(Triangles, base + 6).xy;
-    tri.t2 = texelFetch(Triangles, base + 7).xy;
-    tri.t3 = texelFetch(Triangles, base + 8).xy;
+    
+    // Fetch vertex positions and extract UV.x from w component
+    vec4 pos1 = texelFetch(Triangles, base + 0);
+    vec4 pos2 = texelFetch(Triangles, base + 1);
+    vec4 pos3 = texelFetch(Triangles, base + 2);
+    
+    tri.p1 = pos1.xyz;
+    tri.p2 = pos2.xyz;
+    tri.p3 = pos3.xyz;
+    
+    // Fetch vertex normals and extract UV.y from w component
+    vec4 norm1 = texelFetch(Triangles, base + 3);
+    vec4 norm2 = texelFetch(Triangles, base + 4);
+    vec4 norm3 = texelFetch(Triangles, base + 5);
+    
+    tri.n1 = norm1.xyz;
+    tri.n2 = norm2.xyz;
+    tri.n3 = norm3.xyz;
+    
+    // Reconstruct UV coordinates from w components
+    tri.t1 = vec2(pos1.w, norm1.w);
+    tri.t2 = vec2(pos2.w, norm2.w);
+    tri.t3 = vec2(pos3.w, norm3.w);
     
     return tri;
 }

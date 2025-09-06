@@ -4,6 +4,16 @@
 #include "util/util.glsl"
 
 /**
+ * @brief Ray structure for ray tracing parameters
+ */
+struct Ray {
+    vec3 origin;    ///< Ray origin point
+    vec3 direction; ///< Ray direction vector (normalized)
+    float tmin;     ///< Minimum ray distance (avoid self-intersection)
+    float tmax;     ///< Maximum ray distance
+};
+
+/**
  * @brief Camera structure for ray generation and sampling
  */
 struct Camera {
@@ -70,7 +80,7 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
     
     // Compute camera geometry properties
     float half_fov = cam.fov * 0.5f;
-    cam.height = tan(DegreesToRadians(half_fov)) * cam.distance;
+    cam.height = tan(radians(half_fov)) * cam.distance;
     cam.width = cam.height * cam.resolution.x / cam.resolution.y;
     cam.sensor_area = 4.0f * cam.width * cam.height; // Sensor area
     
@@ -85,7 +95,7 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
     
     cam.pixel_to_screen = vec2(
         2.0f * cam.width / cam.resolution.x,
-        2.f * cam.height / cam.resolution.y
+        2.0f * cam.height / cam.resolution.y
     );
     cam.ratio = cam.focal_distance / cam.distance;
     
@@ -120,7 +130,8 @@ Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy)
     float screen_x = pixel_x * cam.pixel_to_screen.x - cam.width;
     float screen_y = pixel_y * cam.pixel_to_screen.y - cam.height;
 
-    vec3 dir, origin = cam.position;
+    vec3 dir;
+    vec3 origin = cam.position;
 
     if (cam.aperture_radius > 0.0f) {
         vec2 aperture_xy = sample_xy * cam.aperture_radius;
@@ -167,10 +178,16 @@ float CalculateCameraWe(Camera cam, float cos_theta) {
 SampleCameraResult SampleCamera(Camera cam, vec3 sample_pos, float epsilon) {
     SampleCameraResult result;
     result.pdf = 0.0f; // Default to invalid
+    result.we = 0.0f;
     
     vec3 dir = cam.position - sample_pos;
     vec3 normalized_dir = normalize(dir);
-    result.ray = Ray(sample_pos, normalized_dir, epsilon, length(dir) - epsilon);
+
+    result.ray.origin = sample_pos;
+    result.ray.direction = normalized_dir;
+    result.ray.tmin = epsilon;
+    result.ray.tmax = length(dir) - epsilon;
+
     vec3 negative_dir = -normalized_dir;
     
     // Convert to camera space

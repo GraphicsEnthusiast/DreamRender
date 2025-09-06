@@ -12,15 +12,6 @@ const float PI = 3.1415926535897932385f;
 const float MaxFloat = 3.402823466e+38f;
 
 /**
- * @brief Converts degrees to radians
- * @param degrees Angle in degrees
- * @return Angle in radians
- */
-float DegreesToRadians(float degrees) {
-    return degrees * (PI / 180.0f);
-}
-
-/**
  * @brief Converts a vector from world space to local space
  * @param vec Vector to transform
  * @param right Local space right vector
