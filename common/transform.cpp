@@ -12,7 +12,7 @@ Point3f Transform::TransformPoint(const Point3f& p) const {
 	const Vector4f homog_point(p.x, p.y, p.z, 1.0f);
 	const Vector4f transformed = transform_matrix * homog_point;
 
-	// Handle perspective division if w ¡Ù 1
+	// Handle perspective division if w ï¿½ï¿½ 1
 	if (1.0f == transformed.w) {
 		return Point3f(transformed.x, transformed.y, transformed.z);
 	}
@@ -30,6 +30,10 @@ Vector3f Transform::TransformVector(const Vector3f& v) const {
 	const Vector4f transformed = transform_matrix * homog_vector;
 
 	return Vector3f(transformed.x, transformed.y, transformed.z);
+}
+
+Matrix4f Transform::Matrix() const {
+	return transform_matrix;
 }
 
 Transform Transform::Inverse() const {
@@ -69,6 +73,5 @@ Transform Transform::Scale(float sx, float sy, float sz) {
 
 	return Transform(glm::scale(m, Vector3f(sx, sy, sz)));
 }
-
 
 NAMESPACE_END(dream)

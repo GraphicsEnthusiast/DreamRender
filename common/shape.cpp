@@ -150,7 +150,7 @@ void TriangleMeshManager::ReleaseInstance() {
 	bvh_node_tbo_.reset();
 }
 
-void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/) {
+void TriangleMeshManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes/*, const std::vector<Material>& materials*/) {
 	unsigned int total_triangle_count = 0;
 
 	for (const auto& mesh : meshes) {
@@ -176,7 +176,7 @@ void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes
 			const unsigned int idx1 = indices[i * 3 + 1];
 			const unsigned int idx2 = indices[i * 3 + 2];
 
-			// Extract vertex positions using indices and pack UV.x in w component
+			// Extract vertex positions using indices and pack uv.x in w component
 			triangles_encoded_[triangle_index].p1 = Point4f(
 				vertices[idx0 * 3],
 				vertices[idx0 * 3 + 1],
@@ -195,7 +195,7 @@ void TriangleMeshManager::BuildTriangles(const std::vector<TriangleMesh>& meshes
 				vertices[idx2 * 3 + 2],
 				texcoords[idx2 * 2]);  // uv3.x in w
 
-			// Extract normals using indices and pack UV.y in w component
+			// Extract normals using indices and pack uv.y in w component
 			triangles_encoded_[triangle_index].n1 = Vector4f(
 				normals[idx0 * 3],
 				normals[idx0 * 3 + 1],

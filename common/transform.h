@@ -39,7 +39,7 @@ public:
      * @brief Retrieves underlying transformation matrix
      * @return 4x4 homogeneous transformation matrix
      */
-    Matrix4f Matrix() const { return transform_matrix; }
+    Matrix4f Matrix() const;
 
     /**
      * @brief Computes inverse transformation

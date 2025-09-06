@@ -107,7 +107,7 @@ public:
      * @brief Encodes mesh data from TriangleMesh array into GPU-friendly format
      * @param meshes Array of TriangleMesh objects
      */
-    void BuildTriangles(const std::vector<TriangleMesh>& meshes);
+    void EncodeTriangles(const std::vector<TriangleMesh>& meshes);
 
     /**
      * @brief Builds BVH acceleration structure for the encoded triangles

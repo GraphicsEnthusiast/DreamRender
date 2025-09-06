@@ -120,7 +120,7 @@ public:
 		meshes.emplace_back(mesh);
 
         auto& mesh_manager = TriangleMeshManager::Instance();
-		mesh_manager.BuildTriangles(meshes);
+		mesh_manager.EncodeTriangles(meshes);
         mesh_manager.BuildBVH();
         mesh_manager.CreateGPUBuffers();
 
