@@ -32,7 +32,7 @@ struct Camera {
  */
 struct SampleCameraResult {
     Ray ray;              ///< Ray from position to camera
-    float weight;         ///< Sampling weight
+    float we;             ///< Sampling we
     float pdf;            ///< Probability density function(lens area to solid angle)
     int raster;           ///< Raster index
 };
@@ -147,13 +147,13 @@ Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy)
 }
 
 /**
- * @brief Calculates the camera sampling weight
+ * @brief Calculates the camera sampling we
  * @param cam Camera structure
  * @param cos_theta Cosine of the angle between ray direction and camera forward axis
- * @return Calculated weight value
+ * @return Calculated we value
  */
-float CalculateCameraWeight(Camera cam, float cos_theta) {
-    // Calculate weight (We): (distance²) / (sensor_area * lens_area * cos⁴θ)
+float CalculateCameraWe(Camera cam, float cos_theta) {
+    // Calculate we (We): (distance²) / (sensor_area * lens_area * cos⁴θ)
     return cam.distance * cam.distance / (cam.sensor_area * cam.lens_area * pow(cos_theta, 4.0f));
 }
 
@@ -198,7 +198,7 @@ SampleCameraResult SampleCamera(Camera cam, vec3 sample_pos, float epsilon) {
     // where r² = dot(dir, dir)
     result.pdf = dot(dir, dir) / (cos_theta * cam.lens_area);
     
-    result.weight = CalculateCameraWeight(cam, cos_theta);
+    result.we = CalculateCameraWe(cam, cos_theta);
     
     return result;
 }
