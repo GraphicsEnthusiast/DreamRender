@@ -508,21 +508,20 @@ XYZ SampledSpectrumToXYZ(SampledSpectrum s, SampledWavelengths lambda) {
     SampledSpectrum pdf = SampledWavelengthsPDF(lambda);
     
     // Compute weighted averages with PDF normalization
-    float sumx = 0.0f;
-    float sumy = 0.0f;
-    float sumz = 0.0f;
+    SampledSpectrum x_avg;
+    SampledSpectrum y_avg;
+    SampledSpectrum z_avg;
     
     for (int i = 0; i < NSpectrumSamples; i++) {
-        sumx += SafeDiv(xs.values[i] * s.values[i], pdf.values[i]);
-        sumy += SafeDiv(ys.values[i] * s.values[i], pdf.values[i]);
-        sumz += SafeDiv(zs.values[i] * s.values[i], pdf.values[i]);
+        x_avg.values[i] = SafeDiv(xs.values[i] * s.values[i], pdf.values[i]);
+        y_avg.values[i] = SafeDiv(ys.values[i] * s.values[i], pdf.values[i]);
+        z_avg.values[i] = SafeDiv(zs.values[i] * s.values[i], pdf.values[i]);
     }
     
     // Compute averages and normalize by CIE Y integral
-    float invn = 1.0f / float(NSpectrumSamples);
-    float x = sumx * invn / CIEYIntegral;
-    float y = sumy * invn / CIEYIntegral;
-    float z = sumz * invn / CIEYIntegral;
+    float x = SampledSpectrumAvg(x_avg) / CIEYIntegral;
+    float y = SampledSpectrumAvg(y_avg) / CIEYIntegral;
+    float z = SampledSpectrumAvg(z_avg) / CIEYIntegral;
     
     return XYZNew(x, y, z);
 }
@@ -579,7 +578,7 @@ struct RGBAlbedoSpectrum {
 RGBAlbedoSpectrum RGBAlbedoSpectrumNew(RGBSigmoidPolynomial rsp) {
     RGBAlbedoSpectrum s;
     s.rsp = rsp;
-    
+
     return s;
 }
 

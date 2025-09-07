@@ -67,7 +67,7 @@ void main()
 
 
     // 1. 定义输入RGB颜色（假设在sRGB颜色空间）
-    RGB rgb = RGBNew(0.9f, 0.9f, 0.9f);
+    RGB rgb = RGBNew(0.5f, 0.5f, 0.5f);
 
     // 2. 将RGB转换为光谱系数（需要颜色空间信息）
     RGBSigmoidPolynomial rsp = ToRGBCoeffs(rgb); // 依赖于颜色空间查找表
@@ -86,8 +86,8 @@ void main()
     
     // 
     RGB outputRgb = SampledSpectrumToRGB(sampled, waves); 
-    color = vec4(vec3(outputRgb.r, outputRgb.g, outputRgb.b), 1.0);
-    color = vec4(vec3(rgb.r, rgb.g, rgb.b), 1.0);
+    color = vec4(outputRgb.r, outputRgb.g, outputRgb.b, 1.0f);
+
     // 输出到图像
     imageStore(outputTex, pixel_coords, color);
 }

@@ -120,11 +120,6 @@ int GetSpectrumTableIndex(int maxc, int z, int y, int x, int i) {
  * @return RGBSigmoidPolynomial coefficients for spectral representation
  */
 RGBSigmoidPolynomial RGBToSpectrumTableEval(RGB rgb) {
-    // Clamp RGB values to valid [0, 1] range
-    rgb.r = clamp(rgb.r, 0.0f, 1.0f);
-    rgb.g = clamp(rgb.g, 0.0f, 1.0f);
-    rgb.b = clamp(rgb.b, 0.0f, 1.0f);
-
     // Handle uniform RGB values (grayscale)
     if (rgb.r == rgb.g && rgb.g == rgb.b) {
         float value = rgb.r;
