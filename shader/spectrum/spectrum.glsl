@@ -266,7 +266,7 @@ float SampleVisibleWavelengths(float u) {
  */
 float VisibleWavelengthsPDF(float lambda) {
     // Return 0 for out-of-range wavelengths
-    if (lambda < 360.0f || lambda > 830.0f) {
+    if (lambda < LambdaMin || lambda > LambdaMax) {
         return 0.0f;
     }
     
