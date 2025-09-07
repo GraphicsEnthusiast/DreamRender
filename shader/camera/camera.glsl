@@ -163,7 +163,7 @@ Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy)
  * @param cos_theta Cosine of the angle between ray direction and camera forward axis
  * @return Calculated we value
  */
-float CalculateCameraWe(Camera cam, float cos_theta) {
+float CameraWe(Camera cam, float cos_theta) {
     // Calculate we (We): (distance²) / (sensor_area * lens_area * cos⁴θ)
     return cam.distance * cam.distance / (cam.sensor_area * cam.lens_area * pow(cos_theta, 4.0f));
 }
@@ -175,7 +175,7 @@ float CalculateCameraWe(Camera cam, float cos_theta) {
  * @param epsilon Ray epsilon value
  * @return SampleCameraResult structure with sampling results
  */
-SampleCameraResult SampleCamera(Camera cam, vec3 sample_pos, float epsilon) {
+SampleCameraResult CameraSample(Camera cam, vec3 sample_pos, float epsilon) {
     SampleCameraResult result;
     result.pdf = 0.0f; // Default to invalid
     result.we = 0.0f;
@@ -215,7 +215,7 @@ SampleCameraResult SampleCamera(Camera cam, vec3 sample_pos, float epsilon) {
     // where r² = dot(dir, dir)
     result.pdf = dot(dir, dir) / (cos_theta * cam.lens_area);
     
-    result.we = CalculateCameraWe(cam, cos_theta);
+    result.we = CameraWe(cam, cos_theta);
     
     return result;
 }

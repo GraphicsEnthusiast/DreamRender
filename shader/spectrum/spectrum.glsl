@@ -367,7 +367,7 @@ struct DenselySampledSpectrum {
  * @brief Creates a zero-initialized densely sampled spectrum
  * @return Initialized spectrum struct
  */
-DenselySampledSpectrum DenselySampledSpectrumCreate() {
+DenselySampledSpectrum DenselySampledSpectrumNew() {
     DenselySampledSpectrum s;
     for (int i = 0; i < NCIESamples; i++) {
         s.values[i] = 0.0f;
@@ -433,7 +433,7 @@ DenselySampledSpectrum DenselySampledSpectrumScale(DenselySampledSpectrum d, flo
     for (int i = 0; i < NCIESamples; i++) {
         result.values[i] *= scale;
     }
-    
+
     return result;
 }
 
