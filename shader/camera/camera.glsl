@@ -226,7 +226,7 @@ SampleCameraResult SampleCamera(Camera cam, vec3 sample_pos, float epsilon) {
  * @param dir Direction from camera position to destination
  * @return PDF values
  */
-float PDFCamera(Camera cam, vec3 dir) {
+float CameraPDF(Camera cam, vec3 dir) {
     // For area PDF, we assume uniform sampling over the lens area
     float pdf_area = 1.0f / cam.lens_area;
     

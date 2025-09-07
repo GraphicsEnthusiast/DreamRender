@@ -138,7 +138,6 @@ public:
 		tbo_->BindTexture(2);
 		shader_->SetInt("SRGBToSpectrumTable", 2);
 
-
         // Dispatch compute shader
         glDispatchCompute(width_ / 16, height_ / 16, 1);
 

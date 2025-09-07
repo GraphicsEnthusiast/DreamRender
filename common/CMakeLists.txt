@@ -15,10 +15,6 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pipeline.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/color.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/color.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/spectrum.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/spectrum.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shape.h
     ${CMAKE_CURRENT_SOURCE_DIR}/shape.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/transform.h

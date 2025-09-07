@@ -301,26 +301,31 @@ SampledWavelengths SampledWavelengthsSampleVisible(float u) {
 }
 
 /**
- * @brief Terminates secondary wavelengths (keeps only primary)
- * @param swl Inout reference to SampledWavelengths instance
+ • @brief Terminates secondary wavelengths (keeps only primary)
+ • @param swl Input SampledWavelengths instance
+ • @return Modified SampledWavelengths instance
  */
-void SampledWavelengthsTerminateSecondary(inout SampledWavelengths swl) {
+SampledWavelengths SampledWavelengthsTerminateSecondary(SampledWavelengths swl) {
+    SampledWavelengths result = swl;
+    
     bool terminated = true;
     for (int i = 1; i < NSpectrumSamples; i++) {
-        if (0.0f != swl.pdf[i]) {
+        if (0.0f != result.pdf[i]) {
             terminated = false;
             break;
         }
     }
     if (terminated) {
-        return;
+        return result;
     }
     
     // Update probabilities
     for (int i = 1; i < NSpectrumSamples; i++) {
-        swl.pdf[i] = 0.0f;
+        result.pdf[i] = 0.0f;
     }
-    swl.pdf[0] /= float(NSpectrumSamples);
+    result.pdf[0] /= float(NSpectrumSamples);
+    
+    return result;
 }
 
 /**
@@ -418,14 +423,18 @@ SampledSpectrum CIEDenselySampledSpectrumSample(const float cie[NCIESamples], Sa
 }
 
 /**
- * @brief Scales spectral values by a factor
- * @param d Input/output spectrum (modified in-place)
- * @param scale Scaling factor
+ • @brief Scales spectral values by a factor
+ • @param d Input spectrum
+ • @param scale Scaling factor
+ • @return Scaled spectrum
  */
-void DenselySampledSpectrumScale(inout DenselySampledSpectrum d, float scale) {
+DenselySampledSpectrum DenselySampledSpectrumScale(DenselySampledSpectrum d, float scale) {
+    DenselySampledSpectrum result = d;
     for (int i = 0; i < NCIESamples; i++) {
-        d.values[i] *= scale;
+        result.values[i] *= scale;
     }
+    
+    return result;
 }
 
 /**
@@ -552,6 +561,153 @@ RGB SampledSpectrumToRGB(SampledSpectrum s, SampledWavelengths lambda) {
     XYZ xyz = SampledSpectrumToXYZ(s, lambda);
 
     return XYZToRGB(xyz);
+}
+
+/**
+ * @struct RGBAlbedoSpectrum
+ * @brief Represents reflectance spectrum derived from RGB values
+ */
+struct RGBAlbedoSpectrum {
+    RGBSigmoidPolynomial rsp;  ///< Sigmoid polynomial coefficients
+};
+
+/**
+ * @brief Creates an albedo spectrum from RGB coefficients
+ * @param rsp Sigmoid polynomial coefficients
+ * @return Initialized albedo spectrum
+ */
+RGBAlbedoSpectrum RGBAlbedoSpectrumNew(RGBSigmoidPolynomial rsp) {
+    RGBAlbedoSpectrum s;
+    s.rsp = rsp;
+    return s;
+}
+
+/**
+ * @brief Evaluates spectrum at given wavelength
+ * @param s Input albedo spectrum
+ * @param lambda Wavelength in nanometers
+ * @return Spectral reflectance value
+ */
+float RGBAlbedoSpectrumEval(RGBAlbedoSpectrum s, float lambda) {
+    return RGBSigmoidPolynomialEval(s.rsp, lambda);
+}
+
+/**
+ * @brief Computes maximum reflectance value in visible spectrum
+ * @param s Input albedo spectrum
+ * @return Peak reflectance value
+ */
+float RGBAlbedoSpectrumMaxValue(RGBAlbedoSpectrum s) {
+    return RGBSigmoidPolynomialMaxValue(s.rsp);
+}
+
+/**
+ * @struct RGBUnboundedSpectrum
+ * @brief Represents unconstrained spectral distributions (e.g., emissive sources)
+ */
+struct RGBUnboundedSpectrum {
+    float scale;                ///< Intensity scaling factor
+    RGBSigmoidPolynomial rsp;   ///< Sigmoid polynomial coefficients
+};
+
+/**
+ * @brief Creates an unbounded spectrum from RGB color
+ * @param cs RGB color space definition
+ * @param rgb Input RGB color (components >=0)
+ * @return Initialized unbounded spectrum
+ */
+RGBUnboundedSpectrum RGBUnboundedSpectrumNew(RGB rgb) {
+    RGBUnboundedSpectrum s;
+    
+    // Compute the maximum component of the RGB vector
+    float max_comp = max(rgb.r, max(rgb.g, rgb.b));
+    s.scale = 2.0f * max_comp;
+    
+    // Normalize the RGB vector by scale if not zero
+    RGB scaled_rgb = s.scale > 0.0f ? RGBDivFloat(rgb, s.scale) : RGBNew(0.0f, 0.0f, 0.0f);
+    s.rsp = ToRGBCoeffs(scaled_rgb);
+    
+    return s;
+}
+
+/**
+ * @brief Evaluates scaled spectrum at wavelength
+ * @param s Input unbounded spectrum
+ * @param lambda Wavelength in nanometers
+ * @return Spectral radiance value
+ */
+float RGBUnboundedSpectrumEval(RGBUnboundedSpectrum s, float lambda) {
+    return s.scale * RGBSigmoidPolynomialEval(s.rsp, lambda);
+}
+
+/**
+ * @brief Computes maximum radiant intensity
+ * @param s Input unbounded spectrum
+ * @return Peak radiance value
+ */
+float RGBUnboundedSpectrumMaxValue(RGBUnboundedSpectrum s) {
+    return s.scale * RGBSigmoidPolynomialMaxValue(s.rsp);
+}
+
+/**
+ * @struct RGBIlluminantSpectrum
+ * @brief Represents light source spectrum combined with illuminant
+ */
+struct RGBIlluminantSpectrum {
+    float scale;                        ///< Intensity scaling factor
+    RGBSigmoidPolynomial rsp;           ///< Spectral shape coefficients
+    DenselySampledSpectrum illuminant;  ///< Illuminant spectrum (e.g., D65)
+};
+
+/**
+ * @brief Creates an illuminant spectrum from RGB color
+ * @param cs RGB color space definition
+ * @param rgb Input RGB color
+ * @return Initialized illuminant spectrum
+ */
+RGBIlluminantSpectrum RGBIlluminantSpectrumNew(RGB rgb) {
+    RGBIlluminantSpectrum s;
+    
+    // Compute the maximum component of the RGB vector
+    float max_comp = max(rgb.r, max(rgb.g, rgb.b));
+    s.scale = 2.0f * max_comp;
+    
+    // Normalize the RGB vector by scale if not zero
+    RGB scaled_rgb = s.scale > 0.0f ? RGBDivFloat(rgb, s.scale) : RGBNew(0.0f, 0.0f, 0.0f);
+    s.rsp = ToRGBCoeffs(scaled_rgb);
+    
+    // Initialize illuminant spectrum (D65)
+    // Note: In a real implementation, this would be precomputed and stored
+    for (int i = 0; i < NCIESamples; i++) {
+        float lambda = float(i + LambdaMin);
+        s.illuminant.values[i] = SampleD65Illuminant(lambda);
+    }
+    
+    return s;
+}
+
+/**
+ * @brief Evaluates full spectral power distribution
+ * @param s Input illuminant spectrum
+ * @param lambda Wavelength in nanometers
+ * @return Spectral radiance value
+ */
+float RGBIlluminantSpectrumEval(RGBIlluminantSpectrum s, float lambda) {
+    float illuminant_val = DenselySampledSpectrumEval(s.illuminant, lambda);
+
+    return s.scale * RGBSigmoidPolynomialEval(s.rsp, lambda) * illuminant_val;
+}
+
+/**
+ * @brief Computes maximum spectral radiance
+ * @param s Input illuminant spectrum
+ * @return Peak radiance value
+ */
+float RGBIlluminantSpectrumMaxValue(RGBIlluminantSpectrum s) {
+    float rsp_max = RGBSigmoidPolynomialMaxValue(s.rsp);
+    float illuminant_max = DenselySampledSpectrumMaxValue(s.illuminant);
+
+    return s.scale * rsp_max * illuminant_max;
 }
 
 #endif // _SPECTRUM__GLSL__

@@ -1,5 +1,4 @@
 #include <interface.h>
-#include <spectrum.h>
 
 void CreateSingleton() {
 	dream::ThreadPool::Instance(1);
@@ -29,15 +28,15 @@ int main() {
 //using namespace dream;
 
 //void TestRGBToSpectrum() {
-//	// 1. ³õÊ¼»¯ÑÕÉ«¿Õ¼ä
+//	// 1. ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½É«ï¿½Õ¼ï¿½
 //	RGBColorSpace colorSpace;
 //
-//	// 2. ²âÊÔ´¿ºÚÉ«
+//	// 2. ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½É«
 //	{
 //		RGB black(0, 0, 0);
 //		RGBSigmoidPolynomial coeffs = colorSpace.ToRGBCoeffs(black);
 //
-//		// ÑéÖ¤ËùÓÐ²¨³¤Êä³öÎª0
+//		// ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª0
 //		for (int lambda = 360; lambda <= 830; lambda += 50) {
 //			float value = coeffs(lambda);
 //			if (std::abs(value) > 1e-6f) {
@@ -47,15 +46,15 @@ int main() {
 //		std::cout << "Test 1 (Black): PASS\n";
 //	}
 //
-//	// 3. ²âÊÔ´¿°×É«
+//	// 3. ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½É«
 //	{
 //		RGB white(1, 1, 1);
 //		RGBSigmoidPolynomial coeffs = colorSpace.ToRGBCoeffs(white);
 //
-//		// ÑéÖ¤¹âÆ×Öµ½Ó½ü1.0
+//		// ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½Öµï¿½Ó½ï¿½1.0
 //		for (int lambda = 360; lambda <= 830; lambda += 50) {
 //			float value = coeffs(lambda);
-//			if (std::abs(value - 1.0f) > 0.05f) { // ÔÊÐí5%Îó²î
+//			if (std::abs(value - 1.0f) > 0.05f) { // ï¿½ï¿½ï¿½ï¿½5%ï¿½ï¿½ï¿½
 //				std::cerr << "FAIL: White spectrum mismatch at " << lambda
 //					<< "nm: " << value << "\n";
 //			}
@@ -63,16 +62,16 @@ int main() {
 //		std::cout << "Test 2 (White): PASS\n";
 //	}
 //
-//	// 4. ²âÊÔºìÉ«¹âÆ×ÌØÐÔ
+//	// 4. ï¿½ï¿½ï¿½Ôºï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	{
 //		RGB red(1, 0, 0);
 //		RGBSigmoidPolynomial coeffs = colorSpace.ToRGBCoeffs(red);
 //
-//		// ÑéÖ¤³¤²¨£¨ºì£©> ¶Ì²¨£¨À¶£©
-//		float redValue = coeffs(650.f); // ºì¹â²¨³¤
-//		float blueValue = coeffs(450.f); // À¶¹â²¨³¤
+//		// ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ì£©> ï¿½Ì²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//		float redValue = coeffs(650.f); // ï¿½ï¿½â²¨ï¿½ï¿½
+//		float blueValue = coeffs(450.f); // ï¿½ï¿½ï¿½â²¨ï¿½ï¿½
 //
-//		if (redValue < blueValue * 2.0f) { // ºì¹âÖÁÉÙÊÇÀ¶¹âµÄ2±¶
+//		if (redValue < blueValue * 2.0f) { // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½
 //			std::cerr << "FAIL: Red spectrum not dominant\n"
 //				<< "650nm: " << redValue << " vs 450nm: " << blueValue << "\n";
 //		}
