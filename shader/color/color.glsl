@@ -11,6 +11,26 @@ struct RGB {
 };
 
 /**
+ * @brief Helper function to access RGB components by index
+ * @param rgb The RGB color structure
+ * @param index The component index (0 = red, 1 = green, 2 = blue)
+ * @return The value of the requested color component
+ */
+float GetRGBComponent(RGB rgb, int index) {
+    if (index == 0) {
+        return rgb.r;    // Red component
+    }
+    else if (index == 1) {
+        return rgb.g;    // Green component
+    }
+    else if (index == 2) {
+        return rgb.b;    // Blue component
+    }
+
+    return 0.0;                      // Default fallback value
+}
+
+/**
  * @brief Construct RGB with values
  * @param r Red component
  * @param g Green component
@@ -369,22 +389,6 @@ XYZ XYZClampZero(XYZ xyz) {
     result.z = max(xyz.z, 0.0f);
 
     return result;
-}
-
-/**
- * @brief Convert XYZ color to RGB (SRGB color gamut coordinates and D65 white point)
- * @param xyz Input XYZ color
- * @return RGB color
- */
-RGB XYZToRGB(XYZ xyz) {
-    RGB rgb;
-    
-    // Apply XYZ to RGB conversion matrix
-    rgb.r = 3.240479f * xyz.x - 1.537150f * xyz.y - 0.498535f * xyz.z;
-    rgb.g = -0.969256f * xyz.x + 1.875991f * xyz.y + 0.041556f * xyz.z;
-    rgb.b = 0.055648f * xyz.x - 0.204043f * xyz.y + 1.057311f * xyz.z;
-    
-    return rgb;
 }
 
 #endif // _COLOR__GLSL__

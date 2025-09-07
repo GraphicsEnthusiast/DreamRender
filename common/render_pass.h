@@ -118,17 +118,7 @@ protected:
  */
 class SimpleComputePass : public RenderPass {
 public:
-    SimpleComputePass(unsigned int width, unsigned int height) {
-        name_ = "Simple compute pass";
-
-        width_ = width;
-        height_ = height;
-
-        // Create compute shader
-        const char* compute_path = "../shader/test.comp";
-
-        shader_ = std::make_unique<ComputationShader>(compute_path);
-    }
+    SimpleComputePass(unsigned int width, unsigned int height);
 
     void Execute() override {
 		// Use compute shader
@@ -145,6 +135,10 @@ public:
 		mesh_manager.GetBVHNodeTBO().BindTexture(1);
 		shader_->SetInt("BVHNodes", 1);
 
+		tbo_->BindTexture(2);
+		shader_->SetInt("SRGBToSpectrumTable", 2);
+
+
         // Dispatch compute shader
         glDispatchCompute(width_ / 16, height_ / 16, 1);
 
@@ -152,6 +146,7 @@ public:
     }
 
 protected:
+    std::unique_ptr<TBO> tbo_;
     std::unique_ptr<ComputationShader> shader_;
     unsigned int width_;
     unsigned int height_;

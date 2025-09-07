@@ -1,7 +1,7 @@
 #ifndef _SPECTRUM__GLSL__
 #define _SPECTRUM__GLSL__
 
-#include "color/color.glsl"
+#include "color/color_space.glsl"
 
 /**
  * @struct SampledSpectrum

@@ -3,6 +3,20 @@
 
 #include "util/util.glsl"
 
+// Predefined RGB to XYZ conversion matrix (D65 white point)
+const mat3 RGBTOXYZ = mat3(
+    0.412453, 0.357580, 0.180423,
+    0.212671, 0.715160, 0.072169,
+    0.019334, 0.119193, 0.950227
+);
+
+// Predefined XYZ to RGB conversion matrix (D65 white point)
+const mat3 XYZTORGB = mat3(
+     3.240479, -1.537150, -0.498535,
+    -0.969256,  1.875991,  0.041556,
+     0.055648, -0.204043,  1.057311
+);
+
 const float CIEX[NCIESamples] = float[NCIESamples](
     // CIE X function values
     0.0001299000f, 0.0001458470f, 0.0001638021f, 0.0001840037f, 0.0002066902f,
