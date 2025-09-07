@@ -20,8 +20,6 @@ int main() {
 	gui->Render();
 	ReleaseSingleton();
 
-
-
 	return 0;
 }
 

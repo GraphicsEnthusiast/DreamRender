@@ -579,6 +579,7 @@ struct RGBAlbedoSpectrum {
 RGBAlbedoSpectrum RGBAlbedoSpectrumNew(RGBSigmoidPolynomial rsp) {
     RGBAlbedoSpectrum s;
     s.rsp = rsp;
+    
     return s;
 }
 

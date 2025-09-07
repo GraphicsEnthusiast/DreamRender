@@ -154,11 +154,11 @@ RGBSigmoidPolynomial RGBToSpectrumTableEval(RGB rgb) {
     }
     
     // Compute remapped component values
-    float x = GetRGBComponent(rgb, (maxc + 1) % 3) * (RGBToSpectrumTableRes - 1.0f) / z_val;
-    float y = GetRGBComponent(rgb, (maxc + 2) % 3) * (RGBToSpectrumTableRes - 1.0f) / z_val;
+    float x = GetRGBComponent(rgb, (maxc + 1) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z_val;
+    float y = GetRGBComponent(rgb, (maxc + 2) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z_val;
     
     // Apply inverse smooth step transformation
-    float zz = InverseSmoothStep(InverseSmoothStep(z_val)) * (RGBToSpectrumTableRes - 1.0f);
+    float zz = InverseSmoothStep(InverseSmoothStep(z_val)) * (float(RGBToSpectrumTableRes) - 1.0f);
     
     // Compute integer indices
     int xi = min(int(x), RGBToSpectrumTableRes - 2);
