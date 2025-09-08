@@ -4,14 +4,6 @@
 #include "color/color_space.glsl"
 
 /**
- * @struct SampledSpectrum
- * @brief Represents spectral distribution with discrete wavelength samples
- */
-struct SampledSpectrum {
-    float values[NSpectrumSamples];  // Spectral values at sampled wavelengths
-};
-
-/**
  * @brief Creates a constant spectrum
  * @param c Constant value for all wavelengths
  * @return New SampledSpectrum
@@ -31,7 +23,7 @@ SampledSpectrum SampledSpectrumNew(const float c[NSpectrumSamples]) {
  * @param b Second spectrum operand
  * @return Component-wise sum of a and b
  */
-SampledSpectrum SampledSpectrumAdd(SampledSpectrum a, SampledSpectrum b) {
+SampledSpectrum Add(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
         r.values[i] = a.values[i] + b.values[i];
@@ -46,7 +38,7 @@ SampledSpectrum SampledSpectrumAdd(SampledSpectrum a, SampledSpectrum b) {
  * @param b Second spectrum operand (subtrahend)
  * @return Component-wise difference of a and b (a - b)
  */
-SampledSpectrum SampledSpectrumSub(SampledSpectrum a, SampledSpectrum b) {
+SampledSpectrum Sub(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
         r.values[i] = a.values[i] - b.values[i];
@@ -61,7 +53,7 @@ SampledSpectrum SampledSpectrumSub(SampledSpectrum a, SampledSpectrum b) {
  * @param b Second spectrum operand
  * @return Component-wise product of a and b
  */
-SampledSpectrum SampledSpectrumMul(SampledSpectrum a, SampledSpectrum b) {
+SampledSpectrum Mul(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
         r.values[i] = a.values[i] * b.values[i];
@@ -76,7 +68,7 @@ SampledSpectrum SampledSpectrumMul(SampledSpectrum a, SampledSpectrum b) {
  * @param a Scalar multiplier
  * @return Scaled spectrum
  */
-SampledSpectrum SampledSpectrumMulFloat(SampledSpectrum s, float a) {
+SampledSpectrum MulFloat(SampledSpectrum s, float a) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
         r.values[i] = s.values[i] * a;
@@ -91,7 +83,7 @@ SampledSpectrum SampledSpectrumMulFloat(SampledSpectrum s, float a) {
  * @param b Denominator spectrum
  * @return Component-wise quotient a/b (returns 0 where denominator is 0)
  */
-SampledSpectrum SampledSpectrumDiv(SampledSpectrum a, SampledSpectrum b) {
+SampledSpectrum Div(SampledSpectrum a, SampledSpectrum b) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
         r.values[i] = (b.values[i] != 0.0f) ? (a.values[i] / b.values[i]) : 0.0f;
@@ -106,7 +98,7 @@ SampledSpectrum SampledSpectrumDiv(SampledSpectrum a, SampledSpectrum b) {
  * @param a Scalar divisor
  * @return Component-wise quotient s/a
  */
-SampledSpectrum SampledSpectrumDivFloat(SampledSpectrum s, float a) {
+SampledSpectrum DivFloat(SampledSpectrum s, float a) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
         r.values[i] = s.values[i] / a;
@@ -120,7 +112,7 @@ SampledSpectrum SampledSpectrumDivFloat(SampledSpectrum s, float a) {
  * @param s Input spectrum
  * @return Negated spectrum
  */
-SampledSpectrum SampledSpectrumNegate(SampledSpectrum s) {
+SampledSpectrum Negate(SampledSpectrum s) {
     SampledSpectrum r;
     for (int i = 0; i < NSpectrumSamples; i++) {
         r.values[i] = -s.values[i];
@@ -134,7 +126,7 @@ SampledSpectrum SampledSpectrumNegate(SampledSpectrum s) {
  * @param s Spectrum to check
  * @return True if at least one component is non-zero, false otherwise
  */
-bool SampledSpectrumNonZero(SampledSpectrum s) {
+bool NonZero(SampledSpectrum s) {
     for (int i = 0; i < NSpectrumSamples; i++) {
         if (0.0f != s.values[i]) {
             return true;
@@ -149,7 +141,7 @@ bool SampledSpectrumNonZero(SampledSpectrum s) {
  * @param s Input spectrum
  * @return Minimum component value
  */
-float SampledSpectrumMin(SampledSpectrum s) {
+float Min(SampledSpectrum s) {
     float m = s.values[0];
     for (int i = 1; i < NSpectrumSamples; i++) {
         m = min(m, s.values[i]);
@@ -163,7 +155,7 @@ float SampledSpectrumMin(SampledSpectrum s) {
  * @param s Input spectrum
  * @return Maximum component value
  */
-float SampledSpectrumMax(SampledSpectrum s) {
+float Max(SampledSpectrum s) {
     float m = s.values[0];
     for (int i = 1; i < NSpectrumSamples; i++) {
         m = max(m, s.values[i]);
@@ -177,7 +169,7 @@ float SampledSpectrumMax(SampledSpectrum s) {
  * @param s Input spectrum
  * @return Average value of all spectral samples
  */
-float SampledSpectrumAvg(SampledSpectrum s) {
+float Avg(SampledSpectrum s) {
     float sum = s.values[0];
     for (int i = 1; i < NSpectrumSamples; i++) {
         sum += s.values[i];
@@ -519,9 +511,9 @@ XYZ SampledSpectrumToXYZ(SampledSpectrum s, SampledWavelengths lambda) {
     }
     
     // Compute averages and normalize by CIE Y integral
-    float x = SampledSpectrumAvg(x_avg) / CIEYIntegral;
-    float y = SampledSpectrumAvg(y_avg) / CIEYIntegral;
-    float z = SampledSpectrumAvg(z_avg) / CIEYIntegral;
+    float x = Avg(x_avg) / CIEYIntegral;
+    float y = Avg(y_avg) / CIEYIntegral;
+    float z = Avg(z_avg) / CIEYIntegral;
     
     return XYZNew(x, y, z);
 }

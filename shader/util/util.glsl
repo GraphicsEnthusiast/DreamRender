@@ -12,6 +12,64 @@ const float PI = 3.1415926535897932385f;
 const float MaxFloat = 3.402823466e+38f;
 
 /**
+ * @struct SampledSpectrum
+ * @brief Represents spectral distribution with discrete wavelength samples
+ */
+struct SampledSpectrum {
+    float values[NSpectrumSamples];  // Spectral values at sampled wavelengths
+};
+
+/**
+ * @struct MaterialInfo
+ * @brief Material information structure containing optical properties and texture indices
+ */
+struct MaterialInfo {
+    SampledSpectrum diffuse;
+    int diffuse_texture;
+
+    SampledSpectrum roughness;
+    int roughness_texture;
+};
+
+/**
+ * @struct IntersectionInfo
+ * @brief Ray-geometry intersection information structure
+ */
+struct IntersectionInfo {
+	float distance;
+	vec3 position;
+	vec3 shading_normal;
+    vec3 geometry_normal;
+	bool front_face;
+    MaterialInfo material_info;
+};
+
+/**
+ * @brief Sets and adjusts normal information at intersection point
+ * @param info Initial intersection information structure
+ * @param dir Ray direction vector (normalized)
+ * @param ng Geometry normal (original normal of geometric surface)
+ * @param ns Shading normal (potentially modified or interpolated normal)
+ * @return IntersectionInfo Updated intersection information structure
+ */
+IntersectionInfo SetNormal(IntersectionInfo info, vec3 dir, vec3 ng, vec3 ns) {
+    IntersectionInfo new_info = info;
+
+	new_info.front_face = dot(dir, ng) < 0.0f;
+	new_info.geometry_normal = new_info.front_face ? ng : -ng;
+	new_info.shading_normal = new_info.front_face ? ns : -ns;
+    
+    // Check if geometry normal and shading normal are inconsistent (negative dot product)
+	if (dot(new_info.geometry_normal, new_info.shading_normal) < 0.0f) {
+        // If inconsistent, use reflection operation to flip shading normal to the same side as geometry normal
+        // This ensures normal direction consistency and prevents lighting calculation errors
+		new_info.shading_normal = reflect(new_info.shading_normal, new_info.geometry_normal);
+	}
+
+    return new_info;
+}
+
+/**
  * @brief Converts a vector from world space to local space
  * @param vec Vector to transform
  * @param right Local space right vector

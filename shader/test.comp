@@ -65,51 +65,5 @@ void main()
         color = vec4(bg_color, 1.0);
     }
 
-
-    // 1. 定义输入RGB颜色（假设在sRGB颜色空间）
-    RGB rgb = RGBNew(0.0f, 0.0f, 0.9f);
-
-    // 2. 将RGB转换为光谱系数（需要颜色空间信息）
-    RGBSigmoidPolynomial rsp = ToRGBCoeffs(rgb); // 依赖于颜色空间查找表
-
-    // 3. 创建光谱对象（例如用于反射率）
-    RGBAlbedoSpectrum albedoSpectrum = RGBAlbedoSpectrumNew(rsp);
-
-    // 4. 采样可见光谱波长（使用重要性采样）
-    SampledWavelengths waves = SampledWavelengthsSampleVisible(0.5f); // 0.5是随机种子
-
-    // 5. 在采样波长处评估光谱值
-    SampledSpectrum sampled;
-    for (int i = 0; i < NSpectrumSamples; i++) {
-        sampled.values[i] = RGBAlbedoSpectrumEval(albedoSpectrum, waves.lambda[i]);
-    }
-    
-    // 
-    RGB outputRgb = SampledSpectrumToRGB(sampled, waves); 
-    color = vec4(vec3(outputRgb.r, outputRgb.g, outputRgb.b), 1.0);
-    //color = vec4(vec3(rgb.r, rgb.g, rgb.b), 1.0);
-
-    RGB blue = RGBNew(0.0, 0.0, 0.9);
-	RGBSigmoidPolynomial coeffs = ToRGBCoeffs(blue);
-    float X = 0.0f, Y = 0.0f, Z = 0.0f;
-    for (int i = 0; i < 471; i++) {
-        float lambda = LambdaMin + float(i);
-        X += RGBSigmoidPolynomialEval(coeffs,lambda) * CIEX[i];
-        Y += RGBSigmoidPolynomialEval(coeffs,lambda) * CIEY[i]; 
-        Z += RGBSigmoidPolynomialEval(coeffs,lambda) * CIEZ[i]; 
-    }
-    RGB reconstructed_rgb = XYZToRGB(XYZ(X, Y, Z));
-	float redValue = RGBSigmoidPolynomialEval(coeffs,650.f); 
-	float blueValue = RGBSigmoidPolynomialEval(coeffs,450.f);
-
-    if (blueValue >= 2.0f * redValue) {
-        color = vec4(0.0,0.0,1.0,1.0);
-    }
-    else {
-        color = vec4(1.0,0.0,0.0,1.0);
-    }
-    color = vec4(reconstructed_rgb.r, reconstructed_rgb.g,reconstructed_rgb.b, 1.0f);
-    color = vec4(vec3(outputRgb.r, outputRgb.g, outputRgb.b), 1.0);s
-    // 输出到图像
     imageStore(outputTex, pixel_coords, color);
 }
