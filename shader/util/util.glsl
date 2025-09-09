@@ -2,7 +2,7 @@
 #define _UTIL__GLSL__
 
 // Spectral rendering constants
-const int NSpectrumSamples = 8;               // Number of spectral samples per calculation
+const int NSpectrumSamples = 16;               // Number of spectral samples per calculation
 const float LambdaMin = 360.0f;               // Minimum visible wavelength (nanometers)
 const float LambdaMax = 830.0f;               // Maximum visible wavelength (nanometers)
 const float CIEYIntegral = 106.856895f;
