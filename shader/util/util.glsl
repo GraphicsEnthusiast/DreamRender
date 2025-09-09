@@ -78,7 +78,7 @@ IntersectionInfo SetNormal(IntersectionInfo info, vec3 dir, vec3 ng, vec3 ns) {
  * @return Transformed vector in local space
  */
 vec3 ToLocal(vec3 vec, vec3 right, vec3 up, vec3 forward) {
-    return vec3(dot(vec, right), dot(vec, up), dot(vec, forward));
+    return normalize(vec3(dot(vec, right), dot(vec, up), dot(vec, forward)));
 }
 
 /**
@@ -90,7 +90,7 @@ vec3 ToLocal(vec3 vec, vec3 right, vec3 up, vec3 forward) {
  * @return Transformed vector in world space
  */
 vec3 ToWorld(vec3 dir, vec3 right, vec3 up, vec3 forward) {
-    return dir.x * right + dir.y * up + dir.z * forward;
+    return normalize(dir.x * right + dir.y * up + dir.z * forward);
 }
 
 /**
@@ -113,7 +113,7 @@ vec3 ToLocalFromUp(vec3 dir, vec3 up) {
     b = cross(c, up); // Complete orthonormal basis: B = C × up
 
     // Transform: project world-space dir onto local basis {B, C, up}
-    return vec3(dot(dir, b), dot(dir, c), dot(dir, up));
+    return normalize(vec3(dot(dir, b), dot(dir, c), dot(dir, up)));
 }
 
 /**
