@@ -4,6 +4,19 @@
 #include "color/color_space.glsl"
 
 /**
+ * @brief Creates a zero spectrum
+ * @return New SampledSpectrum
+ */
+SampledSpectrum SampledSpectrumNewZero() {
+    SampledSpectrum s;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        s.values[i] = 0.0f;
+    }
+
+    return s;
+}
+
+/**
  * @brief Creates a constant spectrum
  * @param c Constant value for all wavelengths
  * @return New SampledSpectrum

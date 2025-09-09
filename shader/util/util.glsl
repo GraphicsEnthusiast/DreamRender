@@ -20,14 +20,14 @@ struct SampledSpectrum {
 };
 
 /**
- * @struct MaterialInfo
+ * @struct Material
  * @brief Material information structure containing optical properties and texture indices
  */
-struct MaterialInfo {
+struct Material {
     SampledSpectrum diffuse;
     int diffuse_texture;
 
-    SampledSpectrum roughness;
+    float roughness;
     int roughness_texture;
 };
 
@@ -41,7 +41,7 @@ struct IntersectionInfo {
 	vec3 shading_normal;
     vec3 geometry_normal;
 	bool front_face;
-    MaterialInfo material_info;
+    Material material;
 };
 
 /**
@@ -91,6 +91,54 @@ vec3 ToLocal(vec3 vec, vec3 right, vec3 up, vec3 forward) {
  */
 vec3 ToWorld(vec3 dir, vec3 right, vec3 up, vec3 forward) {
     return dir.x * right + dir.y * up + dir.z * forward;
+}
+
+/**
+ * @brief Converts a unit vector from world space to a local coordinate system defined by an up-direction
+ * @param dir Unit vector in world space to transform
+ * @param up Up-direction vector in world space (defines local space's vertical axis)
+ * @return Transformed vector in local space (orthonormal basis relative to up)
+ */
+vec3 ToLocalFromUp(vec3 dir, vec3 up) {
+    vec3 b, c;
+    // Construct orthonormal basis: prioritize stability by comparing |up.x| vs |up.y|
+    if (abs(up.x) > abs(up.y)) {
+        float len_inv = 1.0f / sqrt(up.x * up.x + up.z * up.z);
+        c = vec3(up.z * len_inv, 0.0f, -up.x * len_inv); // Tangent vector (x-z plane)
+    } 
+    else {
+        float len_inv = 1.0f / sqrt(up.y * up.y + up.z * up.z);
+        c = vec3(0.0f, up.z * len_inv, -up.y * len_inv); // Tangent vector (y-z plane)
+    }
+    b = cross(c, up); // Complete orthonormal basis: B = C × up
+
+    // Transform: project world-space dir onto local basis {B, C, up}
+    return vec3(dot(dir, b), dot(dir, c), dot(dir, up));
+}
+
+/**
+ * @brief Converts a unit vector from local space (defined by up-direction) back to world space
+ * @param dir Unit vector in local space to transform
+ * @param up Up-direction vector in world space (same as used in ToLocalFromUp)
+ * @return Unit vector in world space
+ */
+vec3 ToWorldFromUp(vec3 dir, vec3 up) {
+    vec3 b, c;
+    // Reconstruct identical orthonormal basis as ToLocalFromUp
+    if (abs(up.x) > abs(up.y)) {
+        float len_inv = 1.0f / sqrt(up.x * up.x + up.z * up.z);
+        c = vec3(up.z * len_inv, 0.0f, -up.x * len_inv);
+    } 
+    else {
+        float len_inv = 1.0f / sqrt(up.y * up.y + up.z * up.z);
+        c = vec3(0.0f, up.z * len_inv, -up.y * len_inv);
+    }
+    b = cross(c, up);
+
+    // Reconstruct world-space vector: linear combination of basis vectors
+    vec3 world_vec = dir.x * b + dir.y * c + dir.z * up;
+
+    return normalize(world_vec); // Ensure output remains unit length
 }
 
 #endif // _UTIL__GLSL__
