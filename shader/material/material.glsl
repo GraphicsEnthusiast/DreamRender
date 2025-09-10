@@ -9,7 +9,7 @@
  * @brief Stores the result of material evaluation during light transport simulation.
  */
 struct MaterialEvalInfo {
-    SampledSpectrum bsdf;
+    SampledSpectrum bsdf_cosine;
     float pdf;
 };
 
@@ -19,7 +19,7 @@ struct MaterialEvalInfo {
  */
 struct MaterialSampleInfo {
     vec3 world_l;
-    SampledSpectrum bsdf;
+    SampledSpectrum bsdf_cosine;
     float pdf;
 };
 
@@ -32,7 +32,7 @@ struct MaterialSampleInfo {
  */
 MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l) {
     MaterialEvalInfo m_info;
-    m_info.bsdf = SampledSpectrumNewZero();
+    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
     SampledSpectrum diffuse = info.material.diffuse;
@@ -62,7 +62,7 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world
 	SampledSpectrum brdf = MulFloat(diffuse, 1.0f / PI * (c1 + c2) * (1.0f + roughness * 0.5f)) ;
 	float pdf = CosineHemispherePDF(n_dot_l);
 
-    m_info.bsdf = brdf;
+    m_info.bsdf_cosine = MulFloat(brdf, n_dot_l);
     m_info.pdf = pdf;
 
 	return m_info;
@@ -78,7 +78,7 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world
 MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy) {
     MaterialSampleInfo m_info;
     m_info.world_l = vec3(0.0f);
-    m_info.bsdf = SampledSpectrumNewZero();
+    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
     SampledSpectrum diffuse = info.material.diffuse;
@@ -112,7 +112,7 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sampl
     float pdf = CosineHemispherePDF(n_dot_l);
 
     m_info.world_l = world_l;
-    m_info.bsdf = brdf;
+    m_info.bsdf_cosine = MulFloat(brdf, n_dot_l);
     m_info.pdf = pdf;
 
     return m_info;

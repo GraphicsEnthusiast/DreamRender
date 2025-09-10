@@ -4,13 +4,13 @@
 #include "color/color_space.glsl"
 
 /**
- * @brief Creates a zero spectrum
+ * @brief Creates a constant float spectrum
  * @return New SampledSpectrum
  */
-SampledSpectrum SampledSpectrumNewZero() {
+SampledSpectrum SampledSpectrumNewFloat(float c) {
     SampledSpectrum s;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        s.values[i] = 0.0f;
+        s.values[i] = c;
     }
 
     return s;

@@ -17,6 +17,9 @@ uniform float camera_distance = 1.0;
 uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
 
+float random(vec2 st) {
+    return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123);
+}
 void main()
 {
     // 获取全局线程ID
@@ -38,31 +41,68 @@ void main()
     
     // 生成主光线
     Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, random_offset);
-    
+    vec2 st = gl_GlobalInvocationID.xy / resolution;
     // 使用BVH遍历寻找交点
-    Hit hit = BVHTraverse(ray);
+    SampledWavelengths lambda = SampledWavelengthsSampleVisible(random(st));
+    vec3 pre_pos = ray.origin;
+    vec3 v = -ray.direction;
+    SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
+    vec4 color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    for (int i = 0; i < 3; i++) {
+        Hit hit = BVHTraverse(ray);
     
-    vec4 color;
-    if (hit.distance < MaxFloat) {
-        // 命中几何体：获取三角形并计算法线
-        Triangle tri = FetchTriangle(hit.tri_index);
         
-        // 插值计算法线
-        vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + 
+        if (hit.distance < MaxFloat) {
+            // 命中几何体：获取三角形并计算法线
+            Triangle tri = FetchTriangle(hit.tri_index);
+        
+            vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + 
+                               hit.u * tri.p2 + 
+                               hit.v * tri.p3;
+            vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + 
                                hit.u * tri.n2 + 
                                hit.v * tri.n3);
-        
-        // 法线着色：将法线从[-1,1]映射到[0,1]
-        color = vec4(normal * 0.5 + 0.5, 1.0);
-    } else {
-        // 未命中：使用背景色
-        // 使用《Ray Tracing in One Weekend》中的背景色计算方法
-        vec3 unit_direction = normalize(ray.direction);
-        float t = 0.5 * (unit_direction.y + 1.0); // 将y分量从[-1,1]映射到[0,1]
-        vec3 bg_color = mix(vec3(1.0, 1.0, 1.0), // 白色
+
+            IntersectionInfo info;
+            pre_pos = info.position;
+            info.position = position;
+            info.shading_normal = normal;
+            info.distance = length(pre_pos - position);
+            info.material.diffuse = SampledSpectrumNewFloat(0.7f);
+            info.material.roughness = 0.0f;
+            MaterialSampleInfo m_info = DiffuseSample(info, v, vec2(random(st)));
+            beta = Mul(beta, DivFloat(m_info.bsdf_cosine, m_info.pdf));
+            ray.origin = position + normal * 0.001; // 偏移避免自相交
+            ray.direction = m_info.world_l;
+        } else {
+            // 未命中：使用背景色
+            // 使用《Ray Tracing in One Weekend》中的背景色计算方法
+            vec3 unit_direction = normalize(ray.direction);
+            float t = 0.5 * (unit_direction.y + 1.0); // 将y分量从[-1,1]映射到[0,1]
+            vec3 bg_color = mix(vec3(1.0, 1.0, 1.0), // 白色
                             vec3(0.5, 0.7, 1.0), // 浅蓝色
                             t);
-        color = vec4(bg_color, 1.0);
+
+            RGB bg_rgb = RGBNew(bg_color.r, bg_color.g, bg_color.b);
+            RGBAlbedoSpectrum bg_spectrum = RGBAlbedoSpectrumNew(ToRGBCoeffs(bg_rgb));
+            
+            // 评估光谱值
+            SampledSpectrum bg_spectrum_val;
+            for (int i = 0; i < NSpectrumSamples; i++) {
+                float wavelength = lambda.lambda[i];
+                bg_spectrum_val.values[i] = RGBAlbedoSpectrumEval(bg_spectrum, wavelength);
+            }
+            SampledSpectrum L_env = Mul(beta, bg_spectrum_val);
+            
+            // 将光谱转换为RGB显示
+            RGB linear_rgb = SampledSpectrumToRGB(L_env, lambda);
+            
+            // 应用色调映射和伽马校正
+            //vec3 mapped_rgb = linear_rgb.rgb / (linear_rgb.rgb + vec3(1.0));
+            vec3 display_rgb = vec3(pow(linear_rgb.r, 1.0/2.2), pow(linear_rgb.g, 1.0/2.2), pow(linear_rgb.b, 1.0/2.2));
+            
+            color  = vec4(display_rgb, 1.0);
+        }
     }
 
     imageStore(outputTex, pixel_coords, color);
