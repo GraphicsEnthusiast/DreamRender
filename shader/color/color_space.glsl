@@ -141,7 +141,7 @@ RGBSigmoidPolynomial RGBToSpectrumTableEval(RGB rgb) {
     if (0 == maxc) {
         z_val = rgb.r;
     }
-    else if (maxc == 1) {
+    else if (1 == maxc) {
         z_val = rgb.g;
     }
     else {
