@@ -1,7 +1,6 @@
 #include <interface.h>
 
 void CreateSingleton() {
-	dream::RenderPass::InitSRGBToSpectrumTable();
 	dream::ThreadPool::Instance(1);
 	dream::TriangleMeshManager::Instance();
 }
@@ -14,6 +13,7 @@ void ReleaseSingleton() {
 int main() {
 	CreateSingleton();
 	auto gui = dream::Interface::Create(1280, 720);
+	dream::RenderPass::InitSRGBToSpectrumTable();
 	auto pipeline = std::make_unique<dream::TestPipeline>(gui->GetMainWindow());
 	pipeline->SetRenderingSize(dream::Point2i(1280, 720));
 	pipeline->Init();
