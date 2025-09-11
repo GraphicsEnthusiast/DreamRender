@@ -259,7 +259,7 @@ SampledWavelengths SampledWavelengthsSampleUniform(float u, float lambda_min, fl
  * @param u Random value [0, 1)
  * @return Wavelength in nanometers
  */
-float SampleVisibleWavelengths(float u) {
+float VisibleWavelengthsSample(float u) {
     // Inverse CDF approximation for visible spectrum (360-830nm)
     return 538.0f - 138.888889f * atanh(0.85691062f - 1.82750197f * u);
 }
@@ -298,7 +298,7 @@ SampledWavelengths SampledWavelengthsSampleVisible(float u) {
         }
         
         // Sample wavelength and compute PDF
-        swl.lambda[i] = SampleVisibleWavelengths(up);
+        swl.lambda[i] = VisibleWavelengthsSample(up);
         swl.pdf[i] = VisibleWavelengthsPDF(swl.lambda[i]);
     }
     
