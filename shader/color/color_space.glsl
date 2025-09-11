@@ -111,7 +111,7 @@ float InverseSmoothStep(float x) {
  * @return Linear index into the flattened SRGBToSpectrumTableData array
  */
 int GetSpectrumTableIndex(int maxc, int z, int y, int x, int i) {
-    return (((maxc * RGBToSpectrumTableRes + z) * RGBToSpectrumTableRes + y) * RGBToSpectrumTableRes + x) * 4 + i;
+    return (((maxc * RGBToSpectrumTableRes + z) * RGBToSpectrumTableRes + y) * RGBToSpectrumTableRes + x) * 3 + i;
 }
 
 /**
