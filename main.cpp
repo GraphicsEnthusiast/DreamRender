@@ -1805,7 +1805,7 @@ void TestRGBToSpectrumToRGB() {
 	SampledSpectrum sampledSpectrum = SampledSpectrumNewFloat(0.0f);
 	for (int i = 0; i < NSpectrumSamples; ++i) {
 		float lambda = wavelengths.lambda[i];
-		sampledSpectrum.values[i] = RGBSigmoidPolynomialEval(spectrumCoeffs, lambda);
+		sampledSpectrum.values[i] = RGBSigmoidPolynomialEval(spectrumCoeffs, lambda) * SampleD65Illuminant(lambda);;
 	}
 
 	// 5. Convert sampled spectrum back to XYZ color space
@@ -2018,7 +2018,7 @@ void TestRGBToSpectrumToRGBWithCoeffs() {
 
 	SampledSpectrum sampledSpectrum = SampledSpectrumNewFloat(0.0f);
 	for (int i = 0; i < NSpectrumSamples; ++i) {
-		sampledSpectrum.values[i] = RGBSigmoidPolynomialEval(spectrumCoeffs, sampledWl.lambda[i]);
+		sampledSpectrum.values[i] = RGBSigmoidPolynomialEval(spectrumCoeffs, sampledWl.lambda[i]) * SampleD65Illuminant(sampledWl.lambda[i]);;
 	}
 
 	XYZ xyz = SampledSpectrumToXYZ(sampledSpectrum, sampledWl);
@@ -2153,13 +2153,13 @@ void VisualizeSpectrumFromRGB(const char* filename = "spectrum_data.txt") {
 	}
 
 	// 4. Write file header
-	outFile << "Wavelength(nm)\tRed(1,0,0)\tGreen(0,1,极0)\tBlue(0,0,1)" << std::endl;
+	outFile << "Wavelength(nm)\tRed(1,0,0)\tGreen(0,1,0)\tBlue(0,0,1)" << std::endl;
 
 	// 5. Calculate spectral values across the entire visible spectrum (360nm-830nm) at 1nm intervals
 	for (float lambda = LambdaMin; lambda <= LambdaMax; lambda += 1.0f) {
-		float redValue = RGBSigmoidPolynomialEval(redCoeffs, lambda);
-		float greenValue = RGBSigmoidPolynomialEval(greenCoeffs, lambda);
-		float blueValue = RGBSigmoidPolynomialEval(blueCoeffs, lambda);
+		float redValue = RGBSigmoidPolynomialEval(redCoeffs, lambda) * SampleD65Illuminant(lambda);
+		float greenValue = RGBSigmoidPolynomialEval(greenCoeffs, lambda) * SampleD65Illuminant(lambda);
+		float blueValue = RGBSigmoidPolynomialEval(blueCoeffs, lambda) * SampleD65Illuminant(lambda);
 
 		// Write data
 		outFile << lambda << "\t" << redValue << "\t" << greenValue << "\t" << blueValue << std::endl;
@@ -2213,6 +2213,6 @@ int main() {
 	else {
 		std::cout << "\n*** Suggestion: Problem may be in spectrum->XYZ conversion (SampledSpectrumToXYZ function), CIE matching function data, or XYZ->RGB conversion matrix. ***" << std::endl;
 	}
-
+	TestRGBToSpectrumToRGBWithCoeffs();
 	return 0;
 }
