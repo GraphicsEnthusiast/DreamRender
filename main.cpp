@@ -1,6 +1,7 @@
 #include <interface.h>
 
 void CreateSingleton() {
+	dream::RenderPass::InitSRGBToSpectrumTable();
 	dream::ThreadPool::Instance(1);
 	dream::TriangleMeshManager::Instance();
 }

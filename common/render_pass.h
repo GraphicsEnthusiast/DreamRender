@@ -106,7 +106,13 @@ public:
      */
     const std::string& GetName() const noexcept;
 
+    /**
+     * @brief Initializes the global SRGB to Spectrum conversion table TBO (Texture Buffer Object).
+     */
+    static void InitSRGBToSpectrumTable();
+
 protected:
+    static std::unique_ptr<TBO> srgb_to_spectrum_tbo_;
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
     std::string name_;
@@ -135,7 +141,7 @@ public:
 		mesh_manager.GetBVHNodeTBO().BindTexture(1);
 		shader_->SetInt("BVHNodes", 1);
 
-		tbo_->BindTexture(2);
+        srgb_to_spectrum_tbo_->BindTexture(2);
 		shader_->SetInt("SRGBToSpectrumTable", 2);
 
         // Dispatch compute shader
@@ -145,7 +151,6 @@ public:
     }
 
 protected:
-    std::unique_ptr<TBO> tbo_;
     std::unique_ptr<ComputationShader> shader_;
     unsigned int width_;
     unsigned int height_;

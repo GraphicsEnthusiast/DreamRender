@@ -3,6 +3,8 @@
 
 NAMESPACE_BEGIN(dream)
 
+std::unique_ptr<TBO> RenderPass::srgb_to_spectrum_tbo_ = nullptr;
+
 void RenderPass::SetInputTexture(const std::string& slot_name, const TextureHandle& handle) {
 	auto it = input_map_.find(slot_name);
 	if (input_map_.end() != it) {
@@ -45,6 +47,20 @@ const std::string& RenderPass::GetName() const noexcept {
 	return name_;
 }
 
+void RenderPass::InitSRGBToSpectrumTable() {
+	if (srgb_to_spectrum_tbo_) {
+		return;
+	}
+
+	unsigned int total_size = 3 * 64 * 64 * 64 * 3 * sizeof(float);
+	srgb_to_spectrum_tbo_ = std::make_unique<TBO>(
+		SRGBToSpectrumTableData,
+		total_size,
+		GL_R32F,
+		GL_STATIC_DRAW
+		);
+}
+
 SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
 	name_ = "Simple compute pass";
 
@@ -55,14 +71,6 @@ SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
 	const char* compute_path = "../shader/test.comp";
 
 	shader_ = std::make_unique<ComputationShader>(compute_path);
-
-	unsigned int total_size = 3 * 64 * 64 * 64 * 3 * sizeof(float);
-	tbo_ = std::make_unique<TBO>(
-		SRGBToSpectrumTableData,     // ����ָ��
-		total_size,                  // ���ݴ�С
-		GL_R32F,                  // �ڲ���ʽ (ʹ�� RGBA32F �洢������)
-		GL_STATIC_DRAW               // ʹ�÷�ʽ
-		);
 }
 
 NAMESPACE_END(dream)
