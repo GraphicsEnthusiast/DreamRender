@@ -56,12 +56,12 @@ SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
 
 	shader_ = std::make_unique<ComputationShader>(compute_path);
 
-	unsigned int total_size = 3 * 64 * 64 * 64 * 4 * sizeof(float);
+	unsigned int total_size = 3 * 64 * 64 * 64 * 3 * sizeof(float);
 	tbo_ = std::make_unique<TBO>(
-		SRGBToSpectrumTableData,     // 数据指针
-		total_size,                  // 数据大小
-		GL_R32F,                  // 内部格式 (使用 RGBA32F 存储浮点数)
-		GL_STATIC_DRAW               // 使用方式
+		SRGBToSpectrumTableData,     // 锟斤拷锟斤拷指锟斤拷
+		total_size,                  // 锟斤拷锟捷达拷小
+		GL_R32F,                  // 锟节诧拷锟斤拷式 (使锟斤拷 RGBA32F 锟芥储锟斤拷锟斤拷锟斤拷)
+		GL_STATIC_DRAW               // 使锟矫凤拷式
 		);
 }
 
