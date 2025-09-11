@@ -120,6 +120,8 @@ int GetSpectrumTableIndex(int maxc, int z, int y, int x, int i) {
  * @return RGBSigmoidPolynomial coefficients for spectral representation
  */
 RGBSigmoidPolynomial RGBToSpectrumTableEval(RGB rgb) {
+    rgb = RGBClamp(rgb, 0.0f, 1.0f);
+
     // Handle uniform RGB values (grayscale)
     if (rgb.r == rgb.g && rgb.g == rgb.b) {
         float value = rgb.r;
@@ -137,23 +139,23 @@ RGBSigmoidPolynomial RGBToSpectrumTableEval(RGB rgb) {
         maxc = (rgb.g > rgb.b) ? 1 : 2;
     }
     
-    float z_val = 0.0f;
+    float z = 0.0f;
     if (0 == maxc) {
-        z_val = rgb.r;
+        z = rgb.r;
     }
     else if (1 == maxc) {
-        z_val = rgb.g;
+        z = rgb.g;
     }
     else {
-        z_val = rgb.b;
+        z = rgb.b;
     }
     
     // Compute remapped component values
-    float x = GetRGBComponent(rgb, (maxc + 1) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z_val;
-    float y = GetRGBComponent(rgb, (maxc + 2) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z_val;
+    float x = GetRGBComponent(rgb, (maxc + 1) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z;
+    float y = GetRGBComponent(rgb, (maxc + 2) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z;
     
     // Apply inverse smooth step transformation
-    float zz = InverseSmoothStep(InverseSmoothStep(z_val)) * (float(RGBToSpectrumTableRes) - 1.0f);
+    float zz = InverseSmoothStep(InverseSmoothStep(z)) * (float(RGBToSpectrumTableRes) - 1.0f);
     
     // Compute integer indices
     int xi = min(int(x), RGBToSpectrumTableRes - 2);
