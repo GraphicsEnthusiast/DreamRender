@@ -469,18 +469,28 @@ float DenselySampledSpectrumMaxValue(DenselySampledSpectrum d) {
 }
 
 /**
- * @brief Evaluates spectrum at specified wavelength
+ * @brief Evaluates spectrum at specified wavelength using linear interpolation
  * @param d Input spectrum
  * @param lambda Query wavelength
  * @return Spectral value (0 if wavelength out-of-range)
  */
 float DenselySampledSpectrumEval(DenselySampledSpectrum d, float lambda) {
-    int idx = int(round(lambda) - int(LambdaMin));
-    if (idx < 0 || idx >= NCIESamples) {
+    // Calculate continuous array index
+    float continuous_idx = lambda - LambdaMin;
+    
+    // Check if wavelength is out of valid range [LambdaMin, LambdaMax]
+    // Use (NCIESamples - 1) to ensure we have valid adjacent samples for interpolation
+    if (continuous_idx < 0.0f || continuous_idx >= float(NCIESamples - 1)) {
         return 0.0f;
     }
     
-    return d.values[idx];
+    // Get the lower and upper indices for interpolation
+    int idx0 = int(floor(continuous_idx));
+    int idx1 = idx0 + 1;
+    float t = continuous_idx - float(idx0);  // Interpolation factor
+    
+    // Perform linear interpolation between adjacent samples
+    return mix(d.values[idx0], d.values[idx1], t);
 }
 
 /**

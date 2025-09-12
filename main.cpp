@@ -1218,52 +1218,61 @@ DenselySampledSpectrum DenselySampledSpectrumNew() {
 }
 
 /**
- * @brief Samples spectral values at discrete wavelengths
+ * @brief Samples spectral values at discrete wavelengths using linear interpolation
  * @param d Input densely sampled spectrum
  * @param lambda Target wavelength samples
  * @return SampledSpectrum values at sampled wavelengths
  */
 SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWavelengths lambda) {
-	SampledSpectrum s;
-	for (int i = 0; i < NSpectrumSamples; i++) {
-		// Calculate array index (rounded to nearest integer)
-		int idx = int(round(lambda.lambda[i]) - int(LambdaMin));
+    SampledSpectrum s;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        // Calculate continuous array index
+        float continuous_idx = lambda.lambda[i] - LambdaMin;
+        
+        if (continuous_idx < 0.0f || continuous_idx >= float(NCIESamples - 1)) {
+            s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
+        } 
+        else {
+            // Get the lower and upper indices for interpolation
+            int idx0 = int(floor(continuous_idx));
+            int idx1 = idx0 + 1;
+            float t = continuous_idx - float(idx0);  // Interpolation factor
+            
+            // Perform linear interpolation between adjacent samples
+            s.values[i] = mix(d.values[idx0], d.values[idx1], t);
+        }
+    }
 
-		if (idx < 0 || idx >= NCIESamples) {
-			s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
-		}
-		else {
-			s.values[i] = d.values[idx];
-		}
-	}
-
-	return s;
+    return s;
 }
 
+/**
+ * @brief Samples CIE spectral values at specified wavelengths using linear interpolation
+ * @param cie CIE spectral data array (size must be NCIESamples)
+ * @param lambda Target wavelength samples with PDF values
+ * @return SampledSpectrum containing values at queried wavelengths
+ */
 SampledSpectrum CIEDenselySampledSpectrumSample(const float cie[NCIESamples], SampledWavelengths lambda) {
-	SampledSpectrum s;
+    SampledSpectrum s;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        // Calculate continuous array index
+        float continuous_idx = lambda.lambda[i] - LambdaMin;
+        
+        if (continuous_idx < 0.0f || continuous_idx >= float(NCIESamples - 1)) {
+            s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
+        } 
+        else {
+            // Get the lower and upper indices for interpolation
+            int idx0 = int(floor(continuous_idx));
+            int idx1 = idx0 + 1;
+            float t = continuous_idx - float(idx0);  // Interpolation factor
+            
+            // Perform linear interpolation between adjacent CIE samples
+            s.values[i] = mix(cie[idx0], cie[idx1], t);
+        }
+    }
 
-	for (int i = 0; i < NSpectrumSamples; i++) {
-		// Get current wavelength value
-		float lambda_val = lambda.lambda[i];
-
-		// Calculate continuous array position (non-integer)
-		float pos = lambda_val - LambdaMin;
-		int idx0 = floor(pos);  // Lower index
-		int idx1 = ceil(pos);   // Upper index
-		float t = pos - idx0;   // Interpolation factor
-
-		// Boundary check for both indices
-		if (idx0 < 0 || idx1 >= NCIESamples) {
-			s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
-		}
-		else {
-			// Linear interpolation between adjacent samples
-			s.values[i] = mix(cie[idx0], cie[idx1], t);
-		}
-	}
-
-	return s;
+    return s;
 }
 
 /**
@@ -1296,18 +1305,28 @@ float DenselySampledSpectrumMaxValue(DenselySampledSpectrum d) {
 }
 
 /**
- * @brief Evaluates spectrum at specified wavelength
+ * @brief Evaluates spectrum at specified wavelength using linear interpolation
  * @param d Input spectrum
  * @param lambda Query wavelength
  * @return Spectral value (0 if wavelength out-of-range)
  */
 float DenselySampledSpectrumEval(DenselySampledSpectrum d, float lambda) {
-	int idx = int(round(lambda) - int(LambdaMin));
-	if (idx < 0 || idx >= NCIESamples) {
-		return 0.0f;
-	}
-
-	return d.values[idx];
+    // Calculate continuous array index
+    float continuous_idx = lambda - LambdaMin;
+    
+    // Check if wavelength is out of valid range [LambdaMin, LambdaMax]
+    // Use (NCIESamples - 1) to ensure we have valid adjacent samples for interpolation
+    if (continuous_idx < 0.0f || continuous_idx >= float(NCIESamples - 1)) {
+        return 0.0f;
+    }
+    
+    // Get the lower and upper indices for interpolation
+    int idx0 = int(floor(continuous_idx));
+    int idx1 = idx0 + 1;
+    float t = continuous_idx - float(idx0);  // Interpolation factor
+    
+    // Perform linear interpolation between adjacent samples
+    return mix(d.values[idx0], d.values[idx1], t);
 }
 
 /**
