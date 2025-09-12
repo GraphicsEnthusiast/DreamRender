@@ -60,7 +60,7 @@ float RGBSigmoidPolynomialMaxValue(RGBSigmoidPolynomial poly) {
  * @return RGB color values in sRGB color space
  */
 RGB XYZToRGB(XYZ xyz) {
-    vec3 rgb_vec = XYZTORGB * vec3(xyz.x, xyz.y, xyz.z);
+    vec3 rgb_vec = vec3(xyz.x, xyz.y, xyz.z) * XYZTORGB;
 
     return RGBNew(rgb_vec.r, rgb_vec.g, rgb_vec.b);
 }
@@ -71,7 +71,7 @@ RGB XYZToRGB(XYZ xyz) {
  * @return XYZ color values
  */
 XYZ RGBToXYZ(RGB rgb) {
-    vec3 xyz_vec = RGBTOXYZ * vec3(rgb.r, rgb.g, rgb.b);
+    vec3 xyz_vec = vec3(rgb.r, rgb.g, rgb.b) * RGBTOXYZ;
 
     return XYZNew(xyz_vec.x, xyz_vec.y, xyz_vec.z);
 }

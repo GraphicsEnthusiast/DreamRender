@@ -1467,7 +1467,7 @@ float RGBSigmoidPolynomialMaxValue(RGBSigmoidPolynomial poly) {
  * @return RGB color values in sRGB color space
  */
 RGB XYZToRGB(XYZ xyz) {
-	vec3 rgb_vec = XYZTORGB * vec3(xyz.x, xyz.y, xyz.z);
+	vec3 rgb_vec = vec3(xyz.x, xyz.y, xyz.z) * XYZTORGB;
 
 	return RGBNew(rgb_vec.r, rgb_vec.g, rgb_vec.b);
 }
@@ -1488,7 +1488,7 @@ XYZ RGBToXYZ(RGB rgb) {
  * @param lambda Wavelength in nanometers
  * @return Spectral radiance at the given wavelength
  */
-float SampleD65Illuminant(float lambda) {
+float D65IlluminantSample(float lambda) {
 	int offset = int(round(lambda) - int(LambdaMin));
 	if (offset < 0 || offset >= NCIESamples) {
 		return 0.0f;
@@ -1751,7 +1751,7 @@ RGBIlluminantSpectrum RGBIlluminantSpectrumNew(RGB rgb) {
 	// Note: In a real implementation, this would be precomputed and stored
 	for (int i = 0; i < NCIESamples; i++) {
 		float lambda = float(i + LambdaMin);
-		s.illuminant.values[i] = SampleD65Illuminant(lambda);
+		s.illuminant.values[i] = D65IlluminantSample(lambda);
 	}
 
 	return s;
@@ -1813,7 +1813,7 @@ void VisualizeSpectrumFromRGB(const char* filename = "spectrum_data.txt") {
 
 	std::cout << "Red (1,0,0) spectral coefficients: c0=" << redCoeffs.c0 << ", c1=" << redCoeffs.c1 << ", c2=" << redCoeffs.c2 << std::endl;
 	std::cout << "Green (0,1,0) spectral coefficients: c0=" << greenCoeffs.c0 << ", c1=" << greenCoeffs.c1 << ", c2=" << greenCoeffs.c2 << std::endl;
-	std::cout << "Blue (0,极0,1) spectral coefficients: c0=" << blueCoeffs.c0 << ", c1=" << blueCoeffs.c1 << ", c2=" << blueCoeffs.c2 << std::endl;
+	std::cout << "Blue (0,0,1) spectral coefficients: c0=" << blueCoeffs.c0 << ", c1=" << blueCoeffs.c1 << ", c2=" << blueCoeffs.c2 << std::endl;
 
 	// 3. Open file for output data (for plotting)
 	std::ofstream outFile(filename);
@@ -1827,9 +1827,9 @@ void VisualizeSpectrumFromRGB(const char* filename = "spectrum_data.txt") {
 
 	// 5. Calculate spectral values across the entire visible spectrum (360nm-830nm) at 1nm intervals
 	for (float lambda = LambdaMin; lambda <= LambdaMax; lambda += 1.0f) {
-		float redValue = RGBSigmoidPolynomialEval(redCoeffs, lambda) * SampleD65Illuminant(lambda);
-		float greenValue = RGBSigmoidPolynomialEval(greenCoeffs, lambda) * SampleD65Illuminant(lambda);
-		float blueValue = RGBSigmoidPolynomialEval(blueCoeffs, lambda) * SampleD65Illuminant(lambda);
+		float redValue = RGBSigmoidPolynomialEval(redCoeffs, lambda) * D65IlluminantSample(lambda);
+		float greenValue = RGBSigmoidPolynomialEval(greenCoeffs, lambda) * D65IlluminantSample(lambda);
+		float blueValue = RGBSigmoidPolynomialEval(blueCoeffs, lambda) * D65IlluminantSample(lambda);
 
 		// Write data
 		outFile << lambda << "\t" << redValue << "\t" << greenValue << "\t" << blueValue << std::endl;
@@ -1850,8 +1850,8 @@ void VisualizeSpectrumFromRGB(const char* filename = "spectrum_data.txt") {
 		std::cout << wl << "nm\t\t" << r << "\t" << g << "\t" << b << std::endl;
 	}
 
-	// 7. Simple logic check (based on physical常识)
-	std::cout << "\nPhysical合理性 quick check:" << std::endl;
+	// 7. Simple logic check (based on physical)
+	std::cout << "\nPhysical quick check:" << std::endl;
 	float red450 = RGBSigmoidPolynomialEval(redCoeffs, 450.0f); // Red response at 450nm (blue light)
 	float blue650 = RGBSigmoidPolynomialEval(blueCoeffs, 650.0f); // Blue response at 650nm (red light)
 
@@ -1862,7 +1862,7 @@ void VisualizeSpectrumFromRGB(const char* filename = "spectrum_data.txt") {
 		std::cout << "Warning: Blue spectrum response too high at 650nm red light region (" << blue650 << "), this may be unreasonable." << std::endl;
 	}
 }
-#include <iostream>
+
 #include <random>
 #include <functional>
 
@@ -1905,28 +1905,48 @@ void SpectrumToXYZTest() {
 		}
 	}
 	{
+		// 1. Define pure colors to test
+		RGB color = RGBNew(0.6f, 0.6f, 0.7f);
+
+		// 2. Convert RGB to spectral coefficients
+		RGBSigmoidPolynomial colorCoeffs = RGBToSpectrumTableEval(color);
+
 		// Make sure the xyz of a constant spectrum are basically one.
-		std::array<float, 3> xyzSum = { 0 };
-		int n = 100;
+		std::array<float, 3> rgbSum = { 0 };
+		int n = 1;
 		for (int i = 0; i < n; i++) {
 			float u = generateRandomDouble(0, 1);
-			SampledWavelengths lambda = SampledWavelengthsSampleUniform(u, 360, 830);
-			XYZ xyz = SampledSpectrumToXYZ(SampledSpectrumNewFloat(1.0f), lambda);
-			xyzSum[0] += xyz.x;
-			xyzSum[1] += xyz.y;
-			xyzSum[2] += xyz.z;
+			SampledWavelengths lambda = SampledWavelengthsSampleVisible(u);
+			SampledSpectrum spectrum;
+			for (int j = 0; j < NSpectrumSamples; j++) {
+				float lam_index = lambda.lambda[j];
+				spectrum.values[j] = RGBSigmoidPolynomialEval(colorCoeffs, lam_index) * D65IlluminantSample(lam_index);
+			}
+			
+			XYZ xyz = SampledSpectrumToXYZ(spectrum, lambda);
+			//XYZ xyz = XYZNew(0, 0, 0);
+			//for (int lambda = LambdaMin; lambda <= LambdaMax; lambda++) {
+			//	xyz.x += RGBSigmoidPolynomialEval(colorCoeffs, lambda) * CIEX[lambda - 360] * D65[lambda - 360] / CIEYIntegral;
+			//	xyz.y += RGBSigmoidPolynomialEval(colorCoeffs, lambda) * CIEY[lambda - 360] * D65[lambda - 360] / CIEYIntegral;
+			//	xyz.z += RGBSigmoidPolynomialEval(colorCoeffs, lambda) * CIEZ[lambda - 360] * D65[lambda - 360] / CIEYIntegral;
+			//}
+			RGB rgb = XYZToRGB(xyz);
+			rgbSum[0] += rgb.r;
+			rgbSum[1] += rgb.g;
+			rgbSum[2] += rgb.b;
 		}
 		for (int c = 0; c < 3; ++c)
-			xyzSum[c] /= n;
-	
-		if (std::abs(1 - xyzSum[0]) < .035) {
-			std::cout << "std::abs(1 - xyzSum[0]) < .035" << std::endl;
+			rgbSum[c] /= n;
+
+		RGB rgb = RGBNew(rgbSum[0], rgbSum[1], rgbSum[2]);
+		if (std::abs(color.r - rgb.r) < .035) {
+			std::cout << "std::abs(color.r - rgb.r) < .035" << std::endl;
 		}
-		if (std::abs(1 - xyzSum[1]) < .035) {
-			std::cout << "std::abs(1 - xyzSum[1]) < .035" << std::endl;
+		if (std::abs(color.g - rgb.g) < .035) {
+			std::cout << "std::abs(color.g - rgb.g) < .035" << std::endl;
 		}
-		if (std::abs(1 - xyzSum[2]) < .035) {
-			std::cout << "std::abs(1 - xyzSum[2]) < .035" << std::endl;
+		if (std::abs(color.b - rgb.b) < .035) {
+			std::cout << "std::abs(color.b - rgb.b) < .035" << std::endl;
 		}
 	}
 }
