@@ -382,7 +382,7 @@ DenselySampledSpectrum DenselySampledSpectrumNew() {
 }
 
 /**
- * @brief Samples spectral values at discrete wavelengths
+ * @brief Samples spectral values at discrete wavelengths using linear interpolation
  * @param d Input densely sampled spectrum
  * @param lambda Target wavelength samples
  * @return SampledSpectrum values at sampled wavelengths
@@ -390,14 +390,20 @@ DenselySampledSpectrum DenselySampledSpectrumNew() {
 SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWavelengths lambda) {
     SampledSpectrum s;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        // Calculate array index (rounded to nearest integer)
-        int idx = int(round(lambda.lambda[i]) - int(LambdaMin));
+        // Calculate continuous array index
+        float continuous_idx = lambda.lambda[i] - LambdaMin;
         
-        if (idx < 0 || idx >= NCIESamples) {
+        if (continuous_idx < 0.0f || continuous_idx >= float(NCIESamples - 1)) {
             s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
         } 
         else {
-            s.values[i] = d.values[idx];
+            // Get the lower and upper indices for interpolation
+            int idx0 = int(floor(continuous_idx));
+            int idx1 = idx0 + 1;
+            float t = continuous_idx - float(idx0);  // Interpolation factor
+            
+            // Perform linear interpolation between adjacent samples
+            s.values[i] = mix(d.values[idx0], d.values[idx1], t);
         }
     }
 
@@ -405,7 +411,7 @@ SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWa
 }
 
 /**
- * @brief Samples CIE spectral values at specified wavelengths
+ * @brief Samples CIE spectral values at specified wavelengths using linear interpolation
  * @param cie CIE spectral data array (size must be NCIESamples)
  * @param lambda Target wavelength samples with PDF values
  * @return SampledSpectrum containing values at queried wavelengths
@@ -413,14 +419,20 @@ SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWa
 SampledSpectrum CIEDenselySampledSpectrumSample(const float cie[NCIESamples], SampledWavelengths lambda) {
     SampledSpectrum s;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        // Calculate array index (rounded to nearest integer)
-        int idx = int(round(lambda.lambda[i]) - int(LambdaMin));
+        // Calculate continuous array index
+        float continuous_idx = lambda.lambda[i] - LambdaMin;
         
-        if (idx < 0 || idx >= NCIESamples) {
+        if (continuous_idx < 0.0f || continuous_idx >= float(NCIESamples - 1)) {
             s.values[i] = 0.0f;  // Return 0 for out-of-range wavelengths
         } 
         else {
-            s.values[i] = cie[idx];
+            // Get the lower and upper indices for interpolation
+            int idx0 = int(floor(continuous_idx));
+            int idx1 = idx0 + 1;
+            float t = continuous_idx - float(idx0);  // Interpolation factor
+            
+            // Perform linear interpolation between adjacent CIE samples
+            s.values[i] = mix(cie[idx0], cie[idx1], t);
         }
     }
 
