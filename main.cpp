@@ -1780,8 +1780,6 @@ float RGBIlluminantSpectrumMaxValue(RGBIlluminantSpectrum s) {
 
 	return s.scale * rsp_max * illuminant_max;
 }
-// Test RGB color value (using example color from reference)
-const RGB TEST_COLOR = RGBNew(100.0f / 255.0f, 115.0f / 255.0f, 250.0f / 255.0f);
 
 /**
  * @brief Print RGB color values
@@ -1791,353 +1789,6 @@ void PrintRGB(const char* label, RGB rgb) {
 		<< rgb.r << ", " << rgb.g << ", " << rgb.b << ")" << std::endl;
 }
 
-/**
- * @brief Calculate Euclidean distance between two RGB colors
- */
-float RGBDistance(RGB a, RGB b) {
-	float dr = a.r - b.r;
-	float dg = a.g - b.g;
-	float db = a.b - b.b;
-	return sqrt(dr * dr + dg * dg + db * db);
-}
-
-/**
- * @brief Main test function
- */
-void TestRGBToSpectrumToRGB() {
-	std::cout << "=== RGB to Spectrum to RGB Conversion Test ===" << std::endl;
-
-	// 1. Print original RGB values
-	PrintRGB("Original RGB color", TEST_COLOR);
-
-	// 2. Convert RGB to spectral coefficients (using RGBToSpectrumTableEval)
-	RGBSigmoidPolynomial spectrumCoeffs = RGBToSpectrumTableEval(TEST_COLOR);
-	std::cout << "Spectral coefficients: c0=" << spectrumCoeffs.c0
-		<< ", c1=" << spectrumCoeffs.c1
-		<< ", c2=" << spectrumCoeffs.c2 << std::endl;
-
-	// 3. Sample wavelengths (using visible spectrum sampling)
-	float u = 0.5f; // Use fixed random seed value
-	SampledWavelengths wavelengths = SampledWavelengthsSampleVisible(u);
-
-	// 4. Create sampled spectrum and evaluate spectral values from coefficients
-	SampledSpectrum sampledSpectrum = SampledSpectrumNewFloat(0.0f);
-	for (int i = 0; i < NSpectrumSamples; ++i) {
-		float lambda = wavelengths.lambda[i];
-		sampledSpectrum.values[i] = RGBSigmoidPolynomialEval(spectrumCoeffs, lambda) * SampleD65Illuminant(lambda);;
-	}
-
-	// 5. Convert sampled spectrum back to XYZ color space
-	XYZ xyz = SampledSpectrumToXYZ(sampledSpectrum, wavelengths);
-
-	// 6. Convert XYZ back to RGB
-	RGB reconstructedRGB = XYZToRGB(xyz);
-
-	// 7. Clamp reconstructed RGB values to [0,1] range
-	reconstructedRGB = RGBClamp(reconstructedRGB, 0.0f, 1.0f);
-
-	// 8. Print reconstructed RGB values
-	PrintRGB("Reconstructed RGB color", reconstructedRGB);
-
-	// 9. Calculate and print error
-	float error = RGBDistance(TEST_COLOR, reconstructedRGB);
-	std::cout << "Reconstruction error: " << error << std::endl;
-
-	// 10. Verify if conversion is within acceptable range
-	const float MAX_ACCEPTABLE_ERROR = 0.1f; // Maximum allowed error
-	if (error < MAX_ACCEPTABLE_ERROR) {
-		std::cout << "Test passed: Error within acceptable range" << std::endl;
-	}
-	else {
-		std::cout << "Test failed: Error exceeds acceptable range" << std::endl;
-	}
-
-	// 11. Visualize spectral distribution (optional)
-	std::cout << "\nSpectral sample values (first 10):" << std::endl;
-	for (int i = 0; i < 10 && i < NSpectrumSamples; ++i) {
-		std::cout << "λ=" << wavelengths.lambda[i] << "nm: "
-			<< sampledSpectrum.values[i] << " (pdf=" << wavelengths.pdf[i] << ")" << std::endl;
-	}
-}
-
-/**
- * @brief Multiple colors test function
- */
-void TestMultipleColors() {
-	std::cout << "\n=== Multiple Colors Test ===" << std::endl;
-
-	// Test multiple RGB colors from reference
-	RGB testColors[] = {
-		RGBNew(1.0f, 0.0f, 0.0f),     // Red
-		RGBNew(0.0f, 1.0f, 0.0f),     // Green
-		RGBNew(0.0f, 0.0f, 1.0f),     // Blue
-		RGBNew(1.0f, 1.0f, 0.0f),     // Yellow
-		RGBNew(1.0f, 0.0f, 1.0f),     // Magenta
-		RGBNew(0.0f, 1.0f, 1.0f),     // Cyan
-		RGBNew(1.0f, 1.0f, 1.0f),     // White
-		RGBNew(0.0f, 0.0f, 0.0f),     // Black
-		TEST_COLOR                    // Test color
-	};
-
-	const char* colorNames[] = {
-		"Red", "Green", "Blue", "Yellow",
-		"Magenta", "Cyan", "White", "Black", "Test Color"
-	};
-
-	for (int i = 0; i < sizeof(testColors) / sizeof(testColors[0]); ++i) {
-		std::cout << "\n--- Testing " << colorNames[i] << " ---" << std::endl;
-
-		// RGB → Spectral coefficients
-		RGBSigmoidPolynomial coeffs = RGBToSpectrumTableEval(testColors[i]);
-
-		// Sample wavelengths
-		SampledWavelengths wavelengths = SampledWavelengthsSampleVisible(0.5f);
-
-		// Evaluate spectrum
-		SampledSpectrum spectrum = SampledSpectrumNewFloat(0.0f);
-		for (int j = 0; j < NSpectrumSamples; ++j) {
-			spectrum.values[j] = RGBSigmoidPolynomialEval(coeffs, wavelengths.lambda[j]);
-		}
-
-		// Spectrum → XYZ → RGB
-		XYZ xyz = SampledSpectrumToXYZ(spectrum, wavelengths);
-		RGB reconstructed = XYZToRGB(xyz);
-		reconstructed = RGBClamp(reconstructed, 0.0f, 1.0f);
-
-		// Calculate error
-		float error = RGBDistance(testColors[i], reconstructed);
-
-		PrintRGB("Original color", testColors[i]);
-		PrintRGB("Reconstructed color", reconstructed);
-		std::cout << "Error: " << error << std::endl;
-	}
-}
-
-/**
- * @brief Test RGB to XYZ conversion
- */
-void TestRGBXYZConversion() {
-	std::cout << "\n=== RGB to XYZ Conversion Test ===" << std::endl;
-
-	// Test RGB→XYZ→RGB conversion from reference
-	XYZ xyz = RGBToXYZ(TEST_COLOR);
-	RGB reconstructed = XYZToRGB(xyz);
-
-	PrintRGB("Original RGB", TEST_COLOR);
-	std::cout << "XYZ: (" << xyz.x << ", " << xyz.y << ", " << xyz.z << ")" << std::endl;
-	PrintRGB("Reconstructed RGB", reconstructed);
-
-	float error = RGBDistance(TEST_COLOR, reconstructed);
-	std::cout << "RGB↔XYZ conversion error: " << error << std::endl;
-}
-
-/**
- * @brief Test function: Print polynomial coefficients for RGB to spectrum conversion
- *
- * This function tests the spectral polynomial coefficients obtained from different RGB color values,
- * helping to analyze the coefficient generation process in RGB to spectrum conversion
- */
-void TestRGBCoefficients() {
-	std::cout << "=== RGB to Spectrum Conversion Polynomial Coefficients Test ===" << std::endl;
-
-	// Test a series of standard colors
-	RGB testColors[] = {
-		RGBNew(1.0f, 0.0f, 0.0f),     // Red
-		RGBNew(0.0f, 1.0f, 0.0f),     // Green
-		RGBNew(0.0f, 0.0f, 1.0f),     // Blue
-		RGBNew(1.0f, 1.0f, 0.0f),     // Yellow
-		RGBNew(1.0f, 0.0f, 1.0f),     // Magenta
-		RGBNew(0.0f, 1.0f, 1.0f),     // Cyan
-		RGBNew(1.0f, 1.0f, 1.0f),     // White
-		RGBNew(0.5f, 0.5f, 0.5f),     // Gray
-		RGBNew(0.392157f, 0.45098f, 0.980392f)  // Test color
-	};
-
-	const char* colorNames[] = {
-		"Red(1,0,0)",
-		"Green(0,1,0)",
-		"Blue(0,0,1)",
-		"Yellow(1,1,0)",
-		"Magenta(1,0,1)",
-		"Cyan(0,1,1)",
-		"White(1,1,1)",
-		"Gray(0.5,0.5,0.5)",
-		"Test Color(0.392,0.451,0.980)"
-	};
-
-	std::cout << "\nColor\t\t\tc0 Coefficient\t\t\tc1 Coefficient\t\t\tc2 Coefficient" << std::endl;
-	std::cout << "------------------------------------------------------------------------" << std::endl;
-
-	for (int i = 0; i < sizeof(testColors) / sizeof(testColors[0]); ++i) {
-		// Get RGB to spectrum conversion coefficients
-		RGBSigmoidPolynomial coeffs = RGBToSpectrumTableEval(testColors[i]);
-
-		// Print coefficient information
-		std::cout << colorNames[i] << "\t"
-			<< coeffs.c0 << "\t"
-			<< coeffs.c1 << "\t"
-			<< coeffs.c2 << std::endl;
-
-		// Additional information: Calculate and display polynomial values at key wavelengths
-		if (i == 0 || i == 8) { // Only show detailed evaluation for first and last color
-			std::cout << "  Spectral evaluation: ";
-			std::cout << "450nm=" << RGBSigmoidPolynomialEval(coeffs, 450.0f) << ", ";
-			std::cout << "550nm=" << RGBSigmoidPolynomialEval(coeffs, 550.0f) << ", ";
-			std::cout << "650nm=" << RGBSigmoidPolynomialEval(coeffs, 650.0f);
-			std::cout << std::endl;
-		}
-	}
-
-	// Test coefficient stability: Multiple samples for the same color
-	std::cout << "\n=== Coefficient Stability Test ===" << std::endl;
-	RGB testColor = RGBNew(0.7f, 0.2f, 0.5f);
-	std::cout << "Multiple coefficient samples for test color (0.7,0.2,0.5):" << std::endl;
-
-	for (int i = 0; i < 5; ++i) {
-		RGBSigmoidPolynomial coeffs = RGBToSpectrumTableEval(testColor);
-		std::cout << "Sample " << i + 1 << ": c0=" << coeffs.c0
-			<< ", c1=" << coeffs.c1
-			<< ", c2=" << coeffs.c2 << std::endl;
-	}
-}
-
-/**
- * @brief Extended RGB to spectrum to RGB test, including coefficient information
- */
-void TestRGBToSpectrumToRGBWithCoeffs() {
-	std::cout << "=== Enhanced RGB to Spectrum to RGB Conversion Test ===" << std::endl;
-
-	// Original RGB values
-	RGB originalRGB = RGBNew(0.392157f, 0.45098f, 0.980392f);
-	PrintRGB("Original RGB color", originalRGB);
-
-	// RGB to spectral coefficients conversion
-	RGBSigmoidPolynomial spectrumCoeffs = RGBToSpectrumTableEval(originalRGB);
-	std::cout << "Spectral polynomial coefficients: c0=" << spectrumCoeffs.c0
-		<< ", c1=" << spectrumCoeffs.c1
-		<< ", c2=" << spectrumCoeffs.c2 << std::endl;
-
-	// Display polynomial form
-	std::cout << "Spectral polynomial: f(λ) = s("
-		<< spectrumCoeffs.c0 << "λ² + "
-		<< spectrumCoeffs.c1 << "λ + "
-		<< spectrumCoeffs.c2 << ")" << std::endl;
-
-	// Evaluate polynomial at several key wavelengths
-	std::cout << "Key wavelength evaluation:" << std::endl;
-	float wavelengths[] = { 380.0f, 450.0f, 550.0f, 650.0f, 780.0f };
-	for (float wl : wavelengths) {
-		float value = RGBSigmoidPolynomialEval(spectrumCoeffs, wl);
-		std::cout << "  λ=" << wl << "nm: " << value << std::endl;
-	}
-
-	// Continue with the original conversion process
-	float u = 0.5f;
-	SampledWavelengths sampledWl = SampledWavelengthsSampleVisible(u);
-
-	SampledSpectrum sampledSpectrum = SampledSpectrumNewFloat(0.0f);
-	for (int i = 0; i < NSpectrumSamples; ++i) {
-		sampledSpectrum.values[i] = RGBSigmoidPolynomialEval(spectrumCoeffs, sampledWl.lambda[i]) * SampleD65Illuminant(sampledWl.lambda[i]);;
-	}
-
-	XYZ xyz = SampledSpectrumToXYZ(sampledSpectrum, sampledWl);
-	RGB reconstructedRGB = XYZToRGB(xyz);
-	reconstructedRGB = RGBClamp(reconstructedRGB, 0.0f, 1.0f);
-
-	PrintRGB("Reconstructed RGB color", reconstructedRGB);
-
-	float error = RGBDistance(originalRGB, reconstructedRGB);
-	std::cout << "Reconstruction error: " << error << std::endl;
-}
-
-/**
- * @brief Polynomial coefficient analysis utility function
- */
-void AnalyzeCoefficients(RGBSigmoidPolynomial coeffs, const char* colorName) {
-	std::cout << "=== " << colorName << " Polynomial Coefficient Analysis ===" << std::endl;
-
-	// Calculate polynomial discriminant
-	float discriminant = coeffs.c1 * coeffs.c1 - 4 * coeffs.c0 * coeffs.c2;
-	std::cout << "Discriminant: " << discriminant << std::endl;
-
-	// Find extreme points (if any)
-	if (fabs(coeffs.c0) > 1e-6) {
-		float extremeLambda = -coeffs.c1 / (2 * coeffs.c0);
-		float extremeValue = RGBSigmoidPolynomialEval(coeffs, extremeLambda);
-
-		std::cout << "Extreme point: λ=" << extremeLambda << "nm, Value=" << extremeValue << std::endl;
-
-		// Check if extreme point is within visible spectrum range
-		if (extremeLambda >= 360.0f && extremeLambda <= 830.0f) {
-			std::cout << "Extreme point within visible spectrum" << std::endl;
-		}
-	}
-
-	// Calculate spectral response range
-	float minResponse = RGBSigmoidPolynomialEval(coeffs, 360.0f);
-	float maxResponse = RGBSigmoidPolynomialEval(coeffs, 830.0f);
-	std::cout << "Spectral response range: [" << minResponse << ", " << maxResponse << "]" << std::endl;
-
-	std::cout << std::endl;
-}
-
-/**
- * @brief Isolated test of SampledSpectrumToXYZ function
- *
- * Create a Gaussian spectrum centered at 550nm (simulating green light),
- * test if it can be correctly converted to XYZ and RGB.
- *
- * If the reconstructed RGB is not green, the problem lies in the spectrum->XYZ conversion.
- *
- * @return Whether the test passed (reconstructed RGB should be green)
- */
-bool TestSampledSpectrumToXYZIsolation() {
-	std::cout << "\n=== Isolated Test: Spectrum -> XYZ -> RGB Conversion ===" << std::endl;
-
-	// 1. Sample wavelengths (use uniform sampling to reduce complexity)
-	float u = 0.5f;
-	SampledWavelengths wavelengths = SampledWavelengthsSampleUniform(u, LambdaMin, LambdaMax);
-
-	// 2. Create a known Gaussian spectrum (center 550nm, simulating green light)
-	SampledSpectrum knownSpectrum = SampledSpectrumNewFloat(0.0f);
-	const float centerLambda = 550.0f; // Green light center wavelength
-	const float sigma = 20.0f;        // Gaussian distribution standard deviation
-
-	for (int i = 0; i < NSpectrumSamples; ++i) {
-		float lambda = wavelengths.lambda[i];
-		// Gaussian function: exp(- (λ - center)^2 / (2 * sigma^2))
-		float value = exp(-(lambda - centerLambda) * (lambda - centerLambda) / (2 * sigma * sigma));
-		knownSpectrum.values[i] = value;
-	}
-
-	// 3. Convert known spectrum to XYZ
-	XYZ xyz = SampledSpectrumToXYZ(knownSpectrum, wavelengths);
-	std::cout << "Gaussian spectrum (550nm) converted XYZ: (" << xyz.x << ", " << xyz.y << ", " << xyz.z << ")" << std::endl;
-
-	// 4. Convert XYZ back to RGB
-	RGB reconstructedRGB = XYZToRGB(xyz);
-	reconstructedRGB = RGBClamp(reconstructedRGB, 0.0f, 1.0f);
-	PrintRGB("Reconstructed RGB", reconstructedRGB);
-
-	// 5. Analyze and verify: Reconstructed RGB should be primarily green (G component highest, R and B components low)
-	bool isGreen = (reconstructedRGB.g > reconstructedRGB.r) && (reconstructedRGB.g > reconstructedRGB.b);
-	float error = RGBDistance(reconstructedRGB, RGBNew(0.0f, 1.0f, 0.0f)); // Error from pure green
-
-	std::cout << "Primarily green: " << (isGreen ? "Yes" : "No") << std::endl;
-	std::cout << "Error from pure green: " << error << error << std::endl;
-
-	// 6. Determine test result
-	const float MAX_ERROR = 0.3f; // Allowed error threshold
-	if (isGreen && error < MAX_ERROR) {
-		std::cout << "Isolation test passed: Spectrum->XYZ->RGB conversion is basically correct." << std::endl;
-		return true;
-	}
-	else {
-		std::cout << "Isolation test failed: Reconstructed color abnormal, problem may be in spectrum->XYZ conversion or XYZ->RGB conversion." << std::endl;
-		// Further提示: Check CIE matching function data, XYZToRGB matrix, Monte Carlo integration formula for correctness.
-		return false;
-	}
-}
 
 /**
  * @brief Visualize the curve shape after RGB to spectrum conversion
@@ -2211,27 +1862,121 @@ void VisualizeSpectrumFromRGB(const char* filename = "spectrum_data.txt") {
 		std::cout << "Warning: Blue spectrum response too high at 650nm red light region (" << blue650 << "), this may be unreasonable." << std::endl;
 	}
 }
+#include <iostream>
+#include <random>
+#include <functional>
+
+// 生成整数随机数的通用函数
+int generateRandomInt(int min, int max) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> distrib(min, max);
+	return distrib(gen);
+}
+
+// 生成浮点数随机数的通用函数
+double generateRandomDouble(double min, double max) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<double> distrib(min, max);
+	return distrib(gen);
+}
+void SpectrumToXYZTest() {
+	{
+		// Make sure the integral of all matching function sample values is
+		// basically one in x, y, and z.
+		float xx = 0, yy = 0, zz = 0;
+		for (float lambda = 360; lambda < 831; ++lambda) {
+			xx += CIEX[(int)lambda - 360];
+			yy += CIEY[(int)lambda - 360];
+			zz += CIEZ[(int)lambda - 360];
+		}
+		xx /= CIEYIntegral;
+		yy /= CIEYIntegral;
+		zz /= CIEYIntegral;
+		if (std::abs(1 - xx) < .005) {
+			std::cout << "std::abs(1 - xx) < .005" << std::endl;
+		}
+		if (std::abs(1 - yy) < .005) {
+			std::cout << "std::abs(1 - yy) < .005" << std::endl;
+		}
+		if (std::abs(1 - zz) < .005) {
+			std::cout << "std::abs(1 - zz) < .005" << std::endl;
+		}
+	}
+	{
+		// Make sure the xyz of a constant spectrum are basically one.
+		std::array<float, 3> xyzSum = { 0 };
+		int n = 100;
+		for (int i = 0; i < n; i++) {
+			float u = generateRandomDouble(0, 1);
+			SampledWavelengths lambda = SampledWavelengthsSampleUniform(u, 360, 830);
+			XYZ xyz = SampledSpectrumToXYZ(SampledSpectrumNewFloat(1.0f), lambda);
+			xyzSum[0] += xyz.x;
+			xyzSum[1] += xyz.y;
+			xyzSum[2] += xyz.z;
+		}
+		for (int c = 0; c < 3; ++c)
+			xyzSum[c] /= n;
+	
+		if (std::abs(1 - xyzSum[0]) < .035) {
+			std::cout << "std::abs(1 - xyzSum[0]) < .035" << std::endl;
+		}
+		if (std::abs(1 - xyzSum[1]) < .035) {
+			std::cout << "std::abs(1 - xyzSum[1]) < .035" << std::endl;
+		}
+		if (std::abs(1 - xyzSum[2]) < .035) {
+			std::cout << "std::abs(1 - xyzSum[2]) < .035" << std::endl;
+		}
+	}
+}
+
+void SpectrumSamplingPdfXYZTest() {
+	{
+		// Make sure we can integrate the sum of the x+y+z matching curves correctly
+		// using both uniform and importance sampling methods
+		float impSum = 0, unifSum = 0;
+		int n = 100000;
+
+		for (int i = 0; i < n; i++) {
+			float u = generateRandomDouble(0, 1); // 假设的随机数生成函数
+
+			// Uniform sampling calculation
+			float lambda_unif = glm::mix(360, 830, u); // 使用具体波长范围而非Lambda_min/max
+			float pdf_unif = 1.0f / (830 - 360); // 均匀分布的PDF
+			unifSum += (CIEX[(int)lambda_unif - 360] + CIEY[(int)lambda_unif - 360] + CIEZ[(int)lambda_unif - 360]) / pdf_unif;
+
+			// Importance sampling calculation
+			float lambda_imp = VisibleWavelengthsSample(u); // 重要性采样
+			float pdf_imp = VisibleWavelengthsPDF(lambda_imp); // 重要性采样的PDF
+			if (pdf_imp > 0) {
+				impSum += (CIEX[(int)lambda_imp - 360] + CIEY[(int)lambda_imp - 360] + CIEZ[(int)lambda_imp - 360]) / pdf_imp;
+			}
+		}
+
+		// Calculate average integrals
+		float impInt = impSum / n;
+		float unifInt = unifSum / n;
+
+		// Check consistency between the two methods (relative difference < 0.1%)
+		float relativeDiff = std::abs((impInt - unifInt) / unifInt);
+
+		if (relativeDiff < 0.01) {
+			std::cout << "Importance sampling and uniform sampling integrals are consistent: "
+				<< impInt << " vs " << unifInt << " (relative diff: " << relativeDiff * 100 << "%)"
+				<< std::endl;
+		}
+		else {
+			std::cout << "WARNING: Significant difference between sampling methods: "
+				<< impInt << " vs " << unifInt << " (relative diff: " << relativeDiff * 100 << "%)"
+				<< std::endl;
+		}
+	}
+}
 
 int main() {
-	// Your original test cases...
-	TestRGBToSpectrumToRGB();
-	TestMultipleColors();
-	TestRGBXYZConversion();
-
-	// New debugging cases
-	// 1. Isolated test of SampledSpectrumToXYZ
-	bool spectralToXYZPassed = TestSampledSpectrumToXYZIsolation();
-
-	// 2. Visualize spectral curves (execute regardless of isolation test result)
-	VisualizeSpectrumFromRGB("spectral_curves.txt");
-
-	// Give suggestions based on isolation test results
-	if (spectralToXYZPassed) {
-		std::cout << "\n*** Suggestion: Problem may be in RGB->spectral coefficient conversion (RGBToSpectrumTableEval function or its lookup table). Please focus on analyzing the spectral curve plot generated by VisualizeSpectrumFromRGB. ***" << std::endl;
-	}
-	else {
-		std::cout << "\n*** Suggestion: Problem may be in spectrum->XYZ conversion (SampledSpectrumToXYZ function), CIE matching function data, or XYZ->RGB conversion matrix. ***" << std::endl;
-	}
-	TestRGBToSpectrumToRGBWithCoeffs();
+	SpectrumToXYZTest();
+	SpectrumSamplingPdfXYZTest();
+	//VisualizeSpectrumFromRGB("spectral_curves.txt");
 	return 0;
 }
