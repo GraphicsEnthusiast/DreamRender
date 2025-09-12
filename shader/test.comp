@@ -90,7 +90,7 @@ void main()
             SampledSpectrum bg_spectrum_val;
             for (int i = 0; i < NSpectrumSamples; i++) {
                 float wavelength = lambda.lambda[i];
-                bg_spectrum_val.values[i] = MulFloat(RGBAlbedoSpectrumEval(bg_spectrum, wavelength), D65[int(wavelength) - int(LambdaMin)]);
+                bg_spectrum_val.values[i] = RGBAlbedoSpectrumEval(bg_spectrum, wavelength) * D65[int(wavelength) - int(LambdaMin)];
             }
             SampledSpectrum L_env = Mul(beta, bg_spectrum_val);
             
