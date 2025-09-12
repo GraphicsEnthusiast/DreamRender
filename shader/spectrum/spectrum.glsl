@@ -706,7 +706,7 @@ RGBIlluminantSpectrum RGBIlluminantSpectrumNew(RGB rgb) {
     // Initialize illuminant spectrum (D65)
     for (int i = 0; i < NCIESamples; i++) {
         float lambda = float(i + LambdaMin);
-        s.illuminant.values[i] = SampleD65Illuminant(lambda);
+        s.illuminant.values[i] = D65IlluminantSample(lambda);
     }
     
     return s;

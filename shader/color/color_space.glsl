@@ -77,17 +77,27 @@ XYZ RGBToXYZ(RGB rgb) {
 }
 
 /**
- * @brief Samples the D65 illuminant spectrum at a given wavelength
+ * @brief Samples the D65 illuminant spectrum at a given wavelength using linear interpolation
  * @param lambda Wavelength in nanometers
  * @return Spectral radiance at the given wavelength
  */
-float SampleD65Illuminant(float lambda) {
-    int offset = int(round(lambda) - int(LambdaMin));
-	if (offset < 0 || offset >= NCIESamples) {
-		return 0.0f;
-	}
-
-	return D65[offset];
+float D65IlluminantSample(float lambda) {
+    // Calculate continuous array index
+    float continuous_idx = lambda - LambdaMin;
+    
+    // Check if wavelength is out of valid range [LambdaMin, LambdaMax]
+    // Use (NCIESamples - 1) to ensure we have valid adjacent samples for interpolation
+    if (continuous_idx < 0.0f || continuous_idx >= float(NCIESamples - 1)) {
+        return 0.0f;
+    }
+    
+    // Get the lower and upper indices for interpolation
+    int idx0 = int(floor(continuous_idx));
+    int idx1 = idx0 + 1;
+    float t = continuous_idx - float(idx0);  // Interpolation factor
+    
+    // Perform linear interpolation between adjacent D65 samples
+    return mix(D65[idx0], D65[idx1], t);
 }
 
 const int RGBToSpectrumTableRes = 64;
