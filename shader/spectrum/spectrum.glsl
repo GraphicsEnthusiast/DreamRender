@@ -682,7 +682,6 @@ RGBIlluminantSpectrum RGBIlluminantSpectrumNew(RGB rgb) {
     s.rsp = ToRGBCoeffs(scaled_rgb);
     
     // Initialize illuminant spectrum (D65)
-    // Note: In a real implementation, this would be precomputed and stored
     for (int i = 0; i < NCIESamples; i++) {
         float lambda = float(i + LambdaMin);
         s.illuminant.values[i] = SampleD65Illuminant(lambda);
