@@ -283,7 +283,7 @@ void Interface::Render() {
 
 				// Update back buffer with lock
 				{
-					std::lock_guard<std::mutex> lock(buffer_mutex_);
+					std::unique_lock<std::mutex> lock(buffer_mutex_);
 					back_buffer_ = output;
 					buffer_updated_ = true;
 				}
@@ -306,7 +306,7 @@ void Interface::Render() {
 		// Check if we have a new frame to display
 		bool new_frame_available = false;
 		{
-			std::lock_guard<std::mutex> lock(buffer_mutex_);
+			std::unique_lock<std::mutex> lock(buffer_mutex_);
 			if (buffer_updated_) {
 				// Swap front and back buffers
 				std::swap(front_buffer_, back_buffer_);
