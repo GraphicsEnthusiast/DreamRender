@@ -267,7 +267,7 @@ void Interface::Render() {
 			while (rendering_active_) {
 				// Wait for GPU if a fence exists (max one frame in flight)
 				if (fence) {
-					GLenum result = glClientWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+					GLenum result = glClientWaitSync(fence, 0, 0);
 					glDeleteSync(fence);
 					fence = nullptr;
 				}
