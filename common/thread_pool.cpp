@@ -19,7 +19,7 @@ ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
                     // Wait until tasks available or stop signaled
                     condition_.wait(lock, [this] {
                         return stop_ || !tasks_.empty();
-                        });
+                    });
 
                     // Exit thread if stop requested and queue empty
                     if (stop_ && tasks_.empty()) {
