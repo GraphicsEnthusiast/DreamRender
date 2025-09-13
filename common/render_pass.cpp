@@ -58,7 +58,7 @@ void RenderPass::InitSRGBToSpectrumTable() {
 		total_size,
 		GL_R32F,
 		GL_STATIC_DRAW
-		);
+	);
 }
 
 SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {

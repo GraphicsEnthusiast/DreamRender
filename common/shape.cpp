@@ -268,14 +268,14 @@ void TriangleMeshManager::CreateGPUBuffers() {
 		triangles_encoded_.size() * sizeof(TriangleEncoded),
 		GL_RGBA32F,
 		GL_STATIC_DRAW
-		);
+	);
 
 	bvh_node_tbo_ = std::make_unique<TBO>(
 		bvh_nodes_encoded_.data(),
 		bvh_nodes_encoded_.size() * sizeof(BVHNodeEncoded),
 		GL_RGBA32F,
 		GL_STATIC_DRAW
-		);
+	);
 }
 
 const TBO& TriangleMeshManager::GetTriangleTBO() const noexcept {
