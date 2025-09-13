@@ -91,8 +91,6 @@ protected:
 	bool buffer_updated_ = false;       ///< Flag indicating back buffer update
     std::atomic<bool> rendering_active_ = false;     ///< Render thread activity status
 	unsigned int frame_counter_;        ///< Frame counter
-	std::condition_variable render_cv_;
-	std::mutex render_mutex_;
 };
 
 NAMESPACE_END(dream)

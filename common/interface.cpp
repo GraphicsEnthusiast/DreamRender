@@ -253,7 +253,7 @@ void Interface::SetRenderPipeline(std::unique_ptr<RenderPipeline>&& pipeline) {
 void Interface::Render() {
 	// Start rendering thread on first run
 	if (pipeline_ && !rendering_active_) {
-		rendering_active_ = true;
+		rendering_active_.store(true, std::memory_order_release);
 
 		// Launch rendering in thread pool
 		auto& pool = ThreadPool::Instance();
@@ -264,7 +264,7 @@ void Interface::Render() {
 			// Create a fence for GPU synchronization
 			GLsync fence = nullptr;
 
-			while (rendering_active_) {
+			while (rendering_active_.load(std::memory_order_relaxed)) {
 				// Wait for GPU if a fence exists (max one frame in flight)
 				if (fence) {
 					GLenum wait_result = glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000);
@@ -404,8 +404,7 @@ void Interface::Render() {
 	}
 
 	// Cleanup rendering thread
-	rendering_active_ = false;
-	render_cv_.notify_all();
+	rendering_active_.store(false, std::memory_order_release);
 }
 
 GLFWwindow* Interface::GetMainWindow() const noexcept {
