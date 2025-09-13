@@ -267,9 +267,23 @@ void Interface::Render() {
 			while (rendering_active_) {
 				// Wait for GPU if a fence exists (max one frame in flight)
 				if (fence) {
-					glWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
-					glDeleteSync(fence);
-					fence = nullptr;
+					GLenum wait_result = glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000);
+
+					switch (wait_result) {
+					case GL_ALREADY_SIGNALED:
+					case GL_CONDITION_SATISFIED:
+					case GL_WAIT_FAILED:
+						glDeleteSync(fence);
+						fence = nullptr;
+						break;
+					case GL_TIMEOUT_EXPIRED:
+						if (!rendering_active_.load(std::memory_order_relaxed)) {
+							glDeleteSync(fence);
+							fence = nullptr;
+							break;
+						}
+						continue;
+					}
 				}
 
 				// Execute pipeline
@@ -391,6 +405,7 @@ void Interface::Render() {
 
 	// Cleanup rendering thread
 	rendering_active_ = false;
+	render_cv_.notify_all();
 }
 
 GLFWwindow* Interface::GetMainWindow() const noexcept {

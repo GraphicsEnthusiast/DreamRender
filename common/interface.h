@@ -89,8 +89,10 @@ protected:
 	TextureHandle back_buffer_;         ///< Back buffer (accessed by render thread)
 	std::mutex buffer_mutex_;           ///< Mutex protecting buffer swapping
 	bool buffer_updated_ = false;       ///< Flag indicating back buffer update
-	bool rendering_active_ = false;     ///< Render thread activity status
+    std::atomic<bool> rendering_active_ = false;     ///< Render thread activity status
 	unsigned int frame_counter_;        ///< Frame counter
+	std::condition_variable render_cv_;
+	std::mutex render_mutex_;
 };
 
 NAMESPACE_END(dream)
