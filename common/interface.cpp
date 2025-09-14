@@ -256,10 +256,6 @@ void Interface::Render() {
 		// Launch rendering in thread pool
 		auto& pool = ThreadPool::Instance();
 		pool.Enqueue([this] {
-			if (glfwWindowShouldClose(window_)) {
-				return;
-			}
-
 			// Make sure we have the correct OpenGL context for this thread
 			pipeline_->MakeContextCurrent();
 

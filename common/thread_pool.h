@@ -62,7 +62,7 @@ protected:
     std::queue<std::function<void()>> tasks_;    ///< FIFO queue for pending tasks
     std::mutex queue_mutex_;                     ///< Mutex for thread-safe queue access
     std::condition_variable condition_;          ///< Condition variable for task notification
-    bool stop_;                                  ///< Termination flag (true to stop pool)
+    std::atomic<bool> stop_;                     ///< Termination flag (true to stop pool)
     static std::unique_ptr<ThreadPool> instance_;///< Singleton instance pointer
 };
 

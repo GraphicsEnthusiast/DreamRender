@@ -4,7 +4,9 @@ NAMESPACE_BEGIN(dream)
 
 std::unique_ptr<ThreadPool> ThreadPool::instance_ = nullptr;
 
-ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
+ThreadPool::ThreadPool(unsigned int threads) {
+    stop_.store(false, std::memory_order_release);
+
     // Create specified number of worker threads
     for (unsigned int i = 0; i < threads; ++i) {
         workers_.emplace_back([this] {
@@ -18,11 +20,11 @@ ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
 
                     // Wait until tasks available or stop signaled
                     condition_.wait(lock, [this] {
-                        return stop_ || !tasks_.empty();
+                        return stop_.load(std::memory_order_acquire) || !tasks_.empty();
                     });
 
                     // Exit thread if stop requested and queue empty
-                    if (stop_ && tasks_.empty()) {
+                    if (stop_.load(std::memory_order_acquire) && tasks_.empty()) {
                         return;
                     }
 
@@ -55,11 +57,9 @@ void ThreadPool::Release() {
 }
 
 void ThreadPool::ReleaseInstance() {
-	{
-		std::unique_lock<std::mutex> lock(queue_mutex_);
-		stop_ = true;
-	}
+    stop_.store(true, std::memory_order_release);
     condition_.notify_all();
+
 	for (auto& worker : workers_) {
 		if (worker.joinable()) {
             worker.join();
