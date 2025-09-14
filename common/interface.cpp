@@ -18,7 +18,6 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 	if (!glfwInit()) {
 		ERROR("[error] GLFW initialization failed!");
 		glfwTerminate();
-		exit(0);
 	}
 	// Configure OpenGL context hints
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -30,7 +29,6 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 	if (nullptr == window_) {
 		ERROR("[error] Window creation failed!");
 		glfwTerminate();
-		exit(0);
 	}
 
 	//glfwSetWindowAttrib(window_, GLFW_RESIZABLE, GLFW_FALSE);
@@ -43,7 +41,6 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		ERROR("[error] GLAD initialization failed!");
 		glfwTerminate();
-		exit(0);
 	}
 
 	// Initialize ImGui core context
