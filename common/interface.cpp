@@ -50,10 +50,10 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
-	// Enable docking and multi-viewport features
+	// Enable docking
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // There will be bugs when opening it
 
 	ImGui::StyleColorsDark();  // Apply default dark theme
 
@@ -63,12 +63,10 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 }
 
 Interface::~Interface() {
-	// Shutdown ImGui subsystems
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
-
-	// Release GLFW resources
+	pipeline_.reset();
 	glfwDestroyWindow(window_);
 	glfwTerminate();
 }
@@ -267,23 +265,14 @@ void Interface::Render() {
 			while (rendering_active_.load(std::memory_order_relaxed)) {
 				// Wait for GPU if a fence exists (max one frame in flight)
 				if (fence) {
-					GLenum wait_result = glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000);
+					glWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+					glDeleteSync(fence);
+					fence = nullptr;
+					glFlush();
+				}
 
-					switch (wait_result) {
-					case GL_ALREADY_SIGNALED:
-					case GL_CONDITION_SATISFIED:
-					case GL_WAIT_FAILED:
-						glDeleteSync(fence);
-						fence = nullptr;
-						break;
-					case GL_TIMEOUT_EXPIRED:
-						if (!rendering_active_.load(std::memory_order_relaxed)) {
-							glDeleteSync(fence);
-							fence = nullptr;
-							break;
-						}
-						continue;
-					}
+				if (!rendering_active_.load(std::memory_order_relaxed)) {
+					break;
 				}
 
 				// Execute pipeline
@@ -291,6 +280,7 @@ void Interface::Render() {
 
 				// Create a new GPU fence
 				fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+				glFlush();
 
 				// Get output safely
 				auto output = pipeline_->GetFinalOutput();
@@ -305,6 +295,7 @@ void Interface::Render() {
 
 			// Cleanup fence on exit
 			if (fence) {
+				glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
 				glDeleteSync(fence);
 			}
 		});
