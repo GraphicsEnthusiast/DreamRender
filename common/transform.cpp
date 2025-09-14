@@ -12,7 +12,7 @@ Point3f Transform::TransformPoint(const Point3f& p) const {
 	const Vector4f homog_point(p.x, p.y, p.z, 1.0f);
 	const Vector4f transformed = transform_matrix * homog_point;
 
-	// Handle perspective division if w �� 1
+	// Handle perspective division if w != 1
 	if (1.0f == transformed.w) {
 		return Point3f(transformed.x, transformed.y, transformed.z);
 	}
