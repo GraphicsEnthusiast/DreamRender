@@ -31,6 +31,9 @@ public:
     inline void Enqueue(F&& f) {
         {
             std::unique_lock<std::mutex> lock(queue_mutex_);
+            if (stop_.load(std::memory_order_acquire)) {
+                return;
+            }
             tasks_.emplace(std::forward<F>(f));
         }
         condition_.notify_one();
@@ -58,6 +61,7 @@ protected:
      */
     void ReleaseInstance();
 
+protected:
     std::vector<std::thread> workers_;           ///< Collection of worker threads
     std::queue<std::function<void()>> tasks_;    ///< FIFO queue for pending tasks
     std::mutex queue_mutex_;                     ///< Mutex for thread-safe queue access

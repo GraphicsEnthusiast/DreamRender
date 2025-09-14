@@ -61,7 +61,7 @@ void ThreadPool::ReleaseInstance() {
     condition_.notify_all();
 
 	for (auto& worker : workers_) {
-		if (worker.joinable()) {
+		if (worker.joinable() && worker.get_id() != std::this_thread::get_id()) {
             worker.join();
 			//worker.detach();
 			//std::terminate();
