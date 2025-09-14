@@ -61,7 +61,9 @@ void ThreadPool::ReleaseInstance() {
 	}
 	condition_.notify_all();
 	for (auto& worker : workers_) {
-		if (worker.joinable()) worker.join();
+        if (worker.joinable()) {
+            worker.join();
+        }
 	}
 	workers_.clear();
 	tasks_ = {};
