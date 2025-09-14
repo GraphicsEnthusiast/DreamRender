@@ -262,7 +262,7 @@ void Interface::Render() {
 			// Create a fence for GPU synchronization
 			GLsync fence = nullptr;
 
-			while (rendering_active_.load(std::memory_order_relaxed)) {
+			while (rendering_active_.load(std::memory_order_acquire)) {
 				// Wait for GPU if a fence exists (max one frame in flight)
 				if (fence) {
 					glWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
@@ -271,7 +271,7 @@ void Interface::Render() {
 					glFlush();
 				}
 
-				if (!rendering_active_.load(std::memory_order_relaxed)) {
+				if (!rendering_active_.load(std::memory_order_acquire)) {
 					break;
 				}
 
