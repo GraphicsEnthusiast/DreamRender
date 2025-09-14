@@ -126,29 +126,7 @@ class SimpleComputePass : public RenderPass {
 public:
     SimpleComputePass(unsigned int width, unsigned int height);
 
-    void Execute() override {
-		// Use compute shader
-		shader_->Use();
-
-        // Bind output texture
-        glBindImageTexture(0, GetOutputTexture("Output").id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
-        auto& mesh_manager = TriangleMeshManager::Instance();
-
-        mesh_manager.GetTriangleTBO().BindTexture(0);
-        shader_->SetInt("Triangles", 0);
-
-		mesh_manager.GetBVHNodeTBO().BindTexture(1);
-		shader_->SetInt("BVHNodes", 1);
-
-        srgb_to_spectrum_tbo_->BindTexture(2);
-		shader_->SetInt("SRGBToSpectrumTable", 2);
-
-        // Dispatch compute shader
-        glDispatchCompute(width_ / 16, height_ / 16, 1);
-
-        BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
-    }
+    void Execute() override;
 
 protected:
     std::unique_ptr<ComputationShader> shader_;

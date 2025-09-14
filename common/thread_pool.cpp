@@ -34,7 +34,7 @@ ThreadPool::ThreadPool(unsigned int threads) : stop_(false) {
                 // Execute task outside lock scope
                 task();
             }
-            });
+        });
     }
 }
 
@@ -59,13 +59,15 @@ void ThreadPool::ReleaseInstance() {
 		std::unique_lock<std::mutex> lock(queue_mutex_);
 		stop_ = true;
 	}
-	
     condition_.notify_all();
 	for (auto& worker : workers_) {
-        if (worker.joinable()) {
+		if (worker.joinable()) {
             worker.join();
-        }
+			//worker.detach();
+			//std::terminate();
+		}
 	}
+
 	workers_.clear();
 	tasks_ = {};
 }

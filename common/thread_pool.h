@@ -28,7 +28,7 @@ public:
      * @param f Task to execute
      */
     template<class F>
-    void Enqueue(F&& f) {
+    inline void Enqueue(F&& f) {
         {
             std::unique_lock<std::mutex> lock(queue_mutex_);
             tasks_.emplace(std::forward<F>(f));
