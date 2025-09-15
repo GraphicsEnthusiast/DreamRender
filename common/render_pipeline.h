@@ -112,28 +112,49 @@ public:
     TestPipeline(GLFWwindow* share_window = nullptr) : RenderPipeline(share_window) {}
 
     /**
-      * @brief Configures the test pipeline with processing and presentation passes
-      */
-	void Init() override {
-		auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj", Transform());
-		std::vector<TriangleMesh> meshes;
-		meshes.emplace_back(mesh);
+     * @brief Configures the two-pass pipeline
+     *
+     * Pass 1: SimpleComputePass - Renders the initial frame using compute shader
+     * Pass 2: ProgressivePass - Blends current frame with previous frame for accumulation
+     */
+    void Init() override {
+        // Load and prepare mesh data
+        auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj", Transform());
+        std::vector<TriangleMesh> meshes;
+        meshes.emplace_back(mesh);
 
         auto& mesh_manager = TriangleMeshManager::Instance();
-		mesh_manager.EncodeTriangles(meshes);
+        mesh_manager.EncodeTriangles(meshes);
         mesh_manager.BuildBVH();
         mesh_manager.CreateGPUBuffers();
 
+        // Create textures for both passes
 		TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+		TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y); // 显式创建“上一帧”纹理
+		TextureHandle final_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 
+		// Create compute pass (First pass)
 		auto compute_pass = std::make_shared<SimpleComputePass>(rendering_size_.x, rendering_size_.y);
-
 		compute_pass->SetOutputTexture("Output", compute_output);
-
 		AddPass("Compute", compute_pass);
 
-		SetFinalOutput(compute_output);
-	}
+		// Create progressive pass (Second pass)
+		auto progressive_pass = std::make_shared<ProgressivePass>(rendering_size_.x, rendering_size_.y);
+		progressive_pass->SetInputTexture("CurrentFrame", compute_output);  // Input from compute pass
+		progressive_pass->SetInputTexture("PreviousFrame", previous_frame); // **Input: 外部创建并管理的“上一帧”纹理**
+		progressive_pass->SetOutputTexture("Output", final_output);        // Output to final texture
+		AddPass("Progressive", progressive_pass);
+
+		// Connect passes: Compute → Progressive (用于传递当前帧)
+		ConnectPasses("Compute", "Output", "Progressive", "CurrentFrame");
+
+		// **重要变更: 移除自循环连接**
+		// 不再需要 ConnectPasses("Progressive", "Output", "Progressive", "PreviousFrame");
+		// “上一帧”纹理(previous_frame)的生命周期由TestPipeline管理，并在每帧由ProgressivePass通过glCopyImageSubData更新。
+
+		// Set the final output from progressive pass
+		SetFinalOutput(final_output);
+    }
 };
 
 NAMESPACE_END(dream)

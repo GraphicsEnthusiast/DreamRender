@@ -35,6 +35,13 @@ public:
     void SetInt(const std::string& name, int value);
 
     /**
+     * @brief Sets an unsigned integer uniform value in the shader
+     * @param name Name of the uniform variable
+     * @param value Integer value to set
+     */
+    void SetUInt(const std::string& name, unsigned int value);
+
+    /**
      * @brief Sets a floating-point uniform value in the shader
      * @param name Name of the uniform variable
      * @param value Float value to set

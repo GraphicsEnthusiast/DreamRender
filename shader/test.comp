@@ -16,17 +16,72 @@ uniform float camera_fov = 60.0;
 uniform float camera_distance = 1.0;
 uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
+uniform uint frame_counter = 0; // 新增：帧计数器，用于时间累积
 
-float random(vec2 st) {
+// --- 高质量伪随机数生成器 (基于哈希函数) ---
+// 核心哈希函数（低偏置32位哈希）
+uint hash(uint x) {
+    x = (x ^ (x >> 16)) * 0x21f0aaadU;
+    x = (x ^ (x >> 15)) * 0x735a2d97U;
+    return x ^ (x >> 15);
+}
+// 1D 哈希（输入：32位整数种子）
+float random(uint seed) {
+    return float(hash(seed)) / 4294967295.0; // 转换为 [0, 1) 范围的浮点数
+}
+// 2D 哈希（输入：像素坐标 + 样本索引 + 帧计数器）
+float random(uvec2 pixel, uint sample_index, uint dimension) {
+    uint h = hash(pixel.x ^ hash(pixel.y ^ hash(sample_index ^ hash(dimension ^ frame_counter))));
+    return float(h) / 4294967295.0;
+}
+// 3D 哈希（输入：像素坐标 + 样本索引 + 维度种子）
+float random(uvec3 seed) {
+    return float(hash(seed.x ^ hash(seed.y ^ hash(seed.z)))) / 4294967295.0;
+}
+// 生成 [0, 1) 范围内的随机浮点数（基于像素位置和样本索引）
+float rand(vec2 pixel_coord, int sample_index, int dimension) {
+    uvec2 pix = uvec2(uint(pixel_coord.x), uint(pixel_coord.y));
+    return random(pix, uint(sample_index), uint(dimension));
+}
+// 生成 [0, 1) 范围内的随机浮点数（快速版本，适用于低差异序列）
+float rand(vec2 st) {
     return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123);
 }
+
+// --- 应用层随机数函数（用于采样）---
+// 在单位圆盘上生成均匀随机点（用于景深）
+vec2 sample_disk(vec2 u) {
+    float r = sqrt(u.x);
+    float theta = 2.0 * 3.141592653589793 * u.y;
+    return vec2(r * cos(theta), r * sin(theta));
+}
+// 在单位球面上生成均匀随机方向（用于漫反射）
+vec3 sample_sphere(vec2 u) {
+    float z = 1.0 - 2.0 * u.x;
+    float r = sqrt(max(0.0, 1.0 - z * z));
+    float phi = 2.0 * 3.141592653589793 * u.y;
+    return vec3(r * cos(phi), r * sin(phi), z);
+}
+// 在单位半球上生成余弦加权随机方向（用于重要性采样）
+vec3 sample_hemisphere_cosine(vec2 u, vec3 normal) {
+    // 在局部切线空间生成样本
+    vec2 d = sample_disk(u);
+    float z = sqrt(max(0.0, 1.0 - dot(d, d)));
+    vec3 local_dir = vec3(d, z);
+    
+    // 构建切线空间到世界空间的变换矩阵
+    vec3 tangent = normalize(cross(normal, abs(normal.x) > 0.9 ? vec3(0,1,0) : vec3(1,0,0)));
+    vec3 bitangent = cross(normal, tangent);
+    mat3 TBN = mat3(tangent, bitangent, normal);
+    
+    // 将局部方向变换到世界空间
+    return normalize(TBN * local_dir);
+}
+
 void main()
 {
-    // 获取全局线程ID
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
-    
-    // 边界检查
-    if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >=int(resolution.y)) {
+    if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
         return;
     }
     
@@ -35,33 +90,29 @@ void main()
                              resolution, camera_distance, camera_fov, 
                              camera_aperture, camera_focal_distance, false, 0);
     
-    // 生成像素坐标
     vec2 pixel_center = vec2(pixel_coords) + vec2(0.5);
-    vec2 random_offset = vec2(0.0); // 无随机偏移，确保确定性测试
     
-    // 生成主光线
+    // 使用改进的随机数生成器（结合像素坐标、帧计数器和样本维度）
+    uvec2 seed = uvec2(pixel_coords) + uvec2(frame_counter);
+    vec2 random_offset = vec2(random(seed, 0, 0), random(seed, 0, 1)) - vec2(0.5); // 在 [-0.5, 0.5) 范围内抖动
+    
+    // 生成主光线（可能包含随机抖动以实现抗锯齿）
     Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, random_offset);
-    vec2 st = gl_GlobalInvocationID.xy / resolution;
-    // 使用BVH遍历寻找交点
-    SampledWavelengths lambda = SampledWavelengthsSampleVisible(random(st));
+    
+    SampledWavelengths lambda = SampledWavelengthsSampleVisible(random(seed, 1, 0));
     vec3 pre_pos = ray.origin;
     vec3 v = -ray.direction;
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
-    vec4 color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    for (int i = 0; i < 3; i++) {
-        Hit hit = BVHTraverse(ray);
+    vec4 final_color = vec4(0.0f);
     
+    // 路径追踪循环（可扩展为更多次反弹）
+    for (int bounce = 0; bounce < 10; bounce++) {
+        Hit hit = BVHTraverse(ray);
         
         if (hit.distance < MaxFloat) {
-            // 命中几何体：获取三角形并计算法线
             Triangle tri = FetchTriangle(hit.tri_index);
-        
-            vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + 
-                               hit.u * tri.p2 + 
-                               hit.v * tri.p3;
-            vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + 
-                               hit.u * tri.n2 + 
-                               hit.v * tri.n3);
+            vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
+            vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + hit.u * tri.n2 + hit.v * tri.n3);
 
             IntersectionInfo info;
             pre_pos = info.position;
@@ -70,23 +121,23 @@ void main()
             info.distance = length(pre_pos - position);
             info.material.diffuse = SampledSpectrumNewFloat(0.7f);
             info.material.roughness = 0.0f;
-            MaterialSampleInfo m_info = DiffuseSample(info, v, vec2(random(st)));
+            
+            // 使用改进的随机数进行重要性采样
+            vec2 rand_sample = vec2(random(seed, uint(bounce), 0), random(seed, uint(bounce), 1));
+            MaterialSampleInfo m_info = DiffuseSample(info, v, rand_sample);
+            
             beta = Mul(beta, DivFloat(m_info.bsdf_cosine, m_info.pdf));
-            ray.origin = position + normal * 0.001; // 偏移避免自相交
+            ray.origin = position + normal * 0.001;
             ray.direction = m_info.world_l;
         } else {
-            // 未命中：使用背景色
-            // 使用《Ray Tracing in One Weekend》中的背景色计算方法
+            // 未命中环境光
             vec3 unit_direction = normalize(ray.direction);
-            float t = 0.5 * (unit_direction.y + 1.0); // 将y分量从[-1,1]映射到[0,1]
-            vec3 bg_color = mix(vec3(1.0, 1.0, 1.0), // 白色
-                            vec3(0.5, 0.7, 1.0), // 浅蓝色
-                            t);
+            float t = 0.5 * (unit_direction.y + 1.0);
+            vec3 bg_color = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
 
             RGB bg_rgb = RGBNew(bg_color.r, bg_color.g, bg_color.b);
             RGBAlbedoSpectrum bg_spectrum = RGBAlbedoSpectrumNew(ToRGBCoeffs(bg_rgb));
             
-            // 评估光谱值
             SampledSpectrum bg_spectrum_val;
             for (int i = 0; i < NSpectrumSamples; i++) {
                 float wavelength = lambda.lambda[i];
@@ -94,16 +145,13 @@ void main()
             }
             SampledSpectrum L_env = Mul(beta, bg_spectrum_val);
             
-            // 将光谱转换为RGB显示
             RGB linear_rgb = SampledSpectrumToRGB(L_env, lambda);
-            
-            // 应用色调映射和伽马校正
-            //vec3 mapped_rgb = linear_rgb.rgb / (linear_rgb.rgb + vec3(1.0));
             vec3 display_rgb = vec3(pow(linear_rgb.r, 1.0/2.2), pow(linear_rgb.g, 1.0/2.2), pow(linear_rgb.b, 1.0/2.2));
             
-            color  = vec4(display_rgb, 1.0);
+            final_color = vec4(display_rgb, 1.0);
+            break; // 终止路径
         }
     }
 
-    imageStore(outputTex, pixel_coords, color);
+    imageStore(outputTex, pixel_coords, final_color);
 }

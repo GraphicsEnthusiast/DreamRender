@@ -61,6 +61,62 @@ void RenderPass::InitSRGBToSpectrumTable() {
 	);
 }
 
+ProgressivePass::ProgressivePass(unsigned int width, unsigned int height) {
+	name_ = "Progressive accumulation pass";
+	width_ = width;
+	height_ = height;
+	frame_counter_ = 0;
+
+	// Create compute shader for progressive blending
+	const char* compute_path = "../shader/progressive_blend.comp";
+	shader_ = std::make_unique<ComputationShader>(compute_path);
+}
+
+void ProgressivePass::Execute() {
+	shader_->Use();
+	shader_->SetUInt("FrameCounter", frame_counter_);
+
+	TextureHandle current_frame = GetInputTexture("CurrentFrame");
+	TextureHandle previous_frame = GetInputTexture("PreviousFrame");
+	TextureHandle output_texture = GetOutputTexture("Output");
+
+	if (!current_frame.IsValid() || !previous_frame.IsValid() || !output_texture.IsValid()) {
+		ERROR("[error] Progressive pass: One or more required textures are invalid!");
+
+		return;
+	}
+
+	glBindImageTexture(0, current_frame.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, previous_frame.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glBindImageTexture(2, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	glDispatchCompute(width_ / 16, height_ / 16, 1);
+
+	glCopyImageSubData(output_texture.id, GL_TEXTURE_2D, 0, 0, 0, 0,
+		previous_frame.id, GL_TEXTURE_2D, 0, 0, 0, 0,
+		width_, height_, 1);
+
+	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+
+	IncrementFrameCounter();
+}
+
+void ProgressivePass::SetFrameCounter(unsigned int frame_counter) {
+	frame_counter_ = frame_counter;
+}
+
+unsigned int ProgressivePass::GetFrameCounter() const noexcept {
+	return frame_counter_;
+}
+
+void ProgressivePass::IncrementFrameCounter() {
+	frame_counter_++;
+}
+
+void ProgressivePass::ResetFrameCounter() {
+	frame_counter_ = 0;
+}
+
 SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
 	name_ = "Simple compute pass";
 

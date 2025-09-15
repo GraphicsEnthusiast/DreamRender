@@ -119,6 +119,53 @@ protected:
 };
 
 /**
+ * @class ProgressivePass
+ * @brief Blends current frame with previous frame for progressive refinement
+ */
+class ProgressivePass : public RenderPass {
+public:
+    /**
+     * @brief Constructor for progressive rendering pass
+     * @param width Render target width
+     * @param height Render target height
+     */
+    ProgressivePass(unsigned int width, unsigned int height);
+
+    /**
+     * @brief Executes the progressive blending computation
+     */
+    void Execute() override;
+
+    /**
+     * @brief Sets the current frame counter value
+     * @param frame_counter Current frame number (starts from 0)
+     */
+    void SetFrameCounter(unsigned int frame_counter);
+
+    /**
+     * @brief Gets the current frame counter value
+     * @return Current frame counter value
+     */
+    unsigned int GetFrameCounter() const noexcept;
+
+    /**
+     * @brief Increments the frame counter
+     */
+    void IncrementFrameCounter();
+
+    /**
+     * @brief Resets the frame counter to zero
+     */
+    void ResetFrameCounter();
+
+protected:
+    std::unique_ptr<ComputationShader> shader_; ///< Compute shader for blending
+    unsigned int width_;                        ///< Render target width
+    unsigned int height_;                       ///< Render target height
+    unsigned int frame_counter_;                ///< Frame counter for progressive accumulation
+};
+
+/**
  * @class SimpleComputePass
  * @brief Demonstrates compute shader usage by generating a gradient texture
  */
