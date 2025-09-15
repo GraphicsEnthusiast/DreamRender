@@ -1,7 +1,6 @@
 #pragma once
 
 #include <console.h>
-#include <thread_pool.h>
 #include <render_pipeline.h>
 
 NAMESPACE_BEGIN(dream)
@@ -79,18 +78,29 @@ protected:
      */
     void ApplyDarkTheme();
 
+    /**
+     * @brief Renders the output from the render pipeline
+     */
+    void RenderOutput();
+
+    /**
+     * @brief Main rendering thread function
+     */
+    void RenderThread();
+
 protected:
     GLFWwindow* window_;                ///< GLFW window handle
     std::unique_ptr<Console> console_;  ///< Console for log display
     unsigned int width_;                ///< Current window width
     unsigned int height_;               ///< Current window height
     std::unique_ptr<RenderPipeline> pipeline_;
-	TextureHandle front_buffer_;        ///< Front buffer (accessed by UI thread)
-	TextureHandle back_buffer_;         ///< Back buffer (accessed by render thread)
-	std::mutex buffer_mutex_;           ///< Mutex protecting buffer swapping
-	bool buffer_updated_ = false;       ///< Flag indicating back buffer update
+    TextureHandle front_buffer_;        ///< Front buffer (accessed by UI thread)
+    TextureHandle back_buffer_;         ///< Back buffer (accessed by render thread)
+    std::mutex buffer_mutex_;           ///< Mutex protecting buffer swapping
+    bool buffer_updated_ = false;       ///< Flag indicating back buffer update
     std::atomic<bool> rendering_active_ = false;     ///< Render thread activity status
-	unsigned int frame_counter_;        ///< Frame counter
+    unsigned int frame_counter_;        ///< Frame counter
+    std::thread render_thread_;         ///< Dedicated rendering thread
 };
 
 NAMESPACE_END(dream)

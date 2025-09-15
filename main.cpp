@@ -1,12 +1,10 @@
 #include <interface.h>
 
 void CreateSingleton() {
-	dream::ThreadPool::Instance(1);
 	dream::TriangleMeshManager::Instance();
 }
 
 void ReleaseSingleton() {
-	dream::ThreadPool::Release();
 	dream::TriangleMeshManager::Release();
 }
 
