@@ -78,4 +78,42 @@ TextureHandle RenderPipeline::CreateTexture(int width, int height) {
 	return TextureHandle{ textureID };
 }
 
+void TestPipeline::Init() {
+	// Load and encode mesh data for rendering
+	auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj", Transform());
+	std::vector<TriangleMesh> meshes;
+	meshes.emplace_back(mesh);
+
+	auto& mesh_manager = TriangleMeshManager::Instance();
+	mesh_manager.EncodeTriangles(meshes);
+	mesh_manager.BuildBVH();          // Build acceleration structure
+	mesh_manager.CreateGPUBuffers();  // Upload geometry to GPU
+
+	// Create texture resources for pipeline stages
+	TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y); // Persistent storage for temporal accumulation
+	TextureHandle final_output = CreateTexture(rendering_size_.x, rendering_size_.y);   // Final output target
+
+	// Create and configure compute pass (primary rendering)
+	auto compute_pass = std::make_shared<SimpleComputePass>(rendering_size_.x, rendering_size_.y);
+	compute_pass->SetOutputTexture("Output", compute_output);
+	AddPass("Compute", compute_pass);
+
+	// Create and configure progressive pass (temporal accumulation)
+	auto progressive_pass = std::make_shared<ProgressivePass>(rendering_size_.x, rendering_size_.y);
+	progressive_pass->SetInputTexture("CurrentFrame", compute_output);   // Feed from compute pass
+	progressive_pass->SetInputTexture("PreviousFrame", previous_frame); // Feedback for temporal blending
+	progressive_pass->SetOutputTexture("Output", final_output);          // Output to final target
+	AddPass("Progressive", progressive_pass);
+
+	// Establish data flow: Compute ¡ú Progressive
+	ConnectPasses("Compute", "Output", "Progressive", "CurrentFrame");
+
+	// Note: Temporal feedback is managed via glCopyImageSubData in ProgressivePass::Execute
+	// No explicit graph connection needed for PreviousFrame
+
+	// Designate progressive output as final result
+	SetFinalOutput(final_output);
+}
+
 NAMESPACE_END(dream)

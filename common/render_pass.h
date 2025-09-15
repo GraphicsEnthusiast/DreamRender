@@ -167,18 +167,27 @@ protected:
 
 /**
  * @class SimpleComputePass
- * @brief Demonstrates compute shader usage by generating a gradient texture
+ * @brief Demonstrates compute shader usage by generating a gradient texture.
  */
 class SimpleComputePass : public RenderPass {
 public:
+    /**
+     * @brief Constructor for the simple compute pass.
+     * @param width Width of the output texture and computation domain.
+     * @param height Height of the output texture and computation domain.
+     */
     SimpleComputePass(unsigned int width, unsigned int height);
 
+    /**
+     * @brief Executes the compute shader dispatch.
+     * @note Overrides the pure virtual function from RenderPass.
+     */
     void Execute() override;
 
 protected:
-    std::unique_ptr<ComputationShader> shader_;
-    unsigned int width_;
-    unsigned int height_;
+    std::unique_ptr<ComputationShader> shader_; ///< Compute shader instance
+    unsigned int width_;                        ///< Width of the render target
+    unsigned int height_;                       ///< Height of the render target
 };
 
 NAMESPACE_END(dream)

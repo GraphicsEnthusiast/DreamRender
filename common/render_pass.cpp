@@ -73,6 +73,12 @@ ProgressivePass::ProgressivePass(unsigned int width, unsigned int height) {
 }
 
 void ProgressivePass::Execute() {
+	if (!shader_) {
+		ERROR("[error] Progressive pass: Compute shader is not initialized.");
+
+		return;
+	}
+
 	shader_->Use();
 	shader_->SetUInt("FrameCounter", frame_counter_);
 
@@ -118,36 +124,44 @@ void ProgressivePass::ResetFrameCounter() {
 }
 
 SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
-	name_ = "Simple compute pass";
-
+	name_ = "Simple compute pass"; // Consistent naming style with other passes
 	width_ = width;
 	height_ = height;
 
-	// Create compute shader
-	const char* compute_path = "../shader/test.comp";
-
-	shader_ = std::make_unique<ComputationShader>(compute_path);
+	// Create the compute shader
+	const char* compute_shader_path = "../shader/test.comp"; // Consider making path configurable
+	shader_ = std::make_unique<ComputationShader>(compute_shader_path);
 }
 
 void SimpleComputePass::Execute() {
-	// Use compute shader
+	if (!shader_) {
+		ERROR("[error] Simple compute pass: Compute shader is not initialized.");
+
+		return;
+	}
+
+	// Use (bind) the compute shader program
 	shader_->Use();
 
-	// Bind output texture
-	glBindImageTexture(0, GetOutputTexture("Output").id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	// Retrieve and validate the output texture handle
+	TextureHandle output_texture = GetOutputTexture("Output");
+	if (!output_texture.IsValid()) {
+		ERROR("[error] Simple compute pass: Output texture handle is invalid.");
+
+		return;
+	}
+
+	glBindImageTexture(0, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	auto& mesh_manager = TriangleMeshManager::Instance();
 
 	mesh_manager.GetTriangleTBO().BindTexture(0);
 	shader_->SetInt("Triangles", 0);
-
 	mesh_manager.GetBVHNodeTBO().BindTexture(1);
 	shader_->SetInt("BVHNodes", 1);
-
-	srgb_to_spectrum_tbo_->BindTexture(2);
+	RenderPass::srgb_to_spectrum_tbo_->BindTexture(2);
 	shader_->SetInt("SRGBToSpectrumTable", 2);
 
-	// Dispatch compute shader
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
 	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
