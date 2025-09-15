@@ -23,7 +23,7 @@ Interface::Interface(unsigned int width, unsigned int height) : width_(width), h
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	// Create primary application window
 	window_ = glfwCreateWindow(width_, height_, "dream", nullptr, nullptr);
@@ -239,19 +239,23 @@ void Interface::SetRenderPipeline(std::unique_ptr<RenderPipeline>&& pipeline) {
 }
 
 void Interface::RenderThread() {
-	// Make sure we have the correct OpenGL context for this thread
-	pipeline_->MakeContextCurrent();
-
 	// Create a fence for GPU synchronization
 	GLsync fence = nullptr;
 
 	while (rendering_active_.load(std::memory_order_acquire)) {
+		// Make sure we have the correct OpenGL context for this thread
+		pipeline_->MakeContextCurrent();
+
 		// Wait for GPU if a fence exists (max one frame in flight)
 		if (fence) {
-			glWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
-			glDeleteSync(fence);
-			fence = nullptr;
-			glFlush();
+			GLenum wait_return = glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000);
+			if (GL_ALREADY_SIGNALED == wait_return || GL_CONDITION_SATISFIED == wait_return) {
+				glDeleteSync(fence);
+				fence = nullptr;
+			}
+			else if (GL_TIMEOUT_EXPIRED == wait_return) {
+				continue;
+			}
 		}
 
 		if (!rendering_active_.load(std::memory_order_acquire)) {
@@ -340,7 +344,6 @@ void Interface::Render() {
 		glfwMakeContextCurrent(window_);
 
 		glfwPollEvents();
-		glfwRestoreWindow(window_);
 
 		// Retrieve current framebuffer dimensions
 		int display_w, display_h;

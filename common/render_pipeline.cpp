@@ -7,8 +7,8 @@ RenderPipeline::RenderPipeline(GLFWwindow* share_window) : rendering_size_(Point
 
 	// Create dedicated OpenGL context sharing resources with main window
 	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // Hidden window
-	render_window_ = glfwCreateWindow(1, 1, "Pipeline Context", nullptr, share_window);
 
+	render_window_ = glfwCreateWindow(16, 16, "Pipeline Context", nullptr, share_window);
 	if (!render_window_) {
 		ERROR("[error] Failed to create pipeline OpenGL context.");
 	}
