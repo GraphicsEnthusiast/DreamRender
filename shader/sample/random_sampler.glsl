@@ -115,4 +115,4 @@ IndependentSampler IndependentSamplerNextSamples(IndependentSampler sampler, uin
     return sampler;
 }
 
-#endif // _SAMPLER__GLSL__
+#endif // _RANDOM_SAMPLER__GLSL__
