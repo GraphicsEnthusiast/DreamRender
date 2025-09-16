@@ -1,5 +1,5 @@
-#ifndef _SAMPLER__GLSL__
-#define _SAMPLER__GLSL__
+#ifndef _RANDOM_SAMPLER__GLSL__
+#define _RANDOM_SAMPLER__GLSL__
 
 /**
  * @brief Wang hash function for random number generation
