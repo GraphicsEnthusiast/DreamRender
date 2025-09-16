@@ -254,7 +254,7 @@ void TriangleMeshManager::BuildBVH() {
 		dst_node.rmax = Point4f(src_node.rmax.x, src_node.rmax.y, src_node.rmax.z, static_cast<float>(src_node.firstTri));
 	}
 
-	const uint32_t* indices = bvh.bvh.primIdx;
+	const unsigned int* indices = bvh.bvh.primIdx;
 	std::vector<TriangleEncoded> sorted_triangles(trangles_size);
 	for (unsigned int i = 0; i < trangles_size; ++i) {
 		sorted_triangles[i] = triangles_encoded_[indices[i]];

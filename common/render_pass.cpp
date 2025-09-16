@@ -1,9 +1,11 @@
 #include <render_pass.h>
 #include <srgb_to_spectrum.h>
+#include <sobol_matrices_1024x52.h>
 
 NAMESPACE_BEGIN(dream)
 
 std::unique_ptr<TBO> RenderPass::srgb_to_spectrum_tbo_ = nullptr;
+std::unique_ptr<TBO> RenderPass::sobol_matrices_tbo_ = nullptr;
 
 void RenderPass::SetInputTexture(const std::string& slot_name, const TextureHandle& handle) {
 	auto it = input_map_.find(slot_name);
@@ -57,6 +59,20 @@ void RenderPass::InitSRGBToSpectrumTable() {
 		SRGBToSpectrumTableData,
 		total_size,
 		GL_R32F,
+		GL_STATIC_DRAW
+	);
+}
+
+void RenderPass::InitSobolMatricesTable() {
+	if (sobol_matrices_tbo_) {
+		return;
+	}
+
+	unsigned int total_size = 1024 * 52 * sizeof(unsigned int);
+	sobol_matrices_tbo_ = std::make_unique<TBO>(
+		SobolMatricesTableData,
+		total_size,
+		GL_R32UI,
 		GL_STATIC_DRAW
 	);
 }
@@ -149,6 +165,8 @@ void SimpleComputePass::Execute() {
 	shader_->SetInt("BVHNodes", 1);
 	RenderPass::srgb_to_spectrum_tbo_->BindTexture(2);
 	shader_->SetInt("SRGBToSpectrumTable", 2);
+	RenderPass::sobol_matrices_tbo_->BindTexture(3);
+	shader_->SetInt("SobolMatricesTable", 3);
 	shader_->SetUInt("FrameCounter", frame_counter);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);

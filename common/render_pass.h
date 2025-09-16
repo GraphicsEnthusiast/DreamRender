@@ -96,7 +96,7 @@ public:
     /**
      * @brief Retrieves the texture handle for a specified output slot.
      * @param slot_name Name identifier of the output slot to retrieve.
-     * @return TextureHandle associated with the output slot (invalid if not found)
+     * @return TextureHandle associated with the output slot (invalid if not found).
      */
     TextureHandle GetOutputTexture(const std::string& slot_name) const noexcept;
 
@@ -107,11 +107,17 @@ public:
     const std::string& GetName() const noexcept;
 
     /**
-     * @brief Initializes the global SRGB to Spectrum conversion table TBO (Texture Buffer Object).
+     * @brief Initializes the global SRGB to Spectrum conversion table TBO.
      */
     static void InitSRGBToSpectrumTable();
 
+    /**
+     * @brief Initializes the sobol matrices table TBO.
+     */
+    static void InitSobolMatricesTable();
+
 protected:
+    static std::unique_ptr<TBO> sobol_matrices_tbo_;
     static std::unique_ptr<TBO> srgb_to_spectrum_tbo_;
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping

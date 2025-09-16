@@ -18,7 +18,7 @@ uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
 uniform uint FrameCounter; // 用于时间累积的帧计数器
 
-// --- 应用层随机数函数（使用 IndependentSampler）---
+// --- 应用层随机数函数（使用 SobolSampler）---
 // 在单位圆盘上生成均匀随机点（用于景深）
 vec2 sample_disk(vec2 u) {
     float r = sqrt(u.x);
@@ -52,20 +52,17 @@ vec3 sample_hemisphere_cosine(vec2 u, vec3 normal) {
 
 void main()
 {
-    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
-    if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
+    uvec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    if (pixel_coords.x >= uint(resolution.x) || pixel_coords.y >= uint(resolution.y)) {
         return;
     }
     
-    // 初始化 IndependentSampler - 类似于C++中的sampler初始化
-    IndependentSampler indep_sampler = IndependentSamplerNew();
+    // 初始化 SobolSampler - 使用帧计数器作为种子
+    SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);
     
-    // 设置帧计数器 - 类似于C++中可能的外部控制
-    indep_sampler.frame_count = FrameCounter;
-    
-    // 设置当前像素坐标 - 类似于C++中的sampler->SetPixel(i, j)
-    indep_sampler = IndependentSamplerSetPixel(indep_sampler, pixel_coords.x, pixel_coords.y);
-    indep_sampler = IndependentSamplerNextSamples(indep_sampler, FrameCounter);
+    // 设置当前像素坐标
+    SobolSamplerSetPixel(sobol_sampler, pixel_coords.x, pixel_coords.y);
+    SobolSamplerNextSamples(sobol_sampler, FrameCounter);
     
     // 创建相机
     Camera cam = CreateCamera(camera_position, camera_target, camera_up, 
@@ -74,18 +71,18 @@ void main()
     
     vec2 pixel_center = vec2(pixel_coords) + vec2(0.5);
     
-    // 使用 IndependentSampler 生成随机偏移（抗锯齿）
-    // 类似于C++中的sampler->Get2()但分解为两个Get1()调用
+    // 使用 SobolSampler 生成随机偏移（抗锯齿）
+    // Sobol 序列提供更均匀分布的样本
     vec2 random_offset = vec2(
-        IndependentSamplerGet1(indep_sampler), // 获取第一个随机值
-        IndependentSamplerGet1(indep_sampler)  // 获取第二个随机值
+        SobolSamplerGet1(sobol_sampler), // 获取第一个随机值（维度0）
+        SobolSamplerGet1(sobol_sampler)  // 获取第二个随机值（维度1）
     ) - vec2(0.5); // 在 [-0.5, 0.5) 范围内抖动
     
     // 生成主光线（可能包含随机抖动以实现抗锯齿）
     Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, random_offset);
     
-    // 使用 IndependentSampler 生成波长样本
-    float rand_val = IndependentSamplerGet1(indep_sampler);
+    // 使用 SobolSampler 生成波长样本（维度2）
+    float rand_val = SobolSamplerGet1(sobol_sampler);
     
     SampledWavelengths lambda = SampledWavelengthsSampleVisible(rand_val);
     
@@ -111,10 +108,11 @@ void main()
             info.material.diffuse = SampledSpectrumNewFloat(0.7f);
             info.material.roughness = 0.0f;
             
-            // 使用 IndependentSampler 进行重要性采样
+            // 使用 SobolSampler 进行重要性采样
+            // 每个反弹使用不同的维度（从维度3开始）
             vec2 rand_sample = vec2(
-                IndependentSamplerGet1(indep_sampler), // 获取第一个随机值
-                IndependentSamplerGet1(indep_sampler)  // 获取第二个随机值
+                SobolSamplerGet1(sobol_sampler), // 获取第一个随机值
+                SobolSamplerGet1(sobol_sampler)  // 获取第二个随机值
             );
             
             MaterialSampleInfo m_info = DiffuseSample(info, v, rand_sample);
@@ -146,5 +144,5 @@ void main()
         }
     }
 
-    imageStore(outputTex, pixel_coords, final_color);
+    imageStore(outputTex, ivec2(pixel_coords), final_color);
 }
