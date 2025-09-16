@@ -103,7 +103,7 @@ void IndependentSamplerNextSample(inout IndependentSampler sampler) {
  * @param count Number of samples to advance
  */
 void IndependentSamplerNextSamples(inout IndependentSampler sampler, uint count) {
-    for (uint i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
         IndependentSamplerNextSample(sampler);
     }
 }
@@ -148,9 +148,9 @@ uint SobolSample(uint index, uint dim, uint scramble) {
     
     // Sobol matrices would be defined as a constant array
     // For simplicity, we assume SobolMatrices is available as a uniform buffer
-    for (uint i = dim * 52; 0 != index; index >>= 1, i++) {
+    for (int i = int(dim) * 52; 0 != index; index >>= 1, i++) {
         if (0 != (index & 1)) {
-            r ^= uint(texelFetch(SobolMatricesTable, int(i)).r);
+            r ^= texelFetch(SobolMatricesTable, i).r;
         }
     }
     
