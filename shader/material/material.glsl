@@ -3,6 +3,7 @@
 
 #include "spectrum/spectrum.glsl"
 #include "sample/sampling.glsl"
+#include "sample/random_sampler.glsl"
 
 /**
  * @struct MaterialEvalInfo

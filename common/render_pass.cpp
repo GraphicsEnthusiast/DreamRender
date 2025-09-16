@@ -65,7 +65,6 @@ ProgressivePass::ProgressivePass(unsigned int width, unsigned int height) {
 	name_ = "Progressive accumulation pass";
 	width_ = width;
 	height_ = height;
-	frame_counter_ = 0;
 
 	// Create compute shader for progressive blending
 	const char* compute_path = "../shader/progressive_blend.comp";
@@ -79,13 +78,14 @@ void ProgressivePass::Execute() {
 		return;
 	}
 
+	static unsigned int frame_counter = 0;
+
 	shader_->Use();
-	shader_->SetUInt("FrameCounter", frame_counter_);
+	shader_->SetUInt("FrameCounter", frame_counter);
 
 	TextureHandle current_frame = GetInputTexture("CurrentFrame");
 	TextureHandle previous_frame = GetInputTexture("PreviousFrame");
 	TextureHandle output_texture = GetOutputTexture("Output");
-
 	if (!current_frame.IsValid() || !previous_frame.IsValid() || !output_texture.IsValid()) {
 		ERROR("[error] Progressive pass: One or more required textures are invalid!");
 
@@ -98,29 +98,15 @@ void ProgressivePass::Execute() {
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
+	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+
 	glCopyImageSubData(output_texture.id, GL_TEXTURE_2D, 0, 0, 0, 0,
 		previous_frame.id, GL_TEXTURE_2D, 0, 0, 0, 0,
 		width_, height_, 1);
 
-	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
 
-	IncrementFrameCounter();
-}
-
-void ProgressivePass::SetFrameCounter(unsigned int frame_counter) {
-	frame_counter_ = frame_counter;
-}
-
-unsigned int ProgressivePass::GetFrameCounter() const noexcept {
-	return frame_counter_;
-}
-
-void ProgressivePass::IncrementFrameCounter() {
-	frame_counter_++;
-}
-
-void ProgressivePass::ResetFrameCounter() {
-	frame_counter_ = 0;
+	frame_counter++;
 }
 
 SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
@@ -139,6 +125,8 @@ void SimpleComputePass::Execute() {
 
 		return;
 	}
+
+	static unsigned int frame_counter = 0;
 
 	// Use (bind) the compute shader program
 	shader_->Use();
@@ -161,10 +149,13 @@ void SimpleComputePass::Execute() {
 	shader_->SetInt("BVHNodes", 1);
 	RenderPass::srgb_to_spectrum_tbo_->BindTexture(2);
 	shader_->SetInt("SRGBToSpectrumTable", 2);
+	shader_->SetUInt("FrameCounter", frame_counter);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
-	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+
+	frame_counter++;
 }
 
 NAMESPACE_END(dream)

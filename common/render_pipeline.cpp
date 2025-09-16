@@ -53,7 +53,7 @@ void RenderPipeline::AddPass(const std::string& name, std::shared_ptr<RenderPass
 	graph_->AddPass(name, std::move(pass));
 }
 
-void RenderPipeline::ConnectPasses(const std::string& src_pass, const std::string& src_output, 
+void RenderPipeline::ConnectPasses(const std::string& src_pass, const std::string& src_output,
 	const std::string& dst_pass, const std::string& dst_input) {
 	graph_->AddEdge({ src_pass, src_output, dst_pass, dst_input });
 }
@@ -106,7 +106,7 @@ void TestPipeline::Init() {
 	progressive_pass->SetOutputTexture("Output", final_output);          // Output to final target
 	AddPass("Progressive", progressive_pass);
 
-	// Establish data flow: Compute ¡ú Progressive
+	// Establish data flow: Compute â†’ Progressive
 	ConnectPasses("Compute", "Output", "Progressive", "CurrentFrame");
 
 	// Note: Temporal feedback is managed via glCopyImageSubData in ProgressivePass::Execute

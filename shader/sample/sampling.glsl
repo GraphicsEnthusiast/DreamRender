@@ -3,10 +3,6 @@
 
 /**
  * @brief Samples a direction on the unit hemisphere using uniform disk sampling with cosine weighting 
- * This function generates a direction vector in the local coordinate system (Z-up) using the following steps:
- * 1. Uniformly samples a point on a unit disk using polar coordinates
- * 2. Projects the disk point onto the unit hemisphere (Z > 0)
- * 3. Normalizes the resulting vector to unit length
  * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
  * @return vec3 Unit vector in local coordinate system (Z-up hemisphere)
  */

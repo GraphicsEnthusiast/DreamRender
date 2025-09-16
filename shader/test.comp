@@ -16,45 +16,16 @@ uniform float camera_fov = 60.0;
 uniform float camera_distance = 1.0;
 uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
-uniform uint frame_counter = 0; // 新增：帧计数器，用于时间累积
+uniform uint FrameCounter; // 用于时间累积的帧计数器
 
-// --- 高质量伪随机数生成器 (基于哈希函数) ---
-// 核心哈希函数（低偏置32位哈希）
-uint hash(uint x) {
-    x = (x ^ (x >> 16)) * 0x21f0aaadU;
-    x = (x ^ (x >> 15)) * 0x735a2d97U;
-    return x ^ (x >> 15);
-}
-// 1D 哈希（输入：32位整数种子）
-float random(uint seed) {
-    return float(hash(seed)) / 4294967295.0; // 转换为 [0, 1) 范围的浮点数
-}
-// 2D 哈希（输入：像素坐标 + 样本索引 + 帧计数器）
-float random(uvec2 pixel, uint sample_index, uint dimension) {
-    uint h = hash(pixel.x ^ hash(pixel.y ^ hash(sample_index ^ hash(dimension ^ frame_counter))));
-    return float(h) / 4294967295.0;
-}
-// 3D 哈希（输入：像素坐标 + 样本索引 + 维度种子）
-float random(uvec3 seed) {
-    return float(hash(seed.x ^ hash(seed.y ^ hash(seed.z)))) / 4294967295.0;
-}
-// 生成 [0, 1) 范围内的随机浮点数（基于像素位置和样本索引）
-float rand(vec2 pixel_coord, int sample_index, int dimension) {
-    uvec2 pix = uvec2(uint(pixel_coord.x), uint(pixel_coord.y));
-    return random(pix, uint(sample_index), uint(dimension));
-}
-// 生成 [0, 1) 范围内的随机浮点数（快速版本，适用于低差异序列）
-float rand(vec2 st) {
-    return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
-// --- 应用层随机数函数（用于采样）---
+// --- 应用层随机数函数（使用 IndependentSampler）---
 // 在单位圆盘上生成均匀随机点（用于景深）
 vec2 sample_disk(vec2 u) {
     float r = sqrt(u.x);
     float theta = 2.0 * 3.141592653589793 * u.y;
     return vec2(r * cos(theta), r * sin(theta));
 }
+
 // 在单位球面上生成均匀随机方向（用于漫反射）
 vec3 sample_sphere(vec2 u) {
     float z = 1.0 - 2.0 * u.x;
@@ -62,6 +33,7 @@ vec3 sample_sphere(vec2 u) {
     float phi = 2.0 * 3.141592653589793 * u.y;
     return vec3(r * cos(phi), r * sin(phi), z);
 }
+
 // 在单位半球上生成余弦加权随机方向（用于重要性采样）
 vec3 sample_hemisphere_cosine(vec2 u, vec3 normal) {
     // 在局部切线空间生成样本
@@ -85,6 +57,16 @@ void main()
         return;
     }
     
+    // 初始化 IndependentSampler - 类似于C++中的sampler初始化
+    IndependentSampler indep_sampler = IndependentSamplerNew();
+    
+    // 设置帧计数器 - 类似于C++中可能的外部控制
+    indep_sampler.frame_count = FrameCounter;
+    
+    // 设置当前像素坐标 - 类似于C++中的sampler->SetPixel(i, j)
+    indep_sampler = IndependentSamplerSetPixel(indep_sampler, pixel_coords.x, pixel_coords.y);
+    indep_sampler = IndependentSamplerNextSamples(indep_sampler, FrameCounter);
+    
     // 创建相机
     Camera cam = CreateCamera(camera_position, camera_target, camera_up, 
                              resolution, camera_distance, camera_fov, 
@@ -92,20 +74,27 @@ void main()
     
     vec2 pixel_center = vec2(pixel_coords) + vec2(0.5);
     
-    // 使用改进的随机数生成器（结合像素坐标、帧计数器和样本维度）
-    uvec2 seed = uvec2(pixel_coords) + uvec2(frame_counter);
-    vec2 random_offset = vec2(random(seed, 0, 0), random(seed, 0, 1)) - vec2(0.5); // 在 [-0.5, 0.5) 范围内抖动
+    // 使用 IndependentSampler 生成随机偏移（抗锯齿）
+    // 类似于C++中的sampler->Get2()但分解为两个Get1()调用
+    vec2 random_offset = vec2(
+        IndependentSamplerGet1(indep_sampler), // 获取第一个随机值
+        IndependentSamplerGet1(indep_sampler)  // 获取第二个随机值
+    ) - vec2(0.5); // 在 [-0.5, 0.5) 范围内抖动
     
     // 生成主光线（可能包含随机抖动以实现抗锯齿）
     Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, random_offset);
     
-    SampledWavelengths lambda = SampledWavelengthsSampleVisible(random(seed, 1, 0));
+    // 使用 IndependentSampler 生成波长样本
+    float rand_val = IndependentSamplerGet1(indep_sampler);
+    
+    SampledWavelengths lambda = SampledWavelengthsSampleVisible(rand_val);
+    
     vec3 pre_pos = ray.origin;
     vec3 v = -ray.direction;
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
     vec4 final_color = vec4(0.0f);
     
-    // 路径追踪循环（可扩展为更多次反弹）
+    // 路径追踪循环
     for (int bounce = 0; bounce < 10; bounce++) {
         Hit hit = BVHTraverse(ray);
         
@@ -122,8 +111,12 @@ void main()
             info.material.diffuse = SampledSpectrumNewFloat(0.7f);
             info.material.roughness = 0.0f;
             
-            // 使用改进的随机数进行重要性采样
-            vec2 rand_sample = vec2(random(seed, uint(bounce), 0), random(seed, uint(bounce), 1));
+            // 使用 IndependentSampler 进行重要性采样
+            vec2 rand_sample = vec2(
+                IndependentSamplerGet1(indep_sampler), // 获取第一个随机值
+                IndependentSamplerGet1(indep_sampler)  // 获取第二个随机值
+            );
+            
             MaterialSampleInfo m_info = DiffuseSample(info, v, rand_sample);
             
             beta = Mul(beta, DivFloat(m_info.bsdf_cosine, m_info.pdf));
