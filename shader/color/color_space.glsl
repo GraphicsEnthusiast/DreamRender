@@ -100,8 +100,6 @@ float D65IlluminantSample(float lambda) {
     return mix(D65[idx0], D65[idx1], t);
 }
 
-const int RGBToSpectrumTableRes = 64;
-
 /**
  * @brief Computes the inverse of the smooth step function
  * @param x Input value in the range [0, 1]
@@ -114,14 +112,14 @@ float InverseSmoothStep(float x) {
 /**
  * @brief Computes the flattened index into the SRGBToSpectrumTableData array
  * @param maxc The maximum color channel index (0, 1, or 2 for R, G, B respectively)
- * @param z The coordinate in the first spatial dimension [0, RGBToSpectrumTableRes-1]
- * @param y The coordinate in the second spatial dimension [0, RGBToSpectrumTableRes-1]
- * @param x The coordinate in the third spatial dimension [0, RGBToSpectrumTableRes-1]
- * @param i The coefficient index within the spectral polynomial [0, 3]
+ * @param z The coordinate in the first spatial dimension [0, 64 - 1]
+ * @param y The coordinate in the second spatial dimension [0, 64 - 1]
+ * @param x The coordinate in the third spatial dimension [0, 64 - 1]
+ * @param i The coefficient index within the spectral polynomial [0, 2]
  * @return Linear index into the flattened SRGBToSpectrumTableData array
  */
 int GetSpectrumTableIndex(int maxc, int z, int y, int x, int i) {
-    return (((maxc * RGBToSpectrumTableRes + z) * RGBToSpectrumTableRes + y) * RGBToSpectrumTableRes + x) * 3 + i;
+    return (((maxc * 64 + z) * 64 + y) * 64 + x) * 3 + i;
 }
 
 /**
@@ -161,16 +159,16 @@ RGBSigmoidPolynomial RGBToSpectrumTableEval(RGB rgb) {
     }
     
     // Compute remapped component values
-    float x = GetRGBComponent(rgb, (maxc + 1) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z;
-    float y = GetRGBComponent(rgb, (maxc + 2) % 3) * (float(RGBToSpectrumTableRes) - 1.0f) / z;
+    float x = GetRGBComponent(rgb, (maxc + 1) % 3) * (float(64) - 1.0f) / z;
+    float y = GetRGBComponent(rgb, (maxc + 2) % 3) * (float(64) - 1.0f) / z;
     
     // Apply inverse smooth step transformation
-    float zz = InverseSmoothStep(InverseSmoothStep(z)) * (float(RGBToSpectrumTableRes) - 1.0f);
+    float zz = InverseSmoothStep(InverseSmoothStep(z)) * (float(64) - 1.0f);
     
     // Compute integer indices
-    int xi = min(int(x), RGBToSpectrumTableRes - 2);
-    int yi = min(int(y), RGBToSpectrumTableRes - 2);
-    int zi = min(int(zz), RGBToSpectrumTableRes - 2);
+    int xi = min(int(x), 64 - 2);
+    int yi = min(int(y), 64 - 2);
+    int zi = min(int(zz), 64 - 2);
     
     // Compute fractional offsets
     float dx = x - float(xi);
