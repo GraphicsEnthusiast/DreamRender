@@ -4,6 +4,7 @@
 
 #include "shape/shape.glsl"
 #include "material/material.glsl"
+#include "sample/filter_sampler.glsl"
 
 layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
@@ -69,7 +70,8 @@ void main()
                              resolution, camera_distance, camera_fov, 
                              camera_aperture, camera_focal_distance, false, 0);
     
-    vec2 pixel_center = vec2(pixel_coords) + vec2(0.5);
+    vec2 jitter = FilterGaussian(vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler)));
+    vec2 pixel_center = vec2(pixel_coords) + jitter;
     
     // 使用 SobolSampler 生成随机偏移（抗锯齿）
     // Sobol 序列提供更均匀分布的样本
@@ -77,7 +79,7 @@ void main()
         SobolSamplerGet1(sobol_sampler), // 获取第一个随机值（维度0）
         SobolSamplerGet1(sobol_sampler)  // 获取第二个随机值（维度1）
     ) - vec2(0.5); // 在 [-0.5, 0.5) 范围内抖动
-    
+
     // 生成主光线（可能包含随机抖动以实现抗锯齿）
     Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, random_offset);
     
