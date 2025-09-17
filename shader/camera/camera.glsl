@@ -27,7 +27,6 @@ struct Camera {
     float aperture_radius;///< Lens aperture radius
     float focal_distance; ///< Focal distance for depth of field
     bool filmic;          ///< True for filmic tonemap, false for gamma correction
-    bool environment;     ///< True if environment camera
     int medium;           ///< Medium index the camera is in
     float width;          ///< Image plane width
     float height;         ///< Image plane height
@@ -40,7 +39,7 @@ struct Camera {
 /**
  * @brief Result structure for camera sampling
  */
-struct SampleCameraResult {
+struct CameraSampleInfo {
     Ray ray;              ///< Ray from position to camera
     float we;             ///< Sampling we
     float pdf;            ///< Probability density function(lens area to solid angle)
@@ -67,10 +66,9 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
     cam.resolution = res;
     cam.distance = dist;
     cam.fov = angle;
-    cam.aperture_radius = radius;
+    cam.aperture_radius = max(0.01f, radius);
     cam.focal_distance = focal;
     cam.filmic = filmic;
-    cam.environment = false; // Default to perspective camera
     cam.medium = med;
     
     // Compute camera basis vectors using LookAt method
@@ -84,14 +82,7 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
     cam.width = cam.height * cam.resolution.x / cam.resolution.y;
     cam.sensor_area = 4.0f * cam.width * cam.height; // Sensor area
     
-    // Calculate lens area based on aperture radius
-    // For pinhole camera (aperture_radius == 0), lens area is conceptually 1 in the PDF calculation
-    if (cam.aperture_radius > 0.0f) {
-        cam.lens_area = PI * cam.aperture_radius * cam.aperture_radius;
-    } 
-    else {
-        cam.lens_area = 1.0f;
-    }
+    cam.lens_area = PI * cam.aperture_radius * cam.aperture_radius;
     
     cam.pixel_to_screen = vec2(
         2.0f * cam.width / cam.resolution.x,
@@ -111,42 +102,21 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
  * @return Generated ray
  */
 Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy) {
-    if (cam.environment) {
-        vec3 origin = cam.position;
-        float theta = PI * (1.0f - pixel_y / cam.resolution.y);
-        float phi = 2.0f * PI * (1.0f - pixel_x / cam.resolution.x);
-        vec3 dir = vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
-        dir = dir.x * cam.right + dir.y * cam.up - dir.z * cam.forward;
-
-        Ray ray;
-        ray.origin = origin;
-        ray.direction = normalize(dir);
-        ray.tmin = 0.0f;
-        ray.tmax = MaxFloat;
-
-        return ray;
-    }
-
     float screen_x = pixel_x * cam.pixel_to_screen.x - cam.width;
     float screen_y = pixel_y * cam.pixel_to_screen.y - cam.height;
 
     vec3 dir;
     vec3 origin = cam.position;
 
-    if (cam.aperture_radius > 0.0f) {
-        vec2 aperture_xy = sample_xy * cam.aperture_radius;
-        float focal_x = cam.ratio * screen_x;
-        float focal_y = cam.ratio * screen_y;
-        vec3 aperture_offset = vec3(aperture_xy, 0.0f);
-        vec3 focal_point = vec3(focal_x, focal_y, -cam.focal_distance);
+    vec2 aperture_xy = sample_xy * cam.aperture_radius;
+    float focal_x = cam.ratio * screen_x;
+    float focal_y = cam.ratio * screen_y;
+    vec3 aperture_offset = vec3(aperture_xy, 0.0f);
+    vec3 focal_point = vec3(focal_x, focal_y, -cam.focal_distance);
 
-        dir = focal_point - aperture_offset; 
-        dir = dir.x * cam.right + dir.y * cam.up + dir.z * cam.forward;
-        origin += (aperture_offset.x * cam.right + aperture_offset.y * cam.up);
-    } 
-    else {
-        dir = screen_x * cam.right + screen_y * cam.up - cam.distance * cam.forward;
-    }
+    dir = focal_point - aperture_offset; 
+    dir = dir.x * cam.right + dir.y * cam.up + dir.z * cam.forward;
+    origin += (aperture_offset.x * cam.right + aperture_offset.y * cam.up);
 
     Ray ray;
     ray.origin = origin;
@@ -173,10 +143,10 @@ float CameraWe(Camera cam, float cos_theta) {
  * @param cam Camera structure
  * @param sample_pos Sampling position
  * @param epsilon Ray epsilon value
- * @return SampleCameraResult structure with sampling results
+ * @return CameraSampleInfo structure with sampling results
  */
-SampleCameraResult CameraSample(Camera cam, vec3 sample_pos, float epsilon) {
-    SampleCameraResult result;
+CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos, float epsilon) {
+    CameraSampleInfo result;
     result.pdf = 0.0f; // Default to invalid
     result.we = 0.0f;
     
