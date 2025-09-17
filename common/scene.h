@@ -75,7 +75,7 @@ protected:
     std::vector<BVHNodeEncoded> bvh_nodes_encoded_;        ///< BVH nodes in GPU-friendly format
     std::unique_ptr<TBO> triangle_tbo_;                    ///< TBO for triangle data
     std::unique_ptr<TBO> bvh_node_tbo_;                    ///< TBO for BVH node data
-    static std::unique_ptr<SceneManager> instance_; ///< Singleton instance pointer
+    static std::unique_ptr<SceneManager> instance_;        ///< Singleton instance pointer
 };
 
 NAMESPACE_END(dream)
