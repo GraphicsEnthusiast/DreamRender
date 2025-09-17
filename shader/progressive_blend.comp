@@ -1,28 +1,21 @@
 #version 460 core
 
-// Input textures
 layout(binding = 0, rgba32f) uniform readonly image2D CurrentFrame;
 layout(binding = 1, rgba32f) uniform readonly image2D PreviousFrame;
-// Output texture
 layout(binding = 2, rgba32f) uniform writeonly image2D OutputImage;
 
-// Frame counter for progressive accumulation
 uniform uint FrameCounter;
 
-// Thread group layout - 16x16 threads per group
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 void main() {
-    // Get pixel coordinates from thread ID
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     
-    // Ensure we don't process out-of-bounds pixels
     if (pixel_coords.x >= imageSize(OutputImage).x || 
         pixel_coords.y >= imageSize(OutputImage).y) {
         return;
     }
     
-    // Read current and previous frame pixels
     vec4 current = imageLoad(CurrentFrame, pixel_coords);
     vec4 previous = imageLoad(PreviousFrame, pixel_coords);
     
