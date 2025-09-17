@@ -43,7 +43,7 @@ struct CameraSampleInfo {
     Ray ray;              ///< Ray from position to camera
     float we;             ///< Sampling we
     float pdf;            ///< Probability density function(lens area to solid angle)
-    int raster;           ///< Raster index
+    ivec2 raster;         ///< Raster index
 };
 
 /**
@@ -179,7 +179,7 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos, float epsilon) {
     plane = plane * 0.5f + vec2(0.5f, 0.5f);
     int pixel_x = int(floor(plane.x * (cam.resolution.x - 1.0f) + 0.5f));
     int pixel_y = int(floor(plane.y * (cam.resolution.y - 1.0f) + 0.5f));
-    result.raster = pixel_y * int(cam.resolution.x) + pixel_x;
+    result.raster = ivec2(pixel_x, pixel_y);
     
     // Calculate PDF: p(ω) = p(A) * (r² / cosθ) = (1 / cam.lens_area) * (r² / cosθ)
     // where r² = dot(dir, dir)
