@@ -1,11 +1,11 @@
 #include <interface.h>
 
 void CreateSingleton() {
-	dream::TriangleMeshManager::Instance();
+	dream::SceneManager::Instance();
 }
 
 void ReleaseSingleton() {
-	dream::TriangleMeshManager::Release();
+	dream::SceneManager::Release();
 }
 
 int main() {

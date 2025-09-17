@@ -1,7 +1,7 @@
 #pragma once
 
 #include <shader.h>
-#include <shape.h>
+#include <scene.h>
 
 NAMESPACE_BEGIN(dream)
 

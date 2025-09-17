@@ -157,11 +157,11 @@ void SimpleComputePass::Execute() {
 
 	glBindImageTexture(0, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-	auto& mesh_manager = TriangleMeshManager::Instance();
+	auto& scene_manager = SceneManager::Instance();
 
-	mesh_manager.GetTriangleTBO().BindTexture(0);
+	scene_manager.GetTriangleTBO().BindTexture(0);
 	shader_->SetInt("Triangles", 0);
-	mesh_manager.GetBVHNodeTBO().BindTexture(1);
+	scene_manager.GetBVHNodeTBO().BindTexture(1);
 	shader_->SetInt("BVHNodes", 1);
 	RenderPass::srgb_to_spectrum_tbo_->BindTexture(2);
 	shader_->SetInt("SRGBToSpectrumTable", 2);

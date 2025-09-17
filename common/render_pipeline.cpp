@@ -84,10 +84,10 @@ void TestPipeline::Init() {
 	std::vector<TriangleMesh> meshes;
 	meshes.emplace_back(mesh);
 
-	auto& mesh_manager = TriangleMeshManager::Instance();
-	mesh_manager.EncodeTriangles(meshes);
-	mesh_manager.BuildBVH();          // Build acceleration structure
-	mesh_manager.CreateGPUBuffers();  // Upload geometry to GPU
+	auto& scene_manager = SceneManager::Instance();
+	scene_manager.EncodeTriangles(meshes);
+	scene_manager.BuildBVH();          // Build acceleration structure
+	scene_manager.CreateGPUBuffers();  // Upload geometry to GPU
 
 	// Create texture resources for pipeline stages
 	TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
