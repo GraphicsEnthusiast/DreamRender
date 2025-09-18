@@ -7,9 +7,7 @@ BufferObject::BufferObject(GLenum target, GLenum usage) : id_(0), target_(target
 }
 
 BufferObject::~BufferObject() {
-	if (0 != id_) {
-		Delete();
-	}
+	Delete();
 }
 
 void BufferObject::Barrier(GLbitfield barriers) {
