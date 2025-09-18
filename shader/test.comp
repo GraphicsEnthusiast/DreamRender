@@ -80,11 +80,7 @@ void main() {
             RGBIlluminantSpectrum sky_spectrum = RGBIlluminantSpectrumNew(sky_rgb);
                 
             // Evaluate spectrum at sampled wavelengths
-            SampledSpectrum env_spectrum;
-            for (int i = 0; i < NSpectrumSamples; ++i) {
-                float wavelength = lambda.lambda[i];
-                env_spectrum.values[i] = RGBIlluminantSpectrumEval(sky_spectrum, wavelength);
-            }
+            SampledSpectrum env_spectrum = RGBIlluminantSpectrumSample(sky_spectrum, lambda);
                 
             L = Add(L, Mul(beta, env_spectrum));
 

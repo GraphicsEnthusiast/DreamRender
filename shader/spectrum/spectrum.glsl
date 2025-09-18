@@ -620,6 +620,22 @@ float RGBAlbedoSpectrumEval(RGBAlbedoSpectrum s, float lambda) {
 }
 
 /**
+ * @brief Evaluates an albedo spectrum at multiple sampled wavelengths 
+ * @param spectrum Input albedo spectrum (reflectance)
+ * @param lambda Sampled wavelengths with PDF values
+ * @return SampledSpectrum containing spectral reflectance values at queried wavelengths
+ */
+SampledSpectrum RGBAlbedoSpectrumSample(RGBAlbedoSpectrum spectrum, SampledWavelengths lambda) {
+    SampledSpectrum result;
+    for (int i = 0; i < NSpectrumSamples; ++i) {
+        float wavelength = lambda.lambda[i];
+        result.values[i] = RGBAlbedoSpectrumEval(spectrum, wavelength);
+    }
+    
+    return result;
+}
+
+/**
  * @brief Computes maximum reflectance value in visible spectrum
  * @param s Input albedo spectrum
  * @return Peak reflectance value
@@ -665,6 +681,22 @@ RGBUnboundedSpectrum RGBUnboundedSpectrumNew(RGB rgb) {
  */
 float RGBUnboundedSpectrumEval(RGBUnboundedSpectrum s, float lambda) {
     return s.scale * RGBSigmoidPolynomialEval(s.rsp, lambda);
+}
+
+/**
+ * @brief Evaluates an unbounded spectrum at multiple sampled wavelengths
+ * @param spectrum Input unbounded spectrum (emissive/light source)
+ * @param lambda Sampled wavelengths with PDF values
+ * @return SampledSpectrum containing spectral radiance values at queried wavelengths
+ */
+SampledSpectrum RGBUnboundedSpectrumSample(RGBUnboundedSpectrum spectrum, SampledWavelengths lambda) {
+    SampledSpectrum result;
+    for (int i = 0; i < NSpectrumSamples; ++i) {
+        float wavelength = lambda.lambda[i];
+        result.values[i] = RGBUnboundedSpectrumEval(spectrum, wavelength);
+    }
+
+    return result;
 }
 
 /**
@@ -722,6 +754,22 @@ float RGBIlluminantSpectrumEval(RGBIlluminantSpectrum s, float lambda) {
     float illuminant_val = DenselySampledSpectrumEval(s.illuminant, lambda);
 
     return s.scale * RGBSigmoidPolynomialEval(s.rsp, lambda) * illuminant_val;
+}
+
+/**
+ * @brief Evaluates an RGB illuminant spectrum at multiple sampled wavelengths
+ * @param spectrum Input RGB illuminant spectrum
+ * @param lambda Sampled wavelengths with PDF values
+ * @return SampledSpectrum containing spectral radiance values at queried wavelengths
+ */
+SampledSpectrum RGBIlluminantSpectrumSample(RGBIlluminantSpectrum spectrum, SampledWavelengths lambda) {
+    SampledSpectrum result;
+    for (int i = 0; i < NSpectrumSamples; ++i) {
+        float wavelength = lambda.lambda[i];
+        result.values[i] = RGBIlluminantSpectrumEval(spectrum, wavelength);
+    }
+
+    return result;
 }
 
 /**
