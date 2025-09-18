@@ -1,14 +1,17 @@
 #version 460
-
 #extension GL_ARB_shading_language_include : require
 
 #include "shape/shape.glsl"
 #include "material/material.glsl"
 #include "sample/filter_sampler.glsl"
+#include "camera/camera.glsl"
+#include "spectrum/spectrum.glsl"
+#include "sample/random_sampler.glsl"
 
 layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
 
+// Camera parameters
 uniform vec3 camera_position = vec3(10.0, 10.0, 10.0);
 uniform vec3 camera_target = vec3(0.0, 0.0, 0.0);
 uniform vec3 camera_up = vec3(0.0, 1.0, 0.0);
@@ -17,134 +20,122 @@ uniform float camera_fov = 60.0;
 uniform float camera_distance = 1.0;
 uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
-uniform uint FrameCounter; // 用于时间累积的帧计数器
+uniform uint FrameCounter;
 
-// --- 应用层随机数函数（使用 SobolSampler）---
-// 在单位圆盘上生成均匀随机点（用于景深）
-vec2 sample_disk(vec2 u) {
-    float r = sqrt(u.x);
-    float theta = 2.0 * 3.141592653589793 * u.y;
-    return vec2(r * cos(theta), r * sin(theta));
-}
-
-// 在单位球面上生成均匀随机方向（用于漫反射）
-vec3 sample_sphere(vec2 u) {
-    float z = 1.0 - 2.0 * u.x;
-    float r = sqrt(max(0.0, 1.0 - z * z));
-    float phi = 2.0 * 3.141592653589793 * u.y;
-    return vec3(r * cos(phi), r * sin(phi), z);
-}
-
-// 在单位半球上生成余弦加权随机方向（用于重要性采样）
-vec3 sample_hemisphere_cosine(vec2 u, vec3 normal) {
-    // 在局部切线空间生成样本
-    vec2 d = sample_disk(u);
-    float z = sqrt(max(0.0, 1.0 - dot(d, d)));
-    vec3 local_dir = vec3(d, z);
-    
-    // 构建切线空间到世界空间的变换矩阵
-    vec3 tangent = normalize(cross(normal, abs(normal.x) > 0.9 ? vec3(0,1,0) : vec3(1,0,0)));
-    vec3 bitangent = cross(normal, tangent);
-    mat3 TBN = mat3(tangent, bitangent, normal);
-    
-    // 将局部方向变换到世界空间
-    return normalize(TBN * local_dir);
-}
-
-void main()
-{
-    uvec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
-    if (pixel_coords.x >= uint(resolution.x) || pixel_coords.y >= uint(resolution.y)) {
+void main() {
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
         return;
     }
-    
-    // 初始化 SobolSampler - 使用帧计数器作为种子
+
+    // Initialize Sobol sampler for quasi-random sampling
     SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);
-    
-    // 设置当前像素坐标
     SobolSamplerSetPixel(sobol_sampler, pixel_coords.x, pixel_coords.y);
     SobolSamplerNextSamples(sobol_sampler, FrameCounter);
-    
-    // 创建相机
-    Camera cam = CreateCamera(camera_position, camera_target, camera_up, 
-                             resolution, camera_distance, camera_fov, 
-                             camera_aperture, camera_focal_distance, false, 0);
-    
-    vec2 jitter = FilterGaussian(vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler)));
-    vec2 pixel_center = vec2(pixel_coords) + jitter;
-    
-    // 使用 SobolSampler 生成随机偏移（抗锯齿）
-    // Sobol 序列提供更均匀分布的样本
-    vec2 random_offset = vec2(
-        SobolSamplerGet1(sobol_sampler), // 获取第一个随机值（维度0）
-        SobolSamplerGet1(sobol_sampler)  // 获取第二个随机值（维度1）
-    ) - vec2(0.5); // 在 [-0.5, 0.5) 范围内抖动
 
-    // 生成主光线（可能包含随机抖动以实现抗锯齿）
-    Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, random_offset);
-    
-    // 使用 SobolSampler 生成波长样本（维度2）
-    float rand_val = SobolSamplerGet1(sobol_sampler);
-    
-    SampledWavelengths lambda = SampledWavelengthsSampleVisible(rand_val);
-    
-    vec3 pre_pos = ray.origin;
-    vec3 v = -ray.direction;
+    // Create camera with depth of field
+    Camera cam = CreateCamera(
+        camera_position, camera_target, camera_up,
+        resolution, camera_distance, camera_fov,
+        camera_aperture, camera_focal_distance, false, 0
+    );
+
+    // Generate pixel sample with anti-aliasing
+    vec2 pixel_center = vec2(pixel_coords);
+    vec2 jitter = vec2(
+        SobolSamplerGet1(sobol_sampler),
+        SobolSamplerGet1(sobol_sampler)
+    );
+    pixel_center += jitter;
+
+    // Generate primary ray with depth of field
+    vec2 lens_sample = vec2(
+        SobolSamplerGet1(sobol_sampler),
+        SobolSamplerGet1(sobol_sampler)
+    );
+    Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, lens_sample);
+
+    // Sample wavelengths for spectral rendering
+    float wavelength_sample = SobolSamplerGet1(sobol_sampler);
+    SampledWavelengths lambda = SampledWavelengthsSampleVisible(wavelength_sample);
+
+    // Initialize path tracing state
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
-    vec4 final_color = vec4(0.0f);
-    
-    // 路径追踪循环
-    for (int bounce = 0; bounce < 10; bounce++) {
-        Hit hit = BVHTraverse(ray);
+    SampledSpectrum L = SampledSpectrumNewFloat(0.0f);
+    vec3 ray_origin = ray.origin;
+    vec3 ray_direction = ray.direction;
+    // Path tracing loop (up to 10 bounces)
+    for (int bounce = 0; bounce < 10; ++bounce) {
+        // Intersect ray with scene geometry
+        Hit hit = BVHTraverse(Ray(ray_origin, ray_direction, 0.001, MaxFloat));
         
-        if (hit.distance < MaxFloat) {
-            Triangle tri = FetchTriangle(hit.tri_index);
-            vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
-            vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + hit.u * tri.n2 + hit.v * tri.n3);
+        if (hit.distance == MaxFloat) {
+            // Missed geometry - sample environment light
+            vec3 unit_dir = normalize(ray_direction);
+            float t = 0.5 * (unit_dir.y + 1.0);
+            vec3 sky_color = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
 
-            IntersectionInfo info;
-            pre_pos = info.position;
-            info.position = position;
-            info.shading_normal = normal;
-            info.distance = length(pre_pos - position);
-            info.material.diffuse = SampledSpectrumNewFloat(0.7f);
-            info.material.roughness = 0.0f;
-            
-            // 使用 SobolSampler 进行重要性采样
-            // 每个反弹使用不同的维度（从维度3开始）
-            vec2 rand_sample = vec2(
-                SobolSamplerGet1(sobol_sampler), // 获取第一个随机值
-                SobolSamplerGet1(sobol_sampler)  // 获取第二个随机值
-            );
-            
-            MaterialSampleInfo m_info = DiffuseSample(info, v, rand_sample);
-            
-            beta = Mul(beta, DivFloat(m_info.bsdf_cosine, m_info.pdf));
-            ray.origin = position + normal * 0.001;
-            ray.direction = m_info.world_l;
-        } else {
-            // 未命中环境光
-            vec3 unit_direction = normalize(ray.direction);
-            float t = 0.5 * (unit_direction.y + 1.0);
-            vec3 bg_color = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
-
-            RGB bg_rgb = RGBNew(bg_color.r, bg_color.g, bg_color.b);
-            RGBAlbedoSpectrum bg_spectrum = RGBAlbedoSpectrumNew(ToRGBCoeffs(bg_rgb));
-            
-            SampledSpectrum bg_spectrum_val;
-            for (int i = 0; i < NSpectrumSamples; i++) {
+            // Convert sky color to spectrum
+            RGB sky_rgb = RGBNew(sky_color.r, sky_color.g, sky_color.b);
+            RGBIlluminantSpectrum sky_spectrum = RGBIlluminantSpectrumNew(sky_rgb);
+                
+            // Evaluate spectrum at sampled wavelengths
+            SampledSpectrum env_spectrum;
+            for (int i = 0; i < NSpectrumSamples; ++i) {
                 float wavelength = lambda.lambda[i];
-                bg_spectrum_val.values[i] = RGBAlbedoSpectrumEval(bg_spectrum, wavelength) * D65[int(wavelength) - int(LambdaMin)];
+                env_spectrum.values[i] = RGBIlluminantSpectrumEval(sky_spectrum, wavelength);
             }
-            SampledSpectrum L_env = Mul(beta, bg_spectrum_val);
-            
-            RGB linear_rgb = SampledSpectrumToRGB(L_env, lambda);
-            vec3 display_rgb = vec3(pow(linear_rgb.r, 1.0/2.2), pow(linear_rgb.g, 1.0/2.2), pow(linear_rgb.b, 1.0/2.2));
-            
-            final_color = vec4(display_rgb, 1.0);
-            break; // 终止路径
+                
+            L = Add(L, Mul(beta, env_spectrum));
+
+            break;
         }
+
+        // Fetch triangle data at hit point
+        Triangle tri = FetchTriangle(hit.tri_index);
+        vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
+        vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + hit.u * tri.n2 + hit.v * tri.n3);
+
+        // Prepare material evaluation info
+        IntersectionInfo info;
+        info.position = position;
+        info.shading_normal = normal;
+        info.distance = length(ray_origin - position);
+        info.material.diffuse = SampledSpectrumNewFloat(0.7f); // Default gray material
+        info.material.roughness = 0.0f;
+
+        // Sample material BSDF
+        vec2 bsdf_sample = vec2(
+            SobolSamplerGet1(sobol_sampler),
+            SobolSamplerGet1(sobol_sampler)
+        );
+        MaterialSampleInfo sample_info = DiffuseSample(info, -ray_direction, bsdf_sample);
+
+        // Update path throughput
+        float pdf = sample_info.pdf;
+        if (pdf <= 0.0) break;
+
+        beta = Mul(beta, DivFloat(sample_info.bsdf_cosine, pdf));
+
+        // Russian Roulette termination
+        if (bounce > 3) {
+            float q = max(0.05, 1.0 - Max(beta));
+            if (SobolSamplerGet1(sobol_sampler) < q) break;
+            beta = DivFloat(beta, 1.0 - q);
+        }
+
+        // Update ray for next bounce
+        ray_origin = position + normal * 0.001;
+        ray_direction = sample_info.world_l;
     }
 
-    imageStore(outputTex, ivec2(pixel_coords), final_color);
+    // Convert spectral radiance to RGB for display
+    RGB linear_rgb = SampledSpectrumToRGB(L, lambda);
+    vec3 display_rgb = vec3(
+        pow(linear_rgb.r, 1.0/2.2),
+        pow(linear_rgb.g, 1.0/2.2),
+        pow(linear_rgb.b, 1.0/2.2)
+    );
+
+    imageStore(outputTex, pixel_coords, vec4(display_rgb, 1.0));
 }

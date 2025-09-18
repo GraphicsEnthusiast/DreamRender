@@ -60,7 +60,7 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world
 	float c2 = 0.45f * s2 / (s2 + 0.09f) * cosri * (cosri >= 0.0f ? (max(n_dot_l, n_dot_v)) : 1.0f);
 
     // diffuse brdf: (diffuse / π) * (c1 + c2) * (1 + roughness * 0.5)
-	SampledSpectrum brdf = MulFloat(diffuse, 1.0f / PI * (c1 + c2) * (1.0f + roughness * 0.5f)) ;
+	SampledSpectrum brdf = MulFloat(diffuse, (1.0f / PI) * (c1 + c2) * (1.0f + roughness * 0.5f)) ;
 	float pdf = CosineHemispherePDF(n_dot_l);
 
     m_info.bsdf_cosine = MulFloat(brdf, n_dot_l);

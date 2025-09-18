@@ -307,19 +307,19 @@ void Interface::RenderOutput() {
 		ImGui::Image((void*)(intptr_t)front_buffer_.id, size, ImVec2(0, 1), ImVec2(1, 0));
 
 		// Display frame rate info in corner
-		ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-		ImGui::SetNextWindowBgAlpha(0.35f);
-		if (ImGui::Begin("FPS Overlay", nullptr,
-			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
-			ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing)) {
-			ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-			ImGui::Text("Frame: %d", frame_counter_++);
-			if (new_frame_available) {
-				ImGui::TextColored(ImVec4(0, 1, 0, 1), "New Frame");
-			}
-		}
-		ImGui::End();
+		//ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+		//ImGui::SetNextWindowBgAlpha(0.35f);
+		//if (ImGui::Begin("FPS Overlay", nullptr,
+		//	ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+		//	ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
+		//	ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing)) {
+		//	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+		//	ImGui::Text("Frame: %d", frame_counter_++);
+		//	if (new_frame_available) {
+		//		ImGui::TextColored(ImVec4(0, 1, 0, 1), "New Frame");
+		//	}
+		//}
+		//ImGui::End();
 	}
 	else if (pipeline_) {
 		ImGui::Text("Rendering in progress...");
