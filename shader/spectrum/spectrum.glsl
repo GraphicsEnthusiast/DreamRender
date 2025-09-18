@@ -615,7 +615,7 @@ RGBAlbedoSpectrum RGBAlbedoSpectrumNew(RGBSigmoidPolynomial rsp) {
  * @param lambda Wavelength in nanometers
  * @return Spectral reflectance value
  */
-float RGBAlbedoSpectrumEval(RGBAlbedoSpectrum s, float lambda) {
+float RGBAlbedoSpectrumEvalByLambda(RGBAlbedoSpectrum s, float lambda) {
     return RGBSigmoidPolynomialEval(s.rsp, lambda);
 }
 
@@ -629,9 +629,9 @@ SampledSpectrum RGBAlbedoSpectrumSample(RGBAlbedoSpectrum spectrum, SampledWavel
     SampledSpectrum result;
     for (int i = 0; i < NSpectrumSamples; ++i) {
         float wavelength = lambda.lambda[i];
-        result.values[i] = RGBAlbedoSpectrumEval(spectrum, wavelength);
+        result.values[i] = RGBAlbedoSpectrumEvalByLambda(spectrum, wavelength);
     }
-    
+
     return result;
 }
 
@@ -679,7 +679,7 @@ RGBUnboundedSpectrum RGBUnboundedSpectrumNew(RGB rgb) {
  * @param lambda Wavelength in nanometers
  * @return Spectral radiance value
  */
-float RGBUnboundedSpectrumEval(RGBUnboundedSpectrum s, float lambda) {
+float RGBUnboundedSpectrumEvalByLambda(RGBUnboundedSpectrum s, float lambda) {
     return s.scale * RGBSigmoidPolynomialEval(s.rsp, lambda);
 }
 
@@ -693,7 +693,7 @@ SampledSpectrum RGBUnboundedSpectrumSample(RGBUnboundedSpectrum spectrum, Sample
     SampledSpectrum result;
     for (int i = 0; i < NSpectrumSamples; ++i) {
         float wavelength = lambda.lambda[i];
-        result.values[i] = RGBUnboundedSpectrumEval(spectrum, wavelength);
+        result.values[i] = RGBUnboundedSpectrumEvalByLambda(spectrum, wavelength);
     }
 
     return result;
@@ -750,7 +750,7 @@ RGBIlluminantSpectrum RGBIlluminantSpectrumNew(RGB rgb) {
  * @param lambda Wavelength in nanometers
  * @return Spectral radiance value
  */
-float RGBIlluminantSpectrumEval(RGBIlluminantSpectrum s, float lambda) {
+float RGBIlluminantSpectrumEvalByLambda(RGBIlluminantSpectrum s, float lambda) {
     float illuminant_val = DenselySampledSpectrumEval(s.illuminant, lambda);
 
     return s.scale * RGBSigmoidPolynomialEval(s.rsp, lambda) * illuminant_val;
@@ -766,7 +766,7 @@ SampledSpectrum RGBIlluminantSpectrumSample(RGBIlluminantSpectrum spectrum, Samp
     SampledSpectrum result;
     for (int i = 0; i < NSpectrumSamples; ++i) {
         float wavelength = lambda.lambda[i];
-        result.values[i] = RGBIlluminantSpectrumEval(spectrum, wavelength);
+        result.values[i] = RGBIlluminantSpectrumEvalByLambda(spectrum, wavelength);
     }
 
     return result;
