@@ -3,10 +3,10 @@
 
 #include "shape/shape.glsl"
 #include "material/material.glsl"
-#include "sample/filter_sampler.glsl"
+#include "sample/filter.glsl"
 #include "camera/camera.glsl"
 #include "spectrum/spectrum.glsl"
-#include "sample/random_sampler.glsl"
+#include "sample/sampler.glsl"
 
 layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
@@ -42,10 +42,10 @@ void main() {
 
     // Generate pixel sample with anti-aliasing
     vec2 pixel_center = vec2(pixel_coords);
-    vec2 jitter = vec2(
+    vec2 jitter = GaussianFilter(vec2(
         SobolSamplerGet1(sobol_sampler),
         SobolSamplerGet1(sobol_sampler)
-    );
+    ));
     pixel_center += jitter;
 
     // Generate primary ray with depth of field

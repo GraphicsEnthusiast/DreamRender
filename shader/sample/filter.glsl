@@ -3,7 +3,7 @@
 
 #include "util/util.glsl"
 
-vec2 FilterGaussian(vec2 sample_xy) {
+vec2 GaussianFilter(vec2 sample_xy) {
 	float r1 = max(1e-6f, sample_xy.x);
 	float r = sqrt(-2.0f * log(r1));
 	float theta = 2.0f * PI * sample_xy.y;
