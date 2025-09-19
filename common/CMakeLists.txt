@@ -34,8 +34,7 @@ include_directories(
     ${SPDLOG_INCLUDE_DIR}
     ${IMGUI_INCLUDE_DIR}
     ${FMT_INCLUDE_DIR}
-    ${STB_INCLUDE_DIR}
-    ${TINY_INCLUDE_DIR}
+    ${LOADER_INCLUDE_DIR}
     ${BVH_INCLUDE_DIR}
 )
 

@@ -51,11 +51,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/fmt)
 # Add nlohmann
 set(NLOHMANN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann/include)
 
-# Add stb
-set(STB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/stb)
-
-# Add tiny
-set(TINY_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny)
+# Add loader
+set(LOADER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/loader)
 
 # Add bvh
 set(BVH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/bvh)
@@ -77,7 +74,7 @@ include_directories(
     ${IMGUI_INCLUDE_DIR}
     ${FMT_INCLUDE_DIR}
     ${NLOHMANN_INCLUDE_DIR}
-    ${STB_INCLUDE_DIR}
+    ${LOADER_INCLUDE_DIR}
     ${TINY_INCLUDE_DIR}
     ${BVH_INCLUDE_DIR}
     ${COMMON_INCLUDE_DIR}

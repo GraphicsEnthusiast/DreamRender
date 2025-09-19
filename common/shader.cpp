@@ -88,8 +88,8 @@ std::string Shader::PreprocessShader(const std::string& source, const std::strin
 	while (std::getline(stream, line)) {
 		// Handle #include directives
 		if (0 == line.find("#include")) {
-			unsigned int start = line.find('"');
-			unsigned int end = line.rfind('"');
+			unsigned int start = static_cast<unsigned int>(line.find('"'));
+			unsigned int end = static_cast<unsigned int>(line.rfind('"'));
 
 			if (start != std::string::npos && end != std::string::npos && start < end) {
 				std::string include_file = line.substr(start + 1, end - start - 1);
@@ -134,9 +134,9 @@ std::string Shader::PreprocessShader(const std::string& source, const std::strin
 }
 
 std::string Shader::ExtractBasePath(const std::string& file_path) {
-	unsigned int found = file_path.find_last_of("/\\");
+	unsigned int found = static_cast<unsigned int>(file_path.find_last_of("/\\"));
 
-	return (found != std::string::npos) ? file_path.substr(0, found + 1) : "";
+	return (std::string::npos != found) ? file_path.substr(0, found + 1) : "";
 }
 
 RasterizationShader::RasterizationShader(const char* vertex_path, const char* fragment_path) {
