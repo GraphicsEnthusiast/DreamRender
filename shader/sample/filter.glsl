@@ -1,5 +1,5 @@
-#ifndef _FILTER_SAMPLER_GLSL_
-#define _FILTER_SAMPLER_GLSL_
+#ifndef _FILTER_GLSL_
+#define _FILTER_GLSL_
 
 #include "util/util.glsl"
 
@@ -12,4 +12,4 @@ vec2 GaussianFilter(vec2 sample_xy) {
 	return vec2(0.5f) + 0.375f * uv;
 }
 
-#endif // _FILTER_SAMPLER_GLSL_
+#endif // _FILTER_GLSL_
