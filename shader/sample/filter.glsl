@@ -9,7 +9,7 @@ vec2 GaussianFilter(vec2 sample_xy) {
 	float theta = 2.0f * PI * sample_xy.y;
 	vec2 uv = r * vec2(cos(theta), sin(theta));
 
-	return vec2(0.5f, 0.5f) + 0.375f * uv;
+	return vec2(0.5f) + 0.375f * uv;
 }
 
 #endif // _FILTER_SAMPLER_GLSL_
