@@ -26,7 +26,7 @@ uint WangHash(uint seed) {
  */
 struct SobolSampler {
     uint index;        ///< Current sequence index
-    uint dim;           ///< Current dimension
+    uint dim;          ///< Current dimension
     uint seed;         ///< Seed for randomization
     uint scramble;     ///< Scrambling value for randomization
 };
