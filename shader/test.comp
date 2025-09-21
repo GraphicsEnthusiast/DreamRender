@@ -127,11 +127,7 @@ void main() {
 
     // Convert spectral radiance to RGB for display
     RGB linear_rgb = SampledSpectrumToRGB(L, lambda);
-    vec3 display_rgb = vec3(
-        pow(linear_rgb.r, 1.0/2.2),
-        pow(linear_rgb.g, 1.0/2.2),
-        pow(linear_rgb.b, 1.0/2.2)
-    );
+    RGB display_rgb = LinearToSRGB(linear_rgb);
 
-    imageStore(outputTex, pixel_coords, vec4(display_rgb, 1.0));
+    imageStore(outputTex, pixel_coords, vec4(display_rgb.r, display_rgb.g, display_rgb.b, 1.0));
 }
