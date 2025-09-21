@@ -14,6 +14,27 @@ struct Ray {
 };
 
 /**
+ * @brief Generates a new ray from an intersection point with origin offset to avoid self-intersection
+ * @param position Intersection point in world space
+ * @param normal Surface normal at the intersection point (should be normalized)
+ * @param direction Ray direction vector (should be normalized)
+ * @param tmin Minimum ray distance to prevent self-intersection
+ * @param tmax Maximum ray distance for intersection testing
+ * @return New ray with properly offset origin to prevent numerical precision issues
+ */
+Ray SpawnRay(vec3 position, vec3 normal, vec3 direction, float tmin, float tmax) {
+    vec3 origin = position + normal * Epsilon;
+
+    Ray ray;
+    ray.origin = origin;
+    ray.direction = direction;
+    ray.tmin = tmin;
+    ray.tmax = tmax;
+    
+    return ray;
+}
+
+/**
  * @brief Camera structure for ray generation and sampling
  */
 struct Camera {

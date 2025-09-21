@@ -10,6 +10,7 @@ const int NCIESamples = int(LambdaMax - LambdaMin) + 1; // 471
 
 const float PI = 3.1415926535897932385f;
 const float MaxFloat = 3.402823466e+38f;
+const float Epsilon = 1e-4f;
 
 /**
  * @struct SampledSpectrum
