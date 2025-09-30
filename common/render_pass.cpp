@@ -77,6 +77,14 @@ void RenderPass::InitSobolMatricesTable() {
 	);
 }
 
+const TBO& RenderPass::GetSobolMatricesTBO() noexcept {
+    return *sobol_matrices_tbo_;
+}
+
+const TBO& RenderPass::GetSRGBToSpectrumTBO() noexcept {
+    return *srgb_to_spectrum_tbo_;
+}
+
 ProgressivePass::ProgressivePass(unsigned int width, unsigned int height) {
 	name_ = "Progressive accumulation pass";
 	width_ = width;
@@ -163,9 +171,9 @@ void SimpleComputePass::Execute() {
 	shader_->SetInt("Triangles", 0);
 	scene_manager.GetBVHNodeTBO().BindTexture(1);
 	shader_->SetInt("BVHNodes", 1);
-	RenderPass::srgb_to_spectrum_tbo_->BindTexture(2);
+	RenderPass::GetSRGBToSpectrumTBO().BindTexture(2);
 	shader_->SetInt("SRGBToSpectrumTable", 2);
-	RenderPass::sobol_matrices_tbo_->BindTexture(3);
+	RenderPass::GetSobolMatricesTBO().BindTexture(3);
 	shader_->SetInt("SobolMatricesTable", 3);
 	shader_->SetUInt("FrameCounter", frame_counter);
 

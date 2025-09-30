@@ -116,6 +116,20 @@ public:
      */
     static void InitSobolMatricesTable();
 
+    /**
+     * @brief Gets the Sobol matrices TBO as a const reference
+     * @return const reference to the Sobol matrices TBO
+     * @note This function provides read-only access to the TBO
+     */
+    static const TBO& GetSobolMatricesTBO() noexcept;
+
+    /**
+     * @brief Gets the SRGB to Spectrum conversion table TBO as a const reference
+     * @return const reference to the SRGB to Spectrum TBO
+     * @note This function provides read-only access to the TBO
+     */
+    static const TBO& GetSRGBToSpectrumTBO() noexcept;
+
 protected:
     static std::unique_ptr<TBO> sobol_matrices_tbo_;
     static std::unique_ptr<TBO> srgb_to_spectrum_tbo_;
