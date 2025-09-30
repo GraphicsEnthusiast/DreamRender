@@ -176,7 +176,7 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
     result.ray.origin = sample_pos;
     result.ray.direction = normalized_dir;
     result.ray.tmin = Epsilon;
-    result.ray.tmax = length(dir) - epsilon;
+    result.ray.tmax = length(dir) - Epsilon;
 
     vec3 negative_dir = -normalized_dir;
     
