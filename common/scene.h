@@ -1,6 +1,7 @@
 #pragma once
 
 #include <shape.h>
+#include <sampling.h>
 
 NAMESPACE_BEGIN(dream)
 

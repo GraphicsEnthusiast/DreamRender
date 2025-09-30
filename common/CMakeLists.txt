@@ -21,6 +21,8 @@ set(COMMON_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/buffer_object.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/scene.h
     ${CMAKE_CURRENT_SOURCE_DIR}/scene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sampling.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/srgb_to_spectrum.h
     ${CMAKE_CURRENT_SOURCE_DIR}/sobol_matrices_1024x52.h
 )

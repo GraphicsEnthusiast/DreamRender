@@ -104,7 +104,7 @@ void SceneManager::BuildBVH() {
 		return;
 	}
 
-	unsigned int trangles_size = triangles_encoded_.size();
+	unsigned int trangles_size = static_cast<unsigned int>(triangles_encoded_.size());
 	std::vector<tinybvh::bvhvec4> vertices;
 	vertices.reserve(trangles_size * 3);
 
