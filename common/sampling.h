@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(dream)
  * @brief Data structure for 1D alias table elements used for GPU transfer
  */
 struct AliasTableData {
-    int alias;   ///< Alias index for this table entry
+    float alias; ///< Alias index for this table entry
     float prob;  ///< Probability value for this table entry
 };
 
@@ -58,7 +58,7 @@ protected:
 
 /**
  * @class AliasTable2D
- * @brief Implements 2D alias method using multiple 1D alias tables
+ * @brief Implements 2D alias method using multiple 1D alias table
  */
 class AliasTable2D {
 public:
@@ -76,10 +76,10 @@ public:
     AliasTable2D(const std::vector<float>& distrib, unsigned int width, unsigned int height);
 
     /**
-     * @brief Gets the GPU-ready data for row tables
-     * @return Const reference to row tables GPU data
+     * @brief Gets the GPU-ready data for row table
+     * @return Const reference to row table GPU data
      */
-    const std::vector<AliasTableData>& GetRowTablesGPUData() const noexcept;
+    const std::vector<AliasTableData>& GetRowtableGPUData() const noexcept;
 
     /**
      * @brief Gets the GPU-ready data for column table
@@ -94,10 +94,10 @@ protected:
     void PrepareGPUData();
 
 protected:
-    std::vector<AliasTable1D> row_tables;              ///< Row alias tables
+    std::vector<AliasTable1D> row_table;              ///< Row alias table
     AliasTable1D col_table;                            ///< Column alias table
-    std::vector<AliasTableData> row_tables_gpu_data;   ///< GPU data for row tables
-    std::vector<AliasTableData> col_tables_gpu_data;   ///< GPU data for column table
+    std::vector<AliasTableData> row_table_gpu_data;   ///< GPU data for row table
+    std::vector<AliasTableData> col_table_gpu_data;   ///< GPU data for column table
     unsigned int width;                                ///< Width of 2D distribution
     unsigned int height;                               ///< Height of 2D distribution
 };

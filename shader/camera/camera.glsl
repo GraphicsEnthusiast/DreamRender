@@ -163,10 +163,9 @@ float CameraWe(Camera cam, float cos_theta) {
  * @brief Samples the camera from a given position
  * @param cam Camera structure
  * @param sample_pos Sampling position
- * @param epsilon Ray epsilon value
  * @return CameraSampleInfo structure with sampling results
  */
-CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos, float epsilon) {
+CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
     CameraSampleInfo result;
     result.pdf = 0.0f; // Default to invalid
     result.we = 0.0f;
@@ -176,7 +175,7 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos, float epsilon) {
 
     result.ray.origin = sample_pos;
     result.ray.direction = normalized_dir;
-    result.ray.tmin = epsilon;
+    result.ray.tmin = Epsilon;
     result.ray.tmax = length(dir) - epsilon;
 
     vec3 negative_dir = -normalized_dir;

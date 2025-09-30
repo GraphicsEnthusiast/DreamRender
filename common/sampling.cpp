@@ -51,7 +51,7 @@ float AliasTable1D::Sum() const noexcept {
 void AliasTable1D::PrepareGPUData() {
     gpu_data.resize(table.size());
     for (unsigned int i = 0; i < table.size(); i++) {
-        gpu_data[i] = { table[i].first, table[i].second };
+        gpu_data[i] = { static_cast<float>(table[i].first), table[i].second };
     }
 }
 
@@ -61,13 +61,13 @@ const std::vector<AliasTableData>& AliasTable1D::GetGPUData() const noexcept {
 
 AliasTable2D::AliasTable2D(const std::vector<float>& distrib, unsigned int width, unsigned int height)
     : width(width), height(height) {
-    row_tables.reserve(height);
+    row_table.reserve(height);
     std::vector<float> colDistrib(height);
 
     for (unsigned int i = 0; i < height; i++) {
         std::vector<float> table(distrib.begin() + i * width, distrib.begin() + (i + 1) * width);
         AliasTable1D rowDistrib(table);
-        row_tables.push_back(rowDistrib);
+        row_table.push_back(rowDistrib);
         colDistrib[i] = rowDistrib.Sum();
     }
 
@@ -77,21 +77,21 @@ AliasTable2D::AliasTable2D(const std::vector<float>& distrib, unsigned int width
 }
 
 void AliasTable2D::PrepareGPUData() {
-    row_tables_gpu_data.resize(height * width);
+    row_table_gpu_data.resize(height * width);
     for (unsigned int i = 0; i < height; i++) {
-        const auto& rowData = row_tables[i].GetGPUData();
-        std::copy(rowData.begin(), rowData.end(), row_tables_gpu_data.begin() + i * width);
+        const auto& row_data = row_table[i].GetGPUData();
+        std::copy(row_data.begin(), row_data.end(), row_table_gpu_data.begin() + i * width);
     }
 
-    col_tables_gpu_data = col_table.GetGPUData();
+    col_table_gpu_data = col_table.GetGPUData();
 }
 
-const std::vector<AliasTableData>& AliasTable2D::GetRowTablesGPUData() const noexcept {
-    return row_tables_gpu_data;
+const std::vector<AliasTableData>& AliasTable2D::GetRowtableGPUData() const noexcept {
+    return row_table_gpu_data;
 }
 
 const std::vector<AliasTableData>& AliasTable2D::GetColTableGPUData() const noexcept {
-    return col_tables_gpu_data;
+    return col_table_gpu_data;
 }
 
 NAMESPACE_END(dream)
