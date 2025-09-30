@@ -131,11 +131,13 @@ public:
     static const TBO& GetSRGBToSpectrumTBO() noexcept;
 
 protected:
-    static std::unique_ptr<TBO> sobol_matrices_tbo_;
-    static std::unique_ptr<TBO> srgb_to_spectrum_tbo_;
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
     std::string name_;
+
+private:
+    static std::unique_ptr<TBO> sobol_matrices_tbo_;
+    static std::unique_ptr<TBO> srgb_to_spectrum_tbo_;
 };
 
 /**
