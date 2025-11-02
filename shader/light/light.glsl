@@ -78,12 +78,12 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     // Get triangle  from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).x;
     float area = TriangleArea(info.tri_index);
-
+    
     // Calculate PDF using solid angle conversion
     result.pdf = 1.0f / area;
-    result.pdf *= weight / MeshLightTableSum;
     result.pdf *= info.distance * info.distance / abs(cos_theta);
-    
+    result.pdf *= weight / MeshLightTableSum;
+
     // Get emission from material
     result.emission = info.material.emission;
     
@@ -152,8 +152,8 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     
     // Calculate solid angle PDF using area-to-solid angle conversion
     result.pdf = 1.0f / area;
-    result.pdf *= weight / MeshLightTableSum;
     result.pdf *= result.dist * result.dist / abs(cos_theta);
+    result.pdf *= weight / MeshLightTableSum;
     
     // Assign emission spectrum from material properties
     result.emission = info.material.emission;
