@@ -6,7 +6,7 @@
 #include "sample/filter.glsl"
 #include "camera/camera.glsl"
 #include "spectrum/spectrum.glsl"
-#include "sample/sampler.glsl"
+#include "light/light.glsl"
 
 layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;

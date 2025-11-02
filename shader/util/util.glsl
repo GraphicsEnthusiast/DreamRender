@@ -25,6 +25,8 @@ struct SampledSpectrum {
  * @brief Material information structure containing optical properties and texture indices
  */
 struct Material {
+    SampledSpectrum emission;
+
     SampledSpectrum diffuse;
     int diffuse_texture;
 
@@ -37,6 +39,7 @@ struct Material {
  * @brief Ray-geometry intersection information structure
  */
 struct IntersectionInfo {
+    int tri_index;
 	float distance;
 	vec3 position;
 	vec3 shading_normal;
