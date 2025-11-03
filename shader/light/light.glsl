@@ -59,7 +59,7 @@ float TriangleArea(int index) {
 
 /**
  * @brief Evaluates mesh light contribution for a given direction
- * @param L Light direction (from surface to light)
+ * @param world_l Light direction (from surface to light)
  * @param info Intersection information
  * @return LightEvalInfo containing emission spectrum and PDF
  */
