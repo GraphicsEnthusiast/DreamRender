@@ -75,7 +75,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
         return result;
     }
     
-    // Get triangle  from precomputed table
+    // Get triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).x;
     float area = TriangleArea(info.tri_index);
     
