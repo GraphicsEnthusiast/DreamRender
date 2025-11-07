@@ -81,7 +81,7 @@ void main() {
             // Evaluate spectrum at sampled wavelengths
             SampledSpectrum env_spectrum = RGBIlluminantSpectrumSample(sky_spectrum, lambda);
                 
-            L = Add(L, Mul(beta, env_spectrum));
+            //L = Add(L, Mul(beta, env_spectrum));
 
             break;
         }
@@ -90,6 +90,14 @@ void main() {
         Triangle tri;
         if (hit.is_light) {
             tri = FetchTriangle(hit.tri_index, TrianglesLight);
+
+            RGB light_rgb = RGBNew(2.0f, 2.0f, 1.5f);
+            RGBIlluminantSpectrum light_spectrum = RGBIlluminantSpectrumNew(light_rgb);
+            SampledSpectrum s_spectrum = RGBIlluminantSpectrumSample(light_spectrum, lambda);
+
+            L = Add(L, Mul(beta, s_spectrum));
+
+            //break;
         }
         else {
             tri = FetchTriangle(hit.tri_index, Triangles);

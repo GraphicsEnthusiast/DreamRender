@@ -137,7 +137,7 @@ Hit BVHTraverseSingleBuffer(const Ray ray, samplerBuffer bvh_nodes_buffer, sampl
                 vec3 h = cross(ray.direction, edge2);
                 float a = dot(edge1, h);
                 
-                if (abs(a) < 0.0000001f) {
+                if (abs(a) < Epsilon) {
                     continue;
                 }
                 

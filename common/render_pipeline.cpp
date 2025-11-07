@@ -83,6 +83,8 @@ void TestPipeline::Init() {
 	auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj", Transform());
 	std::vector<TriangleMesh> meshes;
 	meshes.emplace_back(mesh);
+	mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj", Transform::Translate(0.0f, -10.0f, 0.0f));
+	meshes.emplace_back(mesh);
 
 	auto mesh2 = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj", Transform::Translate(7.0f, 0.0f, 0.0f));
 	std::vector<TriangleMesh> meshes2;
