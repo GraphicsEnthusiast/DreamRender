@@ -82,7 +82,7 @@ void TestPipeline::Init() {
 	// Load and encode mesh data for rendering
 	auto mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj", Transform());
 	std::vector<TriangleMesh> meshes;
-	meshes.emplace_back(mesh);
+	//meshes.emplace_back(mesh);
 	mesh = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj", Transform::Translate(0.0f, -10.0f, 0.0f));
 	meshes.emplace_back(mesh);
 
@@ -91,8 +91,8 @@ void TestPipeline::Init() {
 	meshes2.emplace_back(mesh2);
 
 	auto& scene_manager = SceneManager::Instance();
-	scene_manager.EncodeTriangles(meshes, false);
-	scene_manager.EncodeTriangles(meshes2, true);
+	scene_manager.EncodeTriangles(meshes, true);
+	scene_manager.EncodeTriangles(meshes2, false);
 	scene_manager.BuildBVH();          // Build acceleration structure
 	scene_manager.CreateGPUBuffers();  // Upload geometry to GPU
 

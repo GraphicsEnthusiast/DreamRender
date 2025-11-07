@@ -10,7 +10,6 @@ SceneManager& SceneManager::Instance() {
 	std::call_once(init_flag, []() {
 		instance_ = std::unique_ptr<SceneManager>(new SceneManager());
 		});
-
 	return *instance_;
 }
 
@@ -33,6 +32,11 @@ void SceneManager::ReleaseInstance() {
 	bvh_nodes_light_encoded_.clear();
 	triangle_light_tbo_.reset();
 	bvh_node_light_tbo_.reset();
+
+	// Clear alias table data
+	light_triangle_weights_.clear();
+	mesh_light_table_sum_ = 0.0f;
+	mesh_light_alias_table_tbo_.reset();
 }
 
 void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool is_light) {
@@ -41,6 +45,13 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 	// Single pass: count total triangles for the current batch
 	for (const auto& mesh : meshes) {
 		total_count += mesh.GetNumTriangles();
+	}
+
+	// Reset weight data for light triangles
+	if (is_light) {
+		light_triangle_weights_.clear();
+		light_triangle_weights_.reserve(total_count);
+		mesh_light_table_sum_ = 0.0f;
 	}
 
 	// Resize appropriate container based on the is_light parameter
@@ -110,6 +121,16 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 
 			// Store in appropriate container based on the is_light parameter
 			if (is_light) {
+				// Calculate triangle area for importance sampling
+				Vector3f e1 = Point3f(encoded_tri.p2) - Point3f(encoded_tri.p1);
+				Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
+				float area = 0.5f * glm::length(glm::cross(e1, e2));
+
+				// Calculate weight: area + luminance for importance sampling
+				float weight = area;
+
+				light_triangle_weights_.push_back(weight);
+				mesh_light_table_sum_ += weight;
 				triangles_light_encoded_[index++] = encoded_tri;
 			}
 			else {
@@ -117,6 +138,12 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 			}
 		}
 	}
+}
+
+void SceneManager::BuildLightAliasTable() {
+	// Construct alias table using precomputed triangle weights
+	// This enables O(1) time complexity for light triangle sampling on GPU
+	mesh_light_alias_table_ = AliasTable1D(light_triangle_weights_);
 }
 
 std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(
@@ -180,6 +207,9 @@ void SceneManager::BuildBVH() {
 	// Build BVH for light geometry
 	if (!triangles_light_encoded_.empty()) {
 		triangles_light_encoded_ = BuildBVHForTriangles(triangles_light_encoded_, bvh_nodes_light_encoded_);
+		if (!light_triangle_weights_.empty()) {
+			BuildLightAliasTable();
+		}
 	}
 
 	// Log build information
@@ -226,6 +256,16 @@ void SceneManager::CreateGPUBuffers() {
 			GL_STATIC_DRAW
 			);
 	}
+
+	// Create GPU buffer for alias table data
+	if (!mesh_light_alias_table_.GetGPUData().empty()) {
+		mesh_light_alias_table_tbo_ = std::make_unique<TBO>(
+			mesh_light_alias_table_.GetGPUData().data(),
+			mesh_light_alias_table_.GetGPUData().size() * sizeof(AliasTableData),
+			GL_RG32F,  // Each element contains alias index and probability
+			GL_STATIC_DRAW
+			);
+	}
 }
 
 const TBO& SceneManager::GetTriangleTBO() const noexcept {
@@ -240,8 +280,20 @@ const TBO& SceneManager::GetTriangleLightTBO() const noexcept {
 	return *triangle_light_tbo_;
 }
 
+const TBO& SceneManager::GetMeshLightAliasTableTBO() const noexcept {
+	return *mesh_light_alias_table_tbo_;
+}
+
 const TBO& SceneManager::GetBVHNodeLightTBO() const noexcept {
 	return *bvh_node_light_tbo_;
+}
+
+float SceneManager::GetMeshLightTableSum() const noexcept {
+	return mesh_light_table_sum_;
+}
+
+int SceneManager::GetMeshLightTableSize() const noexcept {
+	return static_cast<int>(light_triangle_weights_.size());
 }
 
 NAMESPACE_END(dream)

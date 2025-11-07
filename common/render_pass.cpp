@@ -146,7 +146,6 @@ SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
 void SimpleComputePass::Execute() {
 	if (!shader_) {
 		ERROR("[error] Simple compute pass: Compute shader is not initialized.");
-
 		return;
 	}
 
@@ -159,7 +158,6 @@ void SimpleComputePass::Execute() {
 	TextureHandle output_texture = GetOutputTexture("Output");
 	if (!output_texture.IsValid()) {
 		ERROR("[error] Simple compute pass: Output texture handle is invalid.");
-
 		return;
 	}
 
@@ -179,11 +177,17 @@ void SimpleComputePass::Execute() {
 	RenderPass::GetSobolMatricesTBO().BindTexture(3);
 	shader_->SetInt("SobolMatricesTable", 3);
 
-	// Bind light geometry buffers (new additions)
+	// Bind light geometry buffers (existing code)
 	scene_manager.GetTriangleLightTBO().BindTexture(4);
 	shader_->SetInt("TrianglesLight", 4);
 	scene_manager.GetBVHNodeLightTBO().BindTexture(5);
 	shader_->SetInt("BVHNodesLight", 5);
+
+	// Bind mesh light alias table texture buffer
+	scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
+	shader_->SetInt("MeshLightTable", 6);
+	shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
+	shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
 
 	shader_->SetUInt("FrameCounter", frame_counter);
 
