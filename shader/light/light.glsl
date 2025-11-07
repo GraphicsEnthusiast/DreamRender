@@ -69,7 +69,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     float cos_theta = dot(world_l, info.geometry_normal);
     
     // Early out if light direction is above the surface
-    if (cos_theta > 0.0f) {
+    if (cos_theta <= 0.0f) {
         return result;
     }
     
