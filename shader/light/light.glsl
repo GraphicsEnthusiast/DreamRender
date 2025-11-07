@@ -5,8 +5,6 @@
 #include "sample/sampler.glsl"
 #include "sample/sampling.glsl"
 
-uniform int MeshLightSize;
-
 uniform samplerBuffer MeshLightTable;
 uniform float MeshLightTableSum;
 uniform int MeshLightTableSize;
@@ -32,18 +30,18 @@ struct LightSampleInfo {
 };
 
 /**
- * @brief Calculates the area of a triangle by its index in the mesh light buffer
+ * @brief Calculates the area of a triangle by its index in the specified buffer
  * @param index Triangle index to calculate area for
+ * @param triangles_buffer Sampler buffer containing triangle data
  * @return float Area of the specified triangle in world units squared
  */
-float TriangleArea(int index) {
-    // Fetch triangle vertices from the mesh light buffer
-    int base = index * 3; // 3 vertices per triangle
+float TriangleArea(int index, samplerBuffer triangles_buffer) {
+    int base = index * 6; // 6 vec4 per triangle, matching FetchTriangle
     Triangle tri;
     
-    vec4 pos1 = texelFetch(Triangles, base + 0);
-    vec4 pos2 = texelFetch(Triangles, base + 1); 
-    vec4 pos3 = texelFetch(Triangles, base + 2);
+    vec4 pos1 = texelFetch(triangles_buffer, base + 0);
+    vec4 pos2 = texelFetch(triangles_buffer, base + 1); 
+    vec4 pos3 = texelFetch(triangles_buffer, base + 2);
     
     tri.p1 = pos1.xyz;
     tri.p2 = pos2.xyz;
@@ -71,13 +69,13 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     float cos_theta = dot(world_l, info.geometry_normal);
     
     // Early out if light direction is above the surface
-    if (cos_theta > 0.0f || info.tri_index >= MeshLightSize) {
+    if (cos_theta > 0.0f) {
         return result;
     }
     
-    // Get triangle  from precomputed table
+    // Get triangle from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).x;
-    float area = TriangleArea(info.tri_index);
+    float area = TriangleArea(info.tri_index, TrianglesLight);
     
     // Calculate PDF using solid angle conversion
     result.pdf = 1.0f / area;
@@ -116,8 +114,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
         alias_sample
     );
     
-    // Fetch triangle geometry data for the sampled index
-    Triangle tri = FetchTriangle(tri_index);
+    Triangle tri = FetchTriangle(tri_index, TrianglesLight);
     
     // Uniformly sample point on triangle using barycentric coordinates
     float sqrt_xi1 = sqrt(SobolSamplerGet1(sobol_sampler));
@@ -148,7 +145,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     
     // Retrieve triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, tri_index).x;
-    float area = TriangleArea(tri_index);
+    float area = TriangleArea(tri_index, TrianglesLight);
     
     // Calculate solid angle PDF using area-to-solid angle conversion
     result.pdf = 1.0f / area;

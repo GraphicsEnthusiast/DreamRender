@@ -167,14 +167,24 @@ void SimpleComputePass::Execute() {
 
 	auto& scene_manager = SceneManager::Instance();
 
+	// Bind regular geometry buffers (existing code)
 	scene_manager.GetTriangleTBO().BindTexture(0);
 	shader_->SetInt("Triangles", 0);
 	scene_manager.GetBVHNodeTBO().BindTexture(1);
 	shader_->SetInt("BVHNodes", 1);
+
+	// Bind utility buffers (existing code)
 	RenderPass::GetSRGBToSpectrumTBO().BindTexture(2);
 	shader_->SetInt("SRGBToSpectrumTable", 2);
 	RenderPass::GetSobolMatricesTBO().BindTexture(3);
 	shader_->SetInt("SobolMatricesTable", 3);
+
+	// Bind light geometry buffers (new additions)
+	scene_manager.GetTriangleLightTBO().BindTexture(4);
+	shader_->SetInt("TrianglesLight", 4);
+	scene_manager.GetBVHNodeLightTBO().BindTexture(5);
+	shader_->SetInt("BVHNodesLight", 5);
+
 	shader_->SetUInt("FrameCounter", frame_counter);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);

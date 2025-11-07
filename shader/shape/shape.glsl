@@ -6,14 +6,18 @@
 uniform samplerBuffer Triangles;
 uniform samplerBuffer BVHNodes;
 
+uniform samplerBuffer TrianglesLight;
+uniform samplerBuffer BVHNodesLight;
+
 /**
  * @brief Hit information structure for ray intersection results
  */
 struct Hit {
-    float distance; ///< Intersection distance along the ray
+    float distance; ///< Intersection distance along the rays
     float u;        ///< Barycentric u coordinate
     float v;        ///< Barycentric v coordinate
     int tri_index;  ///< Intersected triangle index
+    bool is_light;  ///< Whether the hit is on a light triangle
 };
 
 /**
@@ -38,25 +42,26 @@ struct BVHNode {
 /**
  * @brief Fetches triangle data from the texture buffer object (TBO)
  * @param index Index of the triangle to fetch
+ * @param trangles_buffer Sampler for the texture buffer storing packed triangle data (positions, normals, and UVs)
  * @return Fetched Triangle structure with position and normal data
  */
-Triangle FetchTriangle(int index) {
+Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     int base = index * 6; // 6 vec4
     Triangle tri;
     
     // Fetch vertex positions and extract uv.x from w component
-    vec4 pos1 = texelFetch(Triangles, base + 0);
-    vec4 pos2 = texelFetch(Triangles, base + 1);
-    vec4 pos3 = texelFetch(Triangles, base + 2);
+    vec4 pos1 = texelFetch(trangles_buffer, base + 0);
+    vec4 pos2 = texelFetch(trangles_buffer, base + 1);
+    vec4 pos3 = texelFetch(trangles_buffer, base + 2);
     
     tri.p1 = pos1.xyz;
     tri.p2 = pos2.xyz;
     tri.p3 = pos3.xyz;
     
     // Fetch vertex normals and extract uv.y from w component
-    vec4 norm1 = texelFetch(Triangles, base + 3);
-    vec4 norm2 = texelFetch(Triangles, base + 4);
-    vec4 norm3 = texelFetch(Triangles, base + 5);
+    vec4 norm1 = texelFetch(trangles_buffer, base + 3);
+    vec4 norm2 = texelFetch(trangles_buffer, base + 4);
+    vec4 norm3 = texelFetch(trangles_buffer, base + 5);
     
     tri.n1 = norm1.xyz;
     tri.n2 = norm2.xyz;
@@ -73,31 +78,36 @@ Triangle FetchTriangle(int index) {
 /**
  * @brief Fetches BVH node data from the bvhnodes TBO
  * @param index Index of the BVH node to fetch (0-based)
+ * @param bvh_nodes_buffer Sampler for the texture buffer storing BVH node data (each node is stored as 4 vec4)
  * @return Fetched BVHNode structure with AABB and child/triangle information
  */
-BVHNode FetchBVHNode(int index) {
+BVHNode FetchBVHNode(int index, samplerBuffer bvh_nodes_buffer) {
     int base = index * 4;
     BVHNode node;
     
-    node.lmin = texelFetch(BVHNodes, base + 0);
-    node.lmax = texelFetch(BVHNodes, base + 1);
-    node.rmin = texelFetch(BVHNodes, base + 2);
-    node.rmax = texelFetch(BVHNodes, base + 3);
+    node.lmin = texelFetch(bvh_nodes_buffer, base + 0);
+    node.lmax = texelFetch(bvh_nodes_buffer, base + 1);
+    node.rmin = texelFetch(bvh_nodes_buffer, base + 2);
+    node.rmax = texelFetch(bvh_nodes_buffer, base + 3);
     
     return node;
 }
 
 /**
- * @brief BVH traversal function for ray tracing
+ * @brief BVH traversal function for a single buffer
  * @param ray Ray structure containing origin, direction, min and max distance
+ * @param bvh_nodes_buffer BVH nodes buffer to traverse
+ * @param triangles_buffer Triangles buffer for intersection tests
+ * @param is_light_buffer Whether this is the light buffer traversal
  * @return Hit structure containing intersection information
  */
-Hit BVHTraverse(const Ray ray) {
+Hit BVHTraverseSingleBuffer(const Ray ray, samplerBuffer bvh_nodes_buffer, samplerBuffer triangles_buffer, bool is_light_buffer) {
     Hit hit;
     hit.distance = ray.tmax;
     hit.u = 0.0f;
     hit.v = 0.0f;
-    hit.tri_index = 0;
+    hit.tri_index = -1;
+    hit.is_light = is_light_buffer;
     
     int stack[64];
     int stack_ptr = 0;
@@ -107,7 +117,7 @@ Hit BVHTraverse(const Ray ray) {
     vec3 inv_d = 1.0f / ray.direction;
     
     while (true) {
-        BVHNode n = FetchBVHNode(current_node);
+        BVHNode n = FetchBVHNode(current_node, bvh_nodes_buffer);
         
         // Extract child indices and triangle information from node
         int left_child = int(n.lmin.w);
@@ -115,11 +125,11 @@ Hit BVHTraverse(const Ray ray) {
         int tri_count = int(n.rmin.w);
         int first_tri = int(n.rmax.w);
         
-        // Leaf node: test triangles
+        // Leaf node
         if (tri_count > 0) {
             for (int i = 0; i < tri_count; i++) {
                 int tri_idx = first_tri + i;
-                Triangle tri = FetchTriangle(tri_idx);
+                Triangle tri = FetchTriangle(tri_idx, triangles_buffer);
                 
                 // Möller–Trumbore intersection algorithm
                 vec3 edge1 = tri.p2 - tri.p1;
@@ -212,6 +222,29 @@ Hit BVHTraverse(const Ray ray) {
     }
     
     return hit;
+}
+
+/**
+ * @brief BVH traversal function for ray tracing that traverses both regular and light buffers
+ * @param ray Ray structure containing origin, direction, min and max distance
+ * @return Hit structure containing intersection information with the closest hit
+ */
+Hit BVHTraverse(const Ray ray) {
+    // Traverse both regular triangles and light triangles
+    Hit regular_hit = BVHTraverseSingleBuffer(ray, BVHNodes, Triangles, false);
+    Hit light_hit = BVHTraverseSingleBuffer(ray, BVHNodesLight, TrianglesLight, true);
+    
+    // Return the closest hit between regular geometry and light geometry
+    if (regular_hit.tri_index == -1 && light_hit.tri_index != -1) {
+        return light_hit;
+    } 
+    else if (light_hit.tri_index != -1 && light_hit.tri_index == -1) {
+        return regular_hit;
+    } 
+    else {
+        // Both found intersections, return the closer one
+        return (regular_hit.distance < light_hit.distance) ? regular_hit : light_hit;
+    }
 }
 
 #endif // _SHAPE__GLSL__

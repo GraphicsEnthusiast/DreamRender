@@ -87,7 +87,13 @@ void main() {
         }
 
         // Fetch triangle data at hit point
-        Triangle tri = FetchTriangle(hit.tri_index);
+        Triangle tri;
+        if (hit.is_light) {
+            tri = FetchTriangle(hit.tri_index, TrianglesLight);
+        }
+        else {
+            tri = FetchTriangle(hit.tri_index, Triangles);
+        }
         vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
         vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + hit.u * tri.n2 + hit.v * tri.n3);
 
