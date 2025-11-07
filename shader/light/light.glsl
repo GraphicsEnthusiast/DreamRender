@@ -57,7 +57,7 @@ float TriangleArea(int index, samplerBuffer triangles_buffer) {
 
 /**
  * @brief Evaluates mesh light contribution for a given direction
- * @param L Light direction (from surface to light)
+ * @param world_l Light direction (from surface to light)
  * @param info Intersection information
  * @return LightEvalInfo containing emission spectrum and PDF
  */
@@ -73,7 +73,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
         return result;
     }
     
-    // Get triangle from precomputed table
+    // Get triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).x;
     float area = TriangleArea(info.tri_index, TrianglesLight);
     
