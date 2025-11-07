@@ -139,7 +139,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     float cos_theta = dot(result.world_l, ng);
     
     // Early exit if light direction points above the surface (invisible)
-    if (cos_theta > 0.0f) {
+    if (cos_theta >= 0.0f) {
         return result;
     }
     

@@ -93,7 +93,7 @@ void main() {
         RGB light_rgb = RGBNew(2.0f, 2.0f, 1.5f);
         RGBIlluminantSpectrum light_spectrum = RGBIlluminantSpectrumNew(light_rgb);
         SampledSpectrum s_spectrum = RGBIlluminantSpectrumSample(light_spectrum, lambda);
-        if (is_light_triangle) {
+        if (is_light_triangle && bounce == 0) {
             tri = FetchTriangle(hit.tri_index, TrianglesLight);
 
             // Add light contribution when directly hitting a light source
@@ -118,14 +118,25 @@ void main() {
         info.material.emission = s_spectrum; // Non-light emission is 0
         info.material.roughness = 0.0f; // Set reasonable roughness value
 
+        // Use correct view direction (towards camera)
+        vec3 world_v = -normalize(ray.direction);
+
+        LightSampleInfo light_info = MeshLightSample(sobol_sampler, info);
+        if (light_info.pdf > 0.0f) {
+            MaterialEvalInfo material_info = DiffuseEvaluate(info, world_v, light_info.world_l);
+    
+            if (material_info.pdf > 0.0f) {
+                SampledSpectrum contrib = DivFloat(Mul(Mul(light_info.emission, material_info.bsdf_cosine), beta), light_info.pdf);
+                L = Add(L, contrib);
+            }
+        }
+
         // Sample material BSDF for indirect lighting
         vec2 bsdf_sample = vec2(
             SobolSamplerGet1(sobol_sampler),
             SobolSamplerGet1(sobol_sampler)
         );
         
-        // Use correct view direction (towards camera)
-        vec3 world_v = -normalize(ray.direction);
         MaterialSampleInfo sample_info = DiffuseSample(info, world_v, bsdf_sample);
 
         // Update path throughput
