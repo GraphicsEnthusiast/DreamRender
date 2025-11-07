@@ -80,7 +80,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     // Calculate PDF using solid angle conversion
     result.pdf = 1.0f / area;
     result.pdf *= info.distance * info.distance / abs(cos_theta);
-    result.pdf *= weight / MeshLightTableSum;
+    result.pdf *= weight / MeshLightTableSize / MeshLightTableSum;
 
     // Get emission from material
     result.emission = info.material.emission;
@@ -139,7 +139,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     float cos_theta = dot(result.world_l, ng);
     
     // Early exit if light direction points above the surface (invisible)
-    if (cos_theta <= 0.0f) {
+    if (cos_theta > 0.0f) {
         return result;
     }
     
@@ -150,7 +150,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     // Calculate solid angle PDF using area-to-solid angle conversion
     result.pdf = 1.0f / area;
     result.pdf *= result.dist * result.dist / abs(cos_theta);
-    result.pdf *= weight / MeshLightTableSum;
+    result.pdf *= weight / MeshLightTableSize / MeshLightTableSum;
     
     // Assign emission spectrum from material properties
     result.emission = info.material.emission;

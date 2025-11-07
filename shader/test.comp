@@ -22,84 +22,6 @@ uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
 uniform uint FrameCounter;
 
-/**
- * @brief Tests visibility between two points by tracing a shadow ray
- * @param origin Ray origin point
- * @param direction Ray direction towards light
- * @param max_distance Maximum distance to test
- * @return bool True if the path is unobstructed (visible)
- */
-bool TestVisibility(vec3 origin, vec3 direction, float max_distance) {
-    // Offset origin to avoid self-intersection
-    vec3 offset_origin = origin + 0.001 * normalize(direction);
-    
-    Ray shadow_ray;
-    shadow_ray.origin = offset_origin;
-    shadow_ray.direction = direction;
-    shadow_ray.tmin = 0.001;
-    shadow_ray.tmax = max_distance - 0.002;
-    
-    Hit shadow_hit = BVHTraverse(shadow_ray);
-    
-    // If we hit something, the light is occluded
-    return shadow_hit.distance >= max_distance;
-}
-
-/**
- * @brief Performs next event estimation (direct lighting) at a surface point
- * @param sobol_sampler Sobol sampler for random numbers
- * @param info Surface intersection information
- * @param lambda Sampled wavelengths for spectral rendering
- * @return SampledSpectrum Direct lighting contribution
- */
-SampledSpectrum SampleDirectLighting(inout SobolSampler sobol_sampler, IntersectionInfo info, SampledWavelengths lambda) {
-    SampledSpectrum direct_light = SampledSpectrumNewFloat(0.0f);
-    
-    // Sample a light source using the alias table
-    LightSampleInfo light_sample = MeshLightSample(sobol_sampler, info);
-    
-    // Check if we got a valid light sample
-    if (light_sample.pdf <= 0.0) {
-        //return direct_light;
-    }
-    
-    // Test visibility between surface point and light sample
-    bool is_visible = TestVisibility(info.position, light_sample.world_l, light_sample.dist);
-    
-    if (!is_visible) {
-        //return direct_light;
-    }
-    
-    // Prepare material evaluation for the light direction
-    vec3 wi = light_sample.world_l;   // Direction from surface to light
-    vec3 wo = -wi;                    // Direction from surface to camera
-    vec3 normal = info.shading_normal;
-    
-    // Calculate cosine term
-    float cos_theta = dot(normal, wi);
-    
-    if (cos_theta <= 0.0) {
-        //return direct_light;
-    }
-    
-    // Evaluate material BSDF
-    MaterialEvalInfo bsdf_eval = DiffuseEvaluate(info, wo, wi);
-    
-    if (bsdf_eval.pdf <= 0.0) {
-        //return direct_light;
-    }
-    
-    // Calculate the direct lighting contribution using the rendering equation:
-    // L_direct = (light_emission * bsdf * cos_theta) / pdf
-    SampledSpectrum contrib = Mul(light_sample.emission, bsdf_eval.bsdf_cosine);
-    contrib = DivFloat(contrib, 1.0f);
-    
-    // Add the contribution if it's valid
-    direct_light = Add(direct_light, contrib);
-    
-    return direct_light;
-}
-
 void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
@@ -171,7 +93,7 @@ void main() {
         RGB light_rgb = RGBNew(2.0f, 2.0f, 1.5f);
         RGBIlluminantSpectrum light_spectrum = RGBIlluminantSpectrumNew(light_rgb);
         SampledSpectrum s_spectrum = RGBIlluminantSpectrumSample(light_spectrum, lambda);
-        if (is_light_triangle && bounce == 0) {
+        if (is_light_triangle) {
             tri = FetchTriangle(hit.tri_index, TrianglesLight);
 
             // Add light contribution when directly hitting a light source
@@ -195,15 +117,6 @@ void main() {
         info.material.diffuse = SampledSpectrumNewFloat(0.7f); // Default gray material
         info.material.emission = s_spectrum; // Non-light emission is 0
         info.material.roughness = 0.0f; // Set reasonable roughness value
-
-        // ========== NEXT EVENT ESTIMATION (DIRECT LIGHTING) ==========
-        // Sample direct lighting from mesh lights
-        SampledSpectrum direct_light = SampleDirectLighting(sobol_sampler, info, lambda);
-            
-        // Correctly accumulate direct lighting contribution
-        L = Add(L, Mul(beta, direct_light));
-
-        // ========== END OF NEXT EVENT ESTIMATION ==========
 
         // Sample material BSDF for indirect lighting
         vec2 bsdf_sample = vec2(
