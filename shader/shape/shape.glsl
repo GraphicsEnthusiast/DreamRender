@@ -234,17 +234,7 @@ Hit BVHTraverse(const Ray ray) {
     Hit regular_hit = BVHTraverseSingleBuffer(ray, BVHNodes, Triangles, false);
     Hit light_hit = BVHTraverseSingleBuffer(ray, BVHNodesLight, TrianglesLight, true);
     
-    // Return the closest hit between regular geometry and light geometry
-    if (regular_hit.tri_index == -1 && light_hit.tri_index != -1) {
-        return light_hit;
-    } 
-    else if (light_hit.tri_index != -1 && light_hit.tri_index == -1) {
-        return regular_hit;
-    } 
-    else {
-        // Both found intersections, return the closer one
-        return (regular_hit.distance < light_hit.distance) ? regular_hit : light_hit;
-    }
+    return (regular_hit.distance < light_hit.distance) ? regular_hit : light_hit;
 }
 
 #endif // _SHAPE__GLSL__

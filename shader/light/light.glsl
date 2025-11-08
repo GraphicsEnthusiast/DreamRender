@@ -24,7 +24,7 @@ struct LightEvalInfo {
  */
 struct LightSampleInfo {
     vec3 world_l;
-    float dist;
+    float distance;
     float pdf;
     SampledSpectrum emission;
 };
@@ -74,7 +74,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     }
     
     // Get triangle weight from precomputed table
-    float weight = texelFetch(MeshLightTable, info.tri_index).x;
+    float weight = texelFetch(MeshLightTable, info.tri_index).y;
     float area = TriangleArea(info.tri_index, TrianglesLight);
     
     // Calculate PDF using solid angle conversion
@@ -97,7 +97,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
 LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionInfo info) {
     LightSampleInfo result;
     result.world_l = vec3(0.0f);
-    result.dist = 0.0f;
+    result.distance = 0.0f;
     result.pdf = 0.0f;
     result.emission = SampledSpectrumNewFloat(0.0f);
     
@@ -128,8 +128,8 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     
     // Calculate light direction vector and distance
     result.world_l = p - info.position;
-    result.dist = length(result.world_l);
-    result.world_l /= result.dist;
+    result.distance = length(result.world_l);
+    result.world_l /= result.distance;
     
     // Compute triangle geometric normal for visibility testing
     vec3 edge1 = tri.p2 - tri.p1;
@@ -144,14 +144,14 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     }
     
     // Retrieve triangle weight from precomputed table
-    float weight = texelFetch(MeshLightTable, tri_index).x;
+    float weight = texelFetch(MeshLightTable, tri_index).y;
     float area = TriangleArea(tri_index, TrianglesLight);
     
     // Calculate solid angle PDF using area-to-solid angle conversion
     result.pdf = 1.0f / area;
-    result.pdf *= result.dist * result.dist / abs(cos_theta);
+    result.pdf *= result.distance * result.distance / abs(cos_theta);
     result.pdf *= weight / MeshLightTableSize / MeshLightTableSum;
-    
+
     // Assign emission spectrum from material properties
     result.emission = info.material.emission;
     

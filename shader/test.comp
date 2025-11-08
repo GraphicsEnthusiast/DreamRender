@@ -22,6 +22,29 @@ uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
 uniform uint FrameCounter;
 
+/**
+ * @brief Performs visibility test from start point in given direction and distance
+ * @param start_point Test start point (world coordinates)
+ * @param direction Normalized direction vector
+ * @param distance Maximum test distance
+ * @param shading_normal Normal at start point (for avoiding self-intersection)
+ * @return bool True if visible (no occlusion), false if occluded
+ */
+bool TestVisibility(vec3 start_point, vec3 direction, float distance, vec3 shading_normal) {
+    // Generate shadow ray with origin offset to avoid self-intersection
+    Ray shadow_ray = SpawnRay(start_point, shading_normal, direction, 0.0f, distance - Epsilon);
+    
+    // Perform BVH traversal to detect occlusion
+    Hit occlusion_hit = BVHTraverse(shadow_ray);
+    
+    // If hit distance is less than max distance, there's occlusion
+    if (occlusion_hit.distance < shadow_ray.tmax) {
+        return false; // Occluded
+    }
+    
+    return true; // Visible
+}
+
 void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
@@ -123,11 +146,13 @@ void main() {
 
         LightSampleInfo light_info = MeshLightSample(sobol_sampler, info);
         if (light_info.pdf > 0.0f) {
-            MaterialEvalInfo material_info = DiffuseEvaluate(info, world_v, light_info.world_l);
+            if (TestVisibility(info.position, light_info.world_l, light_info.distance, info.shading_normal)) {
+                MaterialEvalInfo material_info = DiffuseEvaluate(info, world_v, light_info.world_l);
     
-            if (material_info.pdf > 0.0f) {
-                SampledSpectrum contrib = DivFloat(Mul(Mul(light_info.emission, material_info.bsdf_cosine), beta), light_info.pdf);
-                L = Add(L, contrib);
+                if (material_info.pdf > 0.0f) {
+                    SampledSpectrum contrib = DivFloat(Mul(Mul(light_info.emission, material_info.bsdf_cosine), beta), light_info.pdf);
+                    L = Add(L, contrib);
+                }
             }
         }
 
@@ -153,7 +178,7 @@ void main() {
         }
 
         // Update ray for next bounce
-        ray = SpawnRay(info.position, info.shading_normal, sample_info.world_l, 0.001, MaxFloat);
+        ray = SpawnRay(info.position, info.shading_normal, sample_info.world_l, 0.0f, MaxFloat);
     }
 
     // Convert spectral radiance to RGB for display
