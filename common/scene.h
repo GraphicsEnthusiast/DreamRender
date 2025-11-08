@@ -79,7 +79,7 @@ public:
      * @brief Gets the size of the mesh light table
      * @return The size as an integer
      */
-    int GetMeshLightTableSize() const noexcept;
+    unsigned int GetMeshLightTableSize() const noexcept;
 
     /**
      * @brief Deleted copy constructor
@@ -95,7 +95,7 @@ protected:
     /**
      * @brief Default constructor
      */
-    SceneManager() : mesh_light_table_sum_(0.0f) {};
+    SceneManager() = default;
 
     /**
      * @brief Internal resource cleanup method
@@ -111,9 +111,11 @@ protected:
      * @brief Builds BVH for a specific set of triangles
      * @param triangles Input triangles to build BVH for
      * @param bvh_nodes Output BVH nodes
+     * @param is_light Whether input triangles is light
      * @return Vector of sorted triangles based on BVH construction
      */
-    std::vector<TriangleEncoded> BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles, std::vector<BVHNodeEncoded>& bvh_nodes);
+    std::vector<TriangleEncoded> BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles, std::vector<BVHNodeEncoded>& bvh_nodes,
+        bool is_light);
 
 protected:
     std::vector<TriangleEncoded> triangles_encoded_;        ///< Encoded regular triangle data
@@ -123,7 +125,6 @@ protected:
 
 	AliasTable1D mesh_light_alias_table_;                  ///< Alias table for light triangle sampling
 	std::vector<float> light_triangle_weights_;            ///< Weight for each light triangle (area + luminance)
-	float mesh_light_table_sum_;                           ///< Sum of weights for normalization
 
     std::unique_ptr<TBO> triangle_tbo_;                     ///< TBO for regular triangle data
     std::unique_ptr<TBO> triangle_light_tbo_;               ///< TBO for light triangle data

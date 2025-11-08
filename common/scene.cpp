@@ -35,7 +35,6 @@ void SceneManager::ReleaseInstance() {
 
 	// Clear alias table data
 	light_triangle_weights_.clear();
-	mesh_light_table_sum_ = 0.0f;
 	mesh_light_alias_table_tbo_.reset();
 }
 
@@ -51,7 +50,6 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 	if (is_light) {
 		light_triangle_weights_.clear();
 		light_triangle_weights_.reserve(total_count);
-		mesh_light_table_sum_ = 0.0f;
 	}
 
 	// Resize appropriate container based on the is_light parameter
@@ -130,7 +128,6 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				float weight = area;
 
 				light_triangle_weights_.push_back(weight);
-				mesh_light_table_sum_ += weight;
 				triangles_light_encoded_[index++] = encoded_tri;
 			}
 			else {
@@ -146,9 +143,8 @@ void SceneManager::BuildLightAliasTable() {
 	mesh_light_alias_table_ = AliasTable1D(light_triangle_weights_);
 }
 
-std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(
-	const std::vector<TriangleEncoded>& triangles,
-	std::vector<BVHNodeEncoded>& bvh_nodes) {
+std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles,
+	std::vector<BVHNodeEncoded>& bvh_nodes, bool is_light) {
 
 	if (triangles.empty()) {
 		return std::vector<TriangleEncoded>();
@@ -190,9 +186,16 @@ std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(
 
 	// Sort triangles based on BVH primitive indices
 	const unsigned int* indices = bvh.bvh.primIdx;
+	std::vector<float> sorted_light_triangle_weights(light_triangle_weights_.size());
 	std::vector<TriangleEncoded> sorted_triangles(triangles_size);
 	for (unsigned int i = 0; i < triangles_size; ++i) {
 		sorted_triangles[i] = triangles[indices[i]];
+		if (is_light) {
+			sorted_light_triangle_weights[i] = light_triangle_weights_[indices[i]];
+		}
+	}
+	if (is_light) {
+		light_triangle_weights_ = sorted_light_triangle_weights;
 	}
 
 	return sorted_triangles;
@@ -201,12 +204,12 @@ std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(
 void SceneManager::BuildBVH() {
 	// Build BVH for regular geometry
 	if (!triangles_encoded_.empty()) {
-		triangles_encoded_ = BuildBVHForTriangles(triangles_encoded_, bvh_nodes_encoded_);
+		triangles_encoded_ = BuildBVHForTriangles(triangles_encoded_, bvh_nodes_encoded_, false);
 	}
 
 	// Build BVH for light geometry
 	if (!triangles_light_encoded_.empty()) {
-		triangles_light_encoded_ = BuildBVHForTriangles(triangles_light_encoded_, bvh_nodes_light_encoded_);
+		triangles_light_encoded_ = BuildBVHForTriangles(triangles_light_encoded_, bvh_nodes_light_encoded_, true);
 		if (!light_triangle_weights_.empty()) {
 			BuildLightAliasTable();
 		}
@@ -289,11 +292,11 @@ const TBO& SceneManager::GetBVHNodeLightTBO() const noexcept {
 }
 
 float SceneManager::GetMeshLightTableSum() const noexcept {
-	return mesh_light_table_sum_;
+	return mesh_light_alias_table_.Sum();
 }
 
-int SceneManager::GetMeshLightTableSize() const noexcept {
-	return static_cast<int>(light_triangle_weights_.size());
+unsigned int SceneManager::GetMeshLightTableSize() const noexcept {
+	return static_cast<unsigned int>(light_triangle_weights_.size());
 }
 
 NAMESPACE_END(dream)
