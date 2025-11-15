@@ -12,8 +12,8 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
 
 // Camera parameters
-uniform vec3 camera_position = vec3(10.0, 10.0, 10.0);
-uniform vec3 camera_target = vec3(0.0, 0.0, 0.0);
+uniform vec3 camera_position = vec3(10.0, 8.0, 10.0);
+uniform vec3 camera_target = vec3(0.0, 1.0, 0.0);
 uniform vec3 camera_up = vec3(0.0, 1.0, 0.0);
 uniform vec2 resolution = vec2(1280.0, 720.0);
 uniform float camera_fov = 60.0;
@@ -83,6 +83,7 @@ void main() {
     // Initialize path tracing state
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
     SampledSpectrum L = SampledSpectrumNewFloat(0.0f);
+    IntersectionInfo info;
 
     // Path tracing loop (up to 10 bounces)
     for (int bounce = 0; bounce < 10; ++bounce) {
@@ -118,7 +119,8 @@ void main() {
             tri = FetchTriangle(hit.tri_index, TrianglesLight);
 
             // Add light contribution when directly hitting a light source
-            L = Add(L, Mul(beta, s_spectrum));
+            L = Add(L, Mul(beta, info.material.emission));
+            
             break;
         }
         else {
@@ -127,12 +129,14 @@ void main() {
         
         vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
         vec3 normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + hit.u * tri.n2 + hit.v * tri.n3);
+        vec3 edge1 = tri.p2 - tri.p1;
+        vec3 edge2 = tri.p3 - tri.p1;
+        vec3 geometry_normal = normalize(cross(edge1, edge2));
 
         // Prepare material evaluation info
-        IntersectionInfo info;
         info.position = position;
         info.shading_normal = normal;
-        info.geometry_normal = normal;
+        info.geometry_normal = geometry_normal;
         info.distance = hit.distance;
         info.tri_index = hit.tri_index;
         info.material.diffuse = SampledSpectrumNewFloat(0.9f); // Default gray material
@@ -176,7 +180,7 @@ void main() {
         }
 
         // Update ray for next bounce
-        ray = SpawnRay(info.position, info.shading_normal, sample_info.world_l, 0.0f, MaxFloat);
+        ray = SpawnRay(info.position, info.geometry_normal, sample_info.world_l, 0.0f, MaxFloat);
     }
 
     // Convert spectral radiance to RGB for display
