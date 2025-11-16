@@ -119,7 +119,7 @@ void main() {
             tri = FetchTriangle(hit.tri_index, TrianglesLight);
 
             // Add light contribution when directly hitting a light source
-            L = Add(L, Mul(beta, info.material.emission));
+            L = Add(L, Mul(beta, s_spectrum));
             
             break;
         }
