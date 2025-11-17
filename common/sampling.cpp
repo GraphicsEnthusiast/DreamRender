@@ -54,7 +54,7 @@ float AliasTable1D::Max() const noexcept {
 }
 
 float AliasTable1D::Sum() const noexcept {
-    return max_distrib;
+    return sum_distrib;
 }
 
 void AliasTable1D::PrepareGPUData() {
