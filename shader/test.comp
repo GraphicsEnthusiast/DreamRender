@@ -12,8 +12,8 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
 
 // Camera parameters
-uniform vec3 camera_position = vec3(10.0, 8.0, 10.0);
-uniform vec3 camera_target = vec3(0.0, 1.0, 0.0);
+uniform vec3 camera_position = vec3(15.0, 15.0, 15.0);
+uniform vec3 camera_target = vec3(0.0, 3.0, 0.0);
 uniform vec3 camera_up = vec3(0.0, 1.0, 0.0);
 uniform vec2 resolution = vec2(1280.0, 720.0);
 uniform float camera_fov = 60.0;

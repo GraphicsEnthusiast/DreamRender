@@ -146,6 +146,7 @@ SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
 void SimpleComputePass::Execute() {
 	if (!shader_) {
 		ERROR("[error] Simple compute pass: Compute shader is not initialized.");
+
 		return;
 	}
 
@@ -186,6 +187,7 @@ void SimpleComputePass::Execute() {
 	// Bind mesh light alias table texture buffer
 	scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
 	shader_->SetInt("MeshLightTable", 6);
+	shader_->SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
 	shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
 	shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
 

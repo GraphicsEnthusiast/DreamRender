@@ -295,6 +295,10 @@ float SceneManager::GetMeshLightTableSum() const noexcept {
 	return mesh_light_alias_table_.Sum();
 }
 
+float SceneManager::GetMeshLightTableMax() const noexcept {
+	return mesh_light_alias_table_.Max();
+}
+
 unsigned int SceneManager::GetMeshLightTableSize() const noexcept {
 	return static_cast<unsigned int>(light_triangle_weights_.size());
 }

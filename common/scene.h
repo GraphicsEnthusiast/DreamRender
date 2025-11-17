@@ -76,6 +76,12 @@ public:
     float GetMeshLightTableSum() const noexcept;
 
     /**
+     * @brief Gets the max of the mesh light table
+     * @return The max value as a float
+     */
+    float GetMeshLightTableMax() const noexcept;
+
+    /**
      * @brief Gets the size of the mesh light table
      * @return The size as an integer
      */

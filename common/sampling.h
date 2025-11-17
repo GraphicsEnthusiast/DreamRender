@@ -33,6 +33,12 @@ public:
     AliasTable1D(const std::vector<float>& distrib);
 
     /**
+     * @brief Gets the max of the probability distribution
+     * @return Max of all probabilities in the distribution
+     */
+    float Max() const noexcept;
+
+    /**
      * @brief Gets the sum of the probability distribution
      * @return Sum of all probabilities in the distribution
      */
@@ -53,6 +59,7 @@ protected:
 protected:
     std::vector<Element> table;             ///< Internal alias table
     std::vector<AliasTableData> gpu_data;   ///< GPU-ready data
+    float max_distrib;                      ///< Max of the distribution
     float sum_distrib;                      ///< Sum of the distribution
 };
 

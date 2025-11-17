@@ -7,6 +7,7 @@
 
 uniform samplerBuffer MeshLightTable;
 uniform float MeshLightTableSum;
+uniform float MeshLightTableMax;
 uniform int MeshLightTableSize;
 
 /**
@@ -80,7 +81,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     // Calculate PDF using solid angle conversion
     result.pdf = 1.0f / area;
     result.pdf *= info.distance * info.distance / abs(cos_theta);
-    result.pdf *= weight / MeshLightTableSize / MeshLightTableSum;
+    result.pdf *= weight / MeshLightTableSum;
 
     // Get emission from material
     result.emission = info.material.emission;
@@ -110,7 +111,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
         MeshLightTable, 
         MeshLightTableSize, 
         0, 
-        MeshLightTableSum, 
+        MeshLightTableMax, 
         alias_sample
     );
     
@@ -150,7 +151,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     // Calculate solid angle PDF using area-to-solid angle conversion
     result.pdf = 1.0f / area;
     result.pdf *= result.distance * result.distance / abs(cos_theta);
-    result.pdf *= weight / MeshLightTableSize / MeshLightTableSum;
+    result.pdf *= weight / MeshLightTableSum;
 
     // Assign emission spectrum from material properties
     result.emission = info.material.emission;
