@@ -5,14 +5,14 @@ NAMESPACE_BEGIN(dream)
 AliasTable1D::AliasTable1D(const std::vector<float>& distrib) {
     std::queue<Element> greater, lesser;
 
-    max_distrib = 0.0f;
+    max_table = 0.0f;
     for (auto i : distrib) {
-        max_distrib += i;
+        max_table += i;
     }
 
     for (unsigned int i = 0; i < distrib.size(); i++) {
         float scaled_pdf = distrib[i] * distrib.size();
-        (scaled_pdf >= max_distrib ? greater : lesser).push(Element(i, scaled_pdf));
+        (scaled_pdf >= max_table ? greater : lesser).push(Element(i, scaled_pdf));
     }
 
     table.resize(distrib.size(), Element(-1, 0.0f));
@@ -25,8 +25,8 @@ AliasTable1D::AliasTable1D(const std::vector<float>& distrib) {
 
         table[l] = Element(g, pl);
 
-        pg += pl - max_distrib;
-        (pg < max_distrib ? lesser : greater).push(Element(g, pg));
+        pg += pl - max_table;
+        (pg < max_table ? lesser : greater).push(Element(g, pg));
     }
 
     while (!greater.empty()) {
@@ -41,20 +41,20 @@ AliasTable1D::AliasTable1D(const std::vector<float>& distrib) {
         table[l] = Element(l, pl);
     }
 
-    sum_distrib = 0.0f;
+    sum_table = 0.0f;
     for (const auto& e : table) {
-        sum_distrib += e.second;
+        sum_table += e.second;
     }
 
     PrepareGPUData();
 }
 
 float AliasTable1D::Max() const noexcept {
-    return max_distrib;
+    return max_table;
 }
 
 float AliasTable1D::Sum() const noexcept {
-    return sum_distrib;
+    return sum_table;
 }
 
 void AliasTable1D::PrepareGPUData() {

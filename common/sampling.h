@@ -59,8 +59,8 @@ protected:
 protected:
     std::vector<Element> table;             ///< Internal alias table
     std::vector<AliasTableData> gpu_data;   ///< GPU-ready data
-    float max_distrib;                      ///< Max of the distribution
-    float sum_distrib;                      ///< Sum of the distribution
+    float max_table;                        ///< Max of the table
+    float sum_table;                        ///< Sum of the table
 };
 
 /**
