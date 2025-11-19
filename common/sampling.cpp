@@ -95,7 +95,7 @@ void AliasTable2D::PrepareGPUData() {
     col_table_gpu_data = col_table.GetGPUData();
 }
 
-const std::vector<AliasTableData>& AliasTable2D::GetRowtableGPUData() const noexcept {
+const std::vector<AliasTableData>& AliasTable2D::GetRowTableGPUData() const noexcept {
     return row_table_gpu_data;
 }
 

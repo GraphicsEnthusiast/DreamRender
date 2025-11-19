@@ -86,7 +86,7 @@ public:
      * @brief Gets the GPU-ready data for row table
      * @return Const reference to row table GPU data
      */
-    const std::vector<AliasTableData>& GetRowtableGPUData() const noexcept;
+    const std::vector<AliasTableData>& GetRowTableGPUData() const noexcept;
 
     /**
      * @brief Gets the GPU-ready data for column table
