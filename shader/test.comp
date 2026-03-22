@@ -29,7 +29,7 @@ uniform uint FrameCounter;
  * @param distance Maximum test distance
  * @return bool True if visible (no occlusion), false if occluded
  */
-bool TestVisibility(vec3 start_point, vec3 direction, float distance) {
+bool VisibilityTest(vec3 start_point, vec3 direction, float distance) {
     // Generate shadow ray with origin offset to avoid self-intersection
     Ray shadow_ray = SpawnRay(start_point, direction, direction, 0.0f, distance - Epsilon);
     
@@ -148,7 +148,7 @@ void main() {
 
         LightSampleInfo light_info = MeshLightSample(sobol_sampler, info);
         if (light_info.pdf > 0.0f) {
-            if (TestVisibility(info.position, light_info.world_l, light_info.distance)) {
+            if (VisibilityTest(info.position, light_info.world_l, light_info.distance)) {
                 MaterialEvalInfo material_info = DiffuseEvaluate(info, world_v, light_info.world_l);
     
                 if (material_info.pdf > 0.0f) {

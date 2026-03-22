@@ -57,6 +57,197 @@ float TriangleArea(int index, samplerBuffer triangles_buffer) {
 }
 
 /**
+ * @brief Computes the solid angle (projected area) of a spherical triangle
+ * @param va First vertex of spherical triangle (normalized)
+ * @param vb Second vertex of spherical triangle (normalized)
+ * @param vc Third vertex of spherical triangle (normalized)
+ * @return Solid angle of the spherical triangle in steradians
+ */
+float SphericalTriangleSolidAngle(vec3 va, vec3 vb, vec3 vc) {
+    // Calculate cosines of the spherical triangle's edge lengths
+    float cos_a = clamp(dot(vb, vc), -1.0f, 1.0f);
+    float cos_b = clamp(dot(vc, va), -1.0f, 1.0f);
+    float cos_c = clamp(dot(va, vb), -1.0f, 1.0f);
+    
+    // Calculate sines
+    float sin_a = sqrt(max(1.0f - cos_a * cos_a, 0.0f));
+    float sin_b = sqrt(max(1.0f - cos_b * cos_b, 0.0f));
+    float sin_c = sqrt(max(1.0f - cos_c * cos_c, 0.0f));
+    
+    // If two vertices are coincident, area is zero
+    if (cos_a == 1.0f || cos_b == 1.0f || cos_c == 1.0f) {
+        return 0.0f;
+    }
+    
+    // Calculate cosines of the angles at the vertices
+    float cos_va = clamp((cos_a - cos_b * cos_c) / (sin_b * sin_c), -1.0f, 1.0f);
+    float cos_vb = clamp((cos_b - cos_c * cos_a) / (sin_c * sin_a), -1.0f, 1.0f);
+    float cos_vc = clamp((cos_c - cos_a * cos_b) / (sin_a * sin_b), -1.0f, 1.0f);
+    
+    // Calculate the angles themselves, in radians
+    float ang_va = acos(cos_va);
+    float ang_vb = acos(cos_vb);
+    float ang_vc = acos(cos_vc);
+    
+    // Calculate and return the solid angle of the triangle
+    return ang_va + ang_vb + ang_vc - PI;
+}
+
+/**
+ * @brief Computes orthogonal component of vector v relative to reference vector n
+ * @param v Vector to project
+ * @param n Reference vector (must be normalized)
+ * @return Orthogonal component of v relative to n (not normalized)
+ */
+vec3 OrthogonalComponent(vec3 v, vec3 n) {
+    return v - n * dot(v, n);
+}
+
+/**
+ * @brief Generates a uniform sample on a spherical triangle using two uniform random variables
+ * @param va First vertex of spherical triangle (normalized)
+ * @param vb Second vertex of spherical triangle (normalized)
+ * @param vc Third vertex of spherical triangle (normalized)
+ * @param i First uniform random variable in [0, 1)
+ * @param j Second uniform random variable in [0, 1)
+ * @return Uniformly sampled direction on the spherical triangle (normalized)
+ */
+vec3 SphericalTriangleSampleUniform(vec3 va, vec3 vb, vec3 vc, float i, float j) {
+    // Calculate cosines of the spherical triangle's edge lengths
+    float cos_a = clamp(dot(vb, vc), -1.0f, 1.0f);
+    float cos_b = clamp(dot(vc, va), -1.0f, 1.0f);
+    float cos_c = clamp(dot(va, vb), -1.0f, 1.0f);
+    
+    // Calculate sines
+    float sin_a = sqrt(max(1.0f - cos_a * cos_a, 0.0f));
+    float sin_b = sqrt(max(1.0f - cos_b * cos_b, 0.0f));
+    float sin_c = sqrt(max(1.0f - cos_c * cos_c, 0.0f));
+    
+    // If two vertices are coincident, return first vertex
+    if (cos_a == 1.0f || cos_b == 1.0f || cos_c == 1.0f) {
+        return va;
+    }
+    
+    // Calculate cosines of the angles at the vertices
+    float cos_va = clamp((cos_a - cos_b * cos_c) / (sin_b * sin_c), -1.0f, 1.0f);
+    float cos_vb = clamp((cos_b - cos_c * cos_a) / (sin_c * sin_a), -1.0f, 1.0f);
+    float cos_vc = clamp((cos_c - cos_a * cos_b) / (sin_a * sin_b), -1.0f, 1.0f);
+    
+    // Calculate sine for angle at vertex A
+    float sin_va = sqrt(max(1.0f - cos_va * cos_va, 0.0f));
+    
+    // Calculate the angles themselves, in radians
+    float ang_va = acos(cos_va);
+    float ang_vb = acos(cos_vb);
+    float ang_vc = acos(cos_vc);
+    
+    // Calculate the area (solid angle) of the spherical triangle
+    float area = ang_va + ang_vb + ang_vc - PI;
+    
+    // Implementation of "Stratified Sampling of Spherical Triangles" by James Arvo
+    float area_2 = area * i;
+    
+    float s = sin(area_2 - ang_va);
+    float t = cos(area_2 - ang_va);
+    float u = t - cos_va;
+    float v = s + (sin_va * cos_c);
+    
+    // Calculate q (cos(beta^))
+    float q_top = ((v * t) - (u * s)) * cos_va - v;
+    float q_bottom = (v * s + u * t) * sin_va;
+    
+    // Prevent division by zero
+    float q = 1.0f;
+    if (abs(q_bottom) > Epsilon) {
+        q = q_top / q_bottom;
+    }
+    
+    // C^, the new vertex of the sub-triangle
+    vec3 ortho_comp = OrthogonalComponent(vc, va);
+    float ortho_len = length(ortho_comp);
+    vec3 vc_2 = vec3(0.0f);
+    if (ortho_len > Epsilon) {
+        ortho_comp /= ortho_len; // Normalize
+        vc_2 = va * q + ortho_comp * sqrt(max(1.0f - q * q, 0.0f));
+    } else {
+        vc_2 = va;
+    }
+    
+    // Final sampling along edge BC^
+    float z = 1.0f - j * (1.0f - dot(vc_2, vb));
+    
+    vec3 ortho_vc2_vb = OrthogonalComponent(vc_2, vb);
+    float ortho_len2 = length(ortho_vc2_vb);
+    if (ortho_len2 > Epsilon) {
+        ortho_vc2_vb /= ortho_len2; // Normalize
+    }
+    
+    return vb * z + ortho_vc2_vb * sqrt(max(1.0f - z * z, 0.0f));
+}
+
+/**
+ * @brief Samples a point on a triangle using spherical triangle sampling
+ * @param triangle_vertices Array of 3 triangle vertices in world space
+ * @param shading_point Position of the shading point
+ * @param i First uniform random sample in [0, 1)
+ * @param j Second uniform random sample in [0, 1)
+ * @param[out] direction Sampled direction (from shading point to triangle)
+ * @param[out] distance Distance to intersection point
+ * @param[out] u Barycentric u coordinate
+ * @param[out] v Barycentric v coordinate
+ * @return True if intersection found, false otherwise
+ */
+bool SampleTriangleSpherical(const vec3 triangle_vertices[3], const vec3 shading_point, float i, float j,
+    out vec3 direction, out float distance, out float u, out float v) {
+    // Calculate directions from shading point to triangle vertices
+    vec3 va = triangle_vertices[0] - shading_point;
+    vec3 vb = triangle_vertices[1] - shading_point;
+    vec3 vc = triangle_vertices[2] - shading_point;
+    
+    // Normalize to get directions on unit sphere
+    vec3 A = normalize(va);
+    vec3 B = normalize(vb);
+    vec3 C = normalize(vc);
+    
+    // Sample direction on spherical triangle
+    direction = SphericalTriangleSampleUniform(A, B, C, i, j);
+    
+    // Ray-triangle intersection to find actual intersection point
+    // Möller–Trumbore intersection algorithm
+    vec3 edge1 = triangle_vertices[1] - triangle_vertices[0];
+    vec3 edge2 = triangle_vertices[2] - triangle_vertices[0];
+    vec3 h = cross(direction, edge2);
+    float a = dot(edge1, h);
+    
+    if (abs(a) < Epsilon * Epsilon) {
+        return false; // Ray is parallel to triangle
+    }
+    
+    float f = 1.0f / a;
+    vec3 s = shading_point - triangle_vertices[0];
+    u = f * dot(s, h);
+    
+    if (u < 0.0f || u > 1.0f) {
+        return false; // Intersection outside triangle
+    }
+    
+    vec3 q = cross(s, edge1);
+    v = f * dot(direction, q);
+    
+    if (v < 0.0f || u + v > 1.0f) {
+        return false; // Intersection outside triangle
+    }
+    
+    distance = f * dot(edge2, q);
+    
+    if (distance < Epsilon * Epsilon) {
+        return false; // Intersection behind ray origin
+    }
+    
+    return true;
+}
+
+/**
  * @brief Evaluates mesh light contribution for a given direction
  * @param world_l Light direction (from surface to light)
  * @param info Intersection information
@@ -76,11 +267,26 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     
     // Get triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).y;
-    float area = TriangleArea(info.tri_index, TrianglesLight);
     
-    // Calculate PDF using solid angle conversion
-    result.pdf = 1.0f / area;
-    result.pdf *= info.distance * info.distance / abs(cos_theta);
+    // Calculate directions from shading point to triangle vertices
+    Triangle tri = FetchTriangle(info.tri_index, TrianglesLight);
+    vec3 va = tri.p1 - info.position;
+    vec3 vb = tri.p2 - info.position;
+    vec3 vc = tri.p3 - info.position;
+    
+    // Normalize to get directions on unit sphere
+    vec3 A = normalize(va);
+    vec3 B = normalize(vb);
+    vec3 C = normalize(vc);
+    
+    // Calculate solid angle of spherical triangle
+    float solid_angle = SphericalTriangleSolidAngle(A, B, C);
+    if (solid_angle <= 0.0f) {
+        return result;
+    }
+    
+    // PDF is 1/solid_angle for uniform sampling on spherical triangle
+    result.pdf = 1.0f / solid_angle;
     result.pdf *= weight / MeshLightTableSum;
 
     // Get emission from material
@@ -90,7 +296,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
 }
 
 /**
- * @brief Samples a point on the mesh area light using Sobol sampling and alias table optimization
+ * @brief Samples a point on the mesh area light using spherical triangle sampling
  * @param sobol_sampler Sobol sequence sampler (passed as inout reference for state management)
  * @param info Intersection information for the shading point
  * @return LightSampleInfo containing sampled direction, distance, PDF and emission spectrum
@@ -117,20 +323,27 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     
     Triangle tri = FetchTriangle(tri_index, TrianglesLight);
     
-    // Uniformly sample point on triangle using barycentric coordinates
-    float sqrt_xi1 = sqrt(SobolSamplerGet1(sobol_sampler));
-    float xi2 = SobolSamplerGet1(sobol_sampler);
+    // Prepare triangle vertices
+    vec3 triangle_vertices[3] = {tri.p1, tri.p2, tri.p3};
     
-    float b1 = 1.0f - sqrt_xi1;
-    float b2 = sqrt_xi1 * xi2;
+    // Generate random samples for spherical triangle sampling
+    float rand_u = SobolSamplerGet1(sobol_sampler);
+    float rand_v = SobolSamplerGet1(sobol_sampler);
     
-    // Calculate sampled point using barycentric interpolation
-    vec3 p = (1.0f - b1 - b2) * tri.p1 + b1 * tri.p2 + b2 * tri.p3;
-    
-    // Calculate light direction vector and distance
-    result.world_l = p - info.position;
-    result.distance = length(result.world_l);
-    result.world_l /= result.distance;
+    // Sample using spherical triangle method
+    float u, v;
+    if (!SampleTriangleSpherical(
+        triangle_vertices,
+        info.position,
+        rand_u,
+        rand_v,
+        result.world_l,
+        result.distance,
+        u,
+        v)) {
+        // Failed to intersect, return zero PDF
+        return result;
+    }
     
     // Compute triangle geometric normal for visibility testing
     vec3 edge1 = tri.p2 - tri.p1;
@@ -144,13 +357,27 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
         return result;
     }
     
+    // Calculate directions from shading point to triangle vertices
+    vec3 va = tri.p1 - info.position;
+    vec3 vb = tri.p2 - info.position;
+    vec3 vc = tri.p3 - info.position;
+    
+    // Normalize to get directions on unit sphere
+    vec3 A = normalize(va);
+    vec3 B = normalize(vb);
+    vec3 C = normalize(vc);
+    
+    // Calculate solid angle of spherical triangle
+    float solid_angle = SphericalTriangleSolidAngle(A, B, C);
+    if (solid_angle <= 0.0f) {
+        return result;
+    }
+    
     // Retrieve triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, tri_index).y;
-    float area = TriangleArea(tri_index, TrianglesLight);
     
-    // Calculate solid angle PDF using area-to-solid angle conversion
-    result.pdf = 1.0f / area;
-    result.pdf *= result.distance * result.distance / abs(cos_theta);
+    // PDF for uniform spherical triangle sampling is 1/solid_angle
+    result.pdf = 1.0f / solid_angle;
     result.pdf *= weight / MeshLightTableSum;
 
     // Assign emission spectrum from material properties
