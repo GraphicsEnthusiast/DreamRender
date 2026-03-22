@@ -599,12 +599,12 @@ struct RGBAlbedoSpectrum {
 
 /**
  * @brief Creates an albedo spectrum from RGB coefficients
- * @param rsp Sigmoid polynomial coefficients
+ * @param rgb RGB coefficients
  * @return Initialized albedo spectrum
  */
-RGBAlbedoSpectrum RGBAlbedoSpectrumNew(RGBSigmoidPolynomial rsp) {
+RGBAlbedoSpectrum RGBAlbedoSpectrumNew(RGB rgb) {
     RGBAlbedoSpectrum s;
-    s.rsp = rsp;
+    s.rsp = RGBToSpectrumTableEval(rgb);
 
     return s;
 }

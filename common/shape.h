@@ -73,6 +73,12 @@ struct alignas(16) TriangleEncoded {
 	alignas(16) Vector4f n1;   ///< Vertex normals (w stores uv1.y)
 	alignas(16) Vector4f n2;   ///< Vertex normals (w stores uv2.y)
 	alignas(16) Vector4f n3;   ///< Vertex normals (w stores uv3.y)
+
+    alignas(16) Vector4f material_type; ///< Material type (x component)
+    /// <summary>
+    /// 0: diffuse
+    /// </summary>
+    alignas(16) Vector4f diffuse;       ///< Diffuse color (xyz components) and texture flag (w component: 0 = constant color, 1 = texture)
 };
 
 /**

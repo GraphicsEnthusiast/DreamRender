@@ -139,7 +139,10 @@ void main() {
         info.geometry_normal = geometry_normal;
         info.distance = hit.distance;
         info.tri_index = hit.tri_index;
-        info.material.diffuse = SampledSpectrumNewFloat(0.9f); // Default gray material
+        info.material.type = tri.material_type;
+        RGB diffuse_rgb = RGBNew(tri.diffuse.x, tri.diffuse.y, tri.diffuse.z);
+        RGBAlbedoSpectrum diffuse_spectrum = RGBAlbedoSpectrumNew(diffuse_rgb);
+        info.material.diffuse = RGBAlbedoSpectrumSample(diffuse_spectrum, lambda);; // Default gray material
         info.material.emission = s_spectrum; // Non-light emission is 0
         info.material.roughness = 0.0f; // Set reasonable roughness value
 

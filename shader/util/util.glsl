@@ -25,6 +25,8 @@ struct SampledSpectrum {
  * @brief Material information structure containing optical properties and texture indices
  */
 struct Material {
+    int type;
+
     SampledSpectrum emission;
 
     SampledSpectrum diffuse;

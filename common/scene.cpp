@@ -117,6 +117,9 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				normals[idx2 * 3 + 2],
 				texcoords[idx2 * 2 + 1]);
 
+			encoded_tri.material_type = Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
+			encoded_tri.diffuse = Vector4f(0.8f, 0.8f, 0.8f, 0.0f);
+
 			// Store in appropriate container based on the is_light parameter
 			if (is_light) {
 				// Calculate triangle area for importance sampling
