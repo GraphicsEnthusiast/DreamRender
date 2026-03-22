@@ -204,13 +204,8 @@ bool SampleTriangleSpherical(const vec3 triangle_vertices[3], const vec3 shading
     vec3 vb = triangle_vertices[1] - shading_point;
     vec3 vc = triangle_vertices[2] - shading_point;
     
-    // Normalize to get directions on unit sphere
-    vec3 a = normalize(va);
-    vec3 b = normalize(vb);
-    vec3 c = normalize(vc);
-    
     // Sample direction on spherical triangle
-    direction = SphericalTriangleSampleUniform(a, b, c, i, j);
+    direction = SphericalTriangleSampleUniform(normalize(va), normalize(vb), normalize(vc), i, j);
     
     // Ray-triangle intersection to find actual intersection point
     // Möller–Trumbore intersection algorithm
