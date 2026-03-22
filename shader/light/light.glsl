@@ -324,7 +324,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     Triangle tri = FetchTriangle(tri_index, TrianglesLight);
     
     // Prepare triangle vertices
-    vec3 triangle_vertices[3] = {tri.p1, tri.p2, tri.p3};
+    vec3 triangle_vertices[3] = { tri.p1, tri.p2, tri.p3 };
     
     // Generate random samples for spherical triangle sampling
     float rand_u = SobolSamplerGet1(sobol_sampler);
@@ -363,12 +363,12 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     vec3 vc = tri.p3 - info.position;
     
     // Normalize to get directions on unit sphere
-    vec3 A = normalize(va);
-    vec3 B = normalize(vb);
-    vec3 C = normalize(vc);
+    vec3 a = normalize(va);
+    vec3 b = normalize(vb);
+    vec3 c = normalize(vc);
     
     // Calculate solid angle of spherical triangle
-    float solid_angle = SphericalTriangleSolidAngle(A, B, C);
+    float solid_angle = SphericalTriangleSolidAngle(a, b, c);
     if (solid_angle <= 0.0f) {
         return result;
     }
