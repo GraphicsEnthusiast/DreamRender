@@ -23,6 +23,10 @@ struct Ray {
  * @return New ray with properly offset origin to prevent numerical precision issues
  */
 Ray SpawnRay(vec3 position, vec3 normal, vec3 direction, float tmin, float tmax) {
+    if (dot(normal, direction) <= 0.0f) {
+        normal = -normal;
+    }
+
     vec3 origin = position + normal * Epsilon;
 
     Ray ray;
