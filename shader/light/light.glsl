@@ -205,12 +205,12 @@ bool SampleTriangleSpherical(const vec3 triangle_vertices[3], const vec3 shading
     vec3 vc = triangle_vertices[2] - shading_point;
     
     // Normalize to get directions on unit sphere
-    vec3 A = normalize(va);
-    vec3 B = normalize(vb);
-    vec3 C = normalize(vc);
+    vec3 a = normalize(va);
+    vec3 b = normalize(vb);
+    vec3 c = normalize(vc);
     
     // Sample direction on spherical triangle
-    direction = SphericalTriangleSampleUniform(A, B, C, i, j);
+    direction = SphericalTriangleSampleUniform(a, b, c, i, j);
     
     // Ray-triangle intersection to find actual intersection point
     // Möller–Trumbore intersection algorithm
@@ -275,12 +275,12 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     vec3 vc = tri.p3 - info.position;
     
     // Normalize to get directions on unit sphere
-    vec3 A = normalize(va);
-    vec3 B = normalize(vb);
-    vec3 C = normalize(vc);
+    vec3 a = normalize(va);
+    vec3 b = normalize(vb);
+    vec3 c = normalize(vc);
     
     // Calculate solid angle of spherical triangle
-    float solid_angle = SphericalTriangleSolidAngle(A, B, C);
+    float solid_angle = SphericalTriangleSolidAngle(a, b, c);
     if (solid_angle <= 0.0f) {
         return result;
     }
