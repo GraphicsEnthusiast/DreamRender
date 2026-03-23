@@ -13,24 +13,70 @@ struct Ray {
     float tmax;     ///< Maximum ray distance
 };
 
+const float OriginScale = 1.0f / 32.0f;
+const float FloatScale = 1.0f / 65536.0f;
+const float IntScale = 256.0f;
+
+/**
+ * @brief Computes the offset ray origin to avoid self-intersection
+ * @param p Original intersection point
+ * @param n Surface normal (points outward for rays exiting the surface, else is flipped)
+ * @return Offset point
+ */
+vec3 OffsetRay(vec3 p, vec3 n) {
+    // Compute integer offset scaled by int_scale
+    ivec3 of_i = ivec3(int(IntScale * n.x), 
+                       int(IntScale * n.y), 
+                       int(IntScale * n.z));
+    
+    // Convert float to int, apply integer offset, then convert back to float
+    vec3 p_i = vec3(
+        intBitsToFloat(floatBitsToInt(p.x) + ((p.x < 0.0) ? -of_i.x : of_i.x)),
+        intBitsToFloat(floatBitsToInt(p.y) + ((p.y < 0.0) ? -of_i.y : of_i.y)),
+        intBitsToFloat(floatBitsToInt(p.z) + ((p.z < 0.0) ? -of_i.z : of_i.z))
+    );
+    
+    // Apply appropriate offset based on coordinate magnitude
+    return vec3(
+        abs(p.x) < OriginScale ? p.x + FloatScale * n.x : p_i.x,
+        abs(p.y) < OriginScale ? p.y + FloatScale * n.y : p_i.y,
+        abs(p.z) < OriginScale ? p.z + FloatScale * n.z : p_i.z
+    );
+}
+
 /**
  * @brief Generates a new ray from an intersection point with origin offset to avoid self-intersection
  * @param position Intersection point in world space
+ * @param direction Ray direction vector (should be normalized)
  * @param normal Surface normal at the intersection point (should be normalized)
+ * @param tmin Minimum ray distance to prevent self-intersection
+ * @param tmax Maximum ray distance for intersection testing
+ * @return New ray with properly offset origin to prevent numerical precision issues
+ */
+Ray SpawnRay(vec3 position, vec3 direction, vec3 normal, float tmin, float tmax) {
+    vec3 offset_normal = (dot(normal, direction) >= 0.0f) ? normal : -normal;
+    vec3 offset_origin = OffsetRay(position, offset_normal);
+    
+    Ray ray;
+    ray.origin = offset_origin;
+    ray.direction = direction;
+    ray.tmin = tmin;
+    ray.tmax = tmax;
+    
+    return ray;
+}
+
+/**
+ * @brief Generates a new ray from an intersection point with origin offset to avoid self-intersection
+ * @param position Intersection point in world space
  * @param direction Ray direction vector (should be normalized)
  * @param tmin Minimum ray distance to prevent self-intersection
  * @param tmax Maximum ray distance for intersection testing
  * @return New ray with properly offset origin to prevent numerical precision issues
  */
-Ray SpawnRay(vec3 position, vec3 normal, vec3 direction, float tmin, float tmax) {
-    if (dot(normal, direction) <= 0.0f) {
-        normal = -normal;
-    }
-
-    vec3 origin = position + normal * Epsilon;
-
+Ray SpawnShadowRay(vec3 position, vec3 direction, float tmin, float tmax) {
     Ray ray;
-    ray.origin = origin;
+    ray.origin = position;
     ray.direction = direction;
     ray.tmin = tmin;
     ray.tmax = tmax;
