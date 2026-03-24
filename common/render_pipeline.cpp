@@ -42,11 +42,11 @@ void RenderPipeline::MakeContextCurrent() {
 	}
 }
 
-const Point2f& RenderPipeline::GetRenderingSize() const noexcept {
+const Point2i& RenderPipeline::GetRenderingSize() const noexcept {
 	return rendering_size_;
 }
 
-void RenderPipeline::SetRenderingSize(const glm::ivec2& size) {
+void RenderPipeline::SetRenderingSize(const Point2i& size) {
 	rendering_size_ = size;
 }
 
@@ -80,30 +80,27 @@ TextureHandle RenderPipeline::CreateTexture(int width, int height) {
 }
 
 void TestPipeline::Init() {
-	// Load textures
 	auto& scene_manager = SceneManager::Instance();
 
-	// 只加载立方体的diffuse纹理
 	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
 	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
 
-	// 创建材质
-	// 茶壶材质：使用固定颜色，无纹理
+
 	Material teapot_material;
-	teapot_material.type = MaterialType::DIFFUSE; // Diffuse material
-	teapot_material.diffuse = Vector3f(0.8f, 0.7f, 0.6f);  // 茶壶固定颜色：米白色
-	teapot_material.roughness = 0.5f;                     // 基础粗糙度
-	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f); // 无发射光
-	// 不设置任何纹理
+	teapot_material.type = MaterialType::DIFFUSE;
+	teapot_material.diffuse = Vector3f(0.8f, 0.7f, 0.6f);
+	teapot_material.roughness = 0.5f;
+	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
+
 	INFO("[info] Teapot material: Fixed color ({}, {}, {}), no texture",
 		teapot_material.diffuse.x, teapot_material.diffuse.y, teapot_material.diffuse.z);
 
-	// 立方体材质：使用纹理
+
 	Material cube_material;
-	cube_material.type = MaterialType::DIFFUSE; // Diffuse material
-	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);  // 基础颜色（纹理缺失时回退）
-	cube_material.roughness = 0.3f;                     // 稍光滑
-	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f); // 无发射光
+	cube_material.type = MaterialType::DIFFUSE;
+	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
+	cube_material.roughness = 0.3f;
+	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
 	if (cube_diffuse_id >= 0) {
 		cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
@@ -114,34 +111,30 @@ void TestPipeline::Init() {
 			cube_material.diffuse.x, cube_material.diffuse.y, cube_material.diffuse.z);
 	}
 
-	// 光源四边形材质
+
 	Material light_material;
-	light_material.type = MaterialType::DIFFUSE; // Diffuse material
-	light_material.diffuse = Vector3f(0.8f);  // 白色漫反射
-	light_material.roughness = 0.0f;                     // 完全光滑
-	light_material.emission = Vector3f(2.0f, 2.0f, 1.5f); // 暖白色发射光（光源）
+	light_material.type = MaterialType::DIFFUSE;
+	light_material.diffuse = Vector3f(0.8f);
+	light_material.roughness = 0.0f;
+	light_material.emission = Vector3f(2.0f, 2.0f, 1.5f);
 
 	INFO("[info] Light material: Emission = ({}, {}, {})",
 		light_material.emission.x, light_material.emission.y, light_material.emission.z);
 
-	// 加载带材质的网格
 	std::vector<TriangleMesh> meshes;
 
-	// 茶壶：使用固定颜色材质
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
 		Transform(),
 		teapot_material
 	);
 
-	// 立方体：使用带纹理的材质
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 		Transform::Translate(0.0f, -10.0f, 0.0f),
 		cube_material
 	);
 
-	// 光源四边形
 	std::vector<TriangleMesh> meshes2;
 	meshes2.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\quad.obj",
@@ -149,36 +142,27 @@ void TestPipeline::Init() {
 		light_material
 	);
 
-	// 编码三角形
 	scene_manager.EncodeTriangles(meshes, false);
 	scene_manager.EncodeTriangles(meshes2, true);
-	scene_manager.BuildBVH();          // 构建加速结构
-	scene_manager.CreateGPUBuffers();  // 上传几何数据到GPU
+	scene_manager.BuildBVH();
+	scene_manager.CreateGPUBuffers();
 
-	// 创建管道阶段纹理资源
 	TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y); // 时间累积持久存储
-	TextureHandle final_output = CreateTexture(rendering_size_.x, rendering_size_.y);   // 最终输出目标
+	TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle final_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 
-	// 创建并配置计算通道（主渲染）
 	auto compute_pass = std::make_shared<SimpleComputePass>(rendering_size_.x, rendering_size_.y);
 	compute_pass->SetOutputTexture("Output", compute_output);
 	AddPass("Compute", compute_pass);
 
-	// 创建并配置渐进式通道（时间累积）
 	auto progressive_pass = std::make_shared<ProgressivePass>(rendering_size_.x, rendering_size_.y);
-	progressive_pass->SetInputTexture("CurrentFrame", compute_output);   // 从计算通道输入
-	progressive_pass->SetInputTexture("PreviousFrame", previous_frame); // 时间混合反馈
-	progressive_pass->SetOutputTexture("Output", final_output);          // 输出到最终目标
+	progressive_pass->SetInputTexture("CurrentFrame", compute_output);
+	progressive_pass->SetInputTexture("PreviousFrame", previous_frame);
+	progressive_pass->SetOutputTexture("Output", final_output);
 	AddPass("Progressive", progressive_pass);
 
-	// 建立数据流：计算 → 渐进
 	ConnectPasses("Compute", "Output", "Progressive", "CurrentFrame");
 
-	// 注意：时间反馈通过 ProgressivePass::Execute 中的 glCopyImageSubData 管理
-	// 无需为 PreviousFrame 建立显式的图连接
-
-	// 指定渐进输出为最终结果
 	SetFinalOutput(final_output);
 }
 

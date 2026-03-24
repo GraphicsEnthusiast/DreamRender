@@ -54,15 +54,15 @@ public:
 
     /**
      * @brief Gets the current rendering size (width and height) for the pipeline.
-     * @return const glm::ivec2& The current rendering size.
+     * @return const Point2f& The current rendering size.
      */
-    const Point2f& GetRenderingSize() const noexcept;
+    const Point2i& GetRenderingSize() const noexcept;
 
     /**
      * @brief Sets the rendering size for the pipeline.
      * @param size The new rendering size (width and height).
      */
-    void SetRenderingSize(const glm::ivec2& size);
+    void SetRenderingSize(const Point2i& size);
 
 protected:
     /**
@@ -113,7 +113,6 @@ public:
 
     /**
      * @brief Configures the two-pass pipeline
-     *
      * Pass 1: SimpleComputePass - Renders the initial frame using compute shader
      * Pass 2: ProgressivePass - Blends current frame with previous frame for accumulation
      */
