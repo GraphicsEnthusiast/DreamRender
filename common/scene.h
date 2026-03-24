@@ -98,6 +98,14 @@ public:
     int GetTextureCount() const noexcept;
 
     /**
+     * @brief Loads a texture from file and resizes to 2048x2048
+     * @param file_path Path to texture file
+     * @param type Texture type
+     * @return Texture ID, or -1 if failed
+     */
+    int LoadTexture(const std::string& file_path, TextureType type);
+
+    /**
      * @brief Deleted copy constructor
      */
     SceneManager(const SceneManager&) = delete;
@@ -134,19 +142,6 @@ protected:
         bool is_light);
 
     /**
-     * @brief Loads a texture from file and resizes to 2048x2048
-     * @param file_path Path to texture file
-     * @param type Texture type
-     * @return Texture ID, or -1 if failed
-     */
-    int LoadTexture(const std::string& file_path, TextureType type);
-
-    /**
-     * @brief Creates texture array from loaded textures
-     */
-    void CreateTextureArray();
-
-    /**
      * @brief Bilinear sampling for texture resizing
      * @param data Source texture data
      * @param width Source width
@@ -158,6 +153,11 @@ protected:
      */
     glm::vec4 BilinearSample(const float* data, int width, int height, int channels, float u, float v) const;
 
+    /**
+     * @brief Creates texture array from loaded textures
+     */
+    void CreateTextureArray();
+
 protected:
     std::vector<TriangleEncoded> triangles_encoded_;        ///< Encoded regular triangle data
     std::vector<TriangleEncoded> triangles_light_encoded_;  ///< Encoded light triangle data
@@ -167,7 +167,6 @@ protected:
     std::vector<Texture> textures_;                         ///< Loaded textures
     GLuint texture_array_ = 0;                              ///< OpenGL 2D texture array
     std::unordered_map<std::string, int> texture_name_to_id_; ///< Texture name to ID mapping
-    int next_texture_id_ = 0;                               ///< Next available texture ID
 
     AliasTable1D mesh_light_alias_table_;                   ///< Alias table for light triangle sampling
     std::vector<float> light_triangle_weights_;             ///< Weight for each light triangle (area + luminance)

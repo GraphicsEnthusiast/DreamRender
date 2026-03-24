@@ -17,10 +17,10 @@ int Texture::GetPixelCount() const noexcept {
 }
 
 Material::Material()
-	: name("default_material")
+	: type(MaterialType::DIFFUSE)
 	, diffuse(0.8f, 0.8f, 0.8f)
 	, roughness(0.5f)
-	, emission(0.0f) {}
+	, emission(2.0f, 1.0f ,1.0f) {}
 
 bool Material::HasTexture(TextureType type) const {
 	auto it = texture_ids.find(type);
@@ -37,6 +37,51 @@ int Material::GetTextureID(TextureType type) const {
 	return -1;
 }
 
+void Material::SetTexture(TextureType type, int texture_id) {
+	if (texture_id < 0) {
+		WARN("[warning] Setting invalid texture ID ({}) for texture type {}.", texture_id, static_cast<int>(type));
+
+		return;
+	}
+
+	texture_ids[type] = texture_id;
+
+	INFO("[info] Set texture type {} to ID {}.", static_cast<int>(type), texture_id);
+}
+
+void Material::RemoveTexture(TextureType type) {
+	auto it = texture_ids.find(type);
+	if (it != texture_ids.end()) {
+		texture_ids.erase(it);
+		INFO("[info] Removed texture type {}.", static_cast<int>(type));
+	}
+	else {
+		WARN("[warning] Attempted to remove non-existent texture type {}.", static_cast<int>(type));
+	}
+}
+
+void Material::ClearTextures() {
+	unsigned int count = texture_ids.size();
+	texture_ids.clear();
+	INFO("[info] Cleared all {} textures from material.", count);
+}
+
+unsigned int Material::GetTextureCount() const noexcept {
+	unsigned int count = 0;
+
+	for (const auto& pair : texture_ids) {
+		if (pair.second >= 0) {
+			++count;
+		}
+	}
+
+	return count;
+}
+
+bool Material::HasTextures() const noexcept {
+	return GetTextureCount() > 0;
+}
+
 TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans, const Material& material)
 	: transform_(trans)
 	, material_(material) {
@@ -46,7 +91,7 @@ TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans, cons
 
 	std::string warn;
 	std::string err;
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file.c_str()) || shapes.size() == 0) {
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file.c_str()) || 0 == shapes.size()) {
 		ERROR("[error] Load from obj {} failed!", file.c_str());
 
 		return;

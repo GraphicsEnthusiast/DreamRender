@@ -159,6 +159,7 @@ void SimpleComputePass::Execute() {
 	TextureHandle output_texture = GetOutputTexture("Output");
 	if (!output_texture.IsValid()) {
 		ERROR("[error] Simple compute pass: Output texture handle is invalid.");
+
 		return;
 	}
 
@@ -200,7 +201,7 @@ void SimpleComputePass::Execute() {
 		shader_->SetInt("TextureArray", 7);
 		shader_->SetInt("TextureCount", texture_count);
 
-		INFO("[info] Bound texture array to texture unit 7. ID: {}, Count: {}", texture_array, texture_count);
+		//INFO("[info] Bound texture array to texture unit 7. ID: {}, Count: {}", texture_array, texture_count);
 	}
 	else {
 		//WARN("[warning] Texture array is not available or empty. ID: {}, Count: {}", texture_array, texture_count);

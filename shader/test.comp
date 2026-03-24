@@ -60,14 +60,13 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, bool is_light_
     info.position = position;
     info.uv = uv;
     
-    // Set and adjust normal information using SetNormal function
+    // Set and adjust normal information
     info = SetNormal(info, ray_direction, geometry_normal, shading_normal);
     
     // Create material
     Material mat;
     mat.type = tri.material_type;
     
-    // Extract texture IDs from triangle data
     int diffuse_texture_id = int(tri.diffuse.w);
     int roughness_texture_id = int(tri.roughness.w);
     
@@ -81,7 +80,7 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, bool is_light_
     mat.roughness = tri.roughness.x;
     mat.roughness_texture = roughness_texture_id;
     
-    // 从三角形数据获取emission
+    // Get emission from triangle data
     RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
     RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
     mat.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
@@ -183,7 +182,7 @@ void main() {
         LightSampleInfo light_info = MeshLightSample(sobol_sampler, info, lambda);
         if (light_info.pdf > 0.0f) {
             if (VisibilityTest(info.position, light_info.world_l, info.geometry_normal, light_info.distance)) {
-                MaterialEvalInfo material_info = DiffuseEvaluate(info, world_v, light_info.world_l, lambda);
+                MaterialEvalInfo material_info = MaterialEvaluate(info, world_v, light_info.world_l, lambda);
     
                 if (material_info.pdf > 0.0f) {
                     SampledSpectrum contrib = DivFloat(Mul(Mul(light_info.emission, material_info.bsdf_cosine), beta), light_info.pdf);
@@ -198,7 +197,7 @@ void main() {
             SobolSamplerGet1(sobol_sampler)
         );
         
-        MaterialSampleInfo sample_info = DiffuseSample(info, world_v, bsdf_sample, lambda);
+        MaterialSampleInfo sample_info = MaterialSample(info, world_v, bsdf_sample, lambda);
 
         // Update path throughput
         float pdf = sample_info.pdf;

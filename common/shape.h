@@ -12,7 +12,6 @@ NAMESPACE_BEGIN(dream)
 enum class TextureType {
     DIFFUSE = 0,    ///< Diffuse/albedo texture (base color)
     ROUGHNESS = 1,  ///< Roughness texture
-    COUNT = 2       ///< Total number of texture types
 };
 
 /**
@@ -44,11 +43,19 @@ struct Texture {
 };
 
 /**
+ * @enum MaterialType
+ * @brief Enumerates material types used in rendering
+ */
+enum class MaterialType {
+    DIFFUSE = 0,   ///< Diffuse material (Oren-Nayar model)
+};
+
+/**
  * @struct Material
  * @brief Represents a material with textures
  */
 struct Material {
-    std::string name;                                 ///< Material name
+    MaterialType type;                                         ///< 0: diffuse
     std::unordered_map<TextureType, int> texture_ids; ///< Texture ID for each texture type
     Vector3f diffuse;                                 ///< Diffuse color (when no texture)
     float roughness;                                  ///< Roughness value (0.0-1.0)
@@ -72,6 +79,36 @@ struct Material {
      * @return Texture ID, or -1 if not found
      */
     int GetTextureID(TextureType type) const;
+
+    /**
+     * @brief Sets texture ID for a specific texture type
+     * @param type Texture type
+     * @param texture_id Texture ID to set
+     */
+    void SetTexture(TextureType type, int texture_id);
+
+    /**
+     * @brief Removes texture for a specific texture type
+     * @param type Texture type
+     */
+    void RemoveTexture(TextureType type);
+
+    /**
+     * @brief Clears all textures from the material
+     */
+    void ClearTextures();
+
+    /**
+     * @brief Gets the number of textures in the material
+     * @return Number of textures
+     */
+    unsigned int GetTextureCount() const noexcept;
+
+    /**
+     * @brief Checks if the material uses textures
+     * @return True if material has at least one texture, false otherwise
+     */
+    bool HasTextures() const noexcept;
 };
 
 /**
@@ -159,8 +196,8 @@ struct alignas(16) TriangleEncoded {
 
     alignas(16) Vector4f material_type; ///< Only x is useful, representing the material type, such as 0 for diffuse
     alignas(16) Vector4f emission;      ///< Emission (xyz components)
-    alignas(16) Vector4f diffuse;       ///< Diffuse color (xyz components) and texture flag (w component: 0 = constant color, 1 = texture)
-    alignas(16) Vector4f roughness;     ///< Roughness (x components) and texture flag (w component: 0 = constant color, 1 = texture)
+    alignas(16) Vector4f diffuse;       ///< Diffuse color (xyz components) and texture flag (w component: -1 = constant color, other = texture)
+    alignas(16) Vector4f roughness;     ///< Roughness (x components) and texture flag (w component: -1 = constant color, other = texture)
 };
 
 /**

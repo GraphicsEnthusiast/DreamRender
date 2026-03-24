@@ -46,7 +46,6 @@ void SceneManager::ReleaseInstance() {
 		glDeleteTextures(1, &texture_array_);
 		texture_array_ = 0;
 	}
-	next_texture_id_ = 0;
 }
 
 int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
@@ -106,7 +105,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 	texture.data = std::move(resized_data);
 	texture.texture_array_layer = -1;  // Will be set when creating texture array
 
-	int texture_id = next_texture_id_++;
+	int texture_id = textures_.size();
 	textures_.push_back(std::move(texture));
 	texture_name_to_id_[file_path] = texture_id;
 
@@ -218,7 +217,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 	// Encode triangles into the appropriate container
 	for (unsigned int mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
 		const auto& mesh = meshes[mesh_idx];
-		const auto& material = mesh.GetMaterial();
+		auto material = mesh.GetMaterial();
 
 		const unsigned int mesh_triangle_count = mesh.GetNumTriangles();
 		const auto& vertices = mesh.GetVertices();
@@ -226,7 +225,6 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		const auto& texcoords = mesh.GetTexCoords();
 		const auto& indices = mesh.GetIndices();
 
-		// Get texture indices for this material
 		int diffuse_tex_id = material.GetTextureID(TextureType::DIFFUSE);
 		int roughness_tex_id = material.GetTextureID(TextureType::ROUGHNESS);
 
@@ -276,29 +274,31 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				texcoords[idx2 * 2 + 1]);
 
 			// Set material parameters
-			encoded_tri.material_type.x = 0.0f;// Only x is useful, representing the material type, such as 0 for diffuse
-			encoded_tri.diffuse = Vector4f(
-				material.diffuse.r,           // x: diffuse color R
-				material.diffuse.g,           // y: diffuse color G
-				material.diffuse.b,           // z: diffuse color B
-				diffuse_tex_id
+			encoded_tri.material_type.x = static_cast<float>(material.type);
+
+			encoded_tri.emission = Vector4f(
+				material.emission.x,
+				material.emission.y,
+				material.emission.z,
+				1.0f
 			);
+
+			encoded_tri.diffuse = Vector4f(
+				material.diffuse.r,          // x: diffuse color R
+				material.diffuse.g,          // y: diffuse color G
+				material.diffuse.b,          // z: diffuse color B
+				static_cast<float>(diffuse_tex_id)  // w: diffuse texture ID
+			);
+
 			encoded_tri.roughness = Vector4f(
 				material.roughness,
 				0.0f,
 				0.0f,
-				roughness_tex_id
+				static_cast<float>(roughness_tex_id)  // w: roughness texture ID
 			);
 
 			// Store in appropriate container based on the is_light parameter
 			if (is_light) {
-				encoded_tri.emission = Vector4f(
-					2.0f,
-					1.0f,
-					1.0f,
-					1.0f
-				);
-
 				// Calculate triangle area for importance sampling
 				Vector3f e1 = Point3f(encoded_tri.p2) - Point3f(encoded_tri.p1);
 				Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
@@ -311,13 +311,6 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				triangles_light_encoded_[index++] = encoded_tri;
 			}
 			else {
-				encoded_tri.emission = Vector4f(
-					0.0f,
-					0.0f,
-					0.0f,
-					1.0f
-				);
-
 				triangles_encoded_[index++] = encoded_tri;
 			}
 		}
@@ -409,7 +402,6 @@ void SceneManager::BuildBVH() {
 }
 
 void SceneManager::CreateGPUBuffers() {
-	// Create texture array
 	CreateTextureArray();
 
 	// Create GPU buffers for regular geometry
