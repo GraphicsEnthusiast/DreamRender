@@ -95,7 +95,7 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, bool is_light_
  * @brief Performs visibility test from start point in given direction and distance
  */
 bool VisibilityTest(vec3 start_point, vec3 direction, vec3 normal, float distance) {
-    Ray shadow_ray = SpawnShadowRay(start_point, direction, Epsilon, distance - Epsilon);
+    Ray shadow_ray = SpawnShadowRay(start_point, direction, distance);
     Hit occlusion_hit = BVHTraverse(shadow_ray);
     
     if (occlusion_hit.distance >= shadow_ray.tmax) {

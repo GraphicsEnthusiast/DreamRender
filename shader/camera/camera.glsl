@@ -70,16 +70,15 @@ Ray SpawnRay(vec3 position, vec3 direction, vec3 normal, float tmin, float tmax)
  * @brief Generates a new ray from an intersection point with origin offset to avoid self-intersection
  * @param position Intersection point in world space
  * @param direction Ray direction vector (should be normalized)
- * @param tmin Minimum ray distance to prevent self-intersection
- * @param tmax Maximum ray distance for intersection testing
+ * @param distance Maximum distance to the target point (typically to light source)
  * @return New ray with properly offset origin to prevent numerical precision issues
  */
-Ray SpawnShadowRay(vec3 position, vec3 direction, float tmin, float tmax) {
+Ray SpawnShadowRay(vec3 position, vec3 direction, float distance) {
     Ray ray;
     ray.origin = position;
     ray.direction = direction;
-    ray.tmin = tmin;
-    ray.tmax = tmax;
+    ray.tmin = Epsilon;
+    ray.tmax = distance - Epsilon;
     
     return ray;
 }
