@@ -56,7 +56,7 @@ public:
      * @brief Gets the current rendering size (width and height) for the pipeline.
      * @return const glm::ivec2& The current rendering size.
      */
-    const glm::ivec2& GetRenderingSize() const noexcept;
+    const Point2f& GetRenderingSize() const noexcept;
 
     /**
      * @brief Sets the rendering size for the pipeline.

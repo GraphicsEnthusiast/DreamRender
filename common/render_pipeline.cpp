@@ -42,7 +42,7 @@ void RenderPipeline::MakeContextCurrent() {
 	}
 }
 
-const glm::ivec2& RenderPipeline::GetRenderingSize() const noexcept {
+const Point2f& RenderPipeline::GetRenderingSize() const noexcept {
 	return rendering_size_;
 }
 
