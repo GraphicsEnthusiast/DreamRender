@@ -303,9 +303,13 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				Vector3f e1 = Point3f(encoded_tri.p2) - Point3f(encoded_tri.p1);
 				Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
 				float area = 0.5f * glm::length(glm::cross(e1, e2));
+				const float PI = 3.1415926535897932385f;
+				auto Luminance = [](const Vector3f& rgb) -> float {
+					return 0.2126f * rgb.r + 0.7152f * rgb.g + 0.0722f * rgb.b;
+				};
 
-				// Calculate weight: area + luminance for importance sampling
-				float weight = area;
+				// Calculate weight: power = area * luminance * pi for importance sampling
+				float weight = area * Luminance(material.emission) * PI;
 
 				light_triangle_weights_.push_back(weight);
 				triangles_light_encoded_[index++] = encoded_tri;
