@@ -84,7 +84,7 @@ void TestPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
 	// 只加载立方体的diffuse纹理
-	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\granite_tile_04_diff_2k.jpg";
+	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
 	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
 
 	// 创建材质
