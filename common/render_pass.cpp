@@ -191,6 +191,23 @@ void SimpleComputePass::Execute() {
 	shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
 	shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
 
+	GLuint texture_array = scene_manager.GetTextureArray();
+	int texture_count = scene_manager.GetTextureCount();
+
+	if (texture_array != 0 && texture_count > 0) {
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
+		shader_->SetInt("TextureArray", 7);
+		shader_->SetInt("TextureCount", texture_count);
+
+		INFO("[info] Bound texture array to texture unit 7. ID: {}, Count: {}", texture_array, texture_count);
+	}
+	else {
+		//WARN("[warning] Texture array is not available or empty. ID: {}, Count: {}", texture_array, texture_count);
+		shader_->SetInt("TextureArray", 7);
+		shader_->SetInt("TextureCount", 0);
+	}
+
 	shader_->SetUInt("FrameCounter", frame_counter);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);

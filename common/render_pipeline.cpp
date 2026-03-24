@@ -89,8 +89,6 @@ void TestPipeline::Init() {
 	auto mesh2 = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\quad.obj", Transform::Scale(1.5f, 1.5f, 1.5f) * Transform::Translate(0.0f, 2.0f, 0.0f));
 	std::vector<TriangleMesh> meshes2;
 	meshes2.emplace_back(mesh2);
-	mesh2 = TriangleMesh("C:\\Users\\17199\\Desktop\\DreamRender\\quad2.obj", Transform::Translate(0.0f, 0.0f, 0.0f));
-	meshes2.emplace_back(mesh2);
 
 	auto& scene_manager = SceneManager::Instance();
 	scene_manager.EncodeTriangles(meshes, false);

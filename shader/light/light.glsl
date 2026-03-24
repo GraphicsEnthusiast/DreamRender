@@ -31,32 +31,6 @@ struct LightSampleInfo {
 };
 
 /**
- * @brief Calculates the area of a triangle by its index in the specified buffer
- * @param index Triangle index to calculate area for
- * @param triangles_buffer Sampler buffer containing triangle data
- * @return float Area of the specified triangle in world units squared
- */
-float TriangleArea(int index, samplerBuffer triangles_buffer) {
-    int base = index * 6; // 6 vec4 per triangle, matching FetchTriangle
-    Triangle tri;
-    
-    vec4 pos1 = texelFetch(triangles_buffer, base + 0);
-    vec4 pos2 = texelFetch(triangles_buffer, base + 1); 
-    vec4 pos3 = texelFetch(triangles_buffer, base + 2);
-    
-    tri.p1 = pos1.xyz;
-    tri.p2 = pos2.xyz;
-    tri.p3 = pos3.xyz;
-    
-    // Calculate triangle area using cross product method
-    vec3 edge1 = tri.p2 - tri.p1;
-    vec3 edge2 = tri.p3 - tri.p1;
-    vec3 cross_product = cross(edge1, edge2);
-    
-    return 0.5f * length(cross_product);
-}
-
-/**
  * @brief Computes the solid angle (projected area) of a spherical triangle
  * @param va First vertex of spherical triangle (normalized)
  * @param vb Second vertex of spherical triangle (normalized)
@@ -169,7 +143,8 @@ vec3 SphericalTriangleSampleUniform(vec3 va, vec3 vb, vec3 vc, float i, float j)
     if (ortho_len > Epsilon) {
         ortho_comp /= ortho_len; // Normalize
         vc_2 = va * q + ortho_comp * sqrt(max(1.0f - q * q, 0.0f));
-    } else {
+    } 
+    else {
         vc_2 = va;
     }
     
@@ -243,12 +218,28 @@ bool SampleTriangleSpherical(const vec3 triangle_vertices[3], const vec3 shading
 }
 
 /**
+ * @brief Gets emission spectrum for a light triangle
+ * @param tri_index Index of the light triangle
+ * @param lambda Sampled wavelengths
+ * @return SampledSpectrum Emission spectrum of the light triangle
+ */
+SampledSpectrum GetLightEmission(int tri_index, SampledWavelengths lambda) {
+    Triangle tri = FetchTriangle(tri_index, TrianglesLight);
+    
+    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
+    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+    
+    return RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+}
+
+/**
  * @brief Evaluates mesh light contribution for a given direction
  * @param world_l Light direction (from surface to light)
- * @param info Intersection information
+ * @param info Intersection information of the shading point
+ * @param lambda Sampled wavelengths
  * @return LightEvalInfo containing emission spectrum and PDF
  */
-LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
+LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, SampledWavelengths lambda) {
     LightEvalInfo result;
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
@@ -260,11 +251,15 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
         return result;
     }
     
+    Triangle tri = FetchTriangle(info.tri_index, TrianglesLight);
+    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
+    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+    result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+    
     // Get triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).y;
     
     // Calculate directions from shading point to triangle vertices
-    Triangle tri = FetchTriangle(info.tri_index, TrianglesLight);
     vec3 va = tri.p1 - info.position;
     vec3 vb = tri.p2 - info.position;
     vec3 vc = tri.p3 - info.position;
@@ -284,19 +279,17 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info) {
     result.pdf = 1.0f / solid_angle;
     result.pdf *= weight / MeshLightTableSum;
 
-    // Get emission from material
-    result.emission = info.material.emission;
-    
     return result;
 }
 
 /**
  * @brief Samples a point on the mesh area light using spherical triangle sampling
- * @param sobol_sampler Sobol sequence sampler (passed as inout reference for state management)
+ * @param sobol_sampler Sobol sequence sampler
  * @param info Intersection information for the shading point
+ * @param lambda Sampled wavelengths
  * @return LightSampleInfo containing sampled direction, distance, PDF and emission spectrum
  */
-LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionInfo info) {
+LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionInfo info, SampledWavelengths lambda) {
     LightSampleInfo result;
     result.world_l = vec3(0.0f);
     result.distance = 0.0f;
@@ -375,8 +368,9 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     result.pdf = 1.0f / solid_angle;
     result.pdf *= weight / MeshLightTableSum;
 
-    // Assign emission spectrum from material properties
-    result.emission = info.material.emission;
+    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
+    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+    result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
     
     return result;
 }

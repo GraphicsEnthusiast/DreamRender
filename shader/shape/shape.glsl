@@ -28,7 +28,9 @@ struct Triangle {
     vec3 n1, n2, n3; ///< Vertex normals
     vec2 t1, t2, t3; ///< Vertex texcoords
     int material_type;
+    vec4 emission;
     vec4 diffuse;    ///< Diffuse color (rgb) and texture flag (a: 0=const, 1=texture)
+    vec4 roughness;  ///< Roughness (x) and texture flag (a: 0=const, 1=texture)
 };
 
 /**
@@ -48,7 +50,7 @@ struct BVHNode {
  * @return Fetched Triangle structure with position and normal data
  */
 Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
-    int base = index * 8; // 8 vec4
+    int base = index * 10; // 10 vec4
     Triangle tri;
     
     // Fetch vertex positions and extract uv.x from w component
@@ -75,10 +77,14 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.t3 = vec2(pos3.w, norm3.w);
 
     vec4 mat_type_data = texelFetch(trangles_buffer, base + 6);
-    vec4 diffuse_data = texelFetch(trangles_buffer, base + 7);
+    vec4 emission_data = texelFetch(trangles_buffer, base + 7);
+    vec4 diffuse_data = texelFetch(trangles_buffer, base + 8);
+    vec4 roughness_data = texelFetch(trangles_buffer, base + 9);
 
     tri.material_type = int(mat_type_data.x);
+    tri.emission = emission_data;
     tri.diffuse = diffuse_data;
+    tri.roughness = roughness_data;
     
     return tri;
 }

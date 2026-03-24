@@ -5,6 +5,9 @@
 #include "sample/sampling.glsl"
 #include "sample/sampler.glsl"
 
+uniform sampler2DArray TextureArray;
+uniform int TextureCount;
+
 /**
  * @struct MaterialEvalInfo
  * @brief Stores the result of material evaluation during light transport simulation.
@@ -25,19 +28,76 @@ struct MaterialSampleInfo {
 };
 
 /**
+ * @brief Checks if texture ID is valid
+ */
+bool IsTextureValid(int tex_id) {
+    return tex_id >= 0 && tex_id < TextureCount;
+}
+
+/**
+ * @brief Samples a texture from the texture array
+ */
+vec4 SampleTextureArray(int tex_id, vec2 uv) {
+    if (!IsTextureValid(tex_id)) {
+        return vec4(0.0f);
+    }
+
+    return texture(TextureArray, vec3(uv, float(tex_id)));
+}
+
+/**
+ * @brief Gets the final diffuse color with texture support
+ */
+SampledSpectrum GetFinalDiffuse(IntersectionInfo info, vec2 uv, SampledWavelengths lambda) {
+    // Check if we should use texture
+    if (IsTextureValid(info.material.diffuse_texture)) {
+        // Sample texture
+        vec4 tex_color = SampleTextureArray(info.material.diffuse_texture, uv);
+        
+        // Convert texture RGB to spectrum
+        RGB tex_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
+        RGBAlbedoSpectrum tex_spectrum = RGBAlbedoSpectrumNew(tex_rgb);
+        
+        return RGBAlbedoSpectrumSample(tex_spectrum, lambda);
+    } 
+    else {
+        // Use base diffuse color
+        return info.material.diffuse;
+    }
+}
+
+/**
+ * @brief Gets the final roughness with texture support
+ */
+float GetFinalRoughness(IntersectionInfo info, vec2 uv) {
+    // Check if we should use roughness texture
+    if (IsTextureValid(info.material.roughness_texture)) {
+        // Sample roughness texture (usually in red channel)
+        vec4 tex_color = SampleTextureArray(info.material.roughness_texture, uv);
+
+        return tex_color.r;
+    } 
+    else {
+        // Use base roughness
+        return info.material.roughness;
+    }
+}
+
+/**
  * @brief Evaluates the BSDF and PDF for a diffuse material(Oren-Nayar diffuse model calculation)
  * @param info Intersection data containing material properties and surface normal
  * @param world_v View direction in world space (pointing toward camera)
  * @param world_l Light direction in world space (pointing toward light source)
+ * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialEvalInfo Structure containing BSDF and PDF values
  */
-MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l) {
+MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l, SampledWavelengths lambda) {
     MaterialEvalInfo m_info;
     m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
-    SampledSpectrum diffuse = info.material.diffuse;
-	float roughness = info.material.roughness;
+    SampledSpectrum diffuse = GetFinalDiffuse(info, info.uv, lambda);
+    float roughness = GetFinalRoughness(info, info.uv);
 
 	vec3 v = normalize(world_v);
 	vec3 l = normalize(world_l);
@@ -74,16 +134,17 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world
  * @param info Intersection data containing material properties and surface normal
  * @param world_v View direction in world space (pointing toward camera)
  * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
+ * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy) {
+MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy, SampledWavelengths lambda) {
     MaterialSampleInfo m_info;
     m_info.world_l = vec3(0.0f);
     m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
-    SampledSpectrum diffuse = info.material.diffuse;
-    float roughness = info.material.roughness;
+    SampledSpectrum diffuse = GetFinalDiffuse(info, info.uv, lambda);
+    float roughness = GetFinalRoughness(info, info.uv);
 
     vec3 n = normalize(info.shading_normal);
     vec3 local_l = CosineHemisphereSample(sample_xy);

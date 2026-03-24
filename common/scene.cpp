@@ -1,5 +1,7 @@
 #include <scene.h>
 #include <tiny_bvh.h>
+#include <stb_image.h>
+#include <utils.h>
 
 NAMESPACE_BEGIN(dream)
 
@@ -36,6 +38,157 @@ void SceneManager::ReleaseInstance() {
 	// Clear alias table data
 	light_triangle_weights_.clear();
 	mesh_light_alias_table_tbo_.reset();
+
+	// Clear texture data
+	textures_.clear();
+	texture_name_to_id_.clear();
+	if (texture_array_ != 0) {
+		glDeleteTextures(1, &texture_array_);
+		texture_array_ = 0;
+	}
+	next_texture_id_ = 0;
+}
+
+int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
+	INFO("[info] Loading texture: {}", file_path);
+
+	// Check if texture already loaded
+	auto it = texture_name_to_id_.find(file_path);
+	if (it != texture_name_to_id_.end()) {
+		INFO("[info] Texture already loaded: {} (ID: {})", file_path, it->second);
+
+		return it->second;
+	}
+
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, channels;
+
+	// Load texture as float data
+	float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, 4);
+	if (!data) {
+		ERROR("[error] Failed to load texture: {}", file_path);
+
+		return -1;
+	}
+
+	INFO("[info] Original texture: {}x{}, {} channels", width, height, channels);
+
+	const int TARGET_SIZE = 2048;
+	const int TARGET_CHANNELS = 4;  // RGBA
+
+	// Resize texture to 2048x2048
+	std::vector<float> resized_data(TARGET_SIZE * TARGET_SIZE * TARGET_CHANNELS, 1.0f);
+
+	// Use bilinear interpolation for resizing
+	for (int y = 0; y < TARGET_SIZE; ++y) {
+		for (int x = 0; x < TARGET_SIZE; ++x) {
+			float u = static_cast<float>(x) / (TARGET_SIZE - 1);
+			float v = static_cast<float>(y) / (TARGET_SIZE - 1);
+
+			Vector4f color = BilinearSample(data, width, height, channels, u, v);
+
+			int idx = (y * TARGET_SIZE + x) * TARGET_CHANNELS;
+			resized_data[idx] = color.r;
+			resized_data[idx + 1] = color.g;
+			resized_data[idx + 2] = color.b;
+			resized_data[idx + 3] = color.a;
+		}
+	}
+
+	stbi_image_free(data);
+
+	// Create texture object
+	Texture texture;
+	texture.path = file_path;
+	texture.width = TARGET_SIZE;
+	texture.height = TARGET_SIZE;
+	texture.channels = TARGET_CHANNELS;
+	texture.data = std::move(resized_data);
+	texture.texture_array_layer = -1;  // Will be set when creating texture array
+
+	int texture_id = next_texture_id_++;
+	textures_.push_back(std::move(texture));
+	texture_name_to_id_[file_path] = texture_id;
+
+	INFO("[info] Texture loaded: {} ({}x{}, ID: {})", file_path, TARGET_SIZE, TARGET_SIZE, texture_id);
+
+	return texture_id;
+}
+
+glm::vec4 SceneManager::BilinearSample(const float* data, int width, int height, int channels, float u, float v) const {
+	float x = u * (width - 1);
+	float y = v * (height - 1);
+
+	int x0 = static_cast<int>(std::floor(x));
+	int y0 = static_cast<int>(std::floor(y));
+	int x1 = std::min(x0 + 1, width - 1);
+	int y1 = std::min(y0 + 1, height - 1);
+
+	float wx = x - x0;
+	float wy = y - y0;
+
+	glm::vec4 p00(0.0f), p10(0.0f), p01(0.0f), p11(0.0f);
+
+	for (int c = 0; c < std::min(channels, 4); ++c) {
+		p00[c] = data[(y0 * width + x0) * channels + c];
+		p10[c] = data[(y0 * width + x1) * channels + c];
+		p01[c] = data[(y1 * width + x0) * channels + c];
+		p11[c] = data[(y1 * width + x1) * channels + c];
+	}
+
+	glm::vec4 top = p00 * (1.0f - wx) + p10 * wx;
+	glm::vec4 bottom = p01 * (1.0f - wx) + p11 * wx;
+
+	return top * (1.0f - wy) + bottom * wy;
+}
+
+void SceneManager::CreateTextureArray() {
+	if (textures_.empty()) {
+		INFO("[info] No textures to create texture array.");
+
+		return;
+	}
+
+	INFO("[info] Creating texture array with {} textures (2048x2048 each).", textures_.size());
+
+	// Create 2D texture array
+	glGenTextures(1, &texture_array_);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array_);
+
+	// Calculate mipmap levels
+	int mip_levels = 1;
+	int size = 2048;  // Target size
+	while (size > 1) {
+		size >>= 1;
+		mip_levels++;
+	}
+
+	// Allocate storage for texture array
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, mip_levels, GL_RGBA32F, 2048, 2048, static_cast<GLsizei>(textures_.size()));
+
+	// Upload each texture
+	for (unsigned int i = 0; i < textures_.size(); ++i) {
+		textures_[i].texture_array_layer = static_cast<int>(i);
+
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
+			0, 0, static_cast<GLint>(i),  // layer
+			2048, 2048, 1,
+			GL_RGBA, GL_FLOAT,
+			textures_[i].data.data());
+	}
+
+	// Set texture parameters
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// Generate mipmaps
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+	INFO("[info] Texture array created: ID={}, {} textures", texture_array_, textures_.size());
 }
 
 void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool is_light) {
@@ -65,12 +218,17 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 	// Encode triangles into the appropriate container
 	for (unsigned int mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
 		const auto& mesh = meshes[mesh_idx];
+		const auto& material = mesh.GetMaterial();
 
 		const unsigned int mesh_triangle_count = mesh.GetNumTriangles();
 		const auto& vertices = mesh.GetVertices();
 		const auto& normals = mesh.GetNormals();
 		const auto& texcoords = mesh.GetTexCoords();
 		const auto& indices = mesh.GetIndices();
+
+		// Get texture indices for this material
+		int diffuse_tex_id = material.GetTextureID(TextureType::DIFFUSE);
+		int roughness_tex_id = material.GetTextureID(TextureType::ROUGHNESS);
 
 		for (unsigned int i = 0; i < mesh_triangle_count; ++i) {
 			const unsigned int idx0 = indices[i * 3];
@@ -117,11 +275,30 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				normals[idx2 * 3 + 2],
 				texcoords[idx2 * 2 + 1]);
 
-			encoded_tri.material_type = Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
-			encoded_tri.diffuse = Vector4f(0.8f, 0.8f, 0.8f, 0.0f);
+			// Set material parameters
+			encoded_tri.material_type.x = 0.0f;// Only x is useful, representing the material type, such as 0 for diffuse
+			encoded_tri.diffuse = Vector4f(
+				material.diffuse.r,           // x: diffuse color R
+				material.diffuse.g,           // y: diffuse color G
+				material.diffuse.b,           // z: diffuse color B
+				diffuse_tex_id
+			);
+			encoded_tri.roughness = Vector4f(
+				material.roughness,
+				0.0f,
+				0.0f,
+				roughness_tex_id
+			);
 
 			// Store in appropriate container based on the is_light parameter
 			if (is_light) {
+				encoded_tri.emission = Vector4f(
+					2.0f,
+					1.0f,
+					1.0f,
+					1.0f
+				);
+
 				// Calculate triangle area for importance sampling
 				Vector3f e1 = Point3f(encoded_tri.p2) - Point3f(encoded_tri.p1);
 				Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
@@ -134,6 +311,13 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				triangles_light_encoded_[index++] = encoded_tri;
 			}
 			else {
+				encoded_tri.emission = Vector4f(
+					0.0f,
+					0.0f,
+					0.0f,
+					1.0f
+				);
+
 				triangles_encoded_[index++] = encoded_tri;
 			}
 		}
@@ -225,6 +409,9 @@ void SceneManager::BuildBVH() {
 }
 
 void SceneManager::CreateGPUBuffers() {
+	// Create texture array
+	CreateTextureArray();
+
 	// Create GPU buffers for regular geometry
 	if (!triangles_encoded_.empty()) {
 		triangle_tbo_ = std::make_unique<TBO>(
@@ -304,6 +491,14 @@ float SceneManager::GetMeshLightTableMax() const noexcept {
 
 unsigned int SceneManager::GetMeshLightTableSize() const noexcept {
 	return static_cast<unsigned int>(light_triangle_weights_.size());
+}
+
+GLuint SceneManager::GetTextureArray() const noexcept {
+	return texture_array_;
+}
+
+int SceneManager::GetTextureCount() const noexcept {
+	return static_cast<int>(textures_.size());
 }
 
 NAMESPACE_END(dream)
