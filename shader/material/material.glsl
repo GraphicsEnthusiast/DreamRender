@@ -31,14 +31,19 @@ struct MaterialSampleInfo {
 };
 
 /**
- * @brief Checks if texture ID is valid
+ * @brief Validates texture index to ensure it's within the valid range
+ * @param tex_id Texture index to be checked
+ * @return Boolean indicating if the texture index is valid (true if tex_id is between 0 and TextureCount-1 inclusive)
  */
 bool IsTextureValid(int tex_id) {
     return tex_id >= 0 && tex_id < TextureCount;
 }
 
 /**
- * @brief Samples a texture from the texture array
+ * @brief Samples a texel from the 2D texture array with safety checks
+ * @param tex_id Index of the texture layer in the texture array
+ * @param uv 2D texture coordinates in normalized [0,1] range
+ * @return Sampled RGBA color value; returns bright red (1.0, 0.0, 0.0, 1.0) for invalid texture IDs
  */
 vec4 SampleTextureArray(int tex_id, vec2 uv) {
     if (!IsTextureValid(tex_id)) {
@@ -49,7 +54,11 @@ vec4 SampleTextureArray(int tex_id, vec2 uv) {
 }
 
 /**
- * @brief Gets the final diffuse color with texture support
+ * @brief Retrieves the final diffuse color with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @param uv 2D texture coordinates for the intersection point
+ * @param lambda Sampled wavelengths for spectral rendering conversion
+ * @return SampledSpectrum representing the final diffuse color; uses texture if available, otherwise falls back to base material diffuse
  */
 SampledSpectrum GetFinalDiffuse(IntersectionInfo info, vec2 uv, SampledWavelengths lambda) {
     if (info.material.diffuse_texture >= 0 && info.material.diffuse_texture < TextureCount) {
@@ -68,7 +77,10 @@ SampledSpectrum GetFinalDiffuse(IntersectionInfo info, vec2 uv, SampledWavelengt
 }
 
 /**
- * @brief Gets the final roughness with texture support
+ * @brief Retrieves the final roughness value with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @param uv 2D texture coordinates for the intersection point
+ * @return Final roughness value; uses texture's red channel if roughness texture is available, otherwise falls back to base material roughness
  */
 float GetFinalRoughness(IntersectionInfo info, vec2 uv) {
     if (info.material.roughness_texture >= 0 && info.material.roughness_texture < TextureCount) {
