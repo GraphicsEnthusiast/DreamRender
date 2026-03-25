@@ -70,7 +70,12 @@ public:
      * @brief Pure virtual function for rendering command execution
      * @note Must be implemented by derived classes
      */
-    virtual void Execute() = 0;
+    virtual void Execute();
+
+    /**
+     * @brief Get the current frame counter value
+     */
+    static unsigned int GetFrameCounter() noexcept;
 
     /**
 	 * @brief Sets the texture handle for a specified input slot.
@@ -134,6 +139,7 @@ protected:
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
     std::string name_;
+    static unsigned int frame_counter_;
 
 private:
     static std::unique_ptr<TBO> sobol_matrices_tbo_;

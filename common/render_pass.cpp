@@ -6,6 +6,15 @@ NAMESPACE_BEGIN(dream)
 
 std::unique_ptr<TBO> RenderPass::srgb_to_spectrum_tbo_ = nullptr;
 std::unique_ptr<TBO> RenderPass::sobol_matrices_tbo_ = nullptr;
+unsigned int RenderPass::frame_counter_ = 0;
+
+void RenderPass::Execute() {
+	frame_counter_++;
+}
+
+unsigned int RenderPass::GetFrameCounter() noexcept {
+	return frame_counter_;
+}
 
 void RenderPass::SetInputTexture(const std::string& slot_name, const TextureHandle& handle) {
 	auto it = input_map_.find(slot_name);
@@ -150,8 +159,6 @@ void SimpleComputePass::Execute() {
 		return;
 	}
 
-	static unsigned int frame_counter = 0;
-
 	// Use (bind) the compute shader program
 	shader_->Use();
 
@@ -209,13 +216,13 @@ void SimpleComputePass::Execute() {
 		shader_->SetInt("TextureCount", 0);
 	}
 
-	shader_->SetUInt("FrameCounter", frame_counter);
+	shader_->SetUInt("FrameCounter", frame_counter_);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
 
-	frame_counter++;
+	RenderPass::Execute();
 }
 
 NAMESPACE_END(dream)

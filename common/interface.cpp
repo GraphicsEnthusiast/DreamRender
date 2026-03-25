@@ -7,7 +7,7 @@ std::shared_ptr<Interface> Interface::Create(unsigned int width, unsigned int he
 	return interface;
 }
 
-Interface::Interface(unsigned int width, unsigned int height) : width_(width), height_(height), frame_counter_(0) {
+Interface::Interface(unsigned int width, unsigned int height) : width_(width), height_(height) {
 	spdlog::set_level(spdlog::level::trace);
 	RegisterLogCallback();
 
@@ -306,26 +306,26 @@ void Interface::RenderOutput() {
 	if (front_buffer_.IsValid()) {
 		ImGui::Image((void*)(intptr_t)front_buffer_.id, size, ImVec2(0, 1), ImVec2(1, 0));
 
-		// Display frame rate info in corner
-		//ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-		//ImGui::SetNextWindowBgAlpha(0.35f);
-		//if (ImGui::Begin("FPS Overlay", nullptr,
-		//	ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-		//	ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
-		//	ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing)) {
-		//	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-		//	ImGui::Text("Frame: %d", frame_counter_++);
-		//	if (new_frame_available) {
-		//		ImGui::TextColored(ImVec4(0, 1, 0, 1), "New Frame");
-		//	}
-		//}
-		//ImGui::End();
+		static bool show_fps_overlay = true;
+
+		if (show_fps_overlay) {
+			ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(200, 50), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowBgAlpha(0.35f);
+			if (ImGui::Begin("FPS Overlay", &show_fps_overlay,  // Ìí¼Ó¹Ø±Õ°´Å¥
+				ImGuiWindowFlags_NoTitleBar |
+				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing)) {
+				ImGui::Text("UI Thread FPS: %.1f", ImGui::GetIO().Framerate);
+				ImGui::Text("Rendering Thread Frame: %d", RenderPass::GetFrameCounter());
+			}
+			ImGui::End();
+		}
 	}
 	else if (pipeline_) {
 		ImGui::Text("Rendering in progress...");
 	}
 	else {
-		ImGui::Text("No render pipeline set");
+		ImGui::Text("No render pipeline set.");
 	}
 
 	ImGui::End();
