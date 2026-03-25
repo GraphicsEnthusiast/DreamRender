@@ -94,10 +94,10 @@ float VisibilityTest(vec3 start_point, vec3 direction, float distance) {
     // Check if any geometry was hit before reaching the target distance
     // shadow_ray.tmax defines the maximum distance to test (typically the light distance)
     if (occlusion_hit.distance >= shadow_ray.tmax) {
-        return 1.0f;  // Path is clear - target is visible
+        return 1.0f;
     }
     
-    return 0.0f;  // Path is blocked - target is occluded
+    return 0.0f;
 }
 
 /**
