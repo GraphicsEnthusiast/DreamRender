@@ -200,7 +200,7 @@ Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy)
 /**
  * @brief Calculates the camera sampling we
  * @param cam Camera structure
- * @param cos_theta Cosine of the angle between ray direction and camera forward axis
+ * @param cos_theta Cosine of the angle between the ray direction and camera forward axis
  * @return Calculated we value
  */
 float CameraWe(Camera cam, float cos_theta) {

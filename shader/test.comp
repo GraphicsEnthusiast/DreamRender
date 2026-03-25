@@ -1,12 +1,7 @@
 #version 460
 #extension GL_ARB_shading_language_include : require
 
-#include "shape/shape.glsl"
-#include "material/material.glsl"
-#include "sample/filter.glsl"
-#include "camera/camera.glsl"
-#include "spectrum/spectrum.glsl"
-#include "light/light.glsl"
+#include "integrator/integrator.glsl"
 
 layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
@@ -22,99 +17,11 @@ uniform float camera_aperture = 0.1;
 uniform float camera_focal_distance = 10.0;
 uniform uint FrameCounter;
 
-/**
- * @brief Gets intersection information from hit data
- * @param hit Hit information
- * @param ray_direction The direction of the incoming ray (normalized)
- * @param is_light_triangle Whether this is a light triangle
- * @param lambda Sampled wavelengths
- * @return IntersectionInfo with material and texture data
- */
-IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, bool is_light_triangle, SampledWavelengths lambda) {
-    Triangle tri;
-    if (is_light_triangle) {
-        tri = FetchTriangle(hit.tri_index, TrianglesLight);
-    } 
-    else {
-        tri = FetchTriangle(hit.tri_index, Triangles);
-    }
-    
-    // Interpolate position
-    vec3 position = (1.0 - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
-    
-    // Interpolate shading normal
-    vec3 shading_normal = normalize((1.0 - hit.u - hit.v) * tri.n1 + hit.u * tri.n2 + hit.v * tri.n3);
-    
-    // Interpolate texture coordinates
-    vec2 uv = (1.0 - hit.u - hit.v) * tri.t1 + hit.u * tri.t2 + hit.v * tri.t3;
-    
-    // Calculate geometry normal
-    vec3 edge1 = tri.p2 - tri.p1;
-    vec3 edge2 = tri.p3 - tri.p1;
-    vec3 geometry_normal = normalize(cross(edge1, edge2));
-    
-    // Create initial intersection info
-    IntersectionInfo info;
-    info.tri_index = hit.tri_index;
-    info.distance = hit.distance;
-    info.position = position;
-    info.uv = uv;
-    
-    // Set and adjust normal information
-    info = SetNormal(info, ray_direction, geometry_normal, shading_normal);
-    
-    // Create material
-    Material mat;
-    mat.type = tri.material_type;
-    
-    int diffuse_texture_id = int(tri.diffuse.w);
-    int roughness_texture_id = int(tri.roughness.w);
-    
-    // Get base diffuse color
-    RGB base_diffuse_rgb = RGBNew(tri.diffuse.x, tri.diffuse.y, tri.diffuse.z);
-    RGBAlbedoSpectrum base_diffuse_spectrum = RGBAlbedoSpectrumNew(base_diffuse_rgb);
-    mat.diffuse = RGBAlbedoSpectrumSample(base_diffuse_spectrum, lambda);
-    mat.diffuse_texture = diffuse_texture_id;
-    
-    // Get base roughness
-    mat.roughness = tri.roughness.x;
-    mat.roughness_texture = roughness_texture_id;
-    
-    // Get emission from triangle data
-    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
-    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
-    mat.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
-    
-    // Set the material
-    info.material = mat;
-    
-    return info;
-}
-
-/**
- * @brief Performs visibility test from start point in given direction and distance
- */
-bool VisibilityTest(vec3 start_point, vec3 direction, vec3 normal, float distance) {
-    Ray shadow_ray = SpawnShadowRay(start_point, direction, distance);
-    Hit occlusion_hit = BVHTraverse(shadow_ray);
-    
-    if (occlusion_hit.distance >= shadow_ray.tmax) {
-        return true;
-    }
-    
-    return false;
-}
-
 void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
         return;
     }
-
-    // Initialize Sobol sampler
-    SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);
-    SobolSamplerSetPixel(sobol_sampler, pixel_coords.x, pixel_coords.y);
-    SobolSamplerNextSamples(sobol_sampler, FrameCounter);
 
     // Create camera
     Camera cam = CreateCamera(
@@ -123,100 +30,18 @@ void main() {
         camera_aperture, camera_focal_distance, false, 0
     );
 
-    // Generate pixel sample
-    vec2 pixel_center = vec2(pixel_coords);
-    vec2 jitter = GaussianFilter(vec2(
-        SobolSamplerGet1(sobol_sampler),
-        SobolSamplerGet1(sobol_sampler)
-    ));
-    pixel_center += jitter;
-
-    // Generate primary ray
-    vec2 lens_sample = vec2(
-        SobolSamplerGet1(sobol_sampler),
-        SobolSamplerGet1(sobol_sampler)
-    );
-    Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, lens_sample);
+    // Initialize Sobol sampler
+    SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);
+    SobolSamplerSetPixel(sobol_sampler, pixel_coords.x, pixel_coords.y);
+    SobolSamplerNextSamples(sobol_sampler, FrameCounter);
 
     // Sample wavelengths
     float wavelength_sample = SobolSamplerGet1(sobol_sampler);
     SampledWavelengths lambda = SampledWavelengthsSampleVisible(wavelength_sample);
 
-    // Initialize path tracing
-    SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
-    SampledSpectrum L = SampledSpectrumNewFloat(0.0f);
-    IntersectionInfo info;
+    // Use the PathTracing function
+    SampledSpectrum L = PathTracing(pixel_coords, cam, sobol_sampler, lambda);
 
-    // Path tracing loop
-    for (int bounce = 0; bounce < 10; ++bounce) {
-        Hit hit = BVHTraverse(ray);
-        
-        if (hit.distance == MaxFloat) {
-            // Missed geometry - sample environment
-            vec3 unit_dir = normalize(ray.direction);
-            float t = 0.5 * (unit_dir.y + 1.0);
-            vec3 sky_color = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
-
-            RGB sky_rgb = RGBNew(sky_color.r, sky_color.g, sky_color.b);
-            RGBIlluminantSpectrum sky_spectrum = RGBIlluminantSpectrumNew(sky_rgb);
-            SampledSpectrum env_spectrum = RGBIlluminantSpectrumSample(sky_spectrum, lambda);
-            
-            //L = Add(L, Mul(beta, env_spectrum));
-            break;
-        }
-
-        // Get intersection info
-        bool is_light_triangle = hit.is_light;
-        info = GetIntersectionInfo(hit, normalize(ray.direction), is_light_triangle, lambda);
-
-        // Handle direct light hit
-        if (is_light_triangle && bounce == 0) {
-            L = Add(L, Mul(beta, info.material.emission));
-            break;
-        }
-        
-        // Use correct view direction
-        vec3 world_v = -normalize(ray.direction);
-
-        // Sample direct lighting with lambda parameter
-        LightSampleInfo light_info = MeshLightSample(sobol_sampler, info, lambda);
-        if (light_info.pdf > 0.0f) {
-            if (VisibilityTest(info.position, light_info.world_l, info.geometry_normal, light_info.distance)) {
-                MaterialEvalInfo material_info = MaterialEvaluate(info, world_v, light_info.world_l, lambda);
-    
-                if (material_info.pdf > 0.0f) {
-                    SampledSpectrum contrib = DivFloat(Mul(Mul(light_info.emission, material_info.bsdf_cosine), beta), light_info.pdf);
-                    L = Add(L, contrib);
-                }
-            }
-        }
-
-        // Sample material BSDF
-        vec2 bsdf_sample = vec2(
-            SobolSamplerGet1(sobol_sampler),
-            SobolSamplerGet1(sobol_sampler)
-        );
-        
-        MaterialSampleInfo sample_info = MaterialSample(info, world_v, bsdf_sample, lambda);
-
-        // Update path throughput
-        float pdf = sample_info.pdf;
-        if (pdf <= 0.0) break;
-
-        beta = Mul(beta, DivFloat(sample_info.bsdf_cosine, pdf));
-
-        // Russian Roulette termination
-        if (bounce > 3) {
-            float q = max(0.05, 1.0 - Max(beta));
-            if (SobolSamplerGet1(sobol_sampler) < q) break;
-            beta = DivFloat(beta, 1.0 - q);
-        }
-
-        // Update ray for next bounce
-        ray = SpawnRay(info.position, sample_info.world_l, info.geometry_normal, 0.0f, MaxFloat);
-    }
-
-    // Convert to RGB for display
     RGB linear_rgb = SampledSpectrumToRGB(L, lambda);
     RGB display_rgb = LinearToSRGB(linear_rgb);
 

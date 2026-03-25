@@ -302,6 +302,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				// Calculate triangle area for importance sampling
 				Vector3f e1 = Point3f(encoded_tri.p2) - Point3f(encoded_tri.p1);
 				Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
+
 				float area = 0.5f * glm::length(glm::cross(e1, e2));
 				const float PI = 3.1415926535897932385f;
 				auto Luminance = [](const Vector3f& rgb) -> float {
