@@ -100,6 +100,10 @@ protected:
     bool buffer_updated_ = false;       ///< Flag indicating back buffer update
     std::atomic<bool> rendering_active_ = false;     ///< Render thread activity status
     std::thread render_thread_;         ///< Dedicated rendering thread
+
+    bool show_fps_overlay_ = true;      ///< Controls FPS overlay window visibility
+    bool show_demo_window_ = true;      ///< Controls ImGui demo window visibility
+    bool show_console_ = true;         ///< Controls console window visibility
 };
 
 NAMESPACE_END(dream)

@@ -211,6 +211,11 @@ void Interface::CreateMenuBar() {
 
 		// Rendering controls menu
 		if (ImGui::BeginMenu("Rendering")) {
+			// Add toggle for FPS overlay window
+			if (ImGui::MenuItem("Show FPS Overlay", nullptr, &show_fps_overlay_)) {
+				// Additional logic can be added here if needed
+			}
+
 			bool flag = true;
 			SelectableOptionFromFlag("Wireframe", flag);
 
@@ -226,6 +231,20 @@ void Interface::CreateMenuBar() {
 		if (ImGui::BeginMenu("Visualization")) {
 			bool flag = true;
 			SelectableOptionFromFlag("Actuator", flag);
+			ImGui::EndMenu();
+		}
+
+		// View controls menu
+		if (ImGui::BeginMenu("View")) {
+			if (ImGui::MenuItem("Show FPS Overlay", nullptr, &show_fps_overlay_)) {
+				// Toggle FPS overlay window
+			}
+			if (ImGui::MenuItem("Show Demo Window", nullptr, &show_demo_window_)) {
+				// Toggle ImGui demo window
+			}
+			if (ImGui::MenuItem("Show Console", nullptr, &show_console_)) {
+				// Toggle console window
+			}
 			ImGui::EndMenu();
 		}
 
@@ -306,13 +325,11 @@ void Interface::RenderOutput() {
 	if (front_buffer_.IsValid()) {
 		ImGui::Image((void*)(intptr_t)front_buffer_.id, size, ImVec2(0, 1), ImVec2(1, 0));
 
-		static bool show_fps_overlay = true;
-
-		if (show_fps_overlay) {
+		if (show_fps_overlay_) {
 			ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
 			ImGui::SetNextWindowSize(ImVec2(200, 50), ImGuiCond_FirstUseEver);
 			ImGui::SetNextWindowBgAlpha(0.35f);
-			if (ImGui::Begin("FPS Overlay", &show_fps_overlay,  // Ìí¼Ó¹Ø±Õ°´Å¥
+			if (ImGui::Begin("FPS Overlay", &show_fps_overlay_,
 				ImGuiWindowFlags_NoTitleBar |
 				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing)) {
 				ImGui::Text("UI Thread FPS: %.1f", ImGui::GetIO().Framerate);
@@ -357,9 +374,18 @@ void Interface::Render() {
 		ApplyDarkTheme();  // Apply UI theme
 		ConfigureAndSubmitDockspace(display_w, display_h);  // Setup layout
 		CreateMenuBar();   // Render top menu
-		console_->Draw();  // Display console
+
+		// Render console if enabled
+		if (show_console_) {
+			console_->Draw();  // Display console
+		}
+
 		RenderOutput();  // Render output
-		ImGui::ShowDemoWindow(nullptr);  // Show ImGui demo
+
+		// Show ImGui demo window if enabled
+		if (show_demo_window_) {
+			ImGui::ShowDemoWindow(nullptr);  // Show ImGui demo
+		}
 
 		// Finalize and render frame
 		ImGui::EndFrame();
