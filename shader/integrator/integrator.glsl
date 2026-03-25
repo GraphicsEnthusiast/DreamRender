@@ -148,7 +148,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
     float we = CameraWe(cam, cos_theta);
     
     if (camera_pdf > 0.0f) {
-        // camera_sampling_weight: we * cosθ / camera_pdf
+        // camera_sampling_weight: we * cosθ / camera_pdf = 1
         float camera_sampling_weight = we * cos_theta / camera_pdf;
         
         // Multiply current path throughput by camera weight
