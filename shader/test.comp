@@ -40,7 +40,7 @@ void main() {
     SampledWavelengths lambda = SampledWavelengthsSampleVisible(wavelength_sample);
 
     // Use the PathTracing function
-    SampledSpectrum L = PathTracing(pixel_coords, cam, sobol_sampler, lambda);
+    SampledSpectrum L = PathTracing(pixel_coords, cam, sobol_sampler, lambda, 10);
 
     RGB linear_rgb = SampledSpectrumToRGB(L, lambda);
     RGB display_rgb = LinearToSRGB(linear_rgb);

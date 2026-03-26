@@ -235,11 +235,12 @@ SampledSpectrum GetLightEmission(int tri_index, SampledWavelengths lambda) {
 /**
  * @brief Evaluates mesh light contribution for a given direction
  * @param world_l Light direction (from surface to light)
- * @param info Intersection information of the shading point
+ * @param info Intersection information of the shading point(located on the light source)
+ * @param last_shading_point The previous shading point before hitting the light source
  * @param lambda Sampled wavelengths
  * @return LightEvalInfo containing emission spectrum and PDF
  */
-LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, SampledWavelengths lambda) {
+LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_shading_point, SampledWavelengths lambda) {
     LightEvalInfo result;
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
@@ -260,9 +261,9 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, SampledWave
     float weight = texelFetch(MeshLightTable, info.tri_index).y;
     
     // Calculate directions from shading point to triangle vertices
-    vec3 va = tri.p1 - info.position;
-    vec3 vb = tri.p2 - info.position;
-    vec3 vc = tri.p3 - info.position;
+    vec3 va = tri.p1 - last_shading_point;
+    vec3 vb = tri.p2 - last_shading_point;
+    vec3 vc = tri.p3 - last_shading_point;
     
     // Normalize to get directions on unit sphere
     vec3 a = normalize(va);

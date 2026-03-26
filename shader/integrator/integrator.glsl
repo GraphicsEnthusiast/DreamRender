@@ -123,9 +123,10 @@ float PowerHeuristic(float pdf1, float pdf2, float beta) {
  * @param cam Camera parameters
  * @param sobol_sampler Pre-initialized Sobol quasi-random sequence sampler for Monte Carlo integration
  * @param lambda Pre-sampled wavelengths for spectral rendering; contains wavelength values
+ * @param max_bounce Maximum number of light bounces
  * @return SampledSpectrum representing accumulated radiance
  */
-SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler sobol_sampler, SampledWavelengths lambda, float max_bounce) {
     // ========================= Initialization =========================
     // Generate pixel sample
     vec2 pixel_center = vec2(pixel_coords);
@@ -177,8 +178,9 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
     // ========================= Process first intersection (bounce = 0) separately =========================
     
     // ========================= Start main path tracing loop from bounce = 1 =========================
+    vec3 last_shading_point = info.position;
     vec3 world_v = -normalize(ray.direction);
-    for (int bounce = 1; bounce < 10; ++bounce) {
+    for (int bounce = 1; bounce < max_bounce; ++bounce) {
         // ========================= Light Sampling =========================
         LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
         MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, light_sample_info.world_l, lambda);
@@ -193,7 +195,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
             float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf, 2.0f);
     
             // light_sampling_contribution = β * visibility * ((mis_weight * Le * f * cosθ) / light_pdf)
-            SampledSpectrum final_light_sampling_contribution = Mul(MulFloat( MulFloat(light_sampling_contribution, mis_weight), visibility), beta);
+            SampledSpectrum final_light_sampling_contribution = Mul(MulFloat(MulFloat(light_sampling_contribution, mis_weight), visibility), beta);
     
             // Accumulate to total radiance
             L = Add(L, final_light_sampling_contribution);
@@ -216,12 +218,12 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
         // Check if ray hits a light source
         // If it does not hit the light source, the contribution is 0, so it can be disregarded
         if (new_hit.is_light) {
-            IntersectionInfo light_info = GetIntersectionInfo(new_hit, normalize(material_ray.direction), true, lambda);
-            LightEvalInfo light_eval_info = MeshLightEvaluate(mat_sample_info.world_l, light_info, lambda);
+            info = GetIntersectionInfo(new_hit, normalize(material_ray.direction), true, lambda);
+            LightEvalInfo light_eval_info = MeshLightEvaluate(mat_sample_info.world_l, info, last_shading_point, lambda);
     
             if (light_eval_info.pdf > 0.0f && mat_sample_info.pdf > 0.0f) {
                 // Le * f * cosθ / bsdf_pdf
-                SampledSpectrum Le_f_cos = Mul(light_info.material.emission, mat_sample_info.bsdf_cosine);
+                SampledSpectrum Le_f_cos = Mul(info.material.emission, mat_sample_info.bsdf_cosine);
                 SampledSpectrum bsdf_sampling_contribution = DivFloat(Le_f_cos, mat_sample_info.pdf);
         
                 // mis_weight = (bsdf_pdf^2) / (bsdf_pdf^2 + light_pdf^2)
@@ -254,6 +256,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
         // Update view direction for next bounce
         ray = material_ray;
         world_v = -normalize(ray.direction);
+        last_shading_point = info.position;
         // ========================= Russian Roulette Wheel =========================
     }
     // ========================= Start main path tracing loop from bounce = 1 =========================
