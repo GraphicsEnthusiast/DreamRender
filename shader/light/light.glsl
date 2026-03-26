@@ -298,10 +298,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     result.emission = SampledSpectrumNewFloat(0.0f);
     
     // Sample triangle index using alias table for O(1) time complexity
-    vec2 alias_sample = vec2(
-        SobolSamplerGet1(sobol_sampler), 
-        SobolSamplerGet1(sobol_sampler)
-    );
+    vec2 alias_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     int tri_index = AliasTable1DSample(
         MeshLightTable, 
         MeshLightTableSize, 
