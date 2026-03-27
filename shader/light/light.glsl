@@ -172,7 +172,7 @@ vec3 SphericalTriangleSampleUniform(vec3 va, vec3 vb, vec3 vc, float i, float j)
  * @param[out] v Barycentric v coordinate
  * @return True if intersection found, false otherwise
  */
-bool SampleTriangleSpherical(const vec3 triangle_vertices[3], const vec3 shading_point, float i, float j,
+bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 shading_point, float i, float j,
     out vec3 direction, out float distance, out float u, out float v) {
     // Calculate directions from shading point to triangle vertices
     vec3 va = triangle_vertices[0] - shading_point;
@@ -318,7 +318,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     
     // Sample using spherical triangle method
     float u, v;
-    if (!SampleTriangleSpherical(
+    if (!TriangleSphericalSample(
         triangle_vertices,
         info.position,
         rand_u,
