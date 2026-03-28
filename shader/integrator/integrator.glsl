@@ -100,7 +100,7 @@ float PowerHeuristic(float pdf1, float pdf2, float beta) {
  * @param cam Camera parameters
  * @param sobol_sampler Pre-initialized Sobol quasi-random sequence sampler for Monte Carlo integration
  * @param lambda Pre-sampled wavelengths for spectral rendering; contains wavelength values
- * @param max_bounce Maximum number of light bounces
+ * @param max_bounce Maximum number of ray bounces
  * @return SampledSpectrum representing accumulated radiance
  */
 SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler sobol_sampler, SampledWavelengths lambda, float max_bounce) {
