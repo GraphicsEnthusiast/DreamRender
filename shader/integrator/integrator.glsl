@@ -97,13 +97,13 @@ float PowerHeuristic(float pdf1, float pdf2, float beta) {
 /**
  * @brief Path tracing integrator with multiple importance sampling
  * @param pixel_coords Current pixel coordinates
- * @param cam Camera parameters
+ * @param camera Camera parameters
  * @param sobol_sampler Pre-initialized Sobol quasi-random sequence sampler for Monte Carlo integration
  * @param lambda Pre-sampled wavelengths for spectral rendering; contains wavelength values
  * @param max_bounce Maximum number of ray bounces
  * @return SampledSpectrum representing accumulated radiance
  */
-SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler sobol_sampler, SampledWavelengths lambda, float max_bounce) {
+SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSampler sobol_sampler, SampledWavelengths lambda, float max_bounce) {
     // ========================= Initialization =========================
     // Generate pixel sample
     vec2 pixel_center = vec2(pixel_coords);
@@ -119,11 +119,11 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
     // ========================= Process first intersection (bounce = 0) separately =========================
     // Generate primary ray
     vec2 lens_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-    Ray ray = GeneratePrimaryRay(cam, pixel_center.x, pixel_center.y, lens_sample);
+    Ray ray = GeneratePrimaryRay(camera, pixel_center.x, pixel_center.y, lens_sample);
 
-    float cos_theta = dot(ray.direction, -cam.forward);
-    float camera_pdf = CameraPDF(cam, ray.direction);
-    float we = CameraWe(cam, cos_theta);
+    float cos_theta = dot(ray.direction, -camera.forward);
+    float camera_pdf = CameraPDF(camera, ray.direction);
+    float we = CameraWe(camera, cos_theta);
     
     if (camera_pdf > 0.0f) {
         // camera_sampling_weight: we * cosθ / camera_pdf = 1
