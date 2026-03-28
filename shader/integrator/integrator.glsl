@@ -95,7 +95,7 @@ float PowerHeuristic(float pdf1, float pdf2, float beta) {
 }
 
 /**
- * @brief Main path tracing integrator with multiple importance sampling
+ * @brief Path tracing integrator with multiple importance sampling
  * @param pixel_coords Current pixel coordinates
  * @param cam Camera parameters
  * @param sobol_sampler Pre-initialized Sobol quasi-random sequence sampler for Monte Carlo integration
