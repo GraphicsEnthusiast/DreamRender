@@ -78,29 +78,6 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, bool is_light,
 }
 
 /**
- * @brief Performs binary visibility test from start point in given direction and distance
- * @param start_point Starting point of the visibility test
- * @param direction Normalized direction to test visibility towards
- * @param distance Maximum distance to test for occlusion
- * @return float representing visibility weight: 1.0f for completely visible, 0.0f for occluded
- */
-float VisibilityTest(vec3 start_point, vec3 direction, float distance) {
-    // Create shadow ray with epsilon offset to avoid self-intersection
-    Ray shadow_ray = SpawnShadowRay(start_point, direction, distance);
-    
-    // Traverse acceleration structure to find closest intersection
-    Hit occlusion_hit = BVHTraverse(shadow_ray);
-    
-    // Check if any geometry was hit before reaching the target distance
-    // shadow_ray.tmax defines the maximum distance to test (typically the light distance)
-    if (occlusion_hit.distance >= shadow_ray.tmax) {
-        return 1.0f;
-    }
-    
-    return 0.0f;
-}
-
-/**
  * @brief Power heuristic for multiple importance sampling
  * @param pdf1 PDF of first sampling strategy
  * @param pdf2 PDF of second sampling strategy
@@ -184,7 +161,18 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
         // ========================= Light Sampling =========================
         LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
         MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, light_sample_info.world_l, lambda);
-        float visibility = VisibilityTest(info.position, light_sample_info.world_l, light_sample_info.distance);
+
+        // Performs visibility test from start point in given direction and distance
+        float visibility = 0.0f;
+        // Create shadow ray with epsilon offset to avoid self-intersection
+        Ray shadow_ray = SpawnShadowRay(info.position, light_sample_info.world_l, light_sample_info.distance);
+        // Traverse acceleration structure to find closest intersection
+        Hit occlusion_hit = BVHTraverse(shadow_ray);
+        // Check if any geometry was hit before reaching the target distance
+        // shadow_ray.tmax defines the maximum distance to test (typically the light distance)
+        if (occlusion_hit.distance >= shadow_ray.tmax) {
+            visibility = 1.0f;
+        }
 
         if (light_sample_info.pdf > 0.0f && mat_eval_info.pdf > 0.0f) {
             // Le * f * cosθ / light_pdf
@@ -254,7 +242,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera cam, inout SobolSampler s
         // Update path throughput
         beta = Mul(beta, DivFloat(mat_sample_info.bsdf_cosine, mat_sample_info.pdf));
         // Update view direction for next bounce
-        ray = material_ray;
+        ray = material_ray; 
         world_v = -normalize(ray.direction);
         last_shading_point = info.position;
         // ========================= Russian Roulette Wheel =========================
