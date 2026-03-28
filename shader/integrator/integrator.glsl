@@ -94,6 +94,7 @@ float PowerHeuristic(float pdf1, float pdf2, float beta) {
     return w1 / (w1 + w2);
 }
 
+// ================================================== PathTracing ==================================================
 /**
  * @brief Path tracing integrator with multiple importance sampling
  * @param pixel_coords Current pixel coordinates
@@ -183,10 +184,10 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
             float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf, 2.0f);
     
             // light_sampling_contribution = β * visibility * ((mis_weight * Le * f * cosθ) / light_pdf)
-            SampledSpectrum final_light_sampling_contribution = Mul(MulFloat(MulFloat(light_sampling_contribution, mis_weight), visibility), beta);
+           light_sampling_contribution = Mul(MulFloat(MulFloat(light_sampling_contribution, mis_weight), visibility), beta);
     
             // Accumulate to total radiance
-            L = Add(L, final_light_sampling_contribution);
+            L = Add(L, light_sampling_contribution);
         }
         // ========================= Light Sampling =========================
         
@@ -218,10 +219,10 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                 float mis_weight = PowerHeuristic(mat_sample_info.pdf, light_eval_info.pdf, 2.0f);
 
                 // bsdf_sampling_contribution = β * ((mis_weight * Le * f * cosθ) / bsdf_pdf)
-                SampledSpectrum final_bsdf_sampling_contribution = Mul(MulFloat(bsdf_sampling_contribution, mis_weight), beta);
+                bsdf_sampling_contribution = Mul(MulFloat(bsdf_sampling_contribution, mis_weight), beta);
         
                 // Accumulate to total radiance
-                L = Add(L, final_bsdf_sampling_contribution);
+                L = Add(L, bsdf_sampling_contribution);
             }
     
             // Terminate path after hitting a light source
@@ -251,5 +252,6 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     
     return L;
 }
+// ================================================== PathTracing ==================================================
 
 #endif // _INTEGRATOR__GLSL__
