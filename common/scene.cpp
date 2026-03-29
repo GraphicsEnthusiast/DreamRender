@@ -225,6 +225,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		const auto& texcoords = mesh.GetTexCoords();
 		const auto& indices = mesh.GetIndices();
 
+		int emission_tex_id = material.GetTextureID(TextureType::EMISSION);
 		int diffuse_tex_id = material.GetTextureID(TextureType::DIFFUSE);
 		int roughness_tex_id = material.GetTextureID(TextureType::ROUGHNESS);
 
@@ -280,7 +281,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				material.emission.x,
 				material.emission.y,
 				material.emission.z,
-				1.0f
+				static_cast<float>(emission_tex_id)  // w: emission texture ID
 			);
 
 			encoded_tri.diffuse = Vector4f(

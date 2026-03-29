@@ -56,14 +56,13 @@ vec4 SampleTextureArray(int tex_id, vec2 uv) {
 /**
  * @brief Retrieves the final diffuse color with texture mapping support
  * @param info Intersection data containing material properties and UV coordinates
- * @param uv 2D texture coordinates for the intersection point
  * @param lambda Sampled wavelengths for spectral rendering conversion
  * @return SampledSpectrum representing the final diffuse color; uses texture if available, otherwise falls back to base material diffuse
  */
-SampledSpectrum GetFinalDiffuse(IntersectionInfo info, vec2 uv, SampledWavelengths lambda) {
+SampledSpectrum GetFinalDiffuse(IntersectionInfo info, SampledWavelengths lambda) {
     if (info.material.diffuse_texture >= 0 && info.material.diffuse_texture < TextureCount) {
         // Sample texture
-        vec4 tex_color = SampleTextureArray(info.material.diffuse_texture, uv);
+        vec4 tex_color = SampleTextureArray(info.material.diffuse_texture, info.uv);
         
         // Convert texture RGB to spectrum
         RGB tex_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
@@ -79,13 +78,12 @@ SampledSpectrum GetFinalDiffuse(IntersectionInfo info, vec2 uv, SampledWavelengt
 /**
  * @brief Retrieves the final roughness value with texture mapping support
  * @param info Intersection data containing material properties and UV coordinates
- * @param uv 2D texture coordinates for the intersection point
  * @return Final roughness value; uses texture's red channel if roughness texture is available, otherwise falls back to base material roughness
  */
-float GetFinalRoughness(IntersectionInfo info, vec2 uv) {
+float GetFinalRoughness(IntersectionInfo info) {
     if (info.material.roughness_texture >= 0 && info.material.roughness_texture < TextureCount) {
         // Sample roughness texture (usually in red channel)
-        vec4 tex_color = SampleTextureArray(info.material.roughness_texture, uv);
+        vec4 tex_color = SampleTextureArray(info.material.roughness_texture, info.uv);
 
         return tex_color.r;
     }
@@ -107,8 +105,8 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world
     m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
-    SampledSpectrum diffuse = GetFinalDiffuse(info, info.uv, lambda);
-    float roughness = GetFinalRoughness(info, info.uv);
+    SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);
+    float roughness = GetFinalRoughness(info);
 
 	vec3 v = normalize(world_v);
 	vec3 l = normalize(world_l);
@@ -154,8 +152,8 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sampl
     m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
-    SampledSpectrum diffuse = GetFinalDiffuse(info, info.uv, lambda);
-    float roughness = GetFinalRoughness(info, info.uv);
+    SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);
+    float roughness = GetFinalRoughness(info);
 
     vec3 n = normalize(info.shading_normal);
     vec3 local_l = CosineHemisphereSample(sample_xy);

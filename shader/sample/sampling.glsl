@@ -92,4 +92,39 @@ float CosineHemispherePDF(float n_dot_l) {
 	return max(0.0, n_dot_l) / PI;
 }
 
+/**
+ * @brief Generates a uniform direction on the sphere
+ * @param u1 First random number in [0,1)
+ * @param u2 Second random number in [0,1)
+ * @return vec3 Sampled direction vector
+ */
+vec3 UniformSphereSample(vec2 sample_xy) {
+    float u1 = sample_xy.x;
+    float u2 = sample_xy.y;
+    
+    // 1. Sample the cosine of the polar angle uniformly in [-1, 1]
+    float z = 1.0f - 2.0f * u1;
+    
+    // 2. Sample the azimuthal angle uniformly in [0, 2π]
+    float phi = 2.0f * PI * u2;
+    
+    // 3. Calculate radius in xy-plane
+    float r = sqrt(max(0.0f, 1.0f - z * z));
+    
+    // 4. Convert spherical to Cartesian coordinates
+    float x = r * cos(phi);
+    float y = r * sin(phi);
+    
+    return normalize(vec3(x, y, z));
+}
+
+/**
+ * @brief Computes the probability density function (PDF) for uniform sphere sampling
+ * @return float Probability density value (inverse steradians, sr⁻¹)
+ */
+float UniformSpherePDF() {
+    // Uniform sphere sampling PDF is constant: 1/(4π) ≈ 0.079577
+    return 1.0f / (4.0f * PI);
+}
+
 #endif // _SAMPLING__GLSL__

@@ -1,24 +1,20 @@
 #ifndef _INTEGRATOR__GLSL__
 #define _INTEGRATOR__GLSL__
 
-#include "shape/shape.glsl"
-#include "material/material.glsl"
 #include "sample/filter.glsl"
 #include "camera/camera.glsl"
-#include "spectrum/spectrum.glsl"
 #include "light/light.glsl"
 
 /**
  * @brief Gets intersection information from hit data
  * @param hit Hit information
  * @param ray_direction The direction of the incoming ray (normalized)
- * @param is_light Whether this is a light triangle
  * @param lambda Sampled wavelengths
  * @return IntersectionInfo with material and texture data
  */
-IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, bool is_light, SampledWavelengths lambda) {
+IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelengths lambda) {
     Triangle tri;
-    if (is_light) {
+    if (hit.is_light) {
         tri = FetchTriangle(hit.tri_index, TrianglesLight);
     } 
     else {
@@ -53,23 +49,25 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, bool is_light,
     Material mat;
     mat.type = tri.material_type;
     
+    int emission_texture_id = int(tri.emission.w);
     int diffuse_texture_id = int(tri.diffuse.w);
     int roughness_texture_id = int(tri.roughness.w);
-    
-    // Get base diffuse color
-    RGB base_diffuse_rgb = RGBNew(tri.diffuse.x, tri.diffuse.y, tri.diffuse.z);
-    RGBAlbedoSpectrum base_diffuse_spectrum = RGBAlbedoSpectrumNew(base_diffuse_rgb);
-    mat.diffuse = RGBAlbedoSpectrumSample(base_diffuse_spectrum, lambda);
-    mat.diffuse_texture = diffuse_texture_id;
-    
-    // Get base roughness
-    mat.roughness = tri.roughness.x;
-    mat.roughness_texture = roughness_texture_id;
-    
-    // Get emission from triangle data
+
+    // Get emission
     RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
     RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
     mat.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+    mat.emission_texture = emission_texture_id;
+    
+    // Get diffuse
+    RGB diffuse = RGBNew(tri.diffuse.r, tri.diffuse.g, tri.diffuse.b);
+    RGBAlbedoSpectrum diffuse_spectrum = RGBAlbedoSpectrumNew(diffuse);
+    mat.diffuse = RGBAlbedoSpectrumSample(diffuse_spectrum, lambda);
+    mat.diffuse_texture = diffuse_texture_id;
+    
+    // Get roughness
+    mat.roughness = tri.roughness.x;
+    mat.roughness_texture = roughness_texture_id;
     
     // Set the material
     info.material = mat;
@@ -146,10 +144,11 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
         return L;
     }
 
-    info = GetIntersectionInfo(hit, ray.direction, is_light, lambda);
+    info = GetIntersectionInfo(hit, ray.direction, lambda);
     // Handle direct light hit
     if (is_light) {
-        L = Add(L, Mul(beta, info.material.emission));
+        LightEvalInfo first_light_eval_info = MeshLightEvaluate(ray.direction, info, camera.position, lambda);
+        //L = Add(L, Mul(beta, first_light_eval_info.emission)); // driver bug?
 
         return L;
     }
@@ -184,7 +183,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
             float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf, 2.0f);
     
             // light_sampling_contribution = β * visibility * ((mis_weight * Le * f * cosθ) / light_pdf)
-           light_sampling_contribution = Mul(MulFloat(MulFloat(light_sampling_contribution, mis_weight), visibility), beta);
+            light_sampling_contribution = Mul(MulFloat(MulFloat(light_sampling_contribution, mis_weight), visibility), beta);
     
             // Accumulate to total radiance
             L = Add(L, light_sampling_contribution);
@@ -207,7 +206,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
         // Check if ray hits a light source
         // If it does not hit the light source, the contribution is 0, so it can be disregarded
         if (new_hit.is_light) {
-            info = GetIntersectionInfo(new_hit, normalize(material_ray.direction), true, lambda);
+            info = GetIntersectionInfo(new_hit, material_ray.direction, lambda);
             LightEvalInfo light_eval_info = MeshLightEvaluate(mat_sample_info.world_l, info, last_shading_point, lambda);
     
             if (light_eval_info.pdf > 0.0f && mat_sample_info.pdf > 0.0f) {

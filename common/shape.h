@@ -10,8 +10,9 @@ NAMESPACE_BEGIN(dream)
  * @brief Enumerates texture types used in material systems
  */
 enum class TextureType {
-    DIFFUSE = 0,    ///< Diffuse/albedo texture (base color)
-    ROUGHNESS = 1,  ///< Roughness texture
+    EMISSION = 0,
+    DIFFUSE = 1,    ///< Diffuse/albedo texture (base color)
+    ROUGHNESS = 2,  ///< Roughness texture
 };
 
 /**
@@ -55,7 +56,7 @@ enum class MaterialType {
  * @brief Represents a material with textures
  */
 struct Material {
-    MaterialType type;                                         ///< 0: diffuse
+    MaterialType type;
     std::unordered_map<TextureType, int> texture_ids; ///< Texture ID for each texture type
     Vector3f diffuse;                                 ///< Diffuse color (when no texture)
     float roughness;                                  ///< Roughness value (0.0-1.0)
@@ -109,6 +110,10 @@ struct Material {
      * @return True if material has at least one texture, false otherwise
      */
     bool HasTextures() const noexcept;
+};
+
+enum class PhaseType {
+    HenyeyGreenstein = 0,  ///< Henyey-Greenstein phase function
 };
 
 /**
@@ -195,7 +200,7 @@ struct alignas(16) TriangleEncoded {
     alignas(16) Vector4f n3;   ///< Vertex normals (w stores uv3.y)
 
     alignas(16) Vector4f material_type; ///< Only x is useful, representing the material type, such as 0 for diffuse
-    alignas(16) Vector4f emission;      ///< Emission (xyz components)
+    alignas(16) Vector4f emission;      ///< Emission (xyz components) and texture flag (w component: -1 = constant color, other = texture)
     alignas(16) Vector4f diffuse;       ///< Diffuse color (xyz components) and texture flag (w component: -1 = constant color, other = texture)
     alignas(16) Vector4f roughness;     ///< Roughness (x components) and texture flag (w component: -1 = constant color, other = texture)
 };

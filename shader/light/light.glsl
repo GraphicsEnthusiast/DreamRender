@@ -4,6 +4,7 @@
 #include "shape/shape.glsl"
 #include "sample/sampler.glsl"
 #include "sample/sampling.glsl"
+#include "material/material.glsl"
 
 uniform samplerBuffer MeshLightTable;
 uniform float MeshLightTableSum;
@@ -29,6 +30,31 @@ struct LightSampleInfo {
     float pdf;
     SampledSpectrum emission;
 };
+
+/**
+ * @brief Retrieves the final emission color with texture mapping support
+ * @param tri Triangle containing emission data (stored in .rgb for base color, .w for texture ID)
+ * @param uv Texture coordinates for texture sampling
+ * @param lambda Sampled wavelengths for spectral rendering conversion
+ * @return SampledSpectrum representing the final emission color; uses texture if available, otherwise falls back to triangle's base emission color
+ */
+SampledSpectrum GetFinalEmission(Triangle tri, vec2 uv, SampledWavelengths lambda) {
+    int emission_texture_id = int(tri.emission.w);
+    if (emission_texture_id >= 0 && emission_texture_id < TextureCount) {
+        vec4 tex_color = SampleTextureArray(emission_texture_id, uv);
+        
+        RGB emission_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
+        RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+
+        return RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+    }
+    else {
+        RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
+        RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+
+        return RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+    }
+}
 
 /**
  * @brief Computes the solid angle (projected area) of a spherical triangle
@@ -218,21 +244,6 @@ bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 shading
 }
 
 /**
- * @brief Gets emission spectrum for a light triangle
- * @param tri_index Index of the light triangle
- * @param lambda Sampled wavelengths
- * @return SampledSpectrum Emission spectrum of the light triangle
- */
-SampledSpectrum GetLightEmission(int tri_index, SampledWavelengths lambda) {
-    Triangle tri = FetchTriangle(tri_index, TrianglesLight);
-    
-    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
-    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
-    
-    return RGBIlluminantSpectrumSample(emission_spectrum, lambda);
-}
-
-/**
  * @brief Evaluates mesh light contribution for a given direction
  * @param world_l Light direction (from surface to light)
  * @param info Intersection information of the shading point(located on the light source)
@@ -253,9 +264,8 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_s
     }
     
     Triangle tri = FetchTriangle(info.tri_index, TrianglesLight);
-    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
-    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
-    result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+
+    result.emission = GetFinalEmission(tri, info.uv, lambda);
     
     // Get triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).y;
@@ -366,9 +376,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     result.pdf = 1.0f / solid_angle;
     result.pdf *= weight / MeshLightTableSum;
 
-    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
-    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
-    result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+    result.emission = GetFinalEmission(tri, vec2(u, v), lambda);
     
     return result;
 }
