@@ -156,7 +156,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     
     // ========================= Start main path tracing loop from bounce = 1 =========================
     vec3 last_shading_point = info.position;
-    vec3 world_v = -normalize(ray.direction);
+    vec3 world_v = -ray.direction;
     for (int bounce = 1; bounce < max_bounce; ++bounce) {
         // ========================= Light Sampling =========================
         LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
