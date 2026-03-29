@@ -67,20 +67,18 @@ struct IntersectionInfo {
  * @return IntersectionInfo Updated intersection information structure
  */
 IntersectionInfo SetNormal(IntersectionInfo info, vec3 dir, vec3 ng, vec3 ns) {
-    IntersectionInfo new_info = info;
-
-	new_info.front_face = dot(dir, ng) < 0.0f;
-	new_info.geometry_normal = new_info.front_face ? ng : -ng;
-	new_info.shading_normal = new_info.front_face ? ns : -ns;
+	info.front_face = dot(dir, ng) < 0.0f;
+	info.geometry_normal = info.front_face ? ng : -ng;
+	info.shading_normal = info.front_face ? ns : -ns;
     
     // Check if geometry normal and shading normal are inconsistent (negative dot product)
-	if (dot(new_info.geometry_normal, new_info.shading_normal) < 0.0f) {
+	if (dot(info.geometry_normal, info.shading_normal) < 0.0f) {
         // If inconsistent, use reflection operation to flip shading normal to the same side as geometry normal
         // This ensures normal direction consistency and prevents lighting calculation errors
-		new_info.shading_normal = reflect(new_info.shading_normal, new_info.geometry_normal);
+		info.shading_normal = reflect(info.shading_normal, info.geometry_normal);
 	}
 
-    return new_info;
+    return info;
 }
 
 /**

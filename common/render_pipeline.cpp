@@ -135,6 +135,12 @@ void TestPipeline::Init() {
 		cube_material
 	);
 
+	meshes.emplace_back(
+		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
+		Transform::Translate(5.0f, -10.0f, 0.0f),
+		cube_material
+	);
+
 	std::vector<TriangleMesh> meshes2;
 	meshes2.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\quad.obj",
