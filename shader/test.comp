@@ -5,6 +5,7 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D outputTex;
+layout(location = 0) uniform uint FrameCounter;
 
 // Camera parameters
 vec3 camera_position = vec3(15.0, 15.0, 15.0);
@@ -15,7 +16,6 @@ float camera_fov = 60.0;
 float camera_distance = 1.0;
 float camera_aperture = 0.1;
 float camera_focal_distance = 10.0;
-layout(location = 4) uniform uint FrameCounter;
 
 void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);

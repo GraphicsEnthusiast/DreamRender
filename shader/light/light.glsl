@@ -5,9 +5,9 @@
 #include "material/material.glsl"
 
 uniform samplerBuffer MeshLightTable;
-layout(location = 0) uniform float MeshLightTableMax;
-layout(location = 1) uniform float MeshLightTableSum;
-layout(location = 2) uniform int MeshLightTableSize;
+layout(location = 1) uniform float MeshLightTableMax;
+layout(location = 2) uniform float MeshLightTableSum;
+layout(location = 3) uniform int MeshLightTableSize;
 
 /**
  * @struct LightEvalInfo
