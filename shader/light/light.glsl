@@ -265,18 +265,14 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_s
 
     result.emission = GetFinalEmission(tri, info.uv, lambda);
     
+    // Calculate directions from shading point to triangle vertices
     // Get triangle weight from precomputed table
     float weight = texelFetch(MeshLightTable, info.tri_index).y;
     
-    // Calculate directions from shading point to triangle vertices
-    vec3 va = tri.p1 - last_shading_point;
-    vec3 vb = tri.p2 - last_shading_point;
-    vec3 vc = tri.p3 - last_shading_point;
-    
     // Normalize to get directions on unit sphere
-    vec3 a = normalize(va);
-    vec3 b = normalize(vb);
-    vec3 c = normalize(vc);
+    vec3 a = normalize(tri.p1 - last_shading_point);
+    vec3 b = normalize(tri.p2 - last_shading_point);
+    vec3 c = normalize(tri.p3 - last_shading_point);
     
     // Calculate solid angle of spherical triangle
     float solid_angle = SphericalTriangleSolidAngle(a, b, c);
@@ -352,14 +348,10 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     }
     
     // Calculate directions from shading point to triangle vertices
-    vec3 va = tri.p1 - info.position;
-    vec3 vb = tri.p2 - info.position;
-    vec3 vc = tri.p3 - info.position;
-    
     // Normalize to get directions on unit sphere
-    vec3 a = normalize(va);
-    vec3 b = normalize(vb);
-    vec3 c = normalize(vc);
+    vec3 a = normalize(tri.p1 - info.position);
+    vec3 b = normalize(tri.p2 - info.position);
+    vec3 c = normalize(tri.p3 - info.position);
     
     // Calculate solid angle of spherical triangle
     float solid_angle = SphericalTriangleSolidAngle(a, b, c);
