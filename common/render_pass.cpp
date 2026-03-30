@@ -111,10 +111,8 @@ void ProgressivePass::Execute() {
 		return;
 	}
 
-	static unsigned int frame_counter = 0;
-
 	shader_->Use();
-	shader_->SetUInt("FrameCounter", frame_counter);
+	shader_->SetUInt("FrameCounter", GetFrameCounter());
 
 	TextureHandle current_frame = GetInputTexture("CurrentFrame");
 	TextureHandle previous_frame = GetInputTexture("PreviousFrame");
@@ -214,7 +212,7 @@ void SimpleComputePass::Execute() {
 		shader_->SetInt("TextureCount", 0);
 	}
 
-	shader_->SetUInt("FrameCounter", frame_counter_);
+	shader_->SetUInt("FrameCounter", GetFrameCounter());
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 

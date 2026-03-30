@@ -15,7 +15,7 @@ float camera_fov = 60.0;
 float camera_distance = 1.0;
 float camera_aperture = 0.1;
 float camera_focal_distance = 10.0;
-uniform uint FrameCounter;
+layout(location = 4) uniform uint FrameCounter;
 
 void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);

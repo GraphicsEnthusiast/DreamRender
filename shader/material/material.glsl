@@ -6,7 +6,7 @@
 #include "sample/sampler.glsl"
 
 uniform sampler2DArray TextureArray;
-layout(location = 11) uniform int TextureCount;
+layout(location = 3) uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Diffuse = 0;  ///< Diffuse material (Oren-Nayar model)
