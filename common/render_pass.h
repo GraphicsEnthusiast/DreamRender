@@ -70,12 +70,17 @@ public:
      * @brief Pure virtual function for rendering command execution
      * @note Must be implemented by derived classes
      */
-    virtual void Execute();
+    virtual void Execute() = 0;
 
     /**
      * @brief Get the current frame counter value
      */
     static unsigned int GetFrameCounter() noexcept;
+
+    /**
+     * @brief Increase the current frame counter value
+     */
+    static void IncreaseFrameCounter() noexcept;
 
     /**
 	 * @brief Sets the texture handle for a specified input slot.

@@ -1,5 +1,5 @@
-#ifndef _UTIL__GLSL__
-#define _UTIL__GLSL__
+#ifndef UTIL_GLSL
+#define UTIL_GLSL
 
 // Spectral rendering constants
 const int NSpectrumSamples = 16;              // Number of spectral samples per calculation
@@ -153,4 +153,4 @@ vec3 ToWorldFromUp(vec3 dir, vec3 up) {
     return normalize(world_vec); // Ensure output remains unit length
 }
 
-#endif // _UTIL__GLSL__
+#endif // UTIL_GLSL

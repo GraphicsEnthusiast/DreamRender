@@ -1,5 +1,5 @@
-#ifndef _INTEGRATOR__GLSL__
-#define _INTEGRATOR__GLSL__
+#ifndef INTEGRATOR_GLSL
+#define INTEGRATOR_GLSL
 
 #include "sample/filter.glsl"
 #include "camera/camera.glsl"
@@ -253,4 +253,4 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
 }
 // ================================================== PathTracing ==================================================
 
-#endif // _INTEGRATOR__GLSL__
+#endif // INTEGRATOR_GLSL

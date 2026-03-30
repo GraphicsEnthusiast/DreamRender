@@ -1,5 +1,5 @@
-#ifndef _MEDIUM__GLSL__
-#define _MEDIUM__GLSL__
+#ifndef MEDIUM_GLSL
+#define MEDIUM_GLSL
 
 #include "util/util.glsl"
 #include "sample/sampling.glsl"
@@ -179,4 +179,4 @@ PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy)
     return result;
 }
 
-#endif // _MEDIUM__GLSL__
+#endif // MEDIUM_GLSL

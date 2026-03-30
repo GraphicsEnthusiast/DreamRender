@@ -1,5 +1,5 @@
-#ifndef _SAMPLING__GLSL__
-#define _SAMPLING__GLSL__
+#ifndef SAMPLING_GLSL
+#define SAMPLING_GLSL
 
 /**
  * Helper function to sample a 1D alias table with an offset into a larger TBO
@@ -127,4 +127,4 @@ float UniformSpherePDF() {
     return 1.0f / (4.0f * PI);
 }
 
-#endif // _SAMPLING__GLSL__
+#endif // SAMPLING_GLSL

@@ -93,6 +93,7 @@ void RenderGraph::Execute() {
 			WARN("[warning] Skipping destroyed RenderPass in execution queue.");
 		}
 	}
+	RenderPass::IncreaseFrameCounter();
 }
 
 void RenderGraph::SetFinalOutput(const TextureHandle& output) {

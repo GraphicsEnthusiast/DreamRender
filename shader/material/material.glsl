@@ -1,12 +1,12 @@
-#ifndef _MATERIAL__GLSL__
-#define _MATERIAL__GLSL__
+#ifndef MATERIAL_GLSL
+#define MATERIAL_GLSL
 
 #include "spectrum/spectrum.glsl"
 #include "sample/sampling.glsl"
 #include "sample/sampler.glsl"
 
 uniform sampler2DArray TextureArray;
-uniform int TextureCount;
+layout(location = 11) uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Diffuse = 0;  ///< Diffuse material (Oren-Nayar model)
@@ -250,4 +250,4 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_v, vec2 samp
     return result;
 }
 
-#endif // _MATERIAL__GLSL__
+#endif // MATERIAL_GLSL

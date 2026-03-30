@@ -1,5 +1,5 @@
-#ifndef _CIE__GLSL__
-#define _CIE__GLSL__
+#ifndef CIE_GLSL
+#define CIE_GLSL
 
 #include "util/util.glsl"
 
@@ -408,4 +408,4 @@ const float D65[NCIESamples] = float[NCIESamples](
     0.5953737885486733f, 0.5982780283395946f, 0.6011822681305159f, 0.6040865079214371f, 0.6069907477123584f,
     0.6098949875032796f);
 
-#endif // _CIE__GLSL__
+#endif // CIE_GLSL

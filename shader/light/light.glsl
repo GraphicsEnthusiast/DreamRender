@@ -1,15 +1,13 @@
-#ifndef _LIGHT__GLSL__
-#define _LIGHT__GLSL__
+#ifndef LIGHT_GLSL
+#define LIGHT_GLSL
 
 #include "shape/shape.glsl"
-#include "sample/sampler.glsl"
-#include "sample/sampling.glsl"
 #include "material/material.glsl"
 
 uniform samplerBuffer MeshLightTable;
-uniform float MeshLightTableSum;
-uniform float MeshLightTableMax;
-uniform int MeshLightTableSize;
+layout(location = 8) uniform float MeshLightTableMax;
+layout(location = 9) uniform float MeshLightTableSum;
+layout(location = 10) uniform int MeshLightTableSize;
 
 /**
  * @struct LightEvalInfo
@@ -381,4 +379,4 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     return result;
 }
 
-#endif // _LIGHT__GLSL__
+#endif // LIGHT_GLSL

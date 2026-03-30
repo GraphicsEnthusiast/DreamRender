@@ -1,5 +1,5 @@
-#ifndef _SPECTRUM__GLSL__
-#define _SPECTRUM__GLSL__
+#ifndef SPECTRUM_GLSL
+#define SPECTRUM_GLSL
 
 #include "color/color_space.glsl"
 
@@ -784,4 +784,4 @@ float RGBIlluminantSpectrumMaxValue(RGBIlluminantSpectrum s) {
     return s.scale * rsp_max * illuminant_max;
 }
 
-#endif // _SPECTRUM__GLSL__
+#endif // SPECTRUM_GLSL

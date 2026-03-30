@@ -1,5 +1,5 @@
-#ifndef _SAMPLER__GLSL__
-#define _SAMPLER__GLSL__
+#ifndef SAMPLER_GLSL
+#define SAMPLER_GLSL
 
 uniform usamplerBuffer SobolMatricesTable;
 
@@ -113,4 +113,4 @@ void SobolSamplerNextSamples(inout SobolSampler sampler, uint count) {
     sampler.dim = 0;
 }
 
-#endif // _SAMPLER__GLSL__
+#endif // SAMPLER_GLSL

@@ -1,5 +1,5 @@
-#ifndef _CAMERA__GLSL__
-#define _CAMERA__GLSL__
+#ifndef CAMERA_GLSL
+#define CAMERA_GLSL
 
 #include "util/util.glsl"
 
@@ -277,4 +277,4 @@ float CameraPDF(Camera cam, vec3 dir) {
     return pdf_area * pdf_solid_angle;
 }
 
-#endif // _CAMERA__GLSL__
+#endif // CAMERA_GLSL

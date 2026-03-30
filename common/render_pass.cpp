@@ -8,7 +8,7 @@ std::unique_ptr<TBO> RenderPass::srgb_to_spectrum_tbo_ = nullptr;
 std::unique_ptr<TBO> RenderPass::sobol_matrices_tbo_ = nullptr;
 unsigned int RenderPass::frame_counter_ = 0;
 
-void RenderPass::Execute() {
+void RenderPass::IncreaseFrameCounter() noexcept {
 	frame_counter_++;
 }
 
@@ -138,8 +138,6 @@ void ProgressivePass::Execute() {
 		width_, height_, 1);
 
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
-
-	frame_counter++;
 }
 
 SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
@@ -221,8 +219,6 @@ void SimpleComputePass::Execute() {
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
-
-	RenderPass::Execute();
 }
 
 NAMESPACE_END(dream)

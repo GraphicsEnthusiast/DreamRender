@@ -1,5 +1,5 @@
-#ifndef _COLOR_SPACE_GLSL_
-#define _COLOR_SPACE_GLSL_
+#ifndef COLOR_SPACE_GLSL
+#define COLOR_SPACE_GLSL
 
 #include "color/color.glsl"
 
@@ -221,4 +221,4 @@ RGBSigmoidPolynomial ToRGBCoeffs(RGB rgb) {
     return RGBToSpectrumTableEval(rgb);
 }
 
-#endif // _COLOR_SPACE_GLSL_
+#endif // COLOR_SPACE_GLSL

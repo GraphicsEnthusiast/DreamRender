@@ -1,5 +1,5 @@
-#ifndef _COLOR__GLSL__
-#define _COLOR__GLSL__
+#ifndef COLOR_GLSL
+#define COLOR_GLSL
 
 #include "color/cie.glsl"
 
@@ -419,4 +419,4 @@ RGB LinearToSRGB(RGB linear) {
     return srgb;
 }
 
-#endif // _COLOR__GLSL__
+#endif // COLOR_GLSL

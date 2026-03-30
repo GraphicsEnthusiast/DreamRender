@@ -1,5 +1,5 @@
-#ifndef _SHAPE__GLSL__
-#define _SHAPE__GLSL__
+#ifndef SHAPE_GLSL
+#define SHAPE_GLSL
 
 #include "camera/camera.glsl"
 
@@ -251,4 +251,4 @@ Hit BVHTraverse(const Ray ray) {
     return (regular_hit.distance < light_hit.distance) ? regular_hit : light_hit;
 }
 
-#endif // _SHAPE__GLSL__
+#endif // SHAPE_GLSL
