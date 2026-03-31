@@ -1,4 +1,4 @@
-Refactoring using OpenGL computer shader, preparing to implement a geometric optical spectral renderer with reference to PBRT4, abandoning RGB rendering.
+0(2311) : error C5041: cannot locate suitable resource to bind variable "@TMP5316". Possibly large array.
+0(2312) : error C5041: cannot locate suitable resource to bind variable "@TMP5315". Possibly large array.
 
-<img width="1282" height="766" alt="QQ截图20260324192803" src="https://github.com/user-attachments/assets/4a6af71d-06bb-4259-81f7-b272aec4ee41" />
-
+Due to the excessive complexity of calculations causing insufficient registers, updates have been stopped.
