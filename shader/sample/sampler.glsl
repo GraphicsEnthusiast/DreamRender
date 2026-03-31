@@ -1,7 +1,9 @@
 #ifndef SAMPLER_GLSL
 #define SAMPLER_GLSL
 
-uniform usamplerBuffer SobolMatricesTable;
+layout(std430, binding = 3) readonly buffer SobolMatricesSSBO {
+    uint SobolMatricesTableData[];
+};
 
 /**
  * @brief Wang hash function for random number generation
@@ -60,7 +62,7 @@ uint SobolSample(uint index, uint dim, uint scramble) {
     // For simplicity, we assume SobolMatrices is available as a uniform buffer
     for (int i = int(dim) * 52; 0 != index; index >>= 1, i++) {
         if (0 != (index & 1)) {
-            r ^= texelFetch(SobolMatricesTable, i).r;
+            r ^= SobolMatricesTableData[i];
         }
     }
     

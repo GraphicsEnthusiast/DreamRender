@@ -3,7 +3,9 @@
 
 #include "color/color.glsl"
 
-uniform samplerBuffer SRGBToSpectrumTable;
+layout(std430, binding = 2) readonly buffer SRGBToSpectrumSSBO {
+    float SRGBToSpectrumTableData[];
+};
 
 /**
  * @class RGBSigmoidPolynomial
@@ -188,14 +190,15 @@ RGBSigmoidPolynomial RGBToSpectrumTableEval(RGB rgb) {
         int idx011 = GetSpectrumTableIndex(maxc, zi + 1, yi + 1, xi, i);
         int idx111 = GetSpectrumTableIndex(maxc, zi + 1, yi + 1, xi + 1, i);
         
-        float val000 = texelFetch(SRGBToSpectrumTable, idx000).r;
-        float val100 = texelFetch(SRGBToSpectrumTable, idx100).r;
-        float val010 = texelFetch(SRGBToSpectrumTable, idx010).r;
-        float val110 = texelFetch(SRGBToSpectrumTable, idx110).r;
-        float val001 = texelFetch(SRGBToSpectrumTable, idx001).r;
-        float val101 = texelFetch(SRGBToSpectrumTable, idx101).r;
-        float val011 = texelFetch(SRGBToSpectrumTable, idx011).r;
-        float val111 = texelFetch(SRGBToSpectrumTable, idx111).r;
+        // 修改：从SSBO直接读取，而不是texelFetch
+        float val000 = SRGBToSpectrumTableData[idx000];
+        float val100 = SRGBToSpectrumTableData[idx100];
+        float val010 = SRGBToSpectrumTableData[idx010];
+        float val110 = SRGBToSpectrumTableData[idx110];
+        float val001 = SRGBToSpectrumTableData[idx001];
+        float val101 = SRGBToSpectrumTableData[idx101];
+        float val011 = SRGBToSpectrumTableData[idx011];
+        float val111 = SRGBToSpectrumTableData[idx111];
         
         // Trilinear interpolation
         float c00 = mix(val000, val100, dx);

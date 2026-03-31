@@ -83,10 +83,10 @@ public:
     static void IncreaseFrameCounter() noexcept;
 
     /**
-	 * @brief Sets the texture handle for a specified input slot.
-	 * @param slot_name Name identifier of the input slot to modify.
-	 * @param handle Texture handle to assign to the slot.
-	 */
+     * @brief Sets the texture handle for a specified input slot.
+     * @param slot_name Name identifier of the input slot to modify.
+     * @param handle Texture handle to assign to the slot.
+     */
     void SetInputTexture(const std::string& slot_name, const TextureHandle& handle);
 
     /**
@@ -117,38 +117,48 @@ public:
     const std::string& GetName() const noexcept;
 
     /**
-     * @brief Initializes the global SRGB to Spectrum conversion table TBO.
+     * @brief Initializes the global SRGB to Spectrum conversion table SSBO.
      */
     static void InitSRGBToSpectrumTable();
 
     /**
-     * @brief Initializes the sobol matrices table TBO.
+     * @brief Initializes the Sobol matrices table SSBO.
      */
     static void InitSobolMatricesTable();
 
     /**
-     * @brief Gets the Sobol matrices TBO as a const reference
-     * @return const reference to the Sobol matrices TBO
-     * @note This function provides read-only access to the TBO
+     * @brief Binds the SRGB to Spectrum SSBO to a specific binding point
+     * @param index The binding point index to bind to
      */
-    static const TBO& GetSobolMatricesTBO() noexcept;
+    static void BindSRGBToSpectrumSSBO(GLuint index) noexcept;
 
     /**
-     * @brief Gets the SRGB to Spectrum conversion table TBO as a const reference
-     * @return const reference to the SRGB to Spectrum TBO
-     * @note This function provides read-only access to the TBO
+     * @brief Binds the Sobol matrices SSBO to a specific binding point
+     * @param index The binding point index to bind to
      */
-    static const TBO& GetSRGBToSpectrumTBO() noexcept;
+    static void BindSobolMatricesSSBO(GLuint index) noexcept;
+
+    /**
+     * @brief Gets the SRGB to Spectrum conversion table SSBO
+     * @return Reference to the SRGB to Spectrum SSBO
+     * @note This function provides direct access to the SSBO
+     */
+    static SSBO& GetSRGBToSpectrumSSBO() noexcept;
+
+    /**
+     * @brief Gets the Sobol matrices table SSBO
+     * @return Reference to the Sobol matrices SSBO
+     * @note This function provides direct access to the SSBO
+     */
+    static SSBO& GetSobolMatricesSSBO() noexcept;
 
 protected:
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
     std::string name_;
     static unsigned int frame_counter_;
-
-private:
-    static std::unique_ptr<TBO> sobol_matrices_tbo_;
-    static std::unique_ptr<TBO> srgb_to_spectrum_tbo_;
+    static std::unique_ptr<SSBO> sobol_matrices_ssbo_;      ///< SSBO for Sobol matrices
+    static std::unique_ptr<SSBO> srgb_to_spectrum_ssbo_;    ///< SSBO for SRGB to Spectrum conversion table
 };
 
 /**

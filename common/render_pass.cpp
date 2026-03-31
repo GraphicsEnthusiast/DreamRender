@@ -4,8 +4,9 @@
 
 NAMESPACE_BEGIN(dream)
 
-std::unique_ptr<TBO> RenderPass::srgb_to_spectrum_tbo_ = nullptr;
-std::unique_ptr<TBO> RenderPass::sobol_matrices_tbo_ = nullptr;
+// �޸�TBOΪSSBO
+std::unique_ptr<SSBO> RenderPass::srgb_to_spectrum_ssbo_ = nullptr;
+std::unique_ptr<SSBO> RenderPass::sobol_matrices_ssbo_ = nullptr;
 unsigned int RenderPass::frame_counter_ = 0;
 
 void RenderPass::IncreaseFrameCounter() noexcept {
@@ -59,39 +60,63 @@ const std::string& RenderPass::GetName() const noexcept {
 }
 
 void RenderPass::InitSRGBToSpectrumTable() {
-	if (srgb_to_spectrum_tbo_) {
+	if (srgb_to_spectrum_ssbo_) {
 		return;
 	}
 
+	// �����ܴ�С��3�����ұ���ÿ��64x64x64��ÿ����Ŀ3��float
 	unsigned int total_size = 3 * 64 * 64 * 64 * 3 * sizeof(float);
-	srgb_to_spectrum_tbo_ = std::make_unique<TBO>(
-		SRGBToSpectrumTableData,
+
+	// ʹ��SSBO���TBO
+	srgb_to_spectrum_ssbo_ = std::make_unique<SSBO>(
 		total_size,
-		GL_R32F,
-		GL_STATIC_DRAW
-	);
+		SRGBToSpectrumTableData,
+		GL_DYNAMIC_READ,  // ͨ��Ϊ��̬����
+		GL_MAP_READ_BIT
+		);
+
+	// �󶨵�Ĭ�ϵİ󶨵㣨�����Ҫ��
+	srgb_to_spectrum_ssbo_->BindBase(2);
 }
 
 void RenderPass::InitSobolMatricesTable() {
-	if (sobol_matrices_tbo_) {
+	if (sobol_matrices_ssbo_) {
 		return;
 	}
 
+	// �����ܴ�С��1024��������ÿ��52ά��ÿ��uint32
 	unsigned int total_size = 1024 * 52 * sizeof(unsigned int);
-	sobol_matrices_tbo_ = std::make_unique<TBO>(
-		SobolMatricesTableData,
+
+	// ʹ��SSBO���TBO
+	sobol_matrices_ssbo_ = std::make_unique<SSBO>(
 		total_size,
-		GL_R32UI,
-		GL_STATIC_DRAW
-	);
+		SobolMatricesTableData,
+		GL_DYNAMIC_READ,  // ͨ��Ϊ��̬����
+		GL_MAP_READ_BIT
+		);
+
+	// �󶨵�Ĭ�ϵİ󶨵㣨�����Ҫ��
+	sobol_matrices_ssbo_->BindBase(3);
 }
 
-const TBO& RenderPass::GetSobolMatricesTBO() noexcept {
-    return *sobol_matrices_tbo_;
+SSBO& RenderPass::GetSobolMatricesSSBO() noexcept {
+	return *sobol_matrices_ssbo_;
 }
 
-const TBO& RenderPass::GetSRGBToSpectrumTBO() noexcept {
-    return *srgb_to_spectrum_tbo_;
+SSBO& RenderPass::GetSRGBToSpectrumSSBO() noexcept {
+	return *srgb_to_spectrum_ssbo_;
+}
+
+void RenderPass::BindSRGBToSpectrumSSBO(GLuint index) noexcept {
+	if (srgb_to_spectrum_ssbo_) {
+		srgb_to_spectrum_ssbo_->BindBase(index);
+	}
+}
+
+void RenderPass::BindSobolMatricesSSBO(GLuint index) noexcept {
+	if (sobol_matrices_ssbo_) {
+		sobol_matrices_ssbo_->BindBase(index);
+	}
 }
 
 ProgressivePass::ProgressivePass(unsigned int width, unsigned int height) {
@@ -176,10 +201,11 @@ void SimpleComputePass::Execute() {
 	scene_manager.GetBVHNodeTBO().BindTexture(1);
 	shader_->SetInt("BVHNodes", 1);
 
-	// Bind utility buffers (existing code)
-	RenderPass::GetSRGBToSpectrumTBO().BindTexture(2);
+	// Bind utility SSBOs
+	RenderPass::BindSRGBToSpectrumSSBO(2);
 	shader_->SetInt("SRGBToSpectrumTable", 2);
-	RenderPass::GetSobolMatricesTBO().BindTexture(3);
+
+	RenderPass::BindSobolMatricesSSBO(3);
 	shader_->SetInt("SobolMatricesTable", 3);
 
 	// Bind light geometry buffers (existing code)
@@ -198,7 +224,7 @@ void SimpleComputePass::Execute() {
 	GLuint texture_array = scene_manager.GetTextureArray();
 	int texture_count = scene_manager.GetTextureCount();
 
-	if (texture_array != 0 && texture_count > 0) {
+	if (0 != texture_array && texture_count > 0) {
 		glActiveTexture(GL_TEXTURE7);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
 		shader_->SetInt("TextureArray", 7);
