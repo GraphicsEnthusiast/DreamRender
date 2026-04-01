@@ -54,10 +54,10 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     int roughness_texture_id = int(tri.roughness.w);
 
     // Get emission
-    RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
-    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
-    mat.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
-    mat.emission_texture = emission_texture_id;
+    //RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
+    //RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+    //mat.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+    //mat.emission_texture = emission_texture_id;
     
     // Get diffuse
     RGB diffuse = RGBNew(tri.diffuse.r, tri.diffuse.g, tri.diffuse.b);

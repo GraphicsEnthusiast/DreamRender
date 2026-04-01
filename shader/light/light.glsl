@@ -160,7 +160,7 @@ vec3 SphericalTriangleSampleUniform(vec3 va, vec3 vb, vec3 vc, float i, float j)
         q = q_top / q_bottom;
     }
     
-    // C^, the new vertex of the sub-triangle
+    // The new vertex of the sub-triangle
     vec3 ortho_comp = OrthogonalComponent(vc, va);
     float ortho_len = length(ortho_comp);
     vec3 vc_2 = vec3(0.0f);
