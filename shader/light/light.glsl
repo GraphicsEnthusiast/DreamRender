@@ -254,10 +254,8 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_s
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
     
-    float cos_theta = dot(world_l, info.geometry_normal);
-    
     // Early out if light direction is above the surface
-    if (cos_theta >= 0.0f) {
+    if (!info.front_face) {
         return result;
     }
     
