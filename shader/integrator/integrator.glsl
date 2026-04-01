@@ -148,7 +148,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     // Handle direct light hit
     if (is_light) {
         LightEvalInfo first_light_eval_info = MeshLightEvaluate(ray.direction, info, camera.position, lambda);
-        //L = Add(L, Mul(beta, first_light_eval_info.emission)); // driver bug?
+        L = Add(L, Mul(beta, first_light_eval_info.emission));
 
         return L;
     }

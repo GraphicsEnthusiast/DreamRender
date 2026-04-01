@@ -1,12 +1,13 @@
 #include <render_pass.h>
 #include <srgb_to_spectrum.h>
 #include <sobol_matrices_1024x52.h>
+#include <cie.h>
 
 NAMESPACE_BEGIN(dream)
 
-// �޸�TBOΪSSBO
 std::unique_ptr<SSBO> RenderPass::srgb_to_spectrum_ssbo_ = nullptr;
 std::unique_ptr<SSBO> RenderPass::sobol_matrices_ssbo_ = nullptr;
+std::unique_ptr<SSBO> RenderPass::cie_ssbo_ = nullptr;
 unsigned int RenderPass::frame_counter_ = 0;
 
 void RenderPass::IncreaseFrameCounter() noexcept {
@@ -64,18 +65,15 @@ void RenderPass::InitSRGBToSpectrumTable() {
 		return;
 	}
 
-	// �����ܴ�С��3�����ұ���ÿ��64x64x64��ÿ����Ŀ3��float
 	unsigned int total_size = 3 * 64 * 64 * 64 * 3 * sizeof(float);
 
-	// ʹ��SSBO���TBO
 	srgb_to_spectrum_ssbo_ = std::make_unique<SSBO>(
 		total_size,
 		SRGBToSpectrumTableData,
-		GL_DYNAMIC_READ,  // ͨ��Ϊ��̬����
+		GL_DYNAMIC_READ,
 		GL_MAP_READ_BIT
 		);
 
-	// �󶨵�Ĭ�ϵİ󶨵㣨�����Ҫ��
 	srgb_to_spectrum_ssbo_->BindBase(2);
 }
 
@@ -84,19 +82,45 @@ void RenderPass::InitSobolMatricesTable() {
 		return;
 	}
 
-	// �����ܴ�С��1024��������ÿ��52ά��ÿ��uint32
 	unsigned int total_size = 1024 * 52 * sizeof(unsigned int);
 
-	// ʹ��SSBO���TBO
 	sobol_matrices_ssbo_ = std::make_unique<SSBO>(
 		total_size,
 		SobolMatricesTableData,
-		GL_DYNAMIC_READ,  // ͨ��Ϊ��̬����
+		GL_DYNAMIC_READ,
 		GL_MAP_READ_BIT
 		);
 
-	// �󶨵�Ĭ�ϵİ󶨵㣨�����Ҫ��
 	sobol_matrices_ssbo_->BindBase(3);
+}
+
+void RenderPass::InitCIETable() {
+	if (cie_ssbo_) {
+		return;
+	}
+
+	// CIE tables contain 471 samples each for X, Y, Z, and D65
+	unsigned int total_size = 4 * NCIESamples * sizeof(float);
+
+	// Prepare combined CIE data
+	std::vector<float> cie_data(4 * NCIESamples);
+
+	// Copy data in order: X, Y, Z, D65
+	for (int i = 0; i < NCIESamples; ++i) {
+		cie_data[i] = CIEX[i];
+		cie_data[i + NCIESamples] = CIEY[i];
+		cie_data[i + 2 * NCIESamples] = CIEZ[i];
+		cie_data[i + 3 * NCIESamples] = D65[i];
+	}
+
+	cie_ssbo_ = std::make_unique<SSBO>(
+		total_size,
+		cie_data.data(),
+		GL_STATIC_READ,
+		GL_MAP_READ_BIT
+		);
+
+	cie_ssbo_->BindBase(8);  // Bind to binding point 8
 }
 
 SSBO& RenderPass::GetSobolMatricesSSBO() noexcept {
@@ -105,6 +129,10 @@ SSBO& RenderPass::GetSobolMatricesSSBO() noexcept {
 
 SSBO& RenderPass::GetSRGBToSpectrumSSBO() noexcept {
 	return *srgb_to_spectrum_ssbo_;
+}
+
+SSBO& RenderPass::GetCIESSBO() noexcept {
+	return *cie_ssbo_;
 }
 
 void RenderPass::BindSRGBToSpectrumSSBO(GLuint index) noexcept {
@@ -116,6 +144,12 @@ void RenderPass::BindSRGBToSpectrumSSBO(GLuint index) noexcept {
 void RenderPass::BindSobolMatricesSSBO(GLuint index) noexcept {
 	if (sobol_matrices_ssbo_) {
 		sobol_matrices_ssbo_->BindBase(index);
+	}
+}
+
+void RenderPass::BindCIESSBO(GLuint index) noexcept {
+	if (cie_ssbo_) {
+		cie_ssbo_->BindBase(index);
 	}
 }
 
@@ -237,6 +271,10 @@ void SimpleComputePass::Execute() {
 		shader_->SetInt("TextureArray", 7);
 		shader_->SetInt("TextureCount", 0);
 	}
+
+	// Bind CIE data SSBO
+	RenderPass::BindCIESSBO(8);
+	shader_->SetInt("CIETable", 8);
 
 	shader_->SetUInt("FrameCounter", GetFrameCounter());
 

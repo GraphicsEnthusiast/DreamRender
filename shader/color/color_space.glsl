@@ -99,7 +99,7 @@ float D65IlluminantSample(float lambda) {
     float t = continuous_idx - float(idx0);  // Interpolation factor
     
     // Perform linear interpolation between adjacent D65 samples
-    return mix(D65[idx0], D65[idx1], t);
+    return mix(D65(idx0), D65(idx1), t);
 }
 
 /**

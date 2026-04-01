@@ -12,6 +12,7 @@ SceneManager& SceneManager::Instance() {
 	std::call_once(init_flag, []() {
 		instance_ = std::unique_ptr<SceneManager>(new SceneManager());
 		});
+
 	return *instance_;
 }
 

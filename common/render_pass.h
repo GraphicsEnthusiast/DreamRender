@@ -8,9 +8,6 @@ NAMESPACE_BEGIN(dream)
 /**
  * @struct TextureHandle
  * @brief Represents a handle to a GPU texture resource
- *
- * Uses integer-based identifier for lightweight texture referencing.
- * Provides equality comparison operator for container compatibility.
  */
 struct TextureHandle {
     GLuint id = UINT32_MAX; ///< Unique texture identifier (UINT32_MAX = invalid handle)
@@ -127,6 +124,11 @@ public:
     static void InitSobolMatricesTable();
 
     /**
+     * @brief Initializes the CIE data table SSBO.
+     */
+    static void InitCIETable();
+
+    /**
      * @brief Binds the SRGB to Spectrum SSBO to a specific binding point
      * @param index The binding point index to bind to
      */
@@ -137,6 +139,12 @@ public:
      * @param index The binding point index to bind to
      */
     static void BindSobolMatricesSSBO(GLuint index) noexcept;
+
+    /**
+     * @brief Binds the CIE data SSBO to a specific binding point
+     * @param index The binding point index to bind to
+     */
+    static void BindCIESSBO(GLuint index) noexcept;
 
     /**
      * @brief Gets the SRGB to Spectrum conversion table SSBO
@@ -152,6 +160,13 @@ public:
      */
     static SSBO& GetSobolMatricesSSBO() noexcept;
 
+    /**
+     * @brief Gets the CIE data table SSBO
+     * @return Reference to the CIE data SSBO
+     * @note This function provides direct access to the SSBO
+     */
+    static SSBO& GetCIESSBO() noexcept;
+
 protected:
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
@@ -159,6 +174,7 @@ protected:
     static unsigned int frame_counter_;
     static std::unique_ptr<SSBO> sobol_matrices_ssbo_;      ///< SSBO for Sobol matrices
     static std::unique_ptr<SSBO> srgb_to_spectrum_ssbo_;    ///< SSBO for SRGB to Spectrum conversion table
+    static std::unique_ptr<SSBO> cie_ssbo_;                 ///< SSBO for CIE data tables
 };
 
 /**

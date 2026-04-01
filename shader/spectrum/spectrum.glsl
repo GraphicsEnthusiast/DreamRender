@@ -412,11 +412,11 @@ SampledSpectrum DenselySampledSpectrumSample(DenselySampledSpectrum d, SampledWa
 
 /**
  * @brief Samples CIE spectral values at specified wavelengths using linear interpolation
- * @param cie CIE spectral data array (size must be NCIESamples)
+ * @param cie CIE spectral data type (0=X, 1=Y, 2=Z, 3=D65)
  * @param lambda Target wavelength samples with PDF values
  * @return SampledSpectrum containing values at queried wavelengths
  */
-SampledSpectrum CIEDenselySampledSpectrumSample(const float cie[NCIESamples], SampledWavelengths lambda) {
+SampledSpectrum CIEDenselySampledSpectrumSample(int cie_type, SampledWavelengths lambda) {
     SampledSpectrum s;
     for (int i = 0; i < NSpectrumSamples; i++) {
         // Calculate continuous array index
@@ -432,7 +432,31 @@ SampledSpectrum CIEDenselySampledSpectrumSample(const float cie[NCIESamples], Sa
             float t = continuous_idx - float(idx0);  // Interpolation factor
             
             // Perform linear interpolation between adjacent CIE samples
-            s.values[i] = mix(cie[idx0], cie[idx1], t);
+            float val0, val1;
+            switch (cie_type) {
+                case 0:  // CIEX
+                    val0 = CIEX(idx0);
+                    val1 = CIEX(idx1);
+                    break;
+                case 1:  // CIEY
+                    val0 = CIEY(idx0);
+                    val1 = CIEY(idx1);
+                    break;
+                case 2:  // CIEZ
+                    val0 = CIEZ(idx0);
+                    val1 = CIEZ(idx1);
+                    break;
+                case 3:  // D65
+                    val0 = D65(idx0);
+                    val1 = D65(idx1);
+                    break;
+                default:
+                    val0 = CIEX(idx0);
+                    val1 = CIEX(idx1);
+                    break;
+            }
+            
+            s.values[i] = mix(val0, val1, t);
         }
     }
 
@@ -527,9 +551,9 @@ float SafeDiv(float a, float b) {
  */
 XYZ SampledSpectrumToXYZ(SampledSpectrum s, SampledWavelengths lambda) {
     // Sample CIE matching functions at given wavelengths
-    SampledSpectrum xs = CIEDenselySampledSpectrumSample(CIEX, lambda);
-    SampledSpectrum ys = CIEDenselySampledSpectrumSample(CIEY, lambda);
-    SampledSpectrum zs = CIEDenselySampledSpectrumSample(CIEZ, lambda);
+    SampledSpectrum xs = CIEDenselySampledSpectrumSample(0, lambda);  // 0 for CIEX
+    SampledSpectrum ys = CIEDenselySampledSpectrumSample(1, lambda);  // 1 for CIEY
+    SampledSpectrum zs = CIEDenselySampledSpectrumSample(2, lambda);  // 2 for CIEZ
     
     // Retrieve PDF spectrum for importance sampling
     SampledSpectrum pdf = SampledWavelengthsPDF(lambda);
@@ -561,7 +585,7 @@ XYZ SampledSpectrumToXYZ(SampledSpectrum s, SampledWavelengths lambda) {
  */
 float SampledSpectrumY(SampledSpectrum s, SampledWavelengths lambda) {
     // Sample CIE Y matching function
-    SampledSpectrum ys = CIEDenselySampledSpectrumSample(CIEY, lambda);
+    SampledSpectrum ys = CIEDenselySampledSpectrumSample(1, lambda);  // 1 for CIEY
     
     // Retrieve PDF spectrum
     SampledSpectrum pdf = SampledWavelengthsPDF(lambda);
