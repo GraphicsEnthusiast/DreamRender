@@ -23,6 +23,10 @@ struct SampledSpectrum {
 struct Medium {
     int phase_type;
     float g;
+
+    int type;
+    SampledSpectrum sigma_s;
+    SampledSpectrum sigma_t;
 };
 
 /**
