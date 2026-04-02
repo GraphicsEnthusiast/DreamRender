@@ -192,7 +192,7 @@ float Avg(SampledSpectrum s) {
 }
 
 /**
- * @brief Computes the exponential of each spectral component with NaN check
+ * @brief Computes the exponential of each spectral component
  * @param s Input spectrum
  * @return Spectrum with exponentiated components
  */
