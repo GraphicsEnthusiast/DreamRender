@@ -211,7 +211,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     
             if (light_eval_info.pdf > 0.0f && mat_sample_info.pdf > 0.0f) {
                 // Le * f * cosθ / bsdf_pdf
-                SampledSpectrum Le_f_cos = Mul(info.material.emission, mat_sample_info.bsdf_cosine);
+                SampledSpectrum Le_f_cos = Mul(light_eval_info.emission, mat_sample_info.bsdf_cosine);
                 SampledSpectrum bsdf_sampling_contribution = DivFloat(Le_f_cos, mat_sample_info.pdf);
         
                 // mis_weight = (bsdf_pdf^2) / (bsdf_pdf^2 + light_pdf^2)
