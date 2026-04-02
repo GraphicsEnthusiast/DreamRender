@@ -179,4 +179,49 @@ PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy)
     return result;
 }
 
+/**
+ * @brief Evaluates wavelength PMF for medium scattering
+ * @param beta Spectral beta (path contribution)
+ * @param albedo Medium albedo spectrum
+ * @param[out] pdf Output probability mass function array
+ */
+void WavelengthEvaluate(SampledSpectrum beta, SampledSpectrum albedo, out float pdf[NSpectrumSamples]) {
+    // Create empirical discrete distribution: beta * albedo
+    SampledSpectrum history_albedo = Mul(beta, albedo);
+    
+    // Create binary table from the combined spectrum
+    BinaryTable1D waveTable = BinaryTableNew(history_albedo);
+    
+    // Extract PMF from the binary table
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        pdf[i] = waveTable.pdf[i];
+    }
+}
+
+/**
+ * @brief Samples wavelength for medium scattering
+ * @param beta Spectral beta (path contribution)
+ * @param albedo Medium albedo spectrum
+ * @param u Random value in [0, 1)
+ * @param[out] pdf Output probability mass function array
+ * @return Sampled wavelength channel index
+ */
+int WavelengthSample(SampledSpectrum beta, SampledSpectrum albedo, float u, out float pdf[NSpectrumSamples]) {
+    // Create empirical discrete distribution: beta * albedo
+    SampledSpectrum history_albedo = Mul(beta, albedo);
+    
+    // Create binary table from the combined spectrum
+    BinaryTable1D wave_table = BinaryTableNew(history_albedo);
+    
+    // Extract PMF from the binary table
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        pdf[i] = wave_table.pdf[i];
+    }
+    
+    // Sample index of wavelength from empirical discrete distribution
+    int channel = BinaryTableSample(wave_table, u);
+    
+    return channel;
+}
+
 #endif // MEDIUM_GLSL
