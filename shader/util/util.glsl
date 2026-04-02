@@ -36,8 +36,8 @@ struct Medium {
 struct Material {
     int type;
 
-    SampledSpectrum emission;
-    int emission_texture;
+    //SampledSpectrum emission;
+    //int emission_texture;
 
     SampledSpectrum diffuse;
     int diffuse_texture;
