@@ -192,6 +192,20 @@ float Avg(SampledSpectrum s) {
 }
 
 /**
+ * @brief Computes the exponential of each spectral component with NaN check
+ * @param s Input spectrum
+ * @return Spectrum with exponentiated components
+ */
+SampledSpectrum Exp(SampledSpectrum s) {
+    SampledSpectrum ret;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        ret.values[i] = exp(s.values[i]);
+    }
+    
+    return ret;
+}
+
+/**
  * @struct SampledWavelengths
  * @brief Stores sampled wavelengths and their probability densities
  */
