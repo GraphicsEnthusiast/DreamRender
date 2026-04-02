@@ -2,6 +2,92 @@
 #define SAMPLING_GLSL
 
 /**
+ * @struct BinaryTable1D
+ * @brief Binary search table for discrete probability distributions
+ */
+struct BinaryTable1D {
+    float cdf[NSpectrumSamples + 1];  // Cumulative distribution function
+    float pdf[NSpectrumSamples];      // Probability density function
+};
+
+/**
+ * @brief Initializes a binary table from spectral values
+ * @param values Array of spectral values (probabilities)
+ * @return Initialized binary table
+ */
+BinaryTable1D BinaryTableNew(SampledSpectrum values) {
+    BinaryTable1D table;
+    
+    // Calculate sum of all spectral components
+    float sum = 0.0f;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        sum += values.values[i];
+    }
+    
+    // Handle zero sum case (uniform distribution)
+    if (abs(sum) < Epsilon) {
+        float uniform_val = 1.0f / float(NSpectrumSamples);
+        table.cdf[0] = 0.0f;
+        for (int i = 0; i < NSpectrumSamples; i++) {
+            table.cdf[i + 1] = float(i + 1) * uniform_val;
+            table.pdf[i] = uniform_val;
+        }
+
+        return table;
+    }
+    
+    // Build CDF and PDF
+    table.cdf[0] = 0.0f;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        float normalized = values.values[i] / sum;
+        table.cdf[i + 1] = table.cdf[i] + normalized;
+        table.pdf[i] = normalized;
+    }
+    
+    // Ensure CDF ends at 1.0 (handle numerical errors)
+    table.cdf[NSpectrumSamples] = 1.0f;
+    
+    return table;
+}
+
+/**
+ * @brief Samples an index from the binary table using binary search
+ * @param table Binary table to sample from
+ * @param sample Random value in [0, 1)
+ * @return Sampled index
+ */
+int BinaryTableSample(BinaryTable1D table, float sample) {
+    // Handle edge cases
+    if (sample <= 0.0f) {
+        return 0;
+    }
+    else if (sample >= 1.0f) {
+        return NSpectrumSamples - 1;
+    }
+    
+    // Binary search in CDF array
+    int left = 0;
+    int right = NSpectrumSamples;  // CDF has size NSpectrumSamples + 1
+    
+    while (left < right) {
+        int mid = (left + right) / 2;
+        
+        if (table.cdf[mid] < sample) {
+            left = mid + 1;
+        } 
+        else {
+            right = mid;
+        }
+    }
+    
+    // Adjust for CDF indexing (CDF index is +1 from value index)
+    int index = left - 1;
+    
+    // Clamp to valid range
+    return clamp(index, 0, NSpectrumSamples - 1);
+}
+
+/**
  * Helper function to sample a 1D alias table with an offset into a larger TBO
  * @param alias_table TBO containing alias table data
  * @param table_size Size of the alias table to sample
