@@ -275,19 +275,19 @@ WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectru
 /**
  * @brief Evaluates transmittance for a given distance in homogeneous medium
  * @param info Intersection info containing medium properties
- * @param history Spectral history (path contribution)
+ * @param beta Spectral beta (path contribution)
  * @param distance Distance to evaluate
  * @param scattered Whether scattering is assumed
  * @return MediumEvalInfo containing transmittance and PDF
  */
-MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectrum history, float distance, bool scattered) {
+MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectrum beta, float distance, bool scattered) {
     MediumEvalInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.trans_pdf = 0.0f;
     
     // Evaluate wavelength PDF
     SampledSpectrum albedo = Div(info.medium.sigma_s, info.medium.sigma_t);
-    WavelengthEvalResult wavelength_result = MediumWavelengthEvaluate(history, albedo);
+    WavelengthEvalResult wavelength_result = MediumWavelengthEvaluate(beta, albedo);
     SampledSpectrum wavelength_pdf = wavelength_result.pdf;
     
     // Calculate transmittance
@@ -334,12 +334,12 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
 /**
  * @brief Samples a distance in homogeneous medium
  * @param info Intersection info containing medium properties
- * @param history Spectral history (path contribution)
+ * @param beta Spectral beta (path contribution)
  * @param max_distance Maximum distance to sample
  * @param sample_xy Random value in [0, 1)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum history, float max_distance, vec2 sample_xy) {
+MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, float max_distance, vec2 sample_xy) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
@@ -348,7 +348,7 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
     
     // Sample wavelength channel
     SampledSpectrum albedo = Div(info.medium.sigma_s, info.medium.sigma_t);
-    WavelengthSampleResult wavelength_result = MediumWavelengthSample(history, albedo, sample_xy.x);
+    WavelengthSampleResult wavelength_result = MediumWavelengthSample(beta, albedo, sample_xy.x);
     int channel = wavelength_result.channel;
     SampledSpectrum wavelength_pdf = wavelength_result.pdf;
     
@@ -417,23 +417,23 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
 /**
  * @brief Unified medium distance evaluation function that dispatches to the appropriate medium model
  * @param info Intersection data containing medium properties
- * @param history Spectral history (path contribution)
+ * @param beta Spectral beta (path contribution)
  * @param distance Distance to evaluate
  * @param scattered Whether scattering is assumed
  * @return MediumEvalInfo containing transmittance and PDF
  */
-MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum history, float distance, bool scattered) {
+MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum beta, float distance, bool scattered) {
     MediumEvalInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.trans_pdf = 0.0f;
     
     // Dispatch based on medium type
     if (MediumType_Homogeneous == info.medium.type) {
-        return HomogeneousDistanceEvaluate(info, history, distance, scattered);
+        return HomogeneousDistanceEvaluate(info, beta, distance, scattered);
     }
     // Add more medium types here in the future
     // else if (MediumType_Heterogeneous == info.medium.type) {
-    //     return HeterogeneousDistanceEvaluate(info, history, distance, scattered);
+    //     return HeterogeneousDistanceEvaluate(info, beta, distance, scattered);
     // }
     
     // Unknown medium type, return zero contribution
@@ -443,12 +443,12 @@ MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum his
 /**
  * @brief Unified medium distance sampling function that dispatches to the appropriate medium model
  * @param info Intersection data containing medium properties
- * @param history Spectral history (path contribution)
+ * @param beta Spectral beta (path contribution)
  * @param max_distance Maximum distance to sample
  * @param sample_xy Random value in [0, 1)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum history, float max_distance, vec2 sample_xy) {
+MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum beta, float max_distance, vec2 sample_xy) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
@@ -457,11 +457,11 @@ MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum his
     
     // Dispatch based on medium type
     if (MediumType_Homogeneous == info.medium.type) {
-        return HomogeneousDistanceSample(info, history, max_distance, sample_xy);
+        return HomogeneousDistanceSample(info, beta, max_distance, sample_xy);
     }
     // Add more medium types here in the future
     // else if (MediumType_Heterogeneous == info.medium.type) {
-    //     return HeterogeneousDistanceSample(info, history, max_distance, sample_xy);
+    //     return HeterogeneousDistanceSample(info, beta, max_distance, sample_xy);
     // }
     
     // Unknown medium type, return zero contribution
