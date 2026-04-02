@@ -53,15 +53,15 @@ BinaryTable1D BinaryTableNew(SampledSpectrum values) {
 /**
  * @brief Samples an index from the binary table using binary search
  * @param table Binary table to sample from
- * @param sample Random value in [0, 1)
+ * @param u Random value in [0, 1)
  * @return Sampled index
  */
-int BinaryTableSample(BinaryTable1D table, float sample) {
+int BinaryTableSample(BinaryTable1D table, float u) {
     // Handle edge cases
-    if (sample <= 0.0f) {
+    if (u <= 0.0f) {
         return 0;
     }
-    else if (sample >= 1.0f) {
+    else if (u >= 1.0f) {
         return NSpectrumSamples - 1;
     }
     
@@ -72,7 +72,7 @@ int BinaryTableSample(BinaryTable1D table, float sample) {
     while (left < right) {
         int mid = (left + right) / 2;
         
-        if (table.cdf[mid] < sample) {
+        if (table.cdf[mid] < u) {
             left = mid + 1;
         } 
         else {
