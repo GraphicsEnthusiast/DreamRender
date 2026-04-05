@@ -58,6 +58,7 @@ struct IntersectionInfo {
     vec3 geometry_normal;
 	bool front_face;
     vec2 uv;
+    bool has_medium;
     Material material;
     Medium medium;
 };

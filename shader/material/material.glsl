@@ -9,7 +9,17 @@ uniform sampler2DArray TextureArray;
 layout(location = 4) uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
-const int MaterialType_Diffuse = 0;  ///< Diffuse material (Oren-Nayar model)
+const int MaterialType_Boundary = 0;
+const int MaterialType_Diffuse = 1;  ///< Diffuse material (Oren-Nayar model)
+
+/**
+ * @brief Checks if hit represents a boundary material
+ * @param info Intersection information
+ * @return Boolean indicating if material is a boundary
+ */
+bool IsBoundaryMaterial(IntersectionInfo info) {
+    return MaterialType_Boundary == info.material.type;
+}
 
 /**
  * @struct MaterialEvalInfo
@@ -190,6 +200,45 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sampl
 }
 
 /**
+ * @brief Evaluates the BSDF and PDF for a boundary material
+ * Represents a perfect transmitting boundary that doesn't alter the light path.
+ * This material type is typically used for media boundaries or perfect transmitters
+ * where light passes through without scattering or absorption.
+ * @param info Intersection data containing material properties
+ * @param world_v View direction in world space (pointing toward camera)
+ * @param world_l Light direction in world space (pointing toward light source)
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo BoundaryEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+	return m_info;
+}
+
+/**
+ * @brief Samples a direction for a boundary material
+ * For boundary materials, the sampling direction is always the perfect specular
+ * transmission direction (opposite to the incoming direction). This represents
+ * a perfect transmitting surface where light passes through without deviation.
+ * @param info Intersection data containing material properties
+ * @param world_v View direction in world space (pointing toward camera)
+ * @param sample_xy 2D random sample in [0,1] range (unused for boundary materials)
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo BoundarySample(IntersectionInfo info, vec3 world_v, vec2 sample_xy, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_l = -world_v;
+    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_v View direction in world space (pointing toward camera)
@@ -205,6 +254,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_v, vec3 worl
     // Dispatch based on material type
     if (MaterialType_Diffuse == info.material.type) {
         return DiffuseEvaluate(info, world_v, world_l, lambda);
+    }
+    else if (MaterialType_Boundary == info.material.type) {
+        return BoundaryEvaluate(info, world_v, world_l, lambda);
     }
     
     // Add more material types here in the future
@@ -236,6 +288,9 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_v, vec2 samp
     // Dispatch based on material type
     if (MaterialType_Diffuse == info.material.type) {
         return DiffuseSample(info, world_v, sample_xy, lambda);
+    }
+    else if (MaterialType_Boundary == info.material.type) {
+        return BoundarySample(info, world_v, sample_xy, lambda);
     }
     
     // Add more material types here in the future

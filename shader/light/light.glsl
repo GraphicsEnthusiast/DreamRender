@@ -187,7 +187,7 @@ vec3 SphericalTriangleSampleUniform(vec3 va, vec3 vb, vec3 vc, float i, float j)
 /**
  * @brief Samples a point on a triangle using spherical triangle sampling
  * @param triangle_vertices Array of 3 triangle vertices in world space
- * @param shading_point Position of the shading point
+ * @param position Position of the shading point
  * @param i First uniform random sample in [0, 1)
  * @param j Second uniform random sample in [0, 1)
  * @param[out] direction Sampled direction (from shading point to triangle)
@@ -196,12 +196,12 @@ vec3 SphericalTriangleSampleUniform(vec3 va, vec3 vb, vec3 vc, float i, float j)
  * @param[out] v Barycentric v coordinate
  * @return True if intersection found, false otherwise
  */
-bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 shading_point, float i, float j,
+bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 position, float i, float j,
     out vec3 direction, out float distance, out float u, out float v) {
     // Calculate directions from shading point to triangle vertices
-    vec3 va = triangle_vertices[0] - shading_point;
-    vec3 vb = triangle_vertices[1] - shading_point;
-    vec3 vc = triangle_vertices[2] - shading_point;
+    vec3 va = triangle_vertices[0] - position;
+    vec3 vb = triangle_vertices[1] - position;
+    vec3 vc = triangle_vertices[2] - position;
     
     // Sample direction on spherical triangle
     direction = SphericalTriangleSampleUniform(normalize(va), normalize(vb), normalize(vc), i, j);
@@ -218,7 +218,7 @@ bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 shading
     }
     
     float f = 1.0f / a;
-    vec3 s = shading_point - triangle_vertices[0];
+    vec3 s = position - triangle_vertices[0];
     u = f * dot(s, h);
     
     if (u < 0.0f || u > 1.0f) {
@@ -245,11 +245,11 @@ bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 shading
  * @brief Evaluates mesh light contribution for a given direction
  * @param world_l Light direction (from surface to light)
  * @param info Intersection information of the shading point(located on the light source)
- * @param last_shading_point The previous shading point before hitting the light source
+ * @param last_position The previous shading point before hitting the light source
  * @param lambda Sampled wavelengths
  * @return LightEvalInfo containing emission spectrum and PDF
  */
-LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_shading_point, SampledWavelengths lambda) {
+LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_position, SampledWavelengths lambda) {
     LightEvalInfo result;
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
@@ -268,9 +268,9 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_s
     float weight = texelFetch(MeshLightTable, info.tri_index).y;
     
     // Normalize to get directions on unit sphere
-    vec3 a = normalize(tri.p1 - last_shading_point);
-    vec3 b = normalize(tri.p2 - last_shading_point);
-    vec3 c = normalize(tri.p3 - last_shading_point);
+    vec3 a = normalize(tri.p1 - last_position);
+    vec3 b = normalize(tri.p2 - last_position);
+    vec3 c = normalize(tri.p3 - last_position);
     
     // Calculate solid angle of spherical triangle
     float solid_angle = SphericalTriangleSolidAngle(a, b, c);

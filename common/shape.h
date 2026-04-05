@@ -49,7 +49,8 @@ struct Texture {
  * @brief Enumerates material types used in rendering
  */
 enum class MaterialType {
-    DIFFUSE = 0,   ///< Diffuse material (Oren-Nayar model)
+    BOUNDARY = 0,
+    DIFFUSE = 1,   ///< Diffuse material (Oren-Nayar model)
 };
 
 /**

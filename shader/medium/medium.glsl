@@ -30,7 +30,7 @@ struct PhaseSampleInfo {
 };
 
 /**
- * @struct WavelengthEvalResult
+ * @struct WavelengthEvalInfo
  * @brief Info of wavelength PDF evaluation
  */
 struct WavelengthEvalInfo {
@@ -38,7 +38,7 @@ struct WavelengthEvalInfo {
 };
 
 /**
- * @struct WavelengthSampleResult
+ * @struct WavelengthSampleInfo
  * @brief Info of wavelength sampling
  */
 struct WavelengthSampleInfo {
@@ -52,7 +52,7 @@ struct WavelengthSampleInfo {
  */
 struct MediumEvalInfo {
     SampledSpectrum transmittance;  ///< Transmittance spectrum
-    float trans_pdf;                ///< Transmittance PDF
+    float pdf;                ///< Transmittance PDF
 };
 
 /**
@@ -62,7 +62,7 @@ struct MediumEvalInfo {
 struct MediumSampleInfo {
     SampledSpectrum transmittance;  ///< Transmittance spectrum
     float distance;                 ///< Sampled distance
-    float trans_pdf;                ///< Transmittance PDF
+    float pdf;                ///< Transmittance PDF
     bool scattered;                 ///< Whether scattering occurred
 };
 
@@ -223,7 +223,7 @@ PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy)
  * @brief Evaluates wavelength PDF for medium scattering
  * @param beta Spectral beta (path contribution)
  * @param albedo Medium albedo spectrum
- * @return WavelengthEvalResult containing PDF for each wavelength
+ * @return WavelengthEvalInfo containing PDF for each wavelength
  */
 WavelengthEvalInfo MediumWavelengthEvaluate(SampledSpectrum beta, SampledSpectrum albedo) {
     WavelengthEvalInfo result;
@@ -248,7 +248,7 @@ WavelengthEvalInfo MediumWavelengthEvaluate(SampledSpectrum beta, SampledSpectru
  * @param beta Spectral beta (path contribution)
  * @param albedo Medium albedo spectrum
  * @param u Random value in [0, 1)
- * @return WavelengthSampleResult containing sampled channel and PDF
+ * @return WavelengthSampleInfo containing sampled channel and PDF
  */
 WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectrum albedo, float u) {
     WavelengthSampleInfo result;
@@ -276,18 +276,18 @@ WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectru
  * @brief Evaluates transmittance for a given distance in homogeneous medium
  * @param info Intersection info containing medium properties
  * @param beta Spectral beta (path contribution)
- * @param distance Distance to evaluate
  * @param scattered Whether scattering is assumed
  * @return MediumEvalInfo containing transmittance and PDF
  */
-MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectrum beta, float distance, bool scattered) {
+MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectrum beta, bool scattered) {
     MediumEvalInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
-    result.trans_pdf = 0.0f;
+    result.pdf = 0.0f;
     
+    float distance = info.distance;
     // Evaluate wavelength PDF
     SampledSpectrum albedo = Div(info.medium.sigma_s, info.medium.sigma_t);
-    WavelengthEvalResult wavelength_result = MediumWavelengthEvaluate(beta, albedo);
+    WavelengthEvalInfo wavelength_result = MediumWavelengthEvaluate(beta, albedo);
     SampledSpectrum wavelength_pdf = wavelength_result.pdf;
     
     // Calculate transmittance
@@ -298,13 +298,13 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
     if (!scattered) {
         // No scattering case
         for (int i = 0; i < NSpectrumSamples; i++) {
-            result.trans_pdf += wavelength_pdf.values[i] * trans.values[i];
+            result.pdf += wavelength_pdf.values[i] * trans.values[i];
         }
     } 
     else {
         // Scattering case
         for (int i = 0; i < NSpectrumSamples; i++) {
-            result.trans_pdf += wavelength_pdf.values[i] * trans.values[i] * info.medium.sigma_t.values[i];
+            result.pdf += wavelength_pdf.values[i] * trans.values[i] * info.medium.sigma_t.values[i];
         }
     }
     
@@ -335,26 +335,27 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
  * @brief Samples a distance in homogeneous medium
  * @param info Intersection info containing medium properties
  * @param beta Spectral beta (path contribution)
- * @param max_distance Maximum distance to sample
  * @param sample_xy Random value in [0, 1)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, float max_distance, vec2 sample_xy) {
+MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec2 sample_xy) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
-    result.trans_pdf = 0.0f;
+    result.pdf = 0.0f;
     result.scattered = false;
+    
+    float max_distance = info.distance;  // 从info中获取最大距离
     
     // Sample wavelength channel
     SampledSpectrum albedo = Div(info.medium.sigma_s, info.medium.sigma_t);
-    WavelengthSampleResult wavelength_result = MediumWavelengthSample(beta, albedo, sample_xy.x);
+    WavelengthSampleInfo wavelength_result = MediumWavelengthSample(beta, albedo, sample_xy.x);
     int channel = wavelength_result.channel;
     SampledSpectrum wavelength_pdf = wavelength_result.pdf;
     
     // Sample collision-free distance using exponential distribution
-    float u_sample = sample_xy.y;
-    float sample_val = 1.0f - u_sample;
+    float u = sample_xy.y;
+    float sample_val = 1.0f - u;
     if (sample_val <= 0.0f) {
         sample_val = 0.0f;
     }
@@ -373,7 +374,7 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
         
         // Calculate PDF for boundary hit
         for (int i = 0; i < NSpectrumSamples; i++) {
-            result.trans_pdf += wavelength_pdf.values[i] * trans.values[i];
+            result.pdf += wavelength_pdf.values[i] * trans.values[i];
         }
         
         result.transmittance = trans;
@@ -387,7 +388,7 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
         
         // Calculate PDF for scattering event
         for (int i = 0; i < NSpectrumSamples; i++) {
-            result.trans_pdf += wavelength_pdf.values[i] * trans.values[i] * info.medium.sigma_t.values[i];
+            result.pdf += wavelength_pdf.values[i] * trans.values[i] * info.medium.sigma_t.values[i];
         }
         
         result.transmittance = trans;
@@ -418,23 +419,18 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
  * @brief Unified medium distance evaluation function that dispatches to the appropriate medium model
  * @param info Intersection data containing medium properties
  * @param beta Spectral beta (path contribution)
- * @param distance Distance to evaluate
  * @param scattered Whether scattering is assumed
  * @return MediumEvalInfo containing transmittance and PDF
  */
-MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum beta, float distance, bool scattered) {
+MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum beta, bool scattered) {
     MediumEvalInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
-    result.trans_pdf = 0.0f;
+    result.pdf = 0.0f;
     
     // Dispatch based on medium type
     if (MediumType_Homogeneous == info.medium.type) {
-        return HomogeneousDistanceEvaluate(info, beta, distance, scattered);
+        return HomogeneousDistanceEvaluate(info, beta, scattered);
     }
-    // Add more medium types here in the future
-    // else if (MediumType_Heterogeneous == info.medium.type) {
-    //     return HeterogeneousDistanceEvaluate(info, beta, distance, scattered);
-    // }
     
     // Unknown medium type, return zero contribution
     return result;
@@ -444,25 +440,20 @@ MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum bet
  * @brief Unified medium distance sampling function that dispatches to the appropriate medium model
  * @param info Intersection data containing medium properties
  * @param beta Spectral beta (path contribution)
- * @param max_distance Maximum distance to sample
  * @param sample_xy Random value in [0, 1)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum beta, float max_distance, vec2 sample_xy) {
+MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec2 sample_xy) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
-    result.trans_pdf = 0.0f;
+    result.pdf = 0.0f;
     result.scattered = false;
     
     // Dispatch based on medium type
     if (MediumType_Homogeneous == info.medium.type) {
-        return HomogeneousDistanceSample(info, beta, max_distance, sample_xy);
+        return HomogeneousDistanceSample(info, beta, sample_xy);
     }
-    // Add more medium types here in the future
-    // else if (MediumType_Heterogeneous == info.medium.type) {
-    //     return HeterogeneousDistanceSample(info, beta, max_distance, sample_xy);
-    // }
     
     // Unknown medium type, return zero contribution
     return result;

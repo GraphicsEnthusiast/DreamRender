@@ -36,14 +36,14 @@ struct Triangle {
     int in_phase_type;      ///< Inside medium phase function type
     float in_g;             ///< Inside medium asymmetry parameter
     int in_medium_type;     ///< Inside medium type
-    float in_medium_flag;   ///< Inside medium flag (-1 = no medium, otherwise medium exists)
+    bool has_in_medium;
     vec3 in_sigma_s;        ///< Inside medium scattering coefficient
     vec3 in_sigma_t;        ///< Inside medium extinction coefficient
     
     int out_phase_type;     ///< Outside medium phase function type
     float out_g;            ///< Outside medium asymmetry parameter
     int out_medium_type;    ///< Outside medium type
-    float out_medium_flag;  ///< Outside medium flag (-1 = no medium, otherwise medium exists)
+    bool has_out_medium;
     vec3 out_sigma_s;       ///< Outside medium scattering coefficient
     vec3 out_sigma_t;       ///< Outside medium extinction coefficient
 };
@@ -115,7 +115,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.in_phase_type = int(in_type_info.x);
     tri.in_g = in_type_info.y;
     tri.in_medium_type = int(in_type_info.z);
-    tri.in_medium_flag = in_type_info.w;
+    tri.has_in_medium = in_type_info.w >= 0.0f ? true : false;
     tri.in_sigma_s = in_sigma_s_data.xyz;
     tri.in_sigma_t = in_sigma_t_data.xyz;
     
@@ -123,7 +123,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.out_phase_type = int(out_type_info.x);
     tri.out_g = out_type_info.y;
     tri.out_medium_type = int(out_type_info.z);
-    tri.out_medium_flag = out_type_info.w;
+    tri.has_out_medium = in_type_info.w >= 0.0f ? true : false;
     tri.out_sigma_s = out_sigma_s_data.xyz;
     tri.out_sigma_t = out_sigma_t_data.xyz;
     
