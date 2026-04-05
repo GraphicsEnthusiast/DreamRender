@@ -3,6 +3,7 @@
 
 #include "shape/shape.glsl"
 #include "material/material.glsl"
+#include "medium/medium.glsl"
 
 uniform samplerBuffer MeshLightTable;
 layout(location = 1) uniform float MeshLightTableMax;
@@ -27,6 +28,8 @@ struct LightSampleInfo {
     float distance;
     float pdf;
     SampledSpectrum emission;
+    Medium out_medium;
+    bool has_medium;
 };
 
 /**
@@ -190,10 +193,10 @@ vec3 SphericalTriangleSampleUniform(vec3 va, vec3 vb, vec3 vc, float i, float j)
  * @param position Position of the shading point
  * @param i First uniform random sample in [0, 1)
  * @param j Second uniform random sample in [0, 1)
- * @param[out] direction Sampled direction (from shading point to triangle)
- * @param[out] distance Distance to intersection point
- * @param[out] u Barycentric u coordinate
- * @param[out] v Barycentric v coordinate
+ * @param direction Sampled direction (from shading point to triangle)
+ * @param distance Distance to intersection point
+ * @param u Barycentric u coordinate
+ * @param v Barycentric v coordinate
  * @return True if intersection found, false otherwise
  */
 bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 position, float i, float j,
@@ -365,6 +368,27 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     result.pdf *= weight / MeshLightTableSum;
 
     result.emission = GetFinalEmission(tri, vec2(u, v), lambda);
+
+    result.has_medium = tri.has_out_medium;
+
+    if (result.has_medium) {
+        Medium out_medium;
+        out_medium.phase_type = tri.out_medium_type;
+        out_medium.g = tri.out_g;
+        out_medium.type = tri.out_medium_type;
+
+        // Convert sigma_s and sigma_t from RGB to spectral
+        RGB sigma_s_rgb = RGBNew(tri.out_sigma_s.r, tri.out_sigma_s.g, tri.out_sigma_s.b);
+        RGB sigma_t_rgb = RGBNew(tri.out_sigma_t.r, tri.out_sigma_t.g, tri.out_sigma_t.b);
+
+        RGBAlbedoSpectrum sigma_s_spectrum = RGBAlbedoSpectrumNew(sigma_s_rgb);
+        RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
+
+        out_medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
+        out_medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
+
+        result.out_medium = out_medium;
+    }
     
     return result;
 }

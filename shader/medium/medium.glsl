@@ -345,7 +345,7 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
     result.pdf = 0.0f;
     result.scattered = false;
     
-    float max_distance = info.distance;  // 从info中获取最大距离
+    float max_distance = info.distance;
     
     // Sample wavelength channel
     SampledSpectrum albedo = Div(info.medium.sigma_s, info.medium.sigma_t);

@@ -65,7 +65,7 @@ struct BVHNode {
  * @return Fetched Triangle structure with position and normal data
  */
 Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
-    int base = index * 16; // 16 vec4 (updated to include medium parameters)
+    int base = index * 16; // 16 vec4
     Triangle tri;
     
     // Fetch vertex positions and extract uv.x from w component
