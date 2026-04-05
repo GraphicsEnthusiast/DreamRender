@@ -114,7 +114,7 @@ void TestPipeline::Init() {
 
 	Material light_material;
 	light_material.type = MaterialType::DIFFUSE;
-	light_material.diffuse = Vector3f(0.8f);
+	light_material.diffuse = Vector3f(0.9f);
 	light_material.roughness = 0.0f;
 	light_material.emission = Vector3f(2.0f, 2.0f, 1.5f);
 
