@@ -18,34 +18,7 @@ SceneManager& SceneManager::Instance() {
 
 void SceneManager::Release() {
 	if (instance_) {
-		instance_->ReleaseInstance();
 		instance_.reset();
-	}
-}
-
-void SceneManager::ReleaseInstance() {
-	// Clear regular geometry data
-	triangles_encoded_.clear();
-	bvh_nodes_encoded_.clear();
-	triangle_tbo_.reset();
-	bvh_node_tbo_.reset();
-
-	// Clear light geometry data
-	triangles_light_encoded_.clear();
-	bvh_nodes_light_encoded_.clear();
-	triangle_light_tbo_.reset();
-	bvh_node_light_tbo_.reset();
-
-	// Clear alias table data
-	light_triangle_weights_.clear();
-	mesh_light_alias_table_tbo_.reset();
-
-	// Clear texture data
-	textures_.clear();
-	texture_name_to_id_.clear();
-	if (texture_array_ != 0) {
-		glDeleteTextures(1, &texture_array_);
-		texture_array_ = 0;
 	}
 }
 
@@ -218,7 +191,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 	// Encode triangles into the appropriate container
 	for (unsigned int mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
 		const auto& mesh = meshes[mesh_idx];
-		auto material = mesh.GetMaterial();
+		const Material* material = mesh.GetMaterial();
 
 		const unsigned int mesh_triangle_count = mesh.GetNumTriangles();
 		const auto& vertices = mesh.GetVertices();
@@ -226,9 +199,13 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		const auto& texcoords = mesh.GetTexCoords();
 		const auto& indices = mesh.GetIndices();
 
-		int emission_tex_id = material.GetTextureID(TextureType::EMISSION);
-		int diffuse_tex_id = material.GetTextureID(TextureType::DIFFUSE);
-		int roughness_tex_id = material.GetTextureID(TextureType::ROUGHNESS);
+		int emission_tex_id = material->GetTextureID(TextureType::EMISSION);
+		int diffuse_tex_id = material->GetTextureID(TextureType::DIFFUSE);
+		int roughness_tex_id = material->GetTextureID(TextureType::ROUGHNESS);
+
+		// Get media
+		const Medium* in_medium = mesh.GetInMedium();
+		const Medium* out_medium = mesh.GetOutMedium();
 
 		for (unsigned int i = 0; i < mesh_triangle_count; ++i) {
 			const unsigned int idx0 = indices[i * 3];
@@ -276,27 +253,108 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				texcoords[idx2 * 2 + 1]);
 
 			// Set material parameters
-			encoded_tri.material_type.x = static_cast<float>(material.type);
+			encoded_tri.material_type = Vector4f(
+				static_cast<float>(material->type),
+				0.0f,
+				0.0f,
+				0.0f
+			);
 
 			encoded_tri.emission = Vector4f(
-				material.emission.x,
-				material.emission.y,
-				material.emission.z,
+				material->emission.x,
+				material->emission.y,
+				material->emission.z,
 				static_cast<float>(emission_tex_id)  // w: emission texture ID
 			);
 
 			encoded_tri.diffuse = Vector4f(
-				material.diffuse.r,          // x: diffuse color R
-				material.diffuse.g,          // y: diffuse color G
-				material.diffuse.b,          // z: diffuse color B
+				material->diffuse.r,          // x: diffuse color R
+				material->diffuse.g,          // y: diffuse color G
+				material->diffuse.b,          // z: diffuse color B
 				static_cast<float>(diffuse_tex_id)  // w: diffuse texture ID
 			);
 
 			encoded_tri.roughness = Vector4f(
-				material.roughness,
+				material->roughness,
 				0.0f,
 				0.0f,
 				static_cast<float>(roughness_tex_id)  // w: roughness texture ID
+			);
+
+			// Encode inside medium
+			float in_medium_flag = -1.0f;  // Default: no medium
+			float in_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
+			float in_g = 0.0f;
+			float in_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
+			Vector3f in_sigma_s(0.0f, 0.0f, 0.0f);
+			Vector3f in_sigma_t(0.0f, 0.0f, 0.0f);
+
+			if (in_medium) {
+				in_medium_flag = 0.0f;  // Has medium
+				in_phase_type = static_cast<float>(in_medium->phase_type);
+				in_g = in_medium->g;
+				in_medium_type = static_cast<float>(in_medium->type);
+				in_sigma_s = in_medium->sigma_s;
+				in_sigma_t = in_medium->sigma_t;
+			}
+
+			encoded_tri.in_type_info = Vector4f(
+				in_phase_type,   // x: phase_type
+				in_g,            // y: g (asymmetry parameter)
+				in_medium_type,  // z: medium_type
+				in_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
+			);
+
+			encoded_tri.in_sigma_s = Vector4f(
+				in_sigma_s.x,
+				in_sigma_s.y,
+				in_sigma_s.z,
+				0.0f
+			);
+
+			encoded_tri.in_sigma_t = Vector4f(
+				in_sigma_t.x,
+				in_sigma_t.y,
+				in_sigma_t.z,
+				0.0f
+			);
+
+			// Encode outside medium
+			float out_medium_flag = -1.0f;  // Default: no medium
+			float out_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
+			float out_g = 0.0f;
+			float out_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
+			Vector3f out_sigma_s(0.0f);
+			Vector3f out_sigma_t(0.0f);
+
+			if (out_medium) {
+				out_medium_flag = 0.0f;  // Has medium
+				out_phase_type = static_cast<float>(out_medium->phase_type);
+				out_g = out_medium->g;
+				out_medium_type = static_cast<float>(out_medium->type);
+				out_sigma_s = out_medium->sigma_s;
+				out_sigma_t = out_medium->sigma_t;
+			}
+
+			encoded_tri.out_type_info = Vector4f(
+				out_phase_type,   // x: phase_type
+				out_g,            // y: g (asymmetry parameter)
+				out_medium_type,  // z: medium_type
+				out_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
+			);
+
+			encoded_tri.out_sigma_s = Vector4f(
+				out_sigma_s.x,
+				out_sigma_s.y,
+				out_sigma_s.z,
+				0.0f
+			);
+
+			encoded_tri.out_sigma_t = Vector4f(
+				out_sigma_t.x,
+				out_sigma_t.y,
+				out_sigma_t.z,
+				0.0f
 			);
 
 			// Store in appropriate container based on the is_light parameter
@@ -312,7 +370,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				};
 
 				// Calculate weight: power = area * luminance * pi for importance sampling
-				float weight = area * Luminance(material.emission) * PI;
+				float weight = area * Luminance(material->emission) * PI;
 
 				light_triangle_weights_.push_back(weight);
 				triangles_light_encoded_[index++] = encoded_tri;

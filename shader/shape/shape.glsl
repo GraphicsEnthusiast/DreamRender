@@ -27,10 +27,25 @@ struct Triangle {
     vec3 p1, p2, p3; ///< Vertex positions
     vec3 n1, n2, n3; ///< Vertex normals
     vec2 t1, t2, t3; ///< Vertex texcoords
+
     int material_type;
     vec4 emission;
     vec4 diffuse;    ///< Diffuse color (rgb) and texture flag (a: 0=const, 1=texture)
     vec4 roughness;  ///< Roughness (x) and texture flag (a: 0=const, 1=texture)
+    
+    int in_phase_type;      ///< Inside medium phase function type
+    float in_g;             ///< Inside medium asymmetry parameter
+    int in_medium_type;     ///< Inside medium type
+    float in_medium_flag;   ///< Inside medium flag (-1 = no medium, otherwise medium exists)
+    vec3 in_sigma_s;        ///< Inside medium scattering coefficient
+    vec3 in_sigma_t;        ///< Inside medium extinction coefficient
+    
+    int out_phase_type;     ///< Outside medium phase function type
+    float out_g;            ///< Outside medium asymmetry parameter
+    int out_medium_type;    ///< Outside medium type
+    float out_medium_flag;  ///< Outside medium flag (-1 = no medium, otherwise medium exists)
+    vec3 out_sigma_s;       ///< Outside medium scattering coefficient
+    vec3 out_sigma_t;       ///< Outside medium extinction coefficient
 };
 
 /**
@@ -50,7 +65,7 @@ struct BVHNode {
  * @return Fetched Triangle structure with position and normal data
  */
 Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
-    int base = index * 10; // 10 vec4
+    int base = index * 16; // 16 vec4 (updated to include medium parameters)
     Triangle tri;
     
     // Fetch vertex positions and extract uv.x from w component
@@ -76,6 +91,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.t2 = vec2(pos2.w, norm2.w);
     tri.t3 = vec2(pos3.w, norm3.w);
 
+    // Fetch material parameters
     vec4 mat_type_data = texelFetch(trangles_buffer, base + 6);
     vec4 emission_data = texelFetch(trangles_buffer, base + 7);
     vec4 diffuse_data = texelFetch(trangles_buffer, base + 8);
@@ -85,6 +101,31 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.emission = emission_data;
     tri.diffuse = diffuse_data;
     tri.roughness = roughness_data;
+    
+    // Fetch medium parameters and extract useful information
+    vec4 in_type_info = texelFetch(trangles_buffer, base + 10);
+    vec4 in_sigma_s_data = texelFetch(trangles_buffer, base + 11);
+    vec4 in_sigma_t_data = texelFetch(trangles_buffer, base + 12);
+    
+    vec4 out_type_info = texelFetch(trangles_buffer, base + 13);
+    vec4 out_sigma_s_data = texelFetch(trangles_buffer, base + 14);
+    vec4 out_sigma_t_data = texelFetch(trangles_buffer, base + 15);
+    
+    // Extract inside medium parameters
+    tri.in_phase_type = int(in_type_info.x);
+    tri.in_g = in_type_info.y;
+    tri.in_medium_type = int(in_type_info.z);
+    tri.in_medium_flag = in_type_info.w;
+    tri.in_sigma_s = in_sigma_s_data.xyz;
+    tri.in_sigma_t = in_sigma_t_data.xyz;
+    
+    // Extract outside medium parameters
+    tri.out_phase_type = int(out_type_info.x);
+    tri.out_g = out_type_info.y;
+    tri.out_medium_type = int(out_type_info.z);
+    tri.out_medium_flag = out_type_info.w;
+    tri.out_sigma_s = out_sigma_s_data.xyz;
+    tri.out_sigma_t = out_sigma_t_data.xyz;
     
     return tri;
 }

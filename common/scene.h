@@ -119,12 +119,7 @@ protected:
     /**
      * @brief Default constructor
      */
-    SceneManager() = default;
-
-    /**
-     * @brief Internal resource cleanup method
-     */
-    void ReleaseInstance();
+    SceneManager() : texture_array_(0) {}
 
     /**
      * @brief Builds alias table for light triangles considering area and emission
@@ -165,7 +160,7 @@ protected:
     std::vector<BVHNodeEncoded> bvh_nodes_light_encoded_;   ///< BVH nodes for light geometry
 
     std::vector<Texture> textures_;                         ///< Loaded textures
-    GLuint texture_array_ = 0;                              ///< OpenGL 2D texture array
+    GLuint texture_array_;                                  ///< OpenGL 2D texture array
     std::unordered_map<std::string, int> texture_name_to_id_; ///< Texture name to ID mapping
 
     AliasTable1D mesh_light_alias_table_;                   ///< Alias table for light triangle sampling

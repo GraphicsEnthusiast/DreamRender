@@ -1,6 +1,7 @@
 #include <shape.h>
 #include <tiny_obj_loader.h>
 #include <utils.h>
+#include <memory>
 
 NAMESPACE_BEGIN(dream)
 
@@ -16,11 +17,19 @@ int Texture::GetPixelCount() const noexcept {
 	return width * height;
 }
 
+Medium::Medium()
+	: phase_type(PhaseType::HenyeyGreenstein)
+	, g(0.0f)
+	, type(MediumType::HOMOGENEOUS)
+	, sigma_s(0.5f, 0.5f, 0.5f)
+	, sigma_t(0.5f, 0.5f, 0.5f) {
+}
+
 Material::Material()
 	: type(MaterialType::DIFFUSE)
 	, diffuse(0.8f, 0.8f, 0.8f)
 	, roughness(0.5f)
-	, emission(2.0f, 1.0f ,1.0f) {}
+	, emission(0.0f, 0.0f, 0.0f) {}
 
 bool Material::HasTexture(TextureType type) const {
 	auto it = texture_ids.find(type);
@@ -82,9 +91,14 @@ bool Material::HasTextures() const noexcept {
 	return GetTextureCount() > 0;
 }
 
-TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans, const Material& material)
+TriangleMesh::TriangleMesh(const std::string& file, const Transform& trans,
+	std::unique_ptr<Material> material,
+	std::unique_ptr<Medium> in_medium,
+	std::unique_ptr<Medium> out_medium)
 	: transform_(trans)
-	, material_(material) {
+	, material_(std::move(material))
+	, in_medium_(std::move(in_medium))
+	, out_medium_(std::move(out_medium)) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -205,12 +219,32 @@ const std::vector<float>& TriangleMesh::GetTexCoords() const noexcept {
 	return texcoords_;
 }
 
-const Material& TriangleMesh::GetMaterial() const noexcept {
-	return material_;
+const Material* TriangleMesh::GetMaterial() const noexcept {
+	return material_.get();
 }
 
-void TriangleMesh::SetMaterial(const Material& material) {
-	material_ = material;
+void TriangleMesh::SetMaterial(std::unique_ptr<Material> material) {
+	if (!material) {
+		ERROR("[error] Cannot set null material for triangle mesh");
+		return;
+	}
+	material_ = std::move(material);
+}
+
+const Medium* TriangleMesh::GetInMedium() const noexcept {
+	return in_medium_.get();
+}
+
+void TriangleMesh::SetInMedium(std::unique_ptr<Medium> medium) {
+	in_medium_ = std::move(medium);
+}
+
+const Medium* TriangleMesh::GetOutMedium() const noexcept {
+	return out_medium_.get();
+}
+
+void TriangleMesh::SetOutMedium(std::unique_ptr<Medium> medium) {
+	out_medium_ = std::move(medium);
 }
 
 NAMESPACE_END(dream)

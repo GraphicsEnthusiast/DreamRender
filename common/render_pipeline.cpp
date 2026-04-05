@@ -126,26 +126,26 @@ void TestPipeline::Init() {
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
 		Transform(),
-		teapot_material
+		std::make_unique<Material>(teapot_material)
 	);
 
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 		Transform::Translate(0.0f, -10.0f, 0.0f),
-		cube_material
+		std::make_unique<Material>(cube_material)
 	);
 
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 		Transform::Translate(5.0f, -10.0f, 0.0f),
-		cube_material
+		std::make_unique<Material>(cube_material)
 	);
 
 	std::vector<TriangleMesh> meshes2;
 	meshes2.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\quad.obj",
 		Transform::Scale(1.5f, 1.5f, 1.5f) * Transform::Translate(0.0f, 2.0f, 0.0f),
-		light_material
+		std::make_unique<Material>(light_material)
 	);
 
 	scene_manager.EncodeTriangles(meshes, false);
