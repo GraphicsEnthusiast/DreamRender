@@ -22,7 +22,7 @@ Medium::Medium()
 	, g(0.0f)
 	, type(MediumType::HOMOGENEOUS)
 	, sigma_s(0.5f)
-	, sigma_t(1.5f) {
+	, sigma_t(1.0f) {
 }
 
 Material::Material()

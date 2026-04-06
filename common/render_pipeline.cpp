@@ -87,7 +87,7 @@ void TestPipeline::Init() {
 
 
 	Material teapot_material;
-	teapot_material.type = MaterialType::BOUNDARY;
+	teapot_material.type = MaterialType::DIFFUSE;
 	teapot_material.diffuse = Vector3f(0.8f, 0.7f, 0.6f);
 	teapot_material.roughness = 0.5f;
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -97,7 +97,7 @@ void TestPipeline::Init() {
 
 
 	Material cube_material;
-	cube_material.type = MaterialType::DIFFUSE;
+	cube_material.type = MaterialType::BOUNDARY;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
 	cube_material.roughness = 0.3f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -126,20 +126,14 @@ void TestPipeline::Init() {
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
 		Transform(),
-		std::make_unique<Material>(teapot_material),
-		std::make_unique<Medium>(Medium())
+		std::make_unique<Material>(teapot_material)
 	);
 
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 		Transform::Translate(0.0f, -10.0f, 0.0f),
-		std::make_unique<Material>(cube_material)
-	);
-
-	meshes.emplace_back(
-		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
-		Transform::Translate(5.0f, -10.0f, 0.0f),
-		std::make_unique<Material>(cube_material)
+		std::make_unique<Material>(cube_material),
+		std::make_unique<Medium>(Medium())
 	);
 
 	std::vector<TriangleMesh> meshes2;
