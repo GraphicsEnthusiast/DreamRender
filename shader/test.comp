@@ -27,7 +27,7 @@ void main() {
     Camera cam = CreateCamera(
         camera_position, camera_target, camera_up,
         resolution, camera_distance, camera_fov,
-        camera_aperture, camera_focal_distance, false, 0
+        camera_aperture, camera_focal_distance, false
     );
 
     // Initialize Sobol sampler

@@ -97,13 +97,14 @@ struct Camera {
     float aperture_radius;///< Lens aperture radius
     float focal_distance; ///< Focal distance for depth of field
     bool filmic;          ///< True for filmic tonemap, false for gamma correction
-    int medium;           ///< Medium index the camera is in
     float width;          ///< Image plane width
     float height;         ///< Image plane height
     vec2 pixel_to_screen; ///< Pixel to screen space conversion factor
     float ratio;          ///< Focal distance ratio
     float sensor_area;    ///< Image plane area (sensor area)
     float lens_area;      ///< Lens area (calculated from aperture_radius)
+    bool has_medium;
+    Medium medium;
 };
 
 /**
@@ -127,10 +128,9 @@ struct CameraSampleInfo {
  * @param radius Aperture radius
  * @param focal Focal distance
  * @param filmic Tonemap type flag
- * @param med Medium index
  * @return Initialized Camera structure looking at target
  */
-Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, float angle, float radius, float focal, bool filmic, int med) {
+Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, float angle, float radius, float focal, bool filmic) {
     Camera cam;
     cam.position = pos;
     cam.resolution = res;
@@ -139,7 +139,6 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
     cam.aperture_radius = max(0.01f, radius);
     cam.focal_distance = focal;
     cam.filmic = filmic;
-    cam.medium = med;
     
     // Compute camera basis vectors using LookAt method
     cam.forward = normalize(pos - target);
