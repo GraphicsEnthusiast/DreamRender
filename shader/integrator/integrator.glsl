@@ -6,6 +6,33 @@
 #include "light/light.glsl"
 
 /**
+ * @brief Checks if hit represents a boundary material
+ * @param info Intersection information
+ * @return Boolean indicating if material is a boundary
+ */
+bool IsBoundaryMaterial(IntersectionInfo info) {
+    return MaterialType_Boundary == info.material.type;
+}
+
+/**
+ * @brief Checks if hit represents nothing (no intersection)
+ * @param hit Hit information
+ * @return Boolean indicating if no intersection occurred
+ */
+bool HitNothing(Hit hit) {
+    return MaxFloat == hit.distance;
+}
+
+/**
+ * @brief Checks if hit represents a light source
+ * @param hit Hit information
+ * @return Boolean indicating if intersection is with a light source
+ */
+bool HitLight(Hit hit) {
+    return hit.is_light;
+}
+
+/**
  * @brief Gets intersection information from hit data
  * @param hit Hit information
  * @param ray_direction The direction of the incoming ray (normalized)
@@ -13,6 +40,7 @@
  * @return IntersectionInfo with material, texture, and medium data
  */
 IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelengths lambda) {
+    IntersectionInfo info;
     Triangle tri;
     if (hit.is_light) {
         tri = FetchTriangle(hit.tri_index, TrianglesLight);
@@ -36,7 +64,6 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     vec3 geometry_normal = normalize(cross(edge1, edge2));
 
     // Create initial intersection info
-    IntersectionInfo info;
     info.tri_index = hit.tri_index;
     info.distance = hit.distance;
     info.position = position;
@@ -77,50 +104,37 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     info.has_medium = false;
 
     // Determine which side of the surface the ray is coming from
-    // If front_face is true, ray is hitting from outside, so outside medium is incoming medium
-    // If front_face is false, ray is hitting from inside, so inside medium is incoming medium
     if (info.front_face) {
-        // Ray is hitting from outside, so use outside medium parameters
         if (tri.has_out_medium) {
             info.has_medium = true;
-
             medium.phase_type = tri.out_phase_type;
             medium.g = tri.out_g;
             medium.type = tri.out_medium_type;
 
-            // Convert sigma_s and sigma_t from RGB to spectral
             RGB sigma_s_rgb = RGBNew(tri.out_sigma_s.r, tri.out_sigma_s.g, tri.out_sigma_s.b);
             RGB sigma_t_rgb = RGBNew(tri.out_sigma_t.r, tri.out_sigma_t.g, tri.out_sigma_t.b);
-
             RGBAlbedoSpectrum sigma_s_spectrum = RGBAlbedoSpectrumNew(sigma_s_rgb);
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
-
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
         }
     }
     else {
-        // Ray is hitting from inside, so use inside medium parameters
         if (tri.has_in_medium) {
             info.has_medium = true;
-
             medium.phase_type = tri.in_phase_type;
             medium.g = tri.in_g;
             medium.type = tri.in_medium_type;
 
-            // Convert sigma_s and sigma_t from RGB to spectral
             RGB sigma_s_rgb = RGBNew(tri.in_sigma_s.r, tri.in_sigma_s.g, tri.in_sigma_s.b);
             RGB sigma_t_rgb = RGBNew(tri.in_sigma_t.r, tri.in_sigma_t.g, tri.in_sigma_t.b);
-
             RGBAlbedoSpectrum sigma_s_spectrum = RGBAlbedoSpectrumNew(sigma_s_rgb);
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
-
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
         }
     }
 
-    // Set the medium
     info.medium = medium;
 
     return info;
@@ -135,13 +149,15 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
  * @return Updated IntersectionInfo with new position and adjusted parameters
  */
 IntersectionInfo UpdateIntersectionInfoByMedium(IntersectionInfo info, float actual_distance, vec3 last_position, vec3 world_l) {
-    // Only using position, distance, medium
-    // Update the position to the scattering point
-    info.position = last_position + actual_distance * world_l;
-    // Adjust the remaining distance
-    info.distance = actual_distance;
+    // Only using position, distance, has_medium, medium
+    IntersectionInfo medium_info;
 
-    return info;
+    medium_info.position = last_position + actual_distance * world_l;
+    medium_info.distance = actual_distance;
+    medium_info.has_medium = info.has_medium;
+    medium_info.medium = info.medium;
+
+    return medium_info;
 }
 
 /**
@@ -161,52 +177,52 @@ float PowerHeuristic(float pdf1, float pdf2, float beta) {
     return w1 / (w1 + w2);
 }
 
-// ================================================== PathTracing ==================================================
 /**
- * @brief Samples direct lighting from a point and calculates its contribution
+ * @brief Computes visibility from shading point to light source, accounting for medium transmittance
  * @param position Starting position of the ray (shading point)
- * @param light_sample_info Information about the sampled light point (direction, medium properties)
- * @param beta Current path throughput (used for Russian roulette decisions)
+ * @param light_sample_info Information about the sampled light point
+ * @param beta Current path throughput (used for medium evaluation)
  * @param lambda Sampled wavelengths for spectral rendering
  * @param mult_trans_pdf Accumulated PDF of the transmittance sampling (product of segment PDFs)
  * @param sobol_sampler Sobol sampler for random number generation
- * @return SampledSpectrum representing the direct lighting contribution
+ * @return SampledSpectrum representing the visibility (including transmittance)
  */
-SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sample_info, SampledSpectrum beta, SampledWavelengths lambda, 
-    out float mult_trans_pdf, inout SobolSampler sobol_sampler) {
+SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sample_info, SampledSpectrum beta, 
+                                 SampledWavelengths lambda, out float mult_trans_pdf, inout SobolSampler sobol_sampler) {
+    
     float shadow_distance_remaining = light_sample_info.distance;
     vec3 shadow_origin = position;
     SampledSpectrum visibility = SampledSpectrumNewFloat(1.0f);
     mult_trans_pdf = 1.0f;
-
+    
     while (true) {
         Ray shadow_ray = SpawnShadowRay(shadow_origin, light_sample_info.world_l, shadow_distance_remaining);
         Hit occlusion_hit = BVHTraverse(shadow_ray);
-        IntersectionInfo occlusion_info;
-
+        
         // If no intersection, we've reached the light
         if (occlusion_hit.distance >= shadow_ray.tmax) {
             if (light_sample_info.has_medium) {
-                occlusion_info.has_medium = true;
-                occlusion_info.medium = light_sample_info.out_medium;
-
-                occlusion_info = UpdateIntersectionInfoByMedium(occlusion_info, shadow_distance_remaining, shadow_origin, light_sample_info.world_l);
-                MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(occlusion_info, beta, false);
-
+                IntersectionInfo medium_info;
+                medium_info.has_medium = true;
+                medium_info.medium = light_sample_info.out_medium;
+                medium_info = UpdateIntersectionInfoByMedium(medium_info, shadow_distance_remaining, shadow_origin, light_sample_info.world_l);
+                
+                MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(medium_info, beta, false);
+                
                 if (medium_eval_info.pdf > 0.0f) {
                     // Update transmittance and PDF
                     mult_trans_pdf *= medium_eval_info.pdf;
                     visibility = Mul(visibility, DivFloat(medium_eval_info.transmittance, medium_eval_info.pdf));
                 }
             }
-
+            
             // Successfully reached the light
             break;
         }
         else {
             // Get information about the intersected object
-            occlusion_info = GetIntersectionInfo(occlusion_hit, shadow_ray.direction, lambda);
-
+            IntersectionInfo occlusion_info = GetIntersectionInfo(occlusion_hit, shadow_ray.direction, lambda);
+            
             // Check if it's a boundary material
             if (!IsBoundaryMaterial(occlusion_info)) {
                 // Not a boundary material, occluded
@@ -214,18 +230,18 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
 
                 break;
             }
-
+            
             // Handle boundary material
             if (occlusion_info.has_medium) {
                 MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(occlusion_info, beta, false);
-
+                
                 if (medium_eval_info.pdf > 0.0f) {
                     // Update transmittance and PDF
                     mult_trans_pdf *= medium_eval_info.pdf;
                     visibility = Mul(visibility, DivFloat(medium_eval_info.transmittance, medium_eval_info.pdf));
                 }
             }
-
+            
             shadow_distance_remaining -= occlusion_info.distance;
             shadow_origin = occlusion_info.position;
         }
@@ -243,200 +259,193 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
  * @param max_bounce Maximum number of ray bounces
  * @return SampledSpectrum representing accumulated radiance
  */
-SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSampler sobol_sampler, SampledWavelengths lambda, float max_bounce) {
-    // ========================= Initialization =========================
-    // Generate pixel sample
+SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSampler sobol_sampler, 
+                            SampledWavelengths lambda, float max_bounce) {
     vec2 pixel_center = vec2(pixel_coords);
     vec2 jitter = GaussianFilter(vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler)));
     pixel_center += jitter;
 
-    // Initialize path tracing
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
     SampledSpectrum L = SampledSpectrumNewFloat(0.0f);
-    IntersectionInfo info;
-    // ========================= Initialization =========================
-
-    // ========================= Process first intersection (bounce = 0) separately =========================
-    // Generate primary ray
+    
     vec2 lens_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     Ray ray = GeneratePrimaryRay(camera, pixel_center.x, pixel_center.y, lens_sample);
 
     float cos_theta = dot(ray.direction, -camera.forward);
     float camera_pdf = CameraPDF(camera, ray.direction);
-    float we = CameraWe(camera, cos_theta);
+    float we = CameraWe(camera, ray.direction);
 
     if (camera_pdf > 0.0f) {
-        // camera_sampling_weight: we * cosθ / camera_pdf = 1
         float camera_sampling_weight = we * cos_theta / camera_pdf;
-
-        // Multiply current path throughput by camera weight
         beta = MulFloat(beta, camera_sampling_weight);
     }
     else {
         return L;
     }
 
-    float mult_trans_pdf = 1.0f;
-    vec3 last_position = info.position;
     vec3 world_v = -ray.direction;
     vec3 world_l = ray.direction;
+    vec3 last_position = ray.origin;
+    float bsdf_phase_pdf = 0.0f;  // bsdf or phase pdf
+    float mult_trans_pdf = 1.0f;
 
-    Hit hit = BVHTraverse(ray);
-    // No environment light
-    if (MaxFloat == hit.distance) {
-        return L;
-    }
-
-    info = GetIntersectionInfo(hit, world_l, lambda);
-    // ========================= Process first intersection (bounce = 0) separately =========================
-
-    // ========================= Start main path tracing loop from bounce = 1 =========================
-    for (int bounce = 1; bounce < max_bounce; ++bounce) {
-        Ray next_ray;
-        float phase_bsdf_pdf;
-        SampledSpectrum phase_bsdfcosine;
-        bool is_medium_scattered;
+    for (int bounce = 0; bounce < max_bounce; ++bounce) {
+        Hit hit = BVHTraverse(ray);
+        IntersectionInfo info = GetIntersectionInfo(hit, world_l, lambda);
+        
+        // Handle medium interaction
+        bool is_medium_scattered = false;
         if (info.has_medium) {
+            // ========================= Medium Distance Sampling =========================
+            // Determine whether the next ray bounce is a surface bounce or a volume bounce
             vec2 medium_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
             MediumSampleInfo medium_sample_info = MediumDistanceSample(info, beta, medium_sample);
-
+            
             if (medium_sample_info.pdf > 0.0f) {
-                mult_trans_pdf *= medium_sample_info.pdf;
                 beta = Mul(beta, DivFloat(medium_sample_info.transmittance, medium_sample_info.pdf));
+                mult_trans_pdf *= medium_sample_info.pdf;
             }
-
+            // ========================= Medium Distance Sampling =========================
+            
             if (medium_sample_info.scattered) {
+                is_medium_scattered = true;
+
+                // Update to scattering point
                 info = UpdateIntersectionInfoByMedium(info, medium_sample_info.distance, last_position, world_l);
+                
+                // ========================= Volume Light Sampling =========================
+                // Sampling direct illumination within the volume
+                float mult_trans_pdf_nee = 1.0f;
+                LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
+                
+                // Compute visibility and medium transmittance
+                SampledSpectrum visibility = DirectLightVisibility(
+                    info.position, light_sample_info, beta, lambda, 
+                    mult_trans_pdf_nee, sobol_sampler
+                );
+                
+                // Evaluate phase function
+                PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_v, light_sample_info.world_l);
+                
+                if (light_sample_info.pdf > 0.0f && phase_eval_info.pdf > 0.0f && mult_trans_pdf_nee > 0.0f) {
+                    float mis_weight = PowerHeuristic(light_sample_info.pdf, phase_eval_info.pdf * mult_trans_pdf_nee, 2.0f);
+
+                    // L_light = β * visibility * mis_weight * Le * phase / light_pdf
+                    SampledSpectrum L_light = Mul(MulFloat(Mul(beta, visibility), mis_weight),
+                        DivFloat(Mul(light_sample_info.emission, phase_eval_info.phase), light_sample_info.pdf));
+                    
+                    L = Add(L, L_light);
+                }
+                // ========================= Volume Light Sampling =========================
+                
+                // ========================= Phase Sampling =========================
+                // Sample phase function direction
                 vec2 phase_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
                 PhaseSampleInfo phase_sample_info = PhaseSample(info, world_v, phase_sample);
-
-                // Cast ray in sampled direction
-                phase_bsdf_pdf = phase_sample_info.pdf;
-                phase_bsdfcosine = phase_sample_info.phase;
-                next_ray = SpawnRay(info.position, phase_sample_info.world_l, vec3(0.0f), 0.0f, MaxFloat);
-                is_medium_scattered = true;
-            }
-            else {
-                if (1 == bounce && hit.is_light) {
-                    LightEvalInfo first_light_eval_info = MeshLightEvaluate(world_l, info, camera.position, lambda);
-                    L = Add(L, Mul(beta, first_light_eval_info.emission));
-
-                    break;
+                
+                if (phase_sample_info.pdf > 0.0f) {
+                    beta = Mul(beta, DivFloat(phase_sample_info.phase, phase_sample_info.pdf));
+                    world_l = phase_sample_info.world_l;
+                    bsdf_phase_pdf = phase_sample_info.pdf;
                 }
-                is_medium_scattered = false;
+                // ========================= Phase Sampling =========================
             }
         }
+        
+        // If not scattered in medium
         if (!info.has_medium || !is_medium_scattered) {
-            if (1 == bounce && hit.is_light) {
-                LightEvalInfo first_light_eval_info = MeshLightEvaluate(world_l, info, camera.position, lambda);
-                L = Add(L, Mul(beta, first_light_eval_info.emission));
+            // Handle hitting a light source
+            if (HitLight(hit)) {
+                // ========================= BSDF or Phase Sampling =========================
+                float mis_weight = 1.0f;
+                LightEvalInfo light_eval_info = MeshLightEvaluate(world_l, info, last_position, lambda);
+                
+                if (0 != bounce && light_eval_info.pdf > 0.0f) {
+                    mis_weight = PowerHeuristic(bsdf_phase_pdf * mult_trans_pdf, light_eval_info.pdf, 2.0f);
+                }
+                
+                // L_material_or_medium = β * visibility * mis_weight * Le * (bsdf * cos or phase) / bsdf_phase_pdf                 
+                //                      = β' * mis_weight * Le
+                // β' = β * visibility * (bsdf * cos or phase) / bsdf_phase_pdf (Already calculated in the previous bounce)
+                SampledSpectrum L_material_or_medium = MulFloat(Mul(beta, light_eval_info.emission), mis_weight);
 
+                L = Add(L, L_material_or_medium);
+                // ========================= BSDF or Phase Sampling =========================
+                
                 break;
             }
-
-            if (IsBoundaryMaterial(info)) {
-                ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
-                world_v = -normalize(ray.direction);
+            // Handle hitting nothing (environment)
+            else if (HitNothing(hit)) {
+                // We don't have environment light, so just break
+                break;
+            }
+            // Handle hitting medium boundary
+            else if (IsBoundaryMaterial(info)) {
+                world_v = -world_l;
                 last_position = info.position;
+                ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
+                bounce--;  // Don't count this as a bounce
 
                 continue;
             }
+            // Handle regular surface interaction
+            else {
+                // ========================= Surface Light Sampling =========================
+                // Sampling direct illumination on the surface
+                float mult_trans_pdf_nee = 1.0f;
+                LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
+                
+                // Compute visibility and medium transmittance
+                SampledSpectrum visibility = DirectLightVisibility(
+                    info.position, light_sample_info, beta, lambda, 
+                    mult_trans_pdf_nee, sobol_sampler
+                );
+                
+                // Evaluate BSDF
+                MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, light_sample_info.world_l, lambda);
+                
+                if (light_sample_info.pdf > 0.0f && mat_eval_info.pdf > 0.0f) {
+                    float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf * mult_trans_pdf_nee, 2.0f);
+                    // L_light = β * visibility * mis_weight * Le * bsdf * cos / light_pdf
+                    SampledSpectrum L_light = Mul(MulFloat(Mul(beta, visibility), mis_weight),
+                        DivFloat(Mul(light_sample_info.emission, mat_eval_info.bsdf_cosine), light_sample_info.pdf));
+                    
+                    L = Add(L, L_light);
+                }
+                // ========================= Surface Light Sampling =========================
+                
 
-            vec2 bsdf_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-            MaterialSampleInfo mat_sample_info = MaterialSample(info, world_v, bsdf_sample, lambda);
-
-            // Cast ray in sampled direction
-            phase_bsdf_pdf = mat_sample_info.pdf;
-            phase_bsdfcosine = mat_sample_info.bsdf_cosine;
-            next_ray = SpawnRay(info.position, mat_sample_info.world_l, info.geometry_normal, 0.0f, MaxFloat);
-            is_medium_scattered = false;
-        }
-
-        // ========================= Light Sampling =========================
-        float mult_nee_trans_pdf = 1.0f;
-        LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
-        SampledSpectrum visibility = DirectLightVisibility(info.position, light_sample_info, beta, lambda, mult_nee_trans_pdf, sobol_sampler);
-
-        if (is_medium_scattered) {
-            PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_v, light_sample_info.world_l);
-
-            if (light_sample_info.pdf > 0.0f && phase_eval_info.pdf > 0.0f) {
-                float mis_weight = PowerHeuristic(light_sample_info.pdf, phase_eval_info.pdf * mult_nee_trans_pdf, 2.0f);
-                SampledSpectrum light_sampling_contribution = Mul(Mul(MulFloat(DivFloat(Mul(light_sample_info.emission, phase_eval_info.phase), 
-                    light_sample_info.pdf), mis_weight), visibility), beta);
-
-                // Accumulate to total radiance
-                L = Add(L, light_sampling_contribution);
+                // ========================= BSDF Sampling =========================
+                // Sample BSDF direction
+                vec2 bsdf_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+                MaterialSampleInfo mat_sample_info = MaterialSample(info, world_v, bsdf_sample, lambda);
+                
+                if (mat_sample_info.pdf > 0.0f) {
+                    beta = Mul(beta, DivFloat(mat_sample_info.bsdf_cosine, mat_sample_info.pdf));
+                    world_l = mat_sample_info.world_l;
+                    bsdf_phase_pdf = mat_sample_info.pdf;
+                }
+                // ========================= BSDF Sampling =========================
             }
-        }
-        else {
-            MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, light_sample_info.world_l, lambda);
-
-            if (light_sample_info.pdf > 0.0f && mat_eval_info.pdf > 0.0f) {
-                float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf * mult_nee_trans_pdf, 2.0f);
-                SampledSpectrum light_sampling_contribution = Mul(Mul(MulFloat(DivFloat(Mul(light_sample_info.emission, mat_eval_info.bsdf_cosine), 
-                    light_sample_info.pdf), mis_weight), visibility), beta);
-
-                // Accumulate to total radiance
-                L = Add(L, light_sampling_contribution);
-            } 
         }
         
-        // ========================= Light Sampling =========================
-
-        // ========================= Material or Medium Sampling =========================
-        world_l = next_ray.direction;
-        Hit new_hit = BVHTraverse(next_ray);
-
-        // No environment light
-        if (MaxFloat == new_hit.distance) {
-            break;
-        }
-
-        // Check if ray hits a light source
-        // If it does not hit the light source, the contribution is 0, so it can be disregarded
-        if (new_hit.is_light) {
-            info = GetIntersectionInfo(new_hit, next_ray.direction, lambda);
-            LightEvalInfo light_eval_info = MeshLightEvaluate(world_l, info, last_position, lambda);
-
-            if (light_eval_info.pdf > 0.0f && phase_bsdf_pdf > 0.0f) {
-                float mis_weight = PowerHeuristic(phase_bsdf_pdf * mult_trans_pdf, light_eval_info.pdf, 2.0f);
-                mis_weight = 1.0f;
-                SampledSpectrum bsdf_phase_sampling_contribution = Mul(MulFloat(DivFloat(Mul(light_eval_info.emission, phase_bsdfcosine), 
-                    phase_bsdf_pdf), mis_weight), beta);
-
-                // Accumulate to total radiance
-                L = Add(L, bsdf_phase_sampling_contribution);
-            }
-
-            // Terminate path after hitting a light source
-            break;
-        }
-        // ========================= Material or Medium Sampling =========================
-
-        // ========================= Russian Roulette Wheel =========================
+        // Russian roulette
         if (bounce > 3 && Max(beta) < 0.1f) {
             float q = max(0.05f, 1.0f - Max(beta));
             if (SobolSamplerGet1(sobol_sampler) < q) {
                 break;
             }
-
             beta = DivFloat(beta, 1.0f - q);
         }
 
-        // Update path throughput
-        beta = Mul(beta, DivFloat(phase_bsdfcosine, phase_bsdf_pdf));
-        // Update view direction for next bounce
-        ray = next_ray;
-        world_v = -normalize(ray.direction);
-        last_position = info.position;
+        // Update for next bounce
+        world_v = -world_l;
         mult_trans_pdf = 1.0f;
-        // ========================= Russian Roulette Wheel =========================
+        last_position = info.position;
+        ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
     }
-    // ========================= Start main path tracing loop from bounce = 1 =========================
-
+    
     return L;
 }
-// ================================================== PathTracing ==================================================
 
 #endif // INTEGRATOR_GLSL

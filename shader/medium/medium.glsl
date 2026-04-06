@@ -114,13 +114,11 @@ PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_v, vec2
     result.pdf = 0.0f;
     
     float g = info.medium.g;
-    vec3 local_l;
+
     // Handle isotropic scattering (g = 0)
     if (0.0f == g) {
-        local_l = UniformSphereSample(sample_xy);
-        
         // Set phase value for all wavelengths
-        result.world_l = ToWorldFromUp(local_l, world_v);
+        result.world_l = UniformSphereSample(sample_xy);
         result.phase = SampledSpectrumNewFloat(1.0f / (4.0f * PI));
         result.pdf = UniformSpherePDF();
 
@@ -148,7 +146,7 @@ PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_v, vec2
     float cos_phi = cos(phi);
     
     // Create direction in local coordinate system (z-up)
-    local_l = vec3(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
+    vec3 local_l = vec3(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
     
     // Calculate phase function value
     float cubic_term = (1.0f + g * g - 2.0f * g * cos_theta);

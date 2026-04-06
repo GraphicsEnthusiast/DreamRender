@@ -103,8 +103,6 @@ struct Camera {
     float ratio;          ///< Focal distance ratio
     float sensor_area;    ///< Image plane area (sensor area)
     float lens_area;      ///< Lens area (calculated from aperture_radius)
-    bool has_medium;
-    Medium medium;
 };
 
 /**
@@ -199,10 +197,12 @@ Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy)
 /**
  * @brief Calculates the camera sampling we
  * @param cam Camera structure
- * @param cos_theta Cosine of the angle between the ray direction and camera forward axis
+ * @param dir Direction from camera position to destination
  * @return Calculated we value
  */
-float CameraWe(Camera cam, float cos_theta) {
+float CameraWe(Camera cam, vec3 dir) {
+    float cos_theta = dot(dir, -cam.forward);
+
     // Calculate we (We): (distance²) / (sensor_area * lens_area * cos⁴θ)
     return cam.distance * cam.distance / (cam.sensor_area * cam.lens_area * pow(cos_theta, 4.0f));
 }
@@ -253,7 +253,7 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
     // where r² = dot(dir, dir)
     result.pdf = dot(dir, dir) / (cos_theta * cam.lens_area);
     
-    result.we = CameraWe(cam, cos_theta);
+    result.we = CameraWe(cam, normalized_dir);
     
     return result;
 }

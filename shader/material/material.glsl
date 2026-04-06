@@ -13,15 +13,6 @@ const int MaterialType_Boundary = 0;
 const int MaterialType_Diffuse = 1;  ///< Diffuse material (Oren-Nayar model)
 
 /**
- * @brief Checks if hit represents a boundary material
- * @param info Intersection information
- * @return Boolean indicating if material is a boundary
- */
-bool IsBoundaryMaterial(IntersectionInfo info) {
-    return MaterialType_Boundary == info.material.type;
-}
-
-/**
  * @struct MaterialEvalInfo
  * @brief Stores the result of material evaluation during light transport simulation.
  */

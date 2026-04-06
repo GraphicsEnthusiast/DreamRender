@@ -24,7 +24,7 @@ void main() {
     }
 
     // Create camera
-    Camera cam = CreateCamera(
+    Camera camera = CreateCamera(
         camera_position, camera_target, camera_up,
         resolution, camera_distance, camera_fov,
         camera_aperture, camera_focal_distance, false
@@ -40,7 +40,7 @@ void main() {
     SampledWavelengths lambda = SampledWavelengthsSampleVisible(wavelength_sample);
 
     // Use the PathTracing function
-    SampledSpectrum L = PathTracing(pixel_coords, cam, sobol_sampler, lambda, 10);
+    SampledSpectrum L = PathTracing(pixel_coords, camera, sobol_sampler, lambda, 50);
 
     RGB linear_rgb = SampledSpectrumToRGB(L, lambda);
     RGB display_rgb = LinearToSRGB(linear_rgb);

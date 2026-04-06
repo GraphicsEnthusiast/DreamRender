@@ -87,7 +87,7 @@ void TestPipeline::Init() {
 
 
 	Material teapot_material;
-	teapot_material.type = MaterialType::DIFFUSE;
+	teapot_material.type = MaterialType::BOUNDARY;
 	teapot_material.diffuse = Vector3f(0.8f, 0.7f, 0.6f);
 	teapot_material.roughness = 0.5f;
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -126,7 +126,8 @@ void TestPipeline::Init() {
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
 		Transform(),
-		std::make_unique<Material>(teapot_material)
+		std::make_unique<Material>(teapot_material),
+		std::make_unique<Medium>(Medium())
 	);
 
 	meshes.emplace_back(
@@ -144,7 +145,7 @@ void TestPipeline::Init() {
 	std::vector<TriangleMesh> meshes2;
 	meshes2.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\quad.obj",
-		Transform::Scale(1.5f, 1.5f, 1.5f) * Transform::Translate(0.0f, 2.0f, 0.0f),
+		Transform::Scale(5.5f, 5.5f, 5.5f) * Transform::Translate(0.0f, 2.0f, 0.0f),
 		std::make_unique<Material>(light_material)
 	);
 

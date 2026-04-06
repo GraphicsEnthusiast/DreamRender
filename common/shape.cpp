@@ -21,8 +21,8 @@ Medium::Medium()
 	: phase_type(PhaseType::HenyeyGreenstein)
 	, g(0.0f)
 	, type(MediumType::HOMOGENEOUS)
-	, sigma_s(0.5f, 0.5f, 0.5f)
-	, sigma_t(0.5f, 0.5f, 0.5f) {
+	, sigma_s(0.5f)
+	, sigma_t(1.5f) {
 }
 
 Material::Material()
