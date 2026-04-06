@@ -177,6 +177,7 @@ float PowerHeuristic(float pdf1, float pdf2, float beta) {
     return w1 / (w1 + w2);
 }
 
+// =================================================== Path Tracing ===================================================
 /**
  * @brief Computes visibility from shading point to light source, accounting for medium transmittance
  * @param position Starting position of the ray (shading point)
@@ -360,16 +361,18 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                 float mis_weight = 1.0f;
                 LightEvalInfo light_eval_info = MeshLightEvaluate(world_l, info, last_position, lambda);
                 
-                if (0 != bounce && light_eval_info.pdf > 0.0f) {
+                if (0 != bounce) {
                     mis_weight = PowerHeuristic(bsdf_phase_pdf * mult_trans_pdf, light_eval_info.pdf, 2.0f);
                 }
                 
-                // L_material_or_medium = β * visibility * mis_weight * Le * (bsdf * cos or phase) / bsdf_phase_pdf                 
-                //                      = β' * mis_weight * Le
-                // β' = β * visibility * (bsdf * cos or phase) / bsdf_phase_pdf (Already calculated in the previous bounce)
-                SampledSpectrum L_material_or_medium = MulFloat(Mul(beta, light_eval_info.emission), mis_weight);
+                if (light_eval_info.pdf > 0.0f) {
+                    // L_material_or_medium = β * visibility * mis_weight * Le * (bsdf * cos or phase) / bsdf_phase_pdf                 
+                    //                      = β' * mis_weight * Le
+                    // β' = β * visibility * (bsdf * cos or phase) / bsdf_phase_pdf (Already calculated in the previous bounce)
+                    SampledSpectrum L_material_or_medium = MulFloat(Mul(beta, light_eval_info.emission), mis_weight);
 
-                L = Add(L, L_material_or_medium);
+                    L = Add(L, L_material_or_medium);
+                }
                 // ========================= BSDF or Phase Sampling =========================
                 
                 break;
@@ -404,13 +407,15 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                 // Evaluate BSDF
                 MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, light_sample_info.world_l, lambda);
                 
-                if (light_sample_info.pdf > 0.0f && mat_eval_info.pdf > 0.0f) {
+                if (light_sample_info.pdf > 0.0f && mat_eval_info.pdf > 0.0f && mult_trans_pdf_nee > 0.0f) {
                     float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf * mult_trans_pdf_nee, 2.0f);
                     // L_light = β * visibility * mis_weight * Le * bsdf * cos / light_pdf
                     SampledSpectrum L_light = Mul(MulFloat(Mul(beta, visibility), mis_weight),
                         DivFloat(Mul(light_sample_info.emission, mat_eval_info.bsdf_cosine), light_sample_info.pdf));
                     
                     L = Add(L, L_light);
+
+                    break;
                 }
                 // ========================= Surface Light Sampling =========================
                 
@@ -447,5 +452,6 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     
     return L;
 }
+// =================================================== Path Tracing ===================================================
 
 #endif // INTEGRATOR_GLSL
