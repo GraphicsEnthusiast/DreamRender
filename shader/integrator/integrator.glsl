@@ -414,8 +414,6 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                         DivFloat(Mul(light_sample_info.emission, mat_eval_info.bsdf_cosine), light_sample_info.pdf));
                     
                     L = Add(L, L_light);
-
-                    break;
                 }
                 // ========================= Surface Light Sampling =========================
                 
