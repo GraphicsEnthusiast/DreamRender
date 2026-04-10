@@ -269,8 +269,6 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
 
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
     SampledSpectrum radiance = SampledSpectrumNewFloat(0.0f);
-    SampledSpectrum irradiance = SampledSpectrumNewFloat(0.0f);
-    SampledSpectrum power = SampledSpectrumNewFloat(0.0f);
     
     vec2 lens_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     Ray ray = GeneratePrimaryRay(camera, pixel_center.x, pixel_center.y, lens_sample);
@@ -278,6 +276,15 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     float cos_theta = dot(ray.direction, -camera.forward);
     float camera_pdf = CameraPDF(camera, ray.direction);
     float we = CameraWe(camera, ray.direction);
+
+    if (camera_pdf > 0.0f) {
+        float camera_sampling_weight = we * cos_theta / camera_pdf;
+        beta = MulFloat(beta, camera_sampling_weight);
+    }
+
+    if (filter_sample_info.pdf > 0.0f) {
+        beta = MulFloat(beta, filter_sample_info.weight / filter_sample_info.pdf);
+    }
 
     vec3 world_v = -ray.direction;
     vec3 world_l = ray.direction;
@@ -442,17 +449,8 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
         last_position = info.position;
         ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
     }
-
-    if (camera_pdf > 0.0f) {
-        float camera_sampling_weight = we * cos_theta / camera_pdf;
-        irradiance = MulFloat(radiance, camera_sampling_weight);
-    }
-
-    if (filter_sample_info.pdf > 0.0f) {
-        power = MulFloat(irradiance, filter_sample_info.weight / filter_sample_info.pdf);
-    }
     
-    return power;
+    return radiance;
 }
 // =================================================== Path Tracing ===================================================
 

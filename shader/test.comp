@@ -40,9 +40,9 @@ void main() {
     SampledWavelengths lambda = SampledWavelengthsSampleVisible(wavelength_sample);
 
     // Use the PathTracing function
-    SampledSpectrum power = PathTracing(pixel_coords, camera, sobol_sampler, lambda, 50);
+    SampledSpectrum radiance = PathTracing(pixel_coords, camera, sobol_sampler, lambda, 50);
 
-    RGB power_linear_rgb = SampledSpectrumToRGB(power, lambda);
+    RGB radiance_linear_rgb = SampledSpectrumToRGB(radiance, lambda);
 
-    imageStore(outputTex, pixel_coords, vec4(RGBToVec3(power_linear_rgb), 1.0f));
+    imageStore(outputTex, pixel_coords, vec4(RGBToVec3(radiance_linear_rgb), 1.0f));
 }
