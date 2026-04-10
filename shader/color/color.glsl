@@ -200,6 +200,15 @@ RGB RGBClampZero(RGB rgb) {
     return result;
 }
 
+/**
+ * @brief Convert RGB custom structure to GLSL vec3
+ * @param rgb Input RGB structure (custom type with r, g, b components)
+ * @return vec3 containing the same color values
+ */
+vec3 RGBToVec3(RGB rgb) {
+    return vec3(rgb.r, rgb.g, rgb.b);
+}
+
 // XYZ Definition
 struct XYZ {
     float x;
@@ -389,34 +398,6 @@ XYZ XYZClampZero(XYZ xyz) {
     result.z = max(xyz.z, 0.0f);
 
     return result;
-}
-
-/**
- * @brief Convert a single linear component to sRGB
- * @param linear Linear color component value
- * @return sRGB encoded color component value
- */
-float LinearToSRGBComponent(float linear) {
-    if (linear <= 0.0031308f) {
-        return 12.92f * linear;
-    } 
-    else {
-        return 1.055f * pow(linear, 1.0f / 2.4f) - 0.055f;
-    }
-}
-
-/**
- * @brief Convert RGB color from linear space to sRGB space
- * @param linear RGB color in linear space
- * @return RGB color in sRGB space
- */
-RGB LinearToSRGB(RGB linear) {
-    RGB srgb;
-    srgb.r = LinearToSRGBComponent(linear.r);
-    srgb.g = LinearToSRGBComponent(linear.g);
-    srgb.b = LinearToSRGBComponent(linear.b);
-    
-    return srgb;
 }
 
 #endif // COLOR_GLSL

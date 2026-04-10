@@ -1,7 +1,6 @@
 #ifndef INTEGRATOR_GLSL
 #define INTEGRATOR_GLSL
 
-#include "sample/filter.glsl"
 #include "camera/camera.glsl"
 #include "light/light.glsl"
 
@@ -263,11 +262,15 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
 SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSampler sobol_sampler, 
                             SampledWavelengths lambda, float max_bounce) {
     vec2 pixel_center = vec2(pixel_coords);
-    vec2 jitter = GaussianFilter(vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler)));
-    pixel_center += jitter;
+    vec2 jitter_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    pixel_center += jitter_sample;
+    float pixel_area = 1.0f;
+    float pixel_pdf = 1.0f / pixel_area;
 
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
-    SampledSpectrum L = SampledSpectrumNewFloat(0.0f);
+    SampledSpectrum radiance = SampledSpectrumNewFloat(0.0f);
+    SampledSpectrum irradiance = SampledSpectrumNewFloat(0.0f);
+    SampledSpectrum power = SampledSpectrumNewFloat(0.0f);
     
     vec2 lens_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     Ray ray = GeneratePrimaryRay(camera, pixel_center.x, pixel_center.y, lens_sample);
@@ -275,14 +278,6 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     float cos_theta = dot(ray.direction, -camera.forward);
     float camera_pdf = CameraPDF(camera, ray.direction);
     float we = CameraWe(camera, ray.direction);
-
-    if (camera_pdf > 0.0f) {
-        float camera_sampling_weight = we * cos_theta / camera_pdf;
-        beta = MulFloat(beta, camera_sampling_weight);
-    }
-    else {
-        return L;
-    }
 
     vec3 world_v = -ray.direction;
     vec3 world_l = ray.direction;
@@ -335,7 +330,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                     SampledSpectrum L_light = Mul(MulFloat(Mul(beta, visibility), mis_weight),
                         DivFloat(Mul(light_sample_info.emission, phase_eval_info.phase), light_sample_info.pdf));
                     
-                    L = Add(L, L_light);
+                    radiance = Add(radiance, L_light);
                 }
                 // ========================= Volume Light Sampling =========================
                 
@@ -365,13 +360,13 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                     mis_weight = PowerHeuristic(bsdf_phase_pdf * mult_trans_pdf, light_eval_info.pdf, 2.0f);
                 }
                 
-                if (light_eval_info.pdf > 0.0f) {
+                if (light_eval_info.pdf > 0.0f && bsdf_phase_pdf > 0.0f && mult_trans_pdf > 0.0f) {
                     // L_material_or_medium = β * visibility * mis_weight * Le * (bsdf * cos or phase) / bsdf_phase_pdf                 
                     //                      = β' * mis_weight * Le
                     // β' = β * visibility * (bsdf * cos or phase) / bsdf_phase_pdf (Already calculated in the previous bounce)
                     SampledSpectrum L_material_or_medium = MulFloat(Mul(beta, light_eval_info.emission), mis_weight);
 
-                    L = Add(L, L_material_or_medium);
+                    radiance = Add(radiance, L_material_or_medium);
                 }
                 // ========================= BSDF or Phase Sampling =========================
                 
@@ -413,7 +408,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                     SampledSpectrum L_light = Mul(MulFloat(Mul(beta, visibility), mis_weight),
                         DivFloat(Mul(light_sample_info.emission, mat_eval_info.bsdf_cosine), light_sample_info.pdf));
                     
-                    L = Add(L, L_light);
+                    radiance = Add(radiance, L_light);
                 }
                 // ========================= Surface Light Sampling =========================
                 
@@ -447,8 +442,17 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
         last_position = info.position;
         ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
     }
+
+    if (camera_pdf > 0.0f) {
+        float camera_sampling_weight = we * cos_theta / camera_pdf;
+        irradiance = MulFloat(radiance, camera_sampling_weight);
+    }
+
+    if (pixel_pdf > 0.0f) {
+        power = DivFloat(irradiance, pixel_pdf);
+    }
     
-    return L;
+    return power;
 }
 // =================================================== Path Tracing ===================================================
 

@@ -16,19 +16,11 @@ void main() {
         return;
     }
     
-    vec4 current = imageLoad(CurrentFrame, pixel_coords);
-    vec4 previous = imageLoad(PreviousFrame, pixel_coords);
-    
-    // Calculate blend factor based on frame counter
-    // As frame counter increases, new frames contribute less to the accumulation
     float blend_factor = 1.0f / float(FrameCounter + 1);
     
-    // Blend between current and previous frames using mix function
-    // mix(x, y, a) = x * (1 - a) + y * a
-    // So with blend_factor = 1 / (n + 1), we get:
-    // result = previous * (1 - 1 / (n + 1)) + current * (1 / (n + 1))
-    //        = previous * (n / (n + 1)) + current * (1 / (n + 1))
-    vec4 blended = mix(previous, current, blend_factor);
+    vec4 current_power = imageLoad(CurrentFrame, pixel_coords) * blend_factor;
+    vec4 previous_power = imageLoad(PreviousFrame, pixel_coords) * (1.0f - blend_factor);
+    vec4 power = current_power + previous_power;
     
-    imageStore(OutputImage, pixel_coords, blended);
+    imageStore(OutputImage, pixel_coords, power);
 }
