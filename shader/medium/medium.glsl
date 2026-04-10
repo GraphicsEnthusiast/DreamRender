@@ -15,8 +15,8 @@ const int MediumType_Homogeneous = 0; ///< Homogeneous medium
  * @brief Stores the result of phase function evaluation
  */
 struct PhaseEvalInfo {
-    SampledSpectrum phase;    ///< Phase function value for each channel
-    float pdf;                ///< Probability density function value
+    SampledSpectrum phase;
+    float pdf;
 };
 
 /**
@@ -24,9 +24,9 @@ struct PhaseEvalInfo {
  * @brief Stores the result of sampling a direction from phase function
  */
 struct PhaseSampleInfo {
-    vec3 world_l;             ///< Sampled direction vector
-    SampledSpectrum phase;    ///< Phase function value for each channel
-    float pdf;                ///< Probability density function value
+    vec3 world_l;
+    SampledSpectrum phase;
+    float pdf;
 };
 
 /**
@@ -34,7 +34,7 @@ struct PhaseSampleInfo {
  * @brief Info of wavelength PDF evaluation
  */
 struct WavelengthEvalInfo {
-    SampledSpectrum pdf;      ///< Probability density function for each wavelength
+    SampledSpectrum pdf;
 };
 
 /**
@@ -42,8 +42,8 @@ struct WavelengthEvalInfo {
  * @brief Info of wavelength sampling
  */
 struct WavelengthSampleInfo {
-    int channel;              ///< Sampled wavelength channel index
-    SampledSpectrum pdf;      ///< Probability density function for each wavelength
+    int channel;
+    SampledSpectrum pdf;
 };
 
 /**
@@ -51,8 +51,8 @@ struct WavelengthSampleInfo {
  * @brief Info of medium distance evaluation
  */
 struct MediumEvalInfo {
-    SampledSpectrum transmittance;  ///< Transmittance spectrum
-    float pdf;                ///< Transmittance PDF
+    SampledSpectrum transmittance;
+    float pdf;
 };
 
 /**
@@ -60,10 +60,10 @@ struct MediumEvalInfo {
  * @brief Info of medium distance sampling
  */
 struct MediumSampleInfo {
-    SampledSpectrum transmittance;  ///< Transmittance spectrum
-    float distance;                 ///< Sampled distance
-    float pdf;                ///< Transmittance PDF
-    bool scattered;                 ///< Whether scattering occurred
+    SampledSpectrum transmittance;
+    float distance;
+    float pdf;
+    bool scattered;
 };
 
 /**

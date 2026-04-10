@@ -3,6 +3,7 @@
 
 #include "camera/camera.glsl"
 #include "light/light.glsl"
+#include "sample/filter.glsl"
 
 /**
  * @brief Checks if hit represents a boundary material
@@ -257,15 +258,14 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
  * @param sobol_sampler Pre-initialized Sobol quasi-random sequence sampler for Monte Carlo integration
  * @param lambda Pre-sampled wavelengths for spectral rendering; contains wavelength values
  * @param max_bounce Maximum number of ray bounces
- * @return SampledSpectrum representing accumulated radiance
+ * @return SampledSpectrum representing accumulated power
  */
 SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSampler sobol_sampler, 
                             SampledWavelengths lambda, float max_bounce) {
-    vec2 pixel_center = vec2(pixel_coords);
-    vec2 jitter_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-    pixel_center += jitter_sample;
-    float pixel_area = 1.0f;
-    float pixel_pdf = 1.0f / pixel_area;
+    vec2 pixel_center = vec2(pixel_coords) + vec2(0.5f);
+    vec2 filter_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    FilterSample filter_sample_info = GaussianFilterSample(0.5f, filter_sample);
+    pixel_center += filter_sample_info.offset;
 
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
     SampledSpectrum radiance = SampledSpectrumNewFloat(0.0f);
@@ -448,8 +448,8 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
         irradiance = MulFloat(radiance, camera_sampling_weight);
     }
 
-    if (pixel_pdf > 0.0f) {
-        power = DivFloat(irradiance, pixel_pdf);
+    if (filter_sample_info.pdf > 0.0f) {
+        power = MulFloat(irradiance, filter_sample_info.weight / filter_sample_info.pdf);
     }
     
     return power;
