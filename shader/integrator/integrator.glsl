@@ -10,7 +10,7 @@
  * @param info Intersection information
  * @return Boolean indicating if material is a boundary
  */
-bool IsBoundaryMaterial(IntersectionInfo info) {
+bool HitBoundaryMaterial(IntersectionInfo info) {
     return MaterialType_Boundary == info.material.type;
 }
 
@@ -225,7 +225,7 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
             IntersectionInfo occlusion_info = GetIntersectionInfo(occlusion_hit, shadow_ray.direction, lambda);
             
             // Check if it's a boundary material
-            if (!IsBoundaryMaterial(occlusion_info)) {
+            if (!HitBoundaryMaterial(occlusion_info)) {
                 // Not a boundary material, occluded
                 visibility = MulFloat(visibility, 0.0f);
 
@@ -316,7 +316,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                 // Update to scattering point
                 info = UpdateIntersectionInfoByMedium(info, medium_sample_info.distance, last_position, world_l);
                 
-                // ========================= Volume Light Sampling =========================
+                // ========================= Volume Light Sampling(MIS) =========================
                 // Sampling direct illumination within the volume
                 float mult_trans_pdf_nee = 1.0f;
                 LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
@@ -339,7 +339,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                     
                     radiance = Add(radiance, L_light);
                 }
-                // ========================= Volume Light Sampling =========================
+                // ========================= Volume Light Sampling(MIS) =========================
                 
                 // ========================= Phase Sampling =========================
                 // Sample phase function direction
@@ -355,11 +355,10 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
             }
         }
         
-        // If not scattered in medium
         if (!info.has_medium || !is_medium_scattered) {
             // Handle hitting a light source
             if (HitLight(hit)) {
-                // ========================= BSDF or Phase Sampling =========================
+                // ========================= BSDF or Phase Sampling(MIS) =========================
                 float mis_weight = 1.0f;
                 LightEvalInfo light_eval_info = MeshLightEvaluate(world_l, info, last_position, lambda);
                 
@@ -375,7 +374,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
 
                     radiance = Add(radiance, L_material_or_medium);
                 }
-                // ========================= BSDF or Phase Sampling =========================
+                // ========================= BSDF or Phase Sampling(MIS) =========================
                 
                 break;
             }
@@ -385,7 +384,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                 break;
             }
             // Handle hitting medium boundary
-            else if (IsBoundaryMaterial(info)) {
+            else if (HitBoundaryMaterial(info)) {
                 world_v = -world_l;
                 last_position = info.position;
                 ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
@@ -395,7 +394,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
             }
             // Handle regular surface interaction
             else {
-                // ========================= Surface Light Sampling =========================
+                // ========================= Surface Light Sampling(MIS) =========================
                 // Sampling direct illumination on the surface
                 float mult_trans_pdf_nee = 1.0f;
                 LightSampleInfo light_sample_info = MeshLightSample(sobol_sampler, info, lambda);
@@ -417,7 +416,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                     
                     radiance = Add(radiance, L_light);
                 }
-                // ========================= Surface Light Sampling =========================
+                // ========================= Surface Light Sampling(MIS) =========================
                 
 
                 // ========================= BSDF Sampling =========================

@@ -1,0 +1,65 @@
+#version 460 core
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba32f) uniform readonly image2D InputImage;
+layout(binding = 1, rgba32f) uniform writeonly image2D OutputImage;
+
+/**
+ * @brief Applies ACES filmic tone mapping operator to linear RGB values
+ * @param color Input linear RGB color in HDR range [0, ∞)
+ * @return vec3 Tone-mapped RGB color in LDR range [0, 1]
+ */
+vec3 ACESToneMapping(vec3 color) {
+    const float a = 2.51f;
+    const float b = 0.03f;
+    const float c = 2.43f;
+    const float d = 0.59f;
+    const float e = 0.14f;
+    
+    color = (color * (a * color + b)) / (color * (c * color + d) + e);
+
+    return clamp(color, 0.0f, 1.0f);
+}
+
+/**
+ * @brief Converts linear RGB values to standard sRGB color space
+ * @param linear Input linear RGB color in range [0, 1]
+ * @return vec3 Gamma-corrected sRGB color in range [0, 1]
+ */ 
+vec3 LinearToSRGB(vec3 linear) {
+    vec3 srgb = vec3(0.0f);
+    
+    for (int i = 0; i < 3; i++) {
+        float component = linear[i];
+        
+        if (component <= 0.0031308f) {
+            srgb[i] = component * 12.92f;
+        } 
+        else {
+            srgb[i] = 1.055f * pow(component, 1.0f / 2.4f) - 0.055f;
+        }
+    }
+    
+    return srgb;
+}
+
+void main() {
+    ivec2 tex_coord = ivec2(gl_GlobalInvocationID.xy);
+    
+    // Clamp coordinates to image bounds
+    ivec2 size = imageSize(InputImage);
+    if (tex_coord.x >= size.x || tex_coord.y >= size.y) {
+        return;
+    }
+    
+    // Read input color
+    vec4 color = imageLoad(InputImage, tex_coord);
+    
+    // Apply ACES tone mapping
+    vec3 mapped_color = ACESToneMapping(color.rgb);
+    
+    // Apply accurate sRGB gamma correction
+    mapped_color = LinearToSRGB(mapped_color);
+    
+    // Write output
+    imageStore(OutputImage, tex_coord, vec4(mapped_color, color.a));
+}

@@ -197,6 +197,45 @@ void ProgressivePass::Execute() {
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
 }
 
+PostProcessingPass::PostProcessingPass(unsigned int width, unsigned int height) {
+	name_ = "Post-processing pass";
+	width_ = width;
+	height_ = height;
+
+	// Create compute shader for post-processing
+	const char* compute_path = "../shader/post_processing.comp";
+	shader_ = std::make_unique<ComputationShader>(compute_path);
+}
+
+void PostProcessingPass::Execute() {
+	if (!shader_) {
+		ERROR("[error] Post processing pass: Compute shader is not initialized.");
+
+		return;
+	}
+
+	shader_->Use();
+
+	// Retrieve input and output texture handles
+	TextureHandle input_texture = GetInputTexture("Input");
+	TextureHandle output_texture = GetOutputTexture("Output");
+
+	if (!input_texture.IsValid() || !output_texture.IsValid()) {
+		ERROR("[error] Post-processing pass: Required textures are invalid!");
+
+		return;
+	}
+
+	// Bind input and output images
+	glBindImageTexture(0, input_texture.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	// Dispatch compute shader
+	glDispatchCompute(width_ / 16, height_ / 16, 1);
+
+	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+}
+
 SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
 	name_ = "Simple compute pass"; // Consistent naming style with other passes
 	width_ = width;
@@ -263,11 +302,8 @@ void SimpleComputePass::Execute() {
 		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
 		shader_->SetInt("TextureArray", 7);
 		shader_->SetInt("TextureCount", texture_count);
-
-		//INFO("[info] Bound texture array to texture unit 7. ID: {}, Count: {}", texture_array, texture_count);
 	}
 	else {
-		//WARN("[warning] Texture array is not available or empty. ID: {}, Count: {}", texture_array, texture_count);
 		shader_->SetInt("TextureArray", 7);
 		shader_->SetInt("TextureCount", 0);
 	}

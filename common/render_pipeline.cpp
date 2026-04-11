@@ -85,16 +85,11 @@ void TestPipeline::Init() {
 	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
 	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
 
-
 	Material teapot_material;
 	teapot_material.type = MaterialType::DIFFUSE;
 	teapot_material.diffuse = Vector3f(0.8f, 0.7f, 0.6f);
 	teapot_material.roughness = 0.5f;
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
-
-	INFO("[info] Teapot material: Fixed color ({}, {}, {}), no texture",
-		teapot_material.diffuse.x, teapot_material.diffuse.y, teapot_material.diffuse.z);
-
 
 	Material cube_material;
 	cube_material.type = MaterialType::BOUNDARY;
@@ -102,24 +97,11 @@ void TestPipeline::Init() {
 	cube_material.roughness = 0.3f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
-	if (cube_diffuse_id >= 0) {
-		cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
-		INFO("[info] Cube material: Using diffuse texture ID: {}", cube_diffuse_id);
-	}
-	else {
-		WARN("[warning] Cube material: Using fallback color ({}, {}, {})",
-			cube_material.diffuse.x, cube_material.diffuse.y, cube_material.diffuse.z);
-	}
-
-
 	Material light_material;
 	light_material.type = MaterialType::DIFFUSE;
 	light_material.diffuse = Vector3f(0.9f);
 	light_material.roughness = 0.0f;
-	light_material.emission = Vector3f(2.0f, 2.0f, 1.5f);
-
-	INFO("[info] Light material: Emission = ({}, {}, {})",
-		light_material.emission.x, light_material.emission.y, light_material.emission.z);
+	light_material.emission = Vector3f(1.5f, 1.5f, 1.0f);
 
 	std::vector<TriangleMesh> meshes;
 
@@ -150,7 +132,8 @@ void TestPipeline::Init() {
 
 	TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 	TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle final_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle progressive_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle postprocess_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 
 	auto compute_pass = std::make_shared<SimpleComputePass>(rendering_size_.x, rendering_size_.y);
 	compute_pass->SetOutputTexture("Output", compute_output);
@@ -159,12 +142,17 @@ void TestPipeline::Init() {
 	auto progressive_pass = std::make_shared<ProgressivePass>(rendering_size_.x, rendering_size_.y);
 	progressive_pass->SetInputTexture("CurrentFrame", compute_output);
 	progressive_pass->SetInputTexture("PreviousFrame", previous_frame);
-	progressive_pass->SetOutputTexture("Output", final_output);
+	progressive_pass->SetOutputTexture("Output", progressive_output);
 	AddPass("Progressive", progressive_pass);
 
+	auto postprocess_pass = std::make_shared<PostProcessingPass>(rendering_size_.x, rendering_size_.y);
+	postprocess_pass->SetInputTexture("Input", progressive_output);
+	postprocess_pass->SetOutputTexture("Output", postprocess_output);
+	AddPass("PostProcessing", postprocess_pass);
+
 	ConnectPasses("Compute", "Output", "Progressive", "CurrentFrame");
+	ConnectPasses("Progressive", "Output", "PostProcessing", "Input");
 
-	SetFinalOutput(final_output);
+	SetFinalOutput(postprocess_output);
 }
-
 NAMESPACE_END(dream)

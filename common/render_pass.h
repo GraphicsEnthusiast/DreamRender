@@ -202,6 +202,31 @@ protected:
 };
 
 /**
+ * @class PostProcessingPass
+ * @brief Applies tone mapping (ACES) and gamma correction to the input image
+ */
+class PostProcessingPass : public RenderPass {
+public:
+    /**
+     * @brief Constructor for post-processing pass
+     * @param width Render target width
+     * @param height Render target height
+     */
+    PostProcessingPass(unsigned int width, unsigned int height);
+
+    /**
+     * @brief Executes the post-processing operations
+     * @note Applies ACES tone mapping and gamma correction
+     */
+    void Execute() override;
+
+protected:
+    std::unique_ptr<ComputationShader> shader_;  ///< Compute shader for post-processing
+    unsigned int width_;                         ///< Render target width
+    unsigned int height_;                        ///< Render target height
+};
+
+/**
  * @class SimpleComputePass
  * @brief Demonstrates compute shader usage by generating a gradient texture.
  */
