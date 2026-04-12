@@ -149,7 +149,6 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     vec3 world_v = -light_ray_info.ray.direction;
     vec3 world_l = light_ray_info.ray.direction;
     vec3 last_position = light_ray_info.ray.origin;
-    float bsdf_phase_pdf = 0.0f;
     Ray ray = light_ray_info.ray;
     
     for (int bounce = 0; bounce < max_bounce; ++bounce) {
@@ -206,7 +205,6 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 if (phase_sample_info.pdf > 0.0f) {
                     beta = Mul(beta, DivFloat(phase_sample_info.phase, phase_sample_info.pdf));
                     world_l = phase_sample_info.world_l;
-                    bsdf_phase_pdf = phase_sample_info.pdf;
                 }
             }
         }
@@ -257,7 +255,6 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 if (mat_sample_info.pdf > 0.0f) {
                     beta = Mul(beta, DivFloat(mat_sample_info.bsdf_cosine, mat_sample_info.pdf));
                     world_l = mat_sample_info.world_l;
-                    bsdf_phase_pdf = mat_sample_info.pdf;
                 }
             }
         }
