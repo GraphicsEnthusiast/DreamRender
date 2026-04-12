@@ -462,7 +462,7 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
     float triangle_weight = texelFetch(MeshLightTable, tri_index).y;
     float triangle_selection_pdf = triangle_weight / MeshLightTableSum;
     float point_sampling_pdf = 1.0f / triangle_area;
-    float direction_sampling_pdf = CosineHemispherePDF(cos_theta);  // cosθ/π
+    float direction_sampling_pdf = CosineHemispherePDF(cos_theta);
     
     result.pdf = triangle_selection_pdf * point_sampling_pdf * direction_sampling_pdf;
     
