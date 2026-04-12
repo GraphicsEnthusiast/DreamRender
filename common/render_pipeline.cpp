@@ -236,11 +236,11 @@ void LTPipeline::Init() {
 	TextureHandle postprocess_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
 
 	// Create light tracing integer pass
-	auto lt_pass_int = std::make_shared<LTPass>(rendering_size_.x, rendering_size_.y);
-	lt_pass_int->SetOutputTextureR(int_texture_r);
-	lt_pass_int->SetOutputTextureG(int_texture_g);
-	lt_pass_int->SetOutputTextureB(int_texture_b);
-	AddPass("LightTracing", lt_pass_int);
+	auto lt_pass = std::make_shared<LTPass>(rendering_size_.x, rendering_size_.y);
+	lt_pass->SetOutputTextureR(int_texture_r);
+	lt_pass->SetOutputTextureG(int_texture_g);
+	lt_pass->SetOutputTextureB(int_texture_b);
+	AddPass("LightTracing", lt_pass);
 
 	// Create integer to float conversion pass
 	auto convert_pass = std::make_shared<ConvertPass>(rendering_size_.x, rendering_size_.y);
