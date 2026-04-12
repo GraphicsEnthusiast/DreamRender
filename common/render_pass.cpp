@@ -393,6 +393,11 @@ void LTPass::Execute() {
 		return;
 	}
 
+	GLuint zero = 0u;
+	glClearTexImage(output_texture_r_.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+	glClearTexImage(output_texture_g_.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+	glClearTexImage(output_texture_b_.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
 	// Bind output textures as images for atomic writes
 	glBindImageTexture(0, output_texture_r_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 	glBindImageTexture(1, output_texture_g_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);

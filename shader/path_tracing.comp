@@ -101,7 +101,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
     Camera camera = CreateCamera(
         camera_position, camera_target, camera_up,
         resolution, camera_distance, camera_fov,
-        camera_aperture, camera_focal_distance, false
+        camera_aperture, camera_focal_distance
     );
 
     // Initialize Sobol sampler

@@ -108,7 +108,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     Camera camera = CreateCamera(
         camera_position, camera_target, camera_up,
         resolution, camera_distance, camera_fov,
-        camera_aperture, camera_focal_distance, false
+        camera_aperture, camera_focal_distance
     );
 
     // Initialize Sobol sampler
@@ -175,7 +175,8 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                             
                             // Convert to RGB and atomically add
                             RGB radiance_linear_rgb = SampledSpectrumToRGB(L_medium, lambda);
-                            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
+                            //AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
+                            AtomicAddColor(camera_sample_info.raster, vec3(1,0,0));
                         }
                     }
                 }
@@ -222,7 +223,8 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                             
                             // Convert to RGB and atomically add
                             RGB radiance_linear_rgb = SampledSpectrumToRGB(L_surface, lambda);
-                            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
+                            //AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
+                            AtomicAddColor(camera_sample_info.raster, vec3(0,1,0));
                         }
                     }
                 }
