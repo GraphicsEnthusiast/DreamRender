@@ -240,7 +240,7 @@ void LTPipeline::Init() {
 	lt_pass_int->SetOutputTextureR(int_texture_r);
 	lt_pass_int->SetOutputTextureG(int_texture_g);
 	lt_pass_int->SetOutputTextureB(int_texture_b);
-	AddPass("LightTracingInt", lt_pass_int);
+	AddPass("LightTracing", lt_pass_int);
 
 	// Create integer to float conversion pass
 	auto convert_pass = std::make_shared<ConvertPass>(rendering_size_.x, rendering_size_.y);
@@ -264,7 +264,7 @@ void LTPipeline::Init() {
 	AddPass("PostProcessing", postprocess_pass);
 
 	// Connect the passes
-	ConnectPasses("LightTracingInt", "", "Convert", "");
+	ConnectPasses("LightTracing", "", "Convert", "");
 	ConnectPasses("Convert", "Output", "Progressive", "CurrentFrame");
 	ConnectPasses("Progressive", "Output", "PostProcessing", "Input");
 

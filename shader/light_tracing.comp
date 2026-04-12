@@ -42,6 +42,7 @@ void AtomicAddColor(ivec2 pixel, vec3 color) {
     imageAtomicAdd(OutputTexB, pixel, b_int);
 }
 
+// =================================================== Light Tracing ===================================================
 /**
  * @brief Computes visibility from shading point to camera, accounting for medium transmittance
  * @param position Starting position of the ray (shading point)
@@ -253,6 +254,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
         ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
     }
 }
+// =================================================== Light Tracing ===================================================
 
 void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
