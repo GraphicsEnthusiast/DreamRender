@@ -128,6 +128,22 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     if (light_ray_info.pdf > 0.0f) {
         beta = Mul(beta, DivFloat(light_ray_info.emission_cosine, light_ray_info.pdf));
     }
+
+    vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    CameraSampleInfo camera_sample_info = CameraSample(camera, light_ray_info.ray.origin, camera_sample);
+    if (camera_sample_info.pdf > 0.0f) {
+        FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
+                    
+        if (filter_evaluate_info.pdf > 0.0f) {
+            beta = MulFloat(beta, filter_evaluate_info.weight / filter_evaluate_info.pdf);
+            SampledSpectrum visibility = DirectCameraVisibility(light_ray_info.ray.origin, camera_sample_info, beta, lambda, sobol_sampler);
+            SampledSpectrum L_camera = Mul(beta, visibility);
+                            
+            // Convert to RGB and atomically add
+            RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
+            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
+        }
+    }
     
     // Initialize ray state
     vec3 world_v = -light_ray_info.ray.direction;
