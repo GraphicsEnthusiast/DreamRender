@@ -319,4 +319,91 @@ void PTPass::Execute() {
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
 }
 
+LTPass::LTPass(unsigned int width, unsigned int height) {
+	name_ = "lt pass";
+	width_ = width;
+	height_ = height;
+
+	// Create the compute shader for light tracing
+	const char* compute_shader_path = "../shader/light_tracing.comp";
+	shader_ = std::make_unique<ComputationShader>(compute_shader_path);
+}
+
+void LTPass::Execute() {
+	if (!shader_) {
+		ERROR("[error] Light tracing pass: Compute shader is not initialized.");
+
+		return;
+	}
+
+	// Use (bind) the compute shader program
+	shader_->Use();
+
+	// Retrieve and validate the output texture handle
+	TextureHandle output_texture = GetOutputTexture("Output");
+	if (!output_texture.IsValid()) {
+		ERROR("[error] Light tracing pass: Output texture handle is invalid.");
+
+		return;
+	}
+
+	// Bind output texture as image for atomic writes
+	glBindImageTexture(0, output_texture.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	auto& scene_manager = SceneManager::Instance();
+
+	// Bind regular geometry buffers
+	scene_manager.GetTriangleTBO().BindTexture(0);
+	shader_->SetInt("Triangles", 0);
+	scene_manager.GetBVHNodeTBO().BindTexture(1);
+	shader_->SetInt("BVHNodes", 1);
+
+	// Bind utility SSBOs
+	RenderPass::BindSRGBToSpectrumSSBO(2);
+	shader_->SetInt("SRGBToSpectrumTable", 2);
+
+	RenderPass::BindSobolMatricesSSBO(3);
+	shader_->SetInt("SobolMatricesTable", 3);
+
+	// Bind light geometry buffers
+	scene_manager.GetTriangleLightTBO().BindTexture(4);
+	shader_->SetInt("TrianglesLight", 4);
+	scene_manager.GetBVHNodeLightTBO().BindTexture(5);
+	shader_->SetInt("BVHNodesLight", 5);
+
+	// Bind mesh light alias table texture buffer
+	scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
+	shader_->SetInt("MeshLightTable", 6);
+	shader_->SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
+	shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
+	shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
+
+	// Bind texture array
+	GLuint texture_array = scene_manager.GetTextureArray();
+	int texture_count = scene_manager.GetTextureCount();
+
+	if (0 != texture_array && texture_count > 0) {
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
+		shader_->SetInt("TextureArray", 7);
+		shader_->SetInt("TextureCount", texture_count);
+	}
+	else {
+		shader_->SetInt("TextureArray", 7);
+		shader_->SetInt("TextureCount", 0);
+	}
+
+	// Bind CIE data SSBO
+	RenderPass::BindCIESSBO(8);
+	shader_->SetInt("CIETable", 8);
+
+	// Set frame counter
+	shader_->SetUInt("FrameCounter", GetFrameCounter());
+
+	glDispatchCompute(width_ / 16, height_ / 16, 1);
+
+	// Ensure all writes are completed
+	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+}
+
 NAMESPACE_END(dream)

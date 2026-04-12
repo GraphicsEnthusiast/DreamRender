@@ -251,4 +251,29 @@ protected:
     unsigned int height_;                       ///< Height of the render target
 };
 
+/**
+ * @class LTPass
+ * @brief Path tracing pass using light tracing (forward path tracing) from light sources
+ */
+class LTPass : public RenderPass {
+public:
+    /**
+     * @brief Constructor for the light tracing compute pass
+     * @param width Width of the output texture and computation domain
+     * @param height Height of the output texture and computation domain
+     */
+    LTPass(unsigned int width, unsigned int height);
+
+    /**
+     * @brief Executes the compute shader dispatch for light tracing
+     * @note Overrides the pure virtual function from RenderPass
+     */
+    void Execute() override;
+
+protected:
+    std::unique_ptr<ComputationShader> shader_; ///< Compute shader instance
+    unsigned int width_;                        ///< Width of the render target
+    unsigned int height_;                       ///< Height of the render target
+};
+
 NAMESPACE_END(dream)

@@ -155,4 +155,89 @@ void PTPipeline::Init() {
 
 	SetFinalOutput(postprocess_output);
 }
+
+void LTPipeline::Init() {
+	auto& scene_manager = SceneManager::Instance();
+
+	// Load materials and textures (same as PTPipeline)
+	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
+	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
+
+	Material teapot_material;
+	teapot_material.type = MaterialType::DIFFUSE;
+	teapot_material.diffuse = Vector3f(0.8f, 0.7f, 0.6f);
+	teapot_material.roughness = 0.5f;
+	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
+
+	Material cube_material;
+	cube_material.type = MaterialType::BOUNDARY;
+	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
+	cube_material.roughness = 0.3f;
+	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
+
+	Material light_material;
+	light_material.type = MaterialType::DIFFUSE;
+	light_material.diffuse = Vector3f(0.9f);
+	light_material.roughness = 0.0f;
+	light_material.emission = Vector3f(1.5f, 1.5f, 1.0f);
+
+	std::vector<TriangleMesh> meshes;
+	meshes.emplace_back(
+		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
+		Transform(),
+		std::make_unique<Material>(teapot_material)
+	);
+
+	meshes.emplace_back(
+		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
+		Transform::Translate(0.0f, -10.0f, 0.0f),
+		std::make_unique<Material>(cube_material),
+		std::make_unique<Medium>(Medium())
+	);
+
+	std::vector<TriangleMesh> meshes2;
+	meshes2.emplace_back(
+		"C:\\Users\\17199\\Desktop\\DreamRender\\quad.obj",
+		Transform::Scale(5.5f, 5.5f, 5.5f) * Transform::Translate(0.0f, 2.0f, 0.0f),
+		std::make_unique<Material>(light_material)
+	);
+
+	scene_manager.EncodeTriangles(meshes, false);
+	scene_manager.EncodeTriangles(meshes2, true);
+	scene_manager.BuildBVH();
+	scene_manager.CreateGPUBuffers();
+
+	// Create textures for the pipeline
+	// Note: For light tracing, we need a texture that supports atomic operations
+	TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle progressive_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle postprocess_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+
+	// Create light tracing compute pass
+	auto light_tracing_pass = std::make_shared<LTPass>(rendering_size_.x, rendering_size_.y);
+	light_tracing_pass->SetOutputTexture("Output", compute_output);
+	AddPass("LightTracing", light_tracing_pass);
+
+	// Create progressive accumulation pass (same as before)
+	auto progressive_pass = std::make_shared<ProgressivePass>(rendering_size_.x, rendering_size_.y);
+	progressive_pass->SetInputTexture("CurrentFrame", compute_output);
+	progressive_pass->SetInputTexture("PreviousFrame", previous_frame);
+	progressive_pass->SetOutputTexture("Output", progressive_output);
+	AddPass("Progressive", progressive_pass);
+
+	// Create post-processing pass
+	auto postprocess_pass = std::make_shared<PostProcessingPass>(rendering_size_.x, rendering_size_.y);
+	postprocess_pass->SetInputTexture("Input", progressive_output);
+	postprocess_pass->SetOutputTexture("Output", postprocess_output);
+	AddPass("PostProcessing", postprocess_pass);
+
+	// Connect the passes
+	ConnectPasses("LightTracing", "Output", "Progressive", "CurrentFrame");
+	ConnectPasses("Progressive", "Output", "PostProcessing", "Input");
+
+	// Set the final output
+	SetFinalOutput(postprocess_output);
+}
+
 NAMESPACE_END(dream)

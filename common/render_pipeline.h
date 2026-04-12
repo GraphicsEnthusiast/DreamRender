@@ -117,4 +117,18 @@ public:
     void Init() override;
 };
 
+/**
+ * @class LTPipeline
+ * @brief Concrete implementation of RenderPipeline for Light Tracing
+ */
+class LTPipeline : public RenderPipeline {
+public:
+    LTPipeline(GLFWwindow* share_window = nullptr) : RenderPipeline(share_window) {}
+
+    /**
+     * @brief Configures the light tracing pipeline
+     */
+    void Init() override;
+};
+
 NAMESPACE_END(dream)
