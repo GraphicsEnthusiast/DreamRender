@@ -137,93 +137,93 @@ struct CameraRayInfo {
  * @return Initialized Camera structure looking at target
  */
 Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, float angle, float radius, float focal) {
-    Camera cam;
-    cam.position = pos;
-    cam.resolution = res;
-    cam.distance = dist;
-    cam.fov = angle;
-    cam.aperture_radius = max(0.01f, radius);
-    cam.focal_distance = focal;
+    Camera camera;
+    camera.position = pos;
+    camera.resolution = res;
+    camera.distance = dist;
+    camera.fov = angle;
+    camera.aperture_radius = max(0.01f, radius);
+    camera.focal_distance = focal;
     
     // Compute camera basis vectors using LookAt method
-    cam.forward = normalize(pos - target);
-    cam.right = normalize(cross(world_up, cam.forward));
-    cam.up = normalize(cross(cam.forward, cam.right));
+    camera.forward = normalize(pos - target);
+    camera.right = normalize(cross(world_up, camera.forward));
+    camera.up = normalize(cross(camera.forward, camera.right));
     
     // Compute camera geometry properties
-    float half_fov = cam.fov * 0.5f;
-    cam.height = tan(radians(half_fov)) * cam.distance;
-    cam.width = cam.height * cam.resolution.x / cam.resolution.y;
-    cam.sensor_area = 4.0f * cam.width * cam.height; // Sensor area
+    float half_fov = camera.fov * 0.5f;
+    camera.height = tan(radians(half_fov)) * camera.distance;
+    camera.width = camera.height * camera.resolution.x / camera.resolution.y;
+    camera.sensor_area = 4.0f * camera.width * camera.height; // Sensor area
     
-    cam.lens_area = PI * cam.aperture_radius * cam.aperture_radius;
+    camera.lens_area = PI * camera.aperture_radius * camera.aperture_radius;
     
-    cam.pixel_to_screen = vec2(
-        2.0f * cam.width / cam.resolution.x,
-        2.0f * cam.height / cam.resolution.y
+    camera.pixel_to_screen = vec2(
+        2.0f * camera.width / camera.resolution.x,
+        2.0f * camera.height / camera.resolution.y
     );
-    cam.ratio = cam.focal_distance / cam.distance;
+    camera.ratio = camera.focal_distance / camera.distance;
     
-    return cam;
+    return camera;
 }
 
 /**
  * @brief Calculates the camera sampling we
- * @param cam Camera structure
+ * @param camera Camera structure
  * @param dir Direction from camera position to destination
  * @return Calculated we value
  */
-float CameraWe(Camera cam, vec3 dir) {
-    float cos_theta = dot(dir, -cam.forward);
+float CameraWe(Camera camera, vec3 dir) {
+    float cos_theta = dot(dir, -camera.forward);
 
     // Calculate we (We): (distance²) / (sensor_area * lens_area * cos⁴θ)
-    return cam.distance * cam.distance / (cam.sensor_area * cam.lens_area * pow(cos_theta, 4.0f));
+    return camera.distance * camera.distance / (camera.sensor_area * camera.lens_area * pow(cos_theta, 4.0f));
 }
 
 /**
  * @brief Computes PDF for camera sampling
- * @param cam Camera structure
+ * @param camera Camera structure
  * @param dir Direction from camera position to destination
  * @return PDF value (solid angle measure)
  */
-float CameraPDF(Camera cam, vec3 dir) {
+float CameraPDF(Camera camera, vec3 dir) {
     // For area PDF, we assume uniform sampling over the lens area
-    float pdf_area = 1.0f / cam.lens_area;
+    float pdf_area = 1.0f / camera.lens_area;
     
-    float cos_theta = dot(dir, -cam.forward);
+    float cos_theta = dot(dir, -camera.forward);
     
     // Calculate solid angle PDF: p(ω) = (distance²) / (sensor_area * cos³θ)
-    float pdf_solid_angle = cam.distance * cam.distance / (cam.sensor_area * pow(cos_theta, 3.0f));
+    float pdf_solid_angle = camera.distance * camera.distance / (camera.sensor_area * pow(cos_theta, 3.0f));
 
     return pdf_area * pdf_solid_angle;
 }
 
 /**
  * @brief Generates a primary ray from camera with PDF and we
- * @param cam Camera structure
+ * @param camera Camera structure
  * @param pixel_x Pixel x-coordinate
  * @param pixel_y Pixel y-coordinate
  * @param sample_xy Random sample for depth of field
  * @return CameraRayInfo containing ray, PDF, and we
  */
-CameraRayInfo GenerateCameraRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy) {
+CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec2 sample_xy) {
     CameraRayInfo result;
     
-    float screen_x = pixel_x * cam.pixel_to_screen.x - cam.width;
-    float screen_y = pixel_y * cam.pixel_to_screen.y - cam.height;
+    float screen_x = pixel_x * camera.pixel_to_screen.x - camera.width;
+    float screen_y = pixel_y * camera.pixel_to_screen.y - camera.height;
 
     vec3 dir;
-    vec3 origin = cam.position;
+    vec3 origin = camera.position;
 
-    vec2 aperture_xy = sample_xy * cam.aperture_radius;
-    float focal_x = cam.ratio * screen_x;
-    float focal_y = cam.ratio * screen_y;
+    vec2 aperture_xy = sample_xy * camera.aperture_radius;
+    float focal_x = camera.ratio * screen_x;
+    float focal_y = camera.ratio * screen_y;
     vec3 aperture_offset = vec3(aperture_xy, 0.0f);
-    vec3 focal_point = vec3(focal_x, focal_y, -cam.focal_distance);
+    vec3 focal_point = vec3(focal_x, focal_y, -camera.focal_distance);
 
     dir = focal_point - aperture_offset; 
-    dir = dir.x * cam.right + dir.y * cam.up + dir.z * cam.forward;
-    origin += (aperture_offset.x * cam.right + aperture_offset.y * cam.up);
+    dir = dir.x * camera.right + dir.y * camera.up + dir.z * camera.forward;
+    origin += (aperture_offset.x * camera.right + aperture_offset.y * camera.up);
 
     result.ray.origin = origin;
     result.ray.direction = normalize(dir);
@@ -231,28 +231,34 @@ CameraRayInfo GenerateCameraRay(Camera cam, float pixel_x, float pixel_y, vec2 s
     result.ray.tmax = MaxFloat;
     
     // Compute PDF and we for the generated ray
-    float cos_theta = dot(result.ray.direction, -cam.forward);
-    result.we_cosine = CameraWe(cam, result.ray.direction) * cos_theta;
-    result.pdf = CameraPDF(cam, result.ray.direction);
+    float cos_theta = dot(result.ray.direction, -camera.forward);
+    result.we_cosine = CameraWe(camera, result.ray.direction) * cos_theta;
+    result.pdf = CameraPDF(camera, result.ray.direction);
     
     return result;
 }
 
 /**
  * @brief Samples the camera from a given position
- * @param cam Camera structure
- * @param sample_pos Sampling position
+ * @param camera Camera structure
+ * @param position Shading point position
+ * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
  * @return CameraSampleInfo structure with sampling results
  */
-CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
+CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
     CameraSampleInfo result;
     result.pdf = 0.0f; // Default to invalid
     result.we_cosine = 0.0f;
-    
-    vec3 dir = cam.position - sample_pos;
+
+    float r = sqrt(sample_xy.x);
+    float theta = 2.0f * PI * sample_xy.y;
+    vec2 disk_sample = vec2(r * cos(theta), r * sin(theta)) * camera.aperture_radius;
+
+    vec3 lens_point = camera.position + disk_sample.x * camera.right + disk_sample.y * camera.up;
+    vec3 dir = lens_point - position;
     vec3 normalized_dir = normalize(dir);
 
-    result.ray.origin = sample_pos;
+    result.ray.origin = position;
     result.ray.direction = normalized_dir;
     result.ray.tmin = Epsilon;
     result.ray.tmax = length(dir) - Epsilon;
@@ -260,16 +266,16 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
     vec3 negative_dir = -normalized_dir;
     
     // Convert to camera space
-    vec3 camera_space_dir = ToLocal(negative_dir, cam.right, cam.up, cam.forward);
+    vec3 camera_space_dir = ToLocal(negative_dir, camera.right, camera.up, camera.forward);
     if (camera_space_dir.z >= 0.0f) {
         return result;
     }
     
     float cos_theta = dot(camera_space_dir, vec3(0.0f, 0.0f, -1.0f));
-    float scale = -cam.distance / camera_space_dir.z;
+    float scale = -camera.distance / camera_space_dir.z;
     camera_space_dir *= scale;
     vec2 plane = vec2(camera_space_dir.x, camera_space_dir.y);
-    plane /= vec2(cam.width, cam.height);
+    plane /= vec2(camera.width, camera.height);
     
     if (plane.x > 1.0f || plane.x < -1.0f || plane.y > 1.0f || plane.y < -1.0f) {
         return result;
@@ -277,15 +283,15 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
 
     plane = plane * 0.5f + vec2(0.5f);
     result.raster_ndc = plane;
-    int pixel_x = int(floor(plane.x * (cam.resolution.x - 1.0f) + 0.5f));
-    int pixel_y = int(floor(plane.y * (cam.resolution.y - 1.0f) + 0.5f));
+    int pixel_x = int(floor(plane.x * (camera.resolution.x - 1.0f) + 0.5f));
+    int pixel_y = int(floor(plane.y * (camera.resolution.y - 1.0f) + 0.5f));
     result.raster = ivec2(pixel_x, pixel_y);
     
-    // Calculate PDF: p(ω) = p(A) * (r² / cosθ) = (1 / cam.lens_area) * (r² / cosθ)
+    // Calculate PDF: p(ω) = p(A) * (r² / cosθ) = (1 / camera.lens_area) * (r² / cosθ)
     // where r² = dot(dir, dir)
-    result.pdf = dot(dir, dir) / (cos_theta * cam.lens_area);
-    result.we_cosine = CameraWe(cam, normalized_dir) * cos_theta;
-    
+    result.pdf = dot(dir, dir) / (cos_theta * camera.lens_area);
+    result.we_cosine = CameraWe(camera, negative_dir) * cos_theta;
+
     return result;
 }
 
