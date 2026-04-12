@@ -387,7 +387,6 @@ void LTPass::Execute() {
 	shader_->Use();
 
 	// Retrieve and validate the output texture handle
-	TextureHandle output_texture = GetOutputTexture("Output");
 	if (!output_texture_r_.IsValid() || !output_texture_g_.IsValid() || !output_texture_b_.IsValid()) {
 		ERROR("[error] Light tracing pass: One or more output texture handles are invalid.");
 
