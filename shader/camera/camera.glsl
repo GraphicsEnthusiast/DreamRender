@@ -112,6 +112,7 @@ struct CameraSampleInfo {
     Ray ray;
     float we_cosine;
     float pdf;
+    vec2 raster_ndc;
     ivec2 raster;
 };
 
@@ -277,7 +278,8 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
         return result;
     }
 
-    plane = plane * 0.5f + vec2(0.5f, 0.5f);
+    plane = plane * 0.5f + vec2(0.5f);
+    result.raster_ndc = plane;
     int pixel_x = int(floor(plane.x * (cam.resolution.x - 1.0f) + 0.5f));
     int pixel_y = int(floor(plane.y * (cam.resolution.y - 1.0f) + 0.5f));
     result.raster = ivec2(pixel_x, pixel_y);

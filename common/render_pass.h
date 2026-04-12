@@ -227,17 +227,17 @@ protected:
 };
 
 /**
- * @class SimpleComputePass
+ * @class PTPass
  * @brief Demonstrates compute shader usage by generating a gradient texture.
  */
-class SimpleComputePass : public RenderPass {
+class PTPass : public RenderPass {
 public:
     /**
      * @brief Constructor for the simple compute pass.
      * @param width Width of the output texture and computation domain.
      * @param height Height of the output texture and computation domain.
      */
-    SimpleComputePass(unsigned int width, unsigned int height);
+    PTPass(unsigned int width, unsigned int height);
 
     /**
      * @brief Executes the compute shader dispatch.

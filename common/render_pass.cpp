@@ -236,17 +236,17 @@ void PostProcessingPass::Execute() {
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
 }
 
-SimpleComputePass::SimpleComputePass(unsigned int width, unsigned int height) {
-	name_ = "Simple compute pass"; // Consistent naming style with other passes
+PTPass::PTPass(unsigned int width, unsigned int height) {
+	name_ = "pt pass"; // Consistent naming style with other passes
 	width_ = width;
 	height_ = height;
 
 	// Create the compute shader
-	const char* compute_shader_path = "../shader/test.comp"; // Consider making path configurable
+	const char* compute_shader_path = "../shader/path_tracing.comp"; // Consider making path configurable
 	shader_ = std::make_unique<ComputationShader>(compute_shader_path);
 }
 
-void SimpleComputePass::Execute() {
+void PTPass::Execute() {
 	if (!shader_) {
 		ERROR("[error] Simple compute pass: Compute shader is not initialized.");
 

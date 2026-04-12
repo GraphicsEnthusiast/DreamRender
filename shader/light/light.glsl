@@ -33,6 +33,16 @@ struct LightSampleInfo {
 };
 
 /**
+ * @struct LightRayInfo
+ * @brief Contains information for a ray generated from a light source
+ */
+struct LightRayInfo {
+    Ray ray;                          ///< Generated ray from light source
+    SampledSpectrum emission_cosine;  ///< Light emission at the sampled point
+    float pdf;                        ///< Probability density function of the sampled point and direction
+};
+
+/**
  * @brief Retrieves the final emission color with texture mapping support
  * @param tri Triangle containing emission data (stored in .rgb for base color, .w for texture ID)
  * @param uv Texture coordinates for texture sampling
@@ -389,6 +399,82 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
 
         result.out_medium = out_medium;
     }
+    
+    return result;
+}
+
+/**
+ * @brief Generates a ray from a light source for light tracing
+ * @param sobol_sampler Sobol sequence sampler for random number generation
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return LightRayInfo containing the generated ray, emission spectrum, and PDF
+ */
+LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    LightRayInfo result;
+    result.ray.direction = vec3(0.0f);
+    result.emission_cosine = SampledSpectrumNewFloat(0.0f);
+    result.pdf = 0.0f;
+    
+    // Sample a light triangle using alias table
+    vec2 alias_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    int tri_index = AliasTable1DSample(
+        MeshLightTable, 
+        MeshLightTableSize, 
+        0, 
+        MeshLightTableMax, 
+        alias_sample
+    );
+    
+    // Fetch triangle data
+    Triangle tri = FetchTriangle(tri_index, TrianglesLight);
+    
+    // Uniformly sample a point on the triangle
+    float u = SobolSamplerGet1(sobol_sampler);
+    float v = SobolSamplerGet1(sobol_sampler);
+    
+    // Ensure barycentric coordinates are valid
+    if (u + v > 1.0f) {
+        u = 1.0f - u;
+        v = 1.0f - v;
+    }
+    
+    // Calculate sampled point on triangle
+    vec3 p0 = tri.p1;
+    vec3 p1 = tri.p2;
+    vec3 p2 = tri.p3;
+    result.ray.origin = (1.0f - u - v) * p0 + u * p1 + v * p2;
+    
+    // Calculate triangle area and normal
+    vec3 edge1 = p1 - p0;
+    vec3 edge2 = p2 - p0;
+    vec3 normal = normalize(cross(edge1, edge2));
+    float triangle_area = 0.5f * length(cross(edge1, edge2));
+    
+    // Sample direction from cosine-weighted hemisphere
+    float dir_u = SobolSamplerGet1(sobol_sampler);
+    float dir_v = SobolSamplerGet1(sobol_sampler);
+    
+    vec3 local_dir = CosineHemisphereSample(vec2(dir_u, dir_v));
+    float cos_theta = local_dir.z;  // Cosine of angle between ray direction and surface normal
+    result.ray.direction = ToWorldFromUp(local_dir, normal);
+    
+    // Calculate PDF
+    float triangle_weight = texelFetch(MeshLightTable, tri_index).y;
+    float triangle_selection_pdf = triangle_weight / MeshLightTableSum;
+    float point_sampling_pdf = 1.0f / triangle_area;
+    float direction_sampling_pdf = CosineHemispherePDF(cos_theta);  // cosθ/π
+    
+    result.pdf = triangle_selection_pdf * point_sampling_pdf * direction_sampling_pdf;
+    
+    // Calculate emission at sampled point and multiply by cosine term
+    // emission_cosine = Le * cosθ
+    vec2 uv = (1.0f - u - v) * tri.t1 + u * tri.t2 + v * tri.t3;
+    SampledSpectrum emission = GetFinalEmission(tri, uv, lambda);
+    result.emission_cosine = MulFloat(emission, cos_theta);
+    
+    // Set ray parameters
+    result.ray.tmin = 0.0f;
+    result.ray.tmax = MaxFloat;
     
     return result;
 }

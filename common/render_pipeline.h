@@ -104,17 +104,15 @@ protected:
 };
 
 /**
- * @class TestPipeline
+ * @class PTPipeline
  * @brief Concrete implementation of RenderPipeline for testing purposes
  */
-class TestPipeline : public RenderPipeline {
+class PTPipeline : public RenderPipeline {
 public:
-    TestPipeline(GLFWwindow* share_window = nullptr) : RenderPipeline(share_window) {}
+    PTPipeline(GLFWwindow* share_window = nullptr) : RenderPipeline(share_window) {}
 
     /**
-     * @brief Configures the two-pass pipeline
-     * Pass 1: SimpleComputePass - Renders the initial frame using compute shader
-     * Pass 2: ProgressivePass - Blends current frame with previous frame for accumulation
+     * @brief Configures the path tracing pipeline
      */
     void Init() override;
 };

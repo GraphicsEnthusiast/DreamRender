@@ -26,22 +26,55 @@
 // a pixel filter always normalize to 1.
 
 /**
- * @struct FilterSample
+ * @struct FilterEvaluateInfo
+ * @brief Structure containing all information about a filter
+ */
+struct FilterEvaluateInfo {
+    float weight;
+    float pdf;
+};
+
+/**
+ * @struct FilterSampleInfo
  * @brief Structure containing all information about a filter sample
  */
-struct FilterSample {
+struct FilterSampleInfo {
     vec2 offset;
     float weight;
     float pdf;
 };
 
 /**
+ * @brief Evaluates a 2D Gaussian filter at a given offset
+ * @param filter_stddev Standard deviation of the Gaussian filter (controls width)
+ * @param offset Offset from the pixel center
+ * @return FilterSampleInfo containing the same offset, weight, and PDF
+ */
+FilterEvaluateInfo GaussianFilterEvaluate(float filter_stddev, vec2 offset) {
+    // Compute Gaussian filter weight at the given offset
+    float r_squared = dot(offset, offset);
+    float variance = filter_stddev * filter_stddev;
+    float exponent = -0.5f * r_squared / variance;
+    float normalization = 1.0f / (2.0f * PI * variance);
+    float weight = exp(exponent) * normalization;
+    
+    // For importance sampling of the filter itself, the PDF equals the filter weight
+    float pdf = weight;
+    
+    FilterEvaluateInfo result;
+    result.weight = weight;
+    result.pdf = pdf;
+    
+    return result;
+}
+
+/**
  * @brief Samples a 2D Gaussian filter using the Box-Muller transform
  * @param filter_stddev Standard deviation of the Gaussian filter (controls width)
  * @param sample_xy Two independent uniform random numbers in [0,1]²
- * @return FilterSample containing offset, weight, and PDF
+ * @return FilterSampleInfo containing offset, weight, and PDF
  */
-FilterSample GaussianFilterSample(float filter_stddev, vec2 sample_xy) {
+FilterSampleInfo GaussianFilterSample(float filter_stddev, vec2 sample_xy) {
     // Avoid log(0) by clamping the first random number
     float r1 = max(sample_xy.x, Epsilon);
     
@@ -66,7 +99,7 @@ FilterSample GaussianFilterSample(float filter_stddev, vec2 sample_xy) {
     // For importance sampling of the filter itself, the PDF equals the filter weight
     float pdf = weight;
     
-    FilterSample result;
+    FilterSampleInfo result;
     result.offset = offset; // Sampled offset relative to pixel center in [-0.5, 0.5] range
     result.weight = weight;
     result.pdf = pdf;

@@ -79,7 +79,7 @@ TextureHandle RenderPipeline::CreateTexture(int width, int height) {
 	return TextureHandle{ textureID };
 }
 
-void TestPipeline::Init() {
+void PTPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
 	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
@@ -135,7 +135,7 @@ void TestPipeline::Init() {
 	TextureHandle progressive_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 	TextureHandle postprocess_output = CreateTexture(rendering_size_.x, rendering_size_.y);
 
-	auto compute_pass = std::make_shared<SimpleComputePass>(rendering_size_.x, rendering_size_.y);
+	auto compute_pass = std::make_shared<PTPass>(rendering_size_.x, rendering_size_.y);
 	compute_pass->SetOutputTexture("Output", compute_output);
 	AddPass("Compute", compute_pass);
 
