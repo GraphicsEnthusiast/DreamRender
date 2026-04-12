@@ -236,6 +236,53 @@ void PostProcessingPass::Execute() {
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
 }
 
+ConvertPass::ConvertPass(unsigned int width, unsigned int height) {
+	name_ = "convert pass";
+	width_ = width;
+	height_ = height;
+
+	// Create the compute shader for conversion
+	const char* compute_shader_path = "../shader/convert_int_to_float.comp";
+	shader_ = std::make_unique<ComputationShader>(compute_shader_path);
+}
+
+void ConvertPass::Execute() {
+	if (!shader_) {
+		ERROR("[error] Convert pass: Compute shader is not initialized.");
+
+		return;
+	}
+
+	// Use (bind) the compute shader program
+	shader_->Use();
+
+	// Retrieve and validate the texture handles
+	TextureHandle input_r = GetInputTexture("InputR");
+	TextureHandle input_g = GetInputTexture("InputG");
+	TextureHandle input_b = GetInputTexture("InputB");
+	TextureHandle output_texture = GetOutputTexture("Output");
+
+	if (!input_r.IsValid() || !input_g.IsValid() || !input_b.IsValid() || !output_texture.IsValid()) {
+		ERROR("[error] Convert pass: One or more required textures are invalid!");
+
+		return;
+	}
+
+	// Bind input integer textures
+	glBindImageTexture(0, input_r.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+	glBindImageTexture(1, input_g.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+	glBindImageTexture(2, input_b.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+
+	// Bind output float texture
+	glBindImageTexture(3, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	// Dispatch compute shader
+	glDispatchCompute(width_ / 16, height_ / 16, 1);
+
+	// Ensure all writes are completed
+	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+}
+
 PTPass::PTPass(unsigned int width, unsigned int height) {
 	name_ = "pt pass"; // Consistent naming style with other passes
 	width_ = width;
@@ -341,14 +388,16 @@ void LTPass::Execute() {
 
 	// Retrieve and validate the output texture handle
 	TextureHandle output_texture = GetOutputTexture("Output");
-	if (!output_texture.IsValid()) {
-		ERROR("[error] Light tracing pass: Output texture handle is invalid.");
+	if (!output_texture_r_.IsValid() || !output_texture_g_.IsValid() || !output_texture_b_.IsValid()) {
+		ERROR("[error] Light tracing pass: One or more output texture handles are invalid.");
 
 		return;
 	}
 
-	// Bind output texture as image for atomic writes
-	glBindImageTexture(0, output_texture.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+	// Bind output textures as images for atomic writes
+	glBindImageTexture(0, output_texture_r_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	glBindImageTexture(1, output_texture_g_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	glBindImageTexture(2, output_texture_b_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 
 	auto& scene_manager = SceneManager::Instance();
 
@@ -405,5 +454,30 @@ void LTPass::Execute() {
 	// Ensure all writes are completed
 	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
 }
+
+TextureHandle LTPass::GetOutputTextureR() const noexcept {
+	return output_texture_r_;
+}
+
+TextureHandle LTPass::GetOutputTextureG() const noexcept {
+	return output_texture_g_;
+}
+
+TextureHandle LTPass::GetOutputTextureB() const noexcept {
+	return output_texture_b_;
+}
+
+void LTPass::SetOutputTextureR(const TextureHandle& handle) {
+	output_texture_r_ = handle;
+}
+
+void LTPass::SetOutputTextureG(const TextureHandle& handle) {
+	output_texture_g_ = handle;
+}
+
+void LTPass::SetOutputTextureB(const TextureHandle& handle) {
+	output_texture_b_ = handle;
+}
+
 
 NAMESPACE_END(dream)

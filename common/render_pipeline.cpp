@@ -63,7 +63,7 @@ void RenderPipeline::SetFinalOutput(const TextureHandle& output) {
 	graph_->SetFinalOutput(output);
 }
 
-TextureHandle RenderPipeline::CreateTexture(int width, int height) {
+TextureHandle RenderPipeline::CreateTextureRGBA32F(int width, int height) {
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
@@ -73,6 +73,22 @@ TextureHandle RenderPipeline::CreateTexture(int width, int height) {
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	return TextureHandle{ textureID };
+}
+
+TextureHandle RenderPipeline::CreateTextureR32UI(int width, int height) {
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width, height, 0,
+		GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -130,10 +146,10 @@ void PTPipeline::Init() {
 	scene_manager.BuildBVH();
 	scene_manager.CreateGPUBuffers();
 
-	TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle progressive_output = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle postprocess_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+	TextureHandle compute_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle previous_frame = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle progressive_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle postprocess_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
 
 	auto compute_pass = std::make_shared<PTPass>(rendering_size_.x, rendering_size_.y);
 	compute_pass->SetOutputTexture("Output", compute_output);
@@ -159,7 +175,7 @@ void PTPipeline::Init() {
 void LTPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
-	// Load materials and textures (same as PTPipeline)
+	// Load materials and textures
 	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
 	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
 
@@ -208,20 +224,35 @@ void LTPipeline::Init() {
 	scene_manager.CreateGPUBuffers();
 
 	// Create textures for the pipeline
-	// Note: For light tracing, we need a texture that supports atomic operations
-	TextureHandle compute_output = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle previous_frame = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle progressive_output = CreateTexture(rendering_size_.x, rendering_size_.y);
-	TextureHandle postprocess_output = CreateTexture(rendering_size_.x, rendering_size_.y);
+	// Integer textures for atomic accumulation
+	TextureHandle int_texture_r = CreateTextureR32UI(rendering_size_.x, rendering_size_.y);
+	TextureHandle int_texture_g = CreateTextureR32UI(rendering_size_.x, rendering_size_.y);
+	TextureHandle int_texture_b = CreateTextureR32UI(rendering_size_.x, rendering_size_.y);
 
-	// Create light tracing compute pass
-	auto light_tracing_pass = std::make_shared<LTPass>(rendering_size_.x, rendering_size_.y);
-	light_tracing_pass->SetOutputTexture("Output", compute_output);
-	AddPass("LightTracing", light_tracing_pass);
+	// Float textures for conversion and progressive accumulation
+	TextureHandle convert_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle previous_frame = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle progressive_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle postprocess_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
 
-	// Create progressive accumulation pass (same as before)
+	// Create light tracing integer pass
+	auto lt_pass_int = std::make_shared<LTPass>(rendering_size_.x, rendering_size_.y);
+	lt_pass_int->SetOutputTextureR(int_texture_r);
+	lt_pass_int->SetOutputTextureG(int_texture_g);
+	lt_pass_int->SetOutputTextureB(int_texture_b);
+	AddPass("LightTracingInt", lt_pass_int);
+
+	// Create integer to float conversion pass
+	auto convert_pass = std::make_shared<ConvertPass>(rendering_size_.x, rendering_size_.y);
+	convert_pass->SetInputTexture("InputR", int_texture_r);
+	convert_pass->SetInputTexture("InputG", int_texture_g);
+	convert_pass->SetInputTexture("InputB", int_texture_b);
+	convert_pass->SetOutputTexture("Output", convert_output);
+	AddPass("Convert", convert_pass);
+
+	// Create progressive accumulation pass
 	auto progressive_pass = std::make_shared<ProgressivePass>(rendering_size_.x, rendering_size_.y);
-	progressive_pass->SetInputTexture("CurrentFrame", compute_output);
+	progressive_pass->SetInputTexture("CurrentFrame", convert_output);
 	progressive_pass->SetInputTexture("PreviousFrame", previous_frame);
 	progressive_pass->SetOutputTexture("Output", progressive_output);
 	AddPass("Progressive", progressive_pass);
@@ -233,7 +264,8 @@ void LTPipeline::Init() {
 	AddPass("PostProcessing", postprocess_pass);
 
 	// Connect the passes
-	ConnectPasses("LightTracing", "Output", "Progressive", "CurrentFrame");
+	ConnectPasses("LightTracingInt", "", "Convert", "");
+	ConnectPasses("Convert", "Output", "Progressive", "CurrentFrame");
 	ConnectPasses("Progressive", "Output", "PostProcessing", "Input");
 
 	// Set the final output

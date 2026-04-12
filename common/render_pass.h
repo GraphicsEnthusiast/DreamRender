@@ -227,6 +227,30 @@ protected:
 };
 
 /**
+ * @class ConvertPass
+ * @brief Converts integer textures to floating-point texture
+ */
+class ConvertPass : public RenderPass {
+public:
+    /**
+     * @brief Constructor for the integer to float conversion pass
+     * @param width Width of the output texture
+     * @param height Height of the output texture
+     */
+    ConvertPass(unsigned int width, unsigned int height);
+
+    /**
+     * @brief Executes the conversion compute shader
+     */
+    void Execute() override;
+
+protected:
+    std::unique_ptr<ComputationShader> shader_; ///< Compute shader instance
+    unsigned int width_;                        ///< Width of the render target
+    unsigned int height_;                       ///< Height of the render target
+};
+
+/**
  * @class PTPass
  * @brief Demonstrates compute shader usage by generating a gradient texture.
  */
@@ -252,28 +276,60 @@ protected:
 };
 
 /**
- * @class LTPass
- * @brief Path tracing pass using light tracing (forward path tracing) from light sources
+ * @class LTPassInt
+ * @brief Light tracing pass that outputs to integer textures for atomic accumulation
  */
 class LTPass : public RenderPass {
 public:
     /**
-     * @brief Constructor for the light tracing compute pass
+     * @brief Constructor for the light tracing pass
      * @param width Width of the output texture and computation domain
      * @param height Height of the output texture and computation domain
      */
     LTPass(unsigned int width, unsigned int height);
 
     /**
-     * @brief Executes the compute shader dispatch for light tracing
-     * @note Overrides the pure virtual function from RenderPass
+     * @brief Executes the compute shader dispatch for light tracing with integer output
      */
     void Execute() override;
+
+    /**
+     * @brief Gets the red channel integer texture handle
+     */
+    TextureHandle GetOutputTextureR() const noexcept;
+
+    /**
+     * @brief Gets the green channel integer texture handle
+     */
+    TextureHandle GetOutputTextureG() const noexcept;
+
+    /**
+     * @brief Gets the blue channel integer texture handle
+     */
+    TextureHandle GetOutputTextureB() const noexcept;
+
+    /**
+     * @brief Sets the red channel integer texture handle
+     */
+    void SetOutputTextureR(const TextureHandle& handle);
+
+    /**
+     * @brief Sets the green channel integer texture handle
+     */
+    void SetOutputTextureG(const TextureHandle& handle);
+
+    /**
+     * @brief Sets the blue channel integer texture handle
+     */
+    void SetOutputTextureB(const TextureHandle& handle);
 
 protected:
     std::unique_ptr<ComputationShader> shader_; ///< Compute shader instance
     unsigned int width_;                        ///< Width of the render target
     unsigned int height_;                       ///< Height of the render target
+    TextureHandle output_texture_r_;            ///< Red channel integer texture
+    TextureHandle output_texture_g_;            ///< Green channel integer texture
+    TextureHandle output_texture_b_;            ///< Blue channel integer texture
 };
 
 NAMESPACE_END(dream)
