@@ -51,6 +51,7 @@ struct Material {
  * @brief Ray-geometry intersection information structure
  */
 struct IntersectionInfo {
+    bool is_light;
     int tri_index;
 	float distance;
 	vec3 position;

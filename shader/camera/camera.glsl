@@ -23,7 +23,7 @@ const float IntScale = 256.0f;
  * @param n Surface normal (points outward for rays exiting the surface, else is flipped)
  * @return Offset point
  */
-vec3 OffsetRay(vec3 p, vec3 n) {
+vec3 OffsetRayOrigin(vec3 p, vec3 n) {
     // Compute integer offset scaled by int_scale
     ivec3 of_i = ivec3(int(IntScale * n.x), 
                        int(IntScale * n.y), 
@@ -55,7 +55,7 @@ vec3 OffsetRay(vec3 p, vec3 n) {
  */
 Ray SpawnRay(vec3 position, vec3 direction, vec3 normal, float tmin, float tmax) {
     vec3 offset_normal = (dot(normal, direction) >= 0.0f) ? normal : -normal;
-    vec3 offset_origin = OffsetRay(position, offset_normal);
+    vec3 offset_origin = OffsetRayOrigin(position, offset_normal);
     
     Ray ray;
     ray.origin = offset_origin;
@@ -109,10 +109,19 @@ struct Camera {
  * @brief Result structure for camera sampling
  */
 struct CameraSampleInfo {
-    Ray ray;              ///< Ray from position to camera
-    float we;             ///< Sampling we
-    float pdf;            ///< Probability density function(lens area to solid angle)
-    ivec2 raster;         ///< Raster index
+    Ray ray;
+    float we_cosine;
+    float pdf;
+    ivec2 raster;
+};
+
+/**
+ * @brief Result structure for camera ray generation
+ */
+struct CameraRayInfo {
+    Ray ray;
+    float we_cosine;
+    float pdf;
 };
 
 /**
@@ -161,14 +170,47 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
 }
 
 /**
- * @brief Generates a primary ray from camera
+ * @brief Calculates the camera sampling we
+ * @param cam Camera structure
+ * @param dir Direction from camera position to destination
+ * @return Calculated we value
+ */
+float CameraWe(Camera cam, vec3 dir) {
+    float cos_theta = dot(dir, -cam.forward);
+
+    // Calculate we (We): (distance²) / (sensor_area * lens_area * cos⁴θ)
+    return cam.distance * cam.distance / (cam.sensor_area * cam.lens_area * pow(cos_theta, 4.0f));
+}
+
+/**
+ * @brief Computes PDF for camera sampling
+ * @param cam Camera structure
+ * @param dir Direction from camera position to destination
+ * @return PDF value (solid angle measure)
+ */
+float CameraPDF(Camera cam, vec3 dir) {
+    // For area PDF, we assume uniform sampling over the lens area
+    float pdf_area = 1.0f / cam.lens_area;
+    
+    float cos_theta = dot(dir, -cam.forward);
+    
+    // Calculate solid angle PDF: p(ω) = (distance²) / (sensor_area * cos³θ)
+    float pdf_solid_angle = cam.distance * cam.distance / (cam.sensor_area * pow(cos_theta, 3.0f));
+
+    return pdf_area * pdf_solid_angle;
+}
+
+/**
+ * @brief Generates a primary ray from camera with PDF and we
  * @param cam Camera structure
  * @param pixel_x Pixel x-coordinate
  * @param pixel_y Pixel y-coordinate
  * @param sample_xy Random sample for depth of field
- * @return Generated ray
+ * @return CameraRayInfo containing ray, PDF, and we
  */
-Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy) {
+CameraRayInfo GenerateCameraRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy) {
+    CameraRayInfo result;
+    
     float screen_x = pixel_x * cam.pixel_to_screen.x - cam.width;
     float screen_y = pixel_y * cam.pixel_to_screen.y - cam.height;
 
@@ -185,26 +227,17 @@ Ray GeneratePrimaryRay(Camera cam, float pixel_x, float pixel_y, vec2 sample_xy)
     dir = dir.x * cam.right + dir.y * cam.up + dir.z * cam.forward;
     origin += (aperture_offset.x * cam.right + aperture_offset.y * cam.up);
 
-    Ray ray;
-    ray.origin = origin;
-    ray.direction = normalize(dir);
-    ray.tmin = 0.0f;
-    ray.tmax = MaxFloat;
-
-    return ray;
-}
-
-/**
- * @brief Calculates the camera sampling we
- * @param cam Camera structure
- * @param dir Direction from camera position to destination
- * @return Calculated we value
- */
-float CameraWe(Camera cam, vec3 dir) {
-    float cos_theta = dot(dir, -cam.forward);
-
-    // Calculate we (We): (distance²) / (sensor_area * lens_area * cos⁴θ)
-    return cam.distance * cam.distance / (cam.sensor_area * cam.lens_area * pow(cos_theta, 4.0f));
+    result.ray.origin = origin;
+    result.ray.direction = normalize(dir);
+    result.ray.tmin = 0.0f;
+    result.ray.tmax = MaxFloat;
+    
+    // Compute PDF and we for the generated ray
+    float cos_theta = dot(result.ray.direction, -cam.forward);
+    result.we_cosine = CameraWe(cam, result.ray.direction) * cos_theta;
+    result.pdf = CameraPDF(cam, result.ray.direction);
+    
+    return result;
 }
 
 /**
@@ -216,7 +249,7 @@ float CameraWe(Camera cam, vec3 dir) {
 CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
     CameraSampleInfo result;
     result.pdf = 0.0f; // Default to invalid
-    result.we = 0.0f;
+    result.we_cosine = 0.0f;
     
     vec3 dir = cam.position - sample_pos;
     vec3 normalized_dir = normalize(dir);
@@ -252,28 +285,9 @@ CameraSampleInfo CameraSample(Camera cam, vec3 sample_pos) {
     // Calculate PDF: p(ω) = p(A) * (r² / cosθ) = (1 / cam.lens_area) * (r² / cosθ)
     // where r² = dot(dir, dir)
     result.pdf = dot(dir, dir) / (cos_theta * cam.lens_area);
-    
-    result.we = CameraWe(cam, normalized_dir);
+    result.we_cosine = CameraWe(cam, normalized_dir) * cos_theta;
     
     return result;
-}
-
-/**
- * @brief Computes PDF for camera sampling
- * @param cam Camera structure
- * @param dir Direction from camera position to destination
- * @return PDF values
- */
-float CameraPDF(Camera cam, vec3 dir) {
-    // For area PDF, we assume uniform sampling over the lens area
-    float pdf_area = 1.0f / cam.lens_area;
-    
-    float cos_theta = dot(dir, -cam.forward);
-    
-    // Calculate solid angle PDF: p(ω) = (distance²) / (sensor_area * cos³θ)
-    float pdf_solid_angle = cam.distance * cam.distance / (cam.sensor_area * pow(cos_theta, 3.0f));
-
-    return pdf_area * pdf_solid_angle;
 }
 
 #endif // CAMERA_GLSL

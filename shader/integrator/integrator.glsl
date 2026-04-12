@@ -16,20 +16,20 @@ bool HitBoundaryMaterial(IntersectionInfo info) {
 
 /**
  * @brief Checks if hit represents nothing (no intersection)
- * @param hit Hit information
+ * @param info Intersection information
  * @return Boolean indicating if no intersection occurred
  */
-bool HitNothing(Hit hit) {
-    return MaxFloat == hit.distance;
+bool HitNothing(IntersectionInfo info) {
+    return MaxFloat == info.distance;
 }
 
 /**
  * @brief Checks if hit represents a light source
- * @param hit Hit information
+ * @param info Intersection information
  * @return Boolean indicating if intersection is with a light source
  */
-bool HitLight(Hit hit) {
-    return hit.is_light;
+bool HitLight(IntersectionInfo info) {
+    return info.is_light;
 }
 
 /**
@@ -48,6 +48,8 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     else {
         tri = FetchTriangle(hit.tri_index, Triangles);
     }
+
+    info.is_light = hit.is_light;
 
     // Interpolate position
     vec3 position = (1.0f - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
@@ -271,19 +273,15 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
     SampledSpectrum radiance = SampledSpectrumNewFloat(0.0f);
     
     vec2 lens_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-    Ray ray = GeneratePrimaryRay(camera, pixel_center.x, pixel_center.y, lens_sample);
-
-    float cos_theta = dot(ray.direction, -camera.forward);
-    float camera_pdf = CameraPDF(camera, ray.direction);
-    float we = CameraWe(camera, ray.direction);
-
-    if (camera_pdf > 0.0f) {
-        float camera_sampling_weight = we * cos_theta / camera_pdf;
-        beta = MulFloat(beta, camera_sampling_weight);
-    }
+    CameraRayInfo camera_ray_info = GenerateCameraRay(camera, pixel_center.x, pixel_center.y, lens_sample);
+    Ray ray = camera_ray_info.ray;
 
     if (filter_sample_info.pdf > 0.0f) {
         beta = MulFloat(beta, filter_sample_info.weight / filter_sample_info.pdf);
+    }
+
+    if (camera_ray_info.pdf > 0.0f) {
+        beta = MulFloat(beta, camera_ray_info.we_cosine / camera_ray_info.pdf);
     }
 
     vec3 world_v = -ray.direction;
@@ -357,7 +355,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
         
         if (!info.has_medium || !is_medium_scattered) {
             // Handle hitting a light source
-            if (HitLight(hit)) {
+            if (HitLight(info)) {
                 // ========================= BSDF or Phase Sampling(MIS) =========================
                 float mis_weight = 1.0f;
                 LightEvalInfo light_eval_info = MeshLightEvaluate(world_l, info, last_position, lambda);
@@ -379,7 +377,7 @@ SampledSpectrum PathTracing(ivec2 pixel_coords, Camera camera, inout SobolSample
                 break;
             }
             // Handle hitting nothing (environment)
-            else if (HitNothing(hit)) {
+            else if (HitNothing(info)) {
                 // We don't have environment light, so just break
                 break;
             }
