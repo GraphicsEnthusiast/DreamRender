@@ -1,0 +1,22 @@
+#version 460
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout(r32f, binding = 0) uniform image2D InputTexR;
+layout(r32f, binding = 1) uniform image2D InputTexG;
+layout(r32f, binding = 2) uniform image2D InputTexB;
+layout(rgba32f, binding = 3) uniform image2D OutputTex;
+
+void main() {
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    if (pixel_coords.x >= imageSize(OutputTex).x || 
+        pixel_coords.y >= imageSize(OutputTex).y) {
+        return;
+    }
+    
+    float r = imageLoad(InputTexR, pixel_coords).r;
+    float g = imageLoad(InputTexG, pixel_coords).r;
+    float b = imageLoad(InputTexB, pixel_coords).r;
+    
+    vec3 color = vec3(r, g, b);
+    
+    imageStore(OutputTex, pixel_coords, vec4(color, 1.0f));
+}

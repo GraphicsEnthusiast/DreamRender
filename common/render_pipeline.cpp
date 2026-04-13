@@ -79,13 +79,13 @@ TextureHandle RenderPipeline::CreateTextureRGBA32F(int width, int height) {
 	return TextureHandle{ textureID };
 }
 
-TextureHandle RenderPipeline::CreateTextureR32UI(int width, int height) {
+TextureHandle RenderPipeline::CreateTextureR32F(int width, int height) {
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width, height, 0,
-		GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0,
+		GL_RED, GL_FLOAT, nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -225,9 +225,9 @@ void LTPipeline::Init() {
 
 	// Create textures for the pipeline
 	// Integer textures for atomic accumulation
-	TextureHandle int_texture_r = CreateTextureR32UI(rendering_size_.x, rendering_size_.y);
-	TextureHandle int_texture_g = CreateTextureR32UI(rendering_size_.x, rendering_size_.y);
-	TextureHandle int_texture_b = CreateTextureR32UI(rendering_size_.x, rendering_size_.y);
+	TextureHandle int_texture_r = CreateTextureR32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle int_texture_g = CreateTextureR32F(rendering_size_.x, rendering_size_.y);
+	TextureHandle int_texture_b = CreateTextureR32F(rendering_size_.x, rendering_size_.y);
 
 	// Float textures for conversion and progressive accumulation
 	TextureHandle convert_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);

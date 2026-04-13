@@ -1,17 +1,14 @@
 #version 460
 #extension GL_ARB_shading_language_include : require
-#extension GL_NV_gpu_shader5 : enable
-#extension GL_ARB_gpu_shader_int64 : enable
+#extension GL_NV_shader_atomic_float : require
 
 #include "integrator/integrator.glsl"
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
-layout(r32ui, binding = 0) uniform uimage2D OutputTexR;
-layout(r32ui, binding = 1) uniform uimage2D OutputTexG;
-layout(r32ui, binding = 2) uniform uimage2D OutputTexB;
+layout(r32f, binding = 0) uniform image2D OutputTexR;
+layout(r32f, binding = 1) uniform image2D OutputTexG;
+layout(r32f, binding = 2) uniform image2D OutputTexB;
 layout(location = 0) uniform uint FrameCounter;
-
-const uint COLOR_SCALE = 10000u; // Scaling factor, convert floating-point color to integer
 
 vec3 camera_position = vec3(15.0f);
 vec3 camera_target = vec3(0.0f, 3.0f, 0.0f);
@@ -33,13 +30,9 @@ void AtomicAddColor(ivec2 pixel, vec3 color) {
         return;
     }
     
-    uint r_int = uint(color.x * float(COLOR_SCALE));
-    uint g_int = uint(color.y * float(COLOR_SCALE));
-    uint b_int = uint(color.z * float(COLOR_SCALE));
-    
-    imageAtomicAdd(OutputTexR, pixel, r_int);
-    imageAtomicAdd(OutputTexG, pixel, g_int);
-    imageAtomicAdd(OutputTexB, pixel, b_int);
+    imageAtomicAdd(OutputTexR, pixel, color.r);
+    imageAtomicAdd(OutputTexG, pixel, color.g);
+    imageAtomicAdd(OutputTexB, pixel, color.b);
 }
 
 // =================================================== Light Tracing ===================================================

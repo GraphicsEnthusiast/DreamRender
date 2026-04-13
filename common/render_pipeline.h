@@ -97,12 +97,12 @@ protected:
     TextureHandle CreateTextureRGBA32F(int width, int height);
 
     /**
-     * @brief Creates a new 2D texture with specified dimensions and default parameters(R32UI).
+     * @brief Creates a new 2D texture with specified dimensions and default parameters(R32F).
      * @param width The width of the texture in pixels (must be positive).
      * @param height The height of the texture in pixels (must be positive).
      * @return TextureHandle Wrapper containing the OpenGL texture ID.
      */
-    TextureHandle CreateTextureR32UI(int width, int height);
+    TextureHandle CreateTextureR32F(int width, int height);
 
 protected:
     std::unique_ptr<SceneManager> mesh_manager_;

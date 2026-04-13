@@ -198,7 +198,7 @@ void ProgressivePass::Execute() {
 }
 
 PostProcessingPass::PostProcessingPass(unsigned int width, unsigned int height) {
-	name_ = "Post-processing pass";
+	name_ = "Post processing pass";
 	width_ = width;
 	height_ = height;
 
@@ -242,7 +242,7 @@ ConvertPass::ConvertPass(unsigned int width, unsigned int height) {
 	height_ = height;
 
 	// Create the compute shader for conversion
-	const char* compute_shader_path = "../shader/convert_int_to_float.comp";
+	const char* compute_shader_path = "../shader/convert_float_to_vec3.comp";
 	shader_ = std::make_unique<ComputationShader>(compute_shader_path);
 }
 
@@ -269,9 +269,9 @@ void ConvertPass::Execute() {
 	}
 
 	// Bind input integer textures
-	glBindImageTexture(0, input_r.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-	glBindImageTexture(1, input_g.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-	glBindImageTexture(2, input_b.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+	glBindImageTexture(0, input_r.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+	glBindImageTexture(1, input_g.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+	glBindImageTexture(2, input_b.id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
 
 	// Bind output float texture
 	glBindImageTexture(3, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
@@ -393,15 +393,15 @@ void LTPass::Execute() {
 		return;
 	}
 
-	GLuint zero = 0u;
-	glClearTexImage(output_texture_r_.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-	glClearTexImage(output_texture_g_.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-	glClearTexImage(output_texture_b_.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+	float zero_f = 0.0f;
+	glClearTexImage(output_texture_r_.id, 0, GL_RED, GL_FLOAT, &zero_f);
+	glClearTexImage(output_texture_g_.id, 0, GL_RED, GL_FLOAT, &zero_f);
+	glClearTexImage(output_texture_b_.id, 0, GL_RED, GL_FLOAT, &zero_f);
 
 	// Bind output textures as images for atomic writes
-	glBindImageTexture(0, output_texture_r_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-	glBindImageTexture(1, output_texture_g_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-	glBindImageTexture(2, output_texture_b_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	glBindImageTexture(0, output_texture_r_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+	glBindImageTexture(1, output_texture_g_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+	glBindImageTexture(2, output_texture_b_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 
 	auto& scene_manager = SceneManager::Instance();
 
