@@ -206,7 +206,7 @@ RGB RGBClampZero(RGB rgb) {
  * @return vec3 containing the same color values
  */
 vec3 RGBToVec3(RGB rgb) {
-    vec3 color = vec3(rgb.r, rgb.g, rgb.b)
+    vec3 color = vec3(rgb.r, rgb.g, rgb.b);
     if (any(isnan(color)) || any(isinf(color))) {
         return vec3(0.0f);
     }
