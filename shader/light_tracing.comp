@@ -128,9 +128,8 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
         FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
                     
         if (filter_evaluate_info.pdf > 0.0f) {
-            beta = MulFloat(beta, filter_evaluate_info.weight / filter_evaluate_info.pdf);
             SampledSpectrum visibility = DirectCameraVisibility(light_ray_info.ray.origin, camera_sample_info, beta, lambda, sobol_sampler);
-            SampledSpectrum L_camera = Mul(light_ray_info.emission, visibility);
+            SampledSpectrum L_camera = MulFloat(Mul(light_ray_info.emission, visibility), filter_evaluate_info.weight / filter_evaluate_info.pdf);
                             
             // Convert to RGB and atomically add
             RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
@@ -264,7 +263,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     }
 }
 // =================================================== Light Tracing ===================================================
-
+ 
 void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
