@@ -37,9 +37,10 @@ struct LightSampleInfo {
  * @brief Contains information for a ray generated from a light source
  */
 struct LightRayInfo {
-    Ray ray;                          ///< Generated ray from light source
-    SampledSpectrum emission_cosine;  ///< Light emission at the sampled point
-    float pdf;                        ///< Probability density function of the sampled point and direction
+    Ray ray;
+    SampledSpectrum emission;
+    float cosine;
+    float pdf;
 };
 
 /**
@@ -412,7 +413,8 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
 LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     LightRayInfo result;
     result.ray.direction = vec3(0.0f);
-    result.emission_cosine = SampledSpectrumNewFloat(0.0f);
+    result.emission = SampledSpectrumNewFloat(0.0f);
+    result.cosine = 0.0f;
     result.pdf = 0.0f;
     
     // Sample a light triangle using alias table
@@ -470,7 +472,8 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
     // emission_cosine = Le * cosθ
     vec2 uv = (1.0f - u - v) * tri.t1 + u * tri.t2 + v * tri.t3;
     SampledSpectrum emission = GetFinalEmission(tri, uv, lambda);
-    result.emission_cosine = MulFloat(emission, cos_theta);
+    result.emission = emission;
+    result.cosine = cos_theta;
     
     // Set ray parameters
     result.ray.tmin = 0.0f;

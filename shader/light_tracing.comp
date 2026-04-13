@@ -55,12 +55,12 @@ void AtomicAddColor(ivec2 pixel, vec3 color) {
 SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sample_info, SampledSpectrum beta, 
                                  SampledWavelengths lambda, inout SobolSampler sobol_sampler) {
     
-    float shadow_distance_remaining = length(camera_sample_info.ray.origin - position) - Epsilon;
+    float shadow_distance_remaining = camera_sample_info.distance;
     vec3 shadow_origin = position;
     SampledSpectrum visibility = SampledSpectrumNewFloat(1.0f);
     
     while (true) {
-        Ray shadow_ray = SpawnShadowRay(shadow_origin, camera_sample_info.ray.direction, shadow_distance_remaining);
+        Ray shadow_ray = SpawnShadowRay(shadow_origin, camera_sample_info.world_l, shadow_distance_remaining);
         Hit occlusion_hit = BVHTraverse(shadow_ray);
         
         // If no intersection, we've reached the camera
@@ -126,7 +126,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     // Initialize path throughput
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
     if (light_ray_info.pdf > 0.0f) {
-        beta = Mul(beta, DivFloat(light_ray_info.emission_cosine, light_ray_info.pdf));
+        beta = Mul(beta, DivFloat(MulFloat(light_ray_info.emission, light_ray_info.cosine), light_ray_info.pdf));
     }
 
     vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
@@ -137,7 +137,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
         if (filter_evaluate_info.pdf > 0.0f) {
             beta = MulFloat(beta, filter_evaluate_info.weight / filter_evaluate_info.pdf);
             SampledSpectrum visibility = DirectCameraVisibility(light_ray_info.ray.origin, camera_sample_info, beta, lambda, sobol_sampler);
-            SampledSpectrum L_camera = Mul(beta, visibility);
+            SampledSpectrum L_camera = Mul(light_ray_info.emission, visibility);
                             
             // Convert to RGB and atomically add
             RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
@@ -180,7 +180,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                         beta = MulFloat(beta, filter_evaluate_info.weight / filter_evaluate_info.pdf);
                         SampledSpectrum visibility = DirectCameraVisibility(info.position, camera_sample_info, beta, lambda, sobol_sampler);
                         
-                        PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_v, camera_sample_info.ray.direction);
+                        PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_v, camera_sample_info.world_l);
                         
                         if (phase_eval_info.pdf > 0.0f) {
                             // L_camera = β * visibility * phase * we_cosine / camera_pdf
@@ -191,9 +191,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                             
                             // Convert to RGB and atomically add
                             RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
-                            //AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
-                            RGB test_color = SampledSpectrumToRGB(L_camera, lambda);
-                            AtomicAddColor(camera_sample_info.raster, RGBToVec3(test_color));
+                            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
                         }
                     }
                 }
@@ -230,7 +228,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                         beta = MulFloat(beta, filter_evaluate_info.weight / filter_evaluate_info.pdf);
                         SampledSpectrum visibility = DirectCameraVisibility(info.position, camera_sample_info, beta, lambda, sobol_sampler);
                         
-                        MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, camera_sample_info.ray.direction, lambda);
+                        MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, camera_sample_info.world_l, lambda);
                         
                         if (mat_eval_info.pdf > 0.0f) {
                             // L_camera = β * visibility * bsdf_cosine * we_cosine / camera_pdf
@@ -241,9 +239,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                             
                             // Convert to RGB and atomically add
                             RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
-                            //AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
-                            RGB test_color = SampledSpectrumToRGB(L_camera, lambda);
-                            AtomicAddColor(camera_sample_info.raster, RGBToVec3(test_color));
+                            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
                         }
                     }
                 }

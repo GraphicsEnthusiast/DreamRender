@@ -108,7 +108,8 @@ struct Camera {
  * @brief Result structure for camera sampling
  */
 struct CameraSampleInfo {
-    Ray ray;
+    vec3 world_l;
+    float distance;
     float we_cosine;
     float pdf;
     vec2 raster_ndc;
@@ -258,10 +259,8 @@ CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
     vec3 dir = lens_point - position;
     vec3 normalized_dir = normalize(dir);
 
-    result.ray.origin = position;
-    result.ray.direction = normalized_dir;
-    result.ray.tmin = Epsilon;
-    result.ray.tmax = length(dir) - Epsilon;
+    result.world_l = normalized_dir;
+    result.distance = length(dir);
 
     vec3 negative_dir = -normalized_dir;
     
