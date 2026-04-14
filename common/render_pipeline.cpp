@@ -151,9 +151,9 @@ void PTPipeline::Init() {
 	TextureHandle progressive_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
 	TextureHandle postprocess_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);
 
-	auto compute_pass = std::make_shared<PTPass>(rendering_size_.x, rendering_size_.y);
-	compute_pass->SetOutputTexture("Output", compute_output);
-	AddPass("Compute", compute_pass);
+	auto pt_pass = std::make_shared<PTPass>(rendering_size_.x, rendering_size_.y);
+	pt_pass->SetOutputTexture("Output", compute_output);
+	AddPass("PathTracing", pt_pass);
 
 	auto progressive_pass = std::make_shared<ProgressivePass>(rendering_size_.x, rendering_size_.y);
 	progressive_pass->SetInputTexture("CurrentFrame", compute_output);
@@ -166,7 +166,7 @@ void PTPipeline::Init() {
 	postprocess_pass->SetOutputTexture("Output", postprocess_output);
 	AddPass("PostProcessing", postprocess_pass);
 
-	ConnectPasses("Compute", "Output", "Progressive", "CurrentFrame");
+	ConnectPasses("PathTracing", "Output", "Progressive", "CurrentFrame");
 	ConnectPasses("Progressive", "Output", "PostProcessing", "Input");
 
 	SetFinalOutput(postprocess_output);
