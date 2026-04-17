@@ -53,7 +53,7 @@ SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sa
     SampledSpectrum visibility = SampledSpectrumNewFloat(1.0f);
     
     while (true) {
-        Ray shadow_ray = SpawnShadowRay(shadow_origin, camera_sample_info.world_l, shadow_distance_remaining);
+        Ray shadow_ray = SpawnShadowRay(shadow_origin, camera_sample_info.world_out, shadow_distance_remaining);
         Hit occlusion_hit = BVHTraverse(shadow_ray);
         
         // If no intersection, we've reached the camera
@@ -97,120 +97,7 @@ SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sa
  * @param max_bounce Maximum number of ray bounces
  */
 void LightTracing(ivec2 pixel_coords, float max_bounce) {
-    // Create camera
-    Camera camera = CreateCamera(
-        camera_position, camera_target, camera_up,
-        resolution, camera_distance, camera_fov,
-        camera_aperture, camera_focal_distance
-    );
-
-    // Initialize Sobol sampler
-    SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);
-    SobolSamplerSetPixel(sobol_sampler, pixel_coords.x, pixel_coords.y);
-    SobolSamplerNextSamples(sobol_sampler, FrameCounter);
-
-    // Sample wavelengths
-    float wavelength_sample = SobolSamplerGet1(sobol_sampler);
-    SampledWavelengths lambda = SampledWavelengthsSampleVisible(wavelength_sample);
-
-    // Generate initial light ray
-    LightRayInfo light_ray_info = GenerateLightRay(sobol_sampler, lambda);
     
-    // Initialize path throughput
-    SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
-    if (light_ray_info.pdf > 0.0f) {
-        beta = Mul(beta, DivFloat(MulFloat(light_ray_info.emission, light_ray_info.cosine), light_ray_info.pdf));
-    }
-
-    vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-    CameraSampleInfo camera_sample_info = CameraSample(camera, light_ray_info.ray.origin, camera_sample);
-    if (camera_sample_info.pdf > 0.0f) {
-        FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
-
-        if (filter_evaluate_info.pdf > 0.0f) {
-            SampledSpectrum visibility = DirectCameraVisibility(light_ray_info.ray.origin, camera_sample_info, beta, lambda, sobol_sampler);
-            SampledSpectrum L_camera = MulFloat(Mul(light_ray_info.emission, visibility), filter_evaluate_info.weight / filter_evaluate_info.pdf);
-                            
-            // Convert to RGB and atomically add
-            RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
-            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
-        }
-    }
-    
-    // Initialize ray state
-    vec3 world_v = -light_ray_info.ray.direction;
-    vec3 world_l = light_ray_info.ray.direction;
-    vec3 last_position = light_ray_info.ray.origin;
-    Ray ray = light_ray_info.ray;
-    
-    for (int bounce = 0; bounce < 1; ++bounce) {
-        Hit hit = BVHTraverse(ray);
-        IntersectionInfo info = GetIntersectionInfo(hit, world_l, lambda);
-        
-        
-        
-
-            if (HitNothing(info)) {
-                break;
-            } else if (HitBoundaryMaterial(info)) {
-                world_v = -world_l;
-                last_position = info.position;
-                ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
-                bounce--;
-
-                continue;
-            } else {
-                // Connect surface point to camera
-                vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-                CameraSampleInfo camera_sample_info = CameraSample(camera, info.position, camera_sample);
-                if (camera_sample_info.pdf > 0.0f) {
-                    FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
-                    
-                    if (filter_evaluate_info.pdf > 0.0f) {
-                        SampledSpectrum visibility = DirectCameraVisibility(info.position, camera_sample_info, beta, lambda, sobol_sampler);
-                        
-                        MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, camera_sample_info.world_l, lambda);
-                        
-                        if (mat_eval_info.pdf > 0.0f) {
-                            // L_camera = β * visibility * bsdf_cosine * we_cosine / camera_pdf
-                            SampledSpectrum L_camera = MulFloat(MulFloat(
-                                Mul(Mul(beta, visibility), mat_eval_info.bsdf_cosine),
-                                camera_sample_info.we_cosine / camera_sample_info.pdf
-                            ), filter_evaluate_info.weight / filter_evaluate_info.pdf);
-                            
-                            // Convert to RGB and atomically add
-                            //RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
-                            //AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
-                            RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
-                            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
-                        }
-                    }
-                }
-                
-                // BSDF Sampling
-                vec2 bsdf_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-                MaterialSampleInfo mat_sample_info = MaterialSample(info, world_v, bsdf_sample, lambda);
-                
-                if (mat_sample_info.pdf > 0.0f) {
-                    beta = Mul(beta, DivFloat(mat_sample_info.bsdf_cosine, mat_sample_info.pdf));
-                    world_l = mat_sample_info.world_l;
-                }
-            }
-        
-        // Russian roulette
-        if (bounce > 3 && Max(beta) < 0.1f) {
-            float q = max(0.05f, 1.0f - Max(beta));
-            if (SobolSamplerGet1(sobol_sampler) < q) {
-                break;
-            }
-            beta = DivFloat(beta, 1.0f - q);
-        }
-
-        // Update for next bounce
-        world_v = -world_l;
-        last_position = info.position;
-        ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
-    }
 }
 // =================================================== Light Tracing ===================================================
  

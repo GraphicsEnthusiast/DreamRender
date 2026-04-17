@@ -39,7 +39,7 @@ struct LightSampleInfo {
 struct LightRayInfo {
     Ray ray;
     SampledSpectrum emission;
-    float cosine;
+    vec3 shading_normal;
     float pdf;
 };
 
@@ -414,7 +414,7 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
     LightRayInfo result;
     result.ray.direction = vec3(0.0f);
     result.emission = SampledSpectrumNewFloat(0.0f);
-    result.cosine = 0.0f;
+    result.shading_normal = vec3(0.0f);
     result.pdf = 0.0f;
     
     // Sample a light triangle using alias table
@@ -449,7 +449,8 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
     // Calculate triangle area and normal
     vec3 edge1 = p1 - p0;
     vec3 edge2 = p2 - p0;
-    vec3 normal = normalize(cross(edge1, edge2));
+    vec3 geometry_normal = normalize(cross(edge1, edge2));
+    vec3 shading_normal = normalize((1.0f - u - v) * tri.n1 + u * tri.n2 + v * tri.n3);
     float triangle_area = 0.5f * length(cross(edge1, edge2));
     
     // Sample direction from cosine-weighted hemisphere
@@ -458,8 +459,14 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
     
     vec3 local_dir = CosineHemisphereSample(vec2(dir_u, dir_v));
     float cos_theta = local_dir.z;  // Cosine of angle between ray direction and surface normal
-    result.ray.direction = ToWorldFromUp(local_dir, normal);
+    vec3 direction = ToWorldFromUp(local_dir, shading_normal);
+
+    if (dot(geometry_normal, direction) <= 0.0f) {
+        return result;
+    }
     
+    result.shading_normal = shading_normal;
+    result.ray.direction = direction;
     // Calculate PDF
     float triangle_weight = texelFetch(MeshLightTable, tri_index).y;
     float triangle_selection_pdf = triangle_weight / MeshLightTableSum;
@@ -469,11 +476,9 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
     result.pdf = triangle_selection_pdf * point_sampling_pdf * direction_sampling_pdf;
     
     // Calculate emission at sampled point and multiply by cosine term
-    // emission_cosine = Le * cosθ
     vec2 uv = (1.0f - u - v) * tri.t1 + u * tri.t2 + v * tri.t3;
     SampledSpectrum emission = GetFinalEmission(tri, uv, lambda);
     result.emission = emission;
-    result.cosine = cos_theta;
     
     // Set ray parameters
     result.ray.tmin = 0.0f;
