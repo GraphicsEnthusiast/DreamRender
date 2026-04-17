@@ -17,7 +17,7 @@ const int MaterialType_Diffuse = 1;  ///< Diffuse material (Oren-Nayar model)
  * @brief Stores the result of material evaluation during light transport simulation.
  */
 struct MaterialEvalInfo {
-    SampledSpectrum bsdf_cosine;
+    SampledSpectrum bsdf;
     float pdf;
 };
 
@@ -26,8 +26,8 @@ struct MaterialEvalInfo {
  * @brief Stores the result of sampling a direction during light transport simulation.
  */
 struct MaterialSampleInfo {
-    vec3 world_l;
-    SampledSpectrum bsdf_cosine;
+    vec3 world_out;
+    SampledSpectrum bsdf;
     float pdf;
 };
 
@@ -96,21 +96,21 @@ float GetFinalRoughness(IntersectionInfo info) {
 /**
  * @brief Evaluates the BSDF and PDF for a diffuse material(Oren-Nayar diffuse model calculation)
  * @param info Intersection data containing material properties and surface normal
- * @param world_v View direction in world space (pointing toward camera)
- * @param world_l Light direction in world space (pointing toward light source)
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialEvalInfo Structure containing BSDF and PDF values
  */
-MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l, SampledWavelengths lambda) {
+MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
     MaterialEvalInfo m_info;
-    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
     SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);
     float roughness = GetFinalRoughness(info);
 
-	vec3 v = normalize(world_v);
-	vec3 l = normalize(world_l);
+	vec3 v = normalize(world_in);
+	vec3 l = normalize(world_out);
 	vec3 n = normalize(info.shading_normal);
 	vec3 h = normalize(v + l);
 	float n_dot_l = dot(n, l);
@@ -133,7 +133,7 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world
 	SampledSpectrum brdf = MulFloat(diffuse, (1.0f / PI) * (c1 + c2) * (1.0f + roughness * 0.5f)) ;
 	float pdf = CosineHemispherePDF(n_dot_l);
 
-    m_info.bsdf_cosine = MulFloat(brdf, n_dot_l);
+    m_info.bsdf = brdf;
     m_info.pdf = pdf;
 
 	return m_info;
@@ -142,15 +142,15 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world
 /**
  * @brief Samples a direction and evaluates the BSDF for a diffuse material(Oren-Nayar diffuse model calculation)
  * @param info Intersection data containing material properties and surface normal
- * @param world_v View direction in world space (pointing toward camera)
+ * @param world_in In direction in world space
  * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy, SampledWavelengths lambda) {
+MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
     MaterialSampleInfo m_info;
-    m_info.world_l = vec3(0.0f);
-    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
     SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);
@@ -158,9 +158,9 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sampl
 
     vec3 n = normalize(info.shading_normal);
     vec3 local_l = CosineHemisphereSample(sample_xy);
-    vec3 world_l = ToWorldFromUp(local_l, n);
-    vec3 v = normalize(world_v);
-    vec3 l = normalize(world_l);
+    vec3 world_out = ToWorldFromUp(local_l, n);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
     vec3 h = normalize(v + l);
 
     float n_dot_l = dot(n, l);
@@ -183,8 +183,8 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sampl
     SampledSpectrum brdf = MulFloat(diffuse, (1.0f / PI) * (c1 + c2) * (1.0f + roughness * 0.5f));
     float pdf = CosineHemispherePDF(n_dot_l);
 
-    m_info.world_l = world_l;
-    m_info.bsdf_cosine = MulFloat(brdf, n_dot_l);
+    m_info.world_out = world_out;
+    m_info.bsdf = brdf;
     m_info.pdf = pdf;
 
     return m_info;
@@ -196,14 +196,14 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_v, vec2 sampl
  * This material type is typically used for media boundaries or perfect transmitters
  * where light passes through without scattering or absorption.
  * @param info Intersection data containing material properties
- * @param world_v View direction in world space (pointing toward camera)
- * @param world_l Light direction in world space (pointing toward light source)
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialEvalInfo Structure containing BSDF and PDF values
  */
-MaterialEvalInfo BoundaryEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l, SampledWavelengths lambda) {
+MaterialEvalInfo BoundaryEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
     MaterialEvalInfo m_info;
-    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
 	return m_info;
@@ -215,15 +215,15 @@ MaterialEvalInfo BoundaryEvaluate(IntersectionInfo info, vec3 world_v, vec3 worl
  * transmission direction (opposite to the incoming direction). This represents
  * a perfect transmitting surface where light passes through without deviation.
  * @param info Intersection data containing material properties
- * @param world_v View direction in world space (pointing toward camera)
+ * @param world_in In direction in world space
  * @param sample_xy 2D random sample in [0,1] range (unused for boundary materials)
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo BoundarySample(IntersectionInfo info, vec3 world_v, vec2 sample_xy, SampledWavelengths lambda) {
+MaterialSampleInfo BoundarySample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
     MaterialSampleInfo m_info;
-    m_info.world_l = -world_v;
-    m_info.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    m_info.world_out = -world_in;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
     return m_info;
@@ -232,30 +232,30 @@ MaterialSampleInfo BoundarySample(IntersectionInfo info, vec3 world_v, vec2 samp
 /**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
- * @param world_v View direction in world space (pointing toward camera)
- * @param world_l Light direction in world space (pointing toward light source)
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialEvalInfo Structure containing BSDF and PDF values
  */
-MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l, SampledWavelengths lambda) {
+MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
     MaterialEvalInfo result;
-    result.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    result.bsdf = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
     
     // Dispatch based on material type
     if (MaterialType_Diffuse == info.material.type) {
-        return DiffuseEvaluate(info, world_v, world_l, lambda);
+        return DiffuseEvaluate(info, world_in, world_out, lambda);
     }
     else if (MaterialType_Boundary == info.material.type) {
-        return BoundaryEvaluate(info, world_v, world_l, lambda);
+        return BoundaryEvaluate(info, world_in, world_out, lambda);
     }
     
     // Add more material types here in the future
     // else if (info.material.type == MaterialType_Metal) {
-    //     return MetalEvaluate(info, world_v, world_l, lambda);
+    //     return MetalEvaluate(info, world_in, world_out, lambda);
     // }
     // else if (info.material.type == MaterialType_Dielectric) {
-    //     return DielectricEvaluate(info, world_v, world_l, lambda);
+    //     return DielectricEvaluate(info, world_in, world_out, lambda);
     // }
     
     // Unknown material type, return zero contribution
@@ -265,31 +265,31 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_v, vec3 worl
 /**
  * @brief Unified material sampling function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
- * @param world_v View direction in world space (pointing toward camera)
+ * @param world_in In direction in world space
  * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy, SampledWavelengths lambda) {
+MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
     MaterialSampleInfo result;
-    result.world_l = vec3(0.0f);
-    result.bsdf_cosine = SampledSpectrumNewFloat(0.0f);
+    result.world_out = vec3(0.0f);
+    result.bsdf = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
     
     // Dispatch based on material type
     if (MaterialType_Diffuse == info.material.type) {
-        return DiffuseSample(info, world_v, sample_xy, lambda);
+        return DiffuseSample(info, world_in, sample_xy, lambda);
     }
     else if (MaterialType_Boundary == info.material.type) {
-        return BoundarySample(info, world_v, sample_xy, lambda);
+        return BoundarySample(info, world_in, sample_xy, lambda);
     }
     
     // Add more material types here in the future
     // else if (info.material.type == MaterialType_Metal) {
-    //     return MetalSample(info, world_v, sample_xy, lambda);
+    //     return MetalSample(info, world_in, sample_xy, lambda);
     // }
     // else if (info.material.type == MaterialType_Dielectric) {
-    //     return DielectricSample(info, world_v, sample_xy, lambda);
+    //     return DielectricSample(info, world_in, sample_xy, lambda);
     // }
     
     // Unknown material type, return zero contribution

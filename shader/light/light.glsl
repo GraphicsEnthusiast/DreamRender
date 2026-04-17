@@ -24,7 +24,7 @@ struct LightEvalInfo {
  * @brief Stores the result of light sampling
  */
 struct LightSampleInfo {
-    vec3 world_l;
+    vec3 world_out;
     float distance;
     float pdf;
     SampledSpectrum emission;
@@ -257,13 +257,13 @@ bool TriangleSphericalSample(const vec3 triangle_vertices[3], const vec3 positio
 
 /**
  * @brief Evaluates mesh light contribution for a given direction
- * @param world_l Light direction (from surface to light)
+ * @param world_out Out direction (from surface to light)
  * @param info Intersection information of the shading point(located on the light source)
  * @param last_position The previous shading point before hitting the light source
  * @param lambda Sampled wavelengths
  * @return LightEvalInfo containing emission spectrum and PDF
  */
-LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_position, SampledWavelengths lambda) {
+LightEvalInfo MeshLightEvaluate(vec3 world_out, IntersectionInfo info, vec3 last_position, SampledWavelengths lambda) {
     LightEvalInfo result;
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
@@ -308,7 +308,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_l, IntersectionInfo info, vec3 last_p
  */
 LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionInfo info, SampledWavelengths lambda) {
     LightSampleInfo result;
-    result.world_l = vec3(0.0f);
+    result.world_out = vec3(0.0f);
     result.distance = 0.0f;
     result.pdf = 0.0f;
     result.emission = SampledSpectrumNewFloat(0.0f);
@@ -339,7 +339,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
         info.position,
         rand_u,
         rand_v,
-        result.world_l,
+        result.world_out,
         result.distance,
         u,
         v)) {
@@ -352,7 +352,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     vec3 edge2 = tri.p3 - tri.p1;
     vec3 ng = normalize(cross(edge1, edge2));
     
-    float cos_theta = dot(result.world_l, ng);
+    float cos_theta = dot(result.world_out, ng);
     
     // Early exit if light direction points above the surface (invisible)
     if (cos_theta >= 0.0f) {

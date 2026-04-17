@@ -108,9 +108,9 @@ struct Camera {
  * @brief Result structure for camera sampling
  */
 struct CameraSampleInfo {
-    vec3 world_l;
+    vec3 world_out;
     float distance;
-    float we_cosine;
+    float we;
     float pdf;
     vec2 raster_ndc;
     ivec2 raster;
@@ -121,7 +121,7 @@ struct CameraSampleInfo {
  */
 struct CameraRayInfo {
     Ray ray;
-    float we_cosine;
+    float we;
     float pdf;
 };
 
@@ -232,8 +232,7 @@ CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec
     result.ray.tmax = MaxFloat;
     
     // Compute PDF and we for the generated ray
-    float cos_theta = dot(result.ray.direction, -camera.forward);
-    result.we_cosine = CameraWe(camera, result.ray.direction) * cos_theta;
+    result.we = CameraWe(camera, result.ray.direction);
     result.pdf = CameraPDF(camera, result.ray.direction);
     
     return result;
@@ -249,7 +248,7 @@ CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec
 CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
     CameraSampleInfo result;
     result.pdf = 0.0f; // Default to invalid
-    result.we_cosine = 0.0f;
+    result.we = 0.0f;
 
     float r = sqrt(sample_xy.x);
     float theta = 2.0f * PI * sample_xy.y;
@@ -259,7 +258,7 @@ CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
     vec3 dir = lens_point - position;
     vec3 normalized_dir = normalize(dir);
 
-    result.world_l = normalized_dir;
+    result.world_out = normalized_dir;
     result.distance = length(dir);
 
     vec3 negative_dir = -normalized_dir;
@@ -289,7 +288,7 @@ CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
     // Calculate PDF: p(ω) = p(A) * (r² / cosθ) = (1 / camera.lens_area) * (r² / cosθ)
     // where r² = dot(dir, dir)
     result.pdf = dot(dir, dir) / (cos_theta * camera.lens_area);
-    result.we_cosine = CameraWe(camera, negative_dir) * cos_theta;
+    result.we = CameraWe(camera, negative_dir);
 
     return result;
 }

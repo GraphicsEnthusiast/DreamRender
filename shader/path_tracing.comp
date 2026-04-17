@@ -37,7 +37,7 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
     mult_trans_pdf = 1.0f;
     
     while (true) {
-        Ray shadow_ray = SpawnShadowRay(shadow_origin, light_sample_info.world_l, shadow_distance_remaining);
+        Ray shadow_ray = SpawnShadowRay(shadow_origin, light_sample_info.world_out, shadow_distance_remaining);
         Hit occlusion_hit = BVHTraverse(shadow_ray);
         
         // If no intersection, we've reached the light
@@ -46,7 +46,7 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
                 IntersectionInfo medium_info;
                 medium_info.has_medium = true;
                 medium_info.medium = light_sample_info.out_medium;
-                medium_info = UpdateIntersectionInfoByMedium(medium_info, shadow_distance_remaining, shadow_origin, light_sample_info.world_l);
+                medium_info = UpdateIntersectionInfoByMedium(medium_info, shadow_distance_remaining, shadow_origin, light_sample_info.world_out);
                 
                 MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(medium_info, beta, false);
                 
@@ -130,18 +130,19 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
     }
 
     if (camera_ray_info.pdf > 0.0f) {
-        beta = MulFloat(beta, camera_ray_info.we_cosine / camera_ray_info.pdf);
+        float cosine = abs(dot(camera_ray_info.ray.direction, -camera.forward));
+        beta = MulFloat(beta, camera_ray_info.we * cosine / camera_ray_info.pdf);
     }
 
-    vec3 world_v = -ray.direction;
-    vec3 world_l = ray.direction;
+    vec3 world_in = -ray.direction;
+    vec3 world_out = ray.direction;
     vec3 last_position = ray.origin;
     float bsdf_phase_pdf = 0.0f;  // bsdf or phase pdf
     float mult_trans_pdf = 1.0f;
 
     for (int bounce = 0; bounce < max_bounce; ++bounce) {
         Hit hit = BVHTraverse(ray);
-        IntersectionInfo info = GetIntersectionInfo(hit, world_l, lambda);
+        IntersectionInfo info = GetIntersectionInfo(hit, world_out, lambda);
         
         // Handle medium interaction
         bool is_medium_scattered = false;
@@ -161,7 +162,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 is_medium_scattered = true;
 
                 // Update to scattering point
-                info = UpdateIntersectionInfoByMedium(info, medium_sample_info.distance, last_position, world_l);
+                info = UpdateIntersectionInfoByMedium(info, medium_sample_info.distance, last_position, world_out);
                 
                 // ========================= Volume Light Sampling(MIS) =========================
                 // Sampling direct illumination within the volume
@@ -172,7 +173,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 SampledSpectrum visibility = DirectLightVisibility(info.position, light_sample_info, beta, lambda, mult_trans_pdf_nee, sobol_sampler);
                 
                 // Evaluate phase function
-                PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_v, light_sample_info.world_l);
+                PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_in, light_sample_info.world_out);
                 
                 if (light_sample_info.pdf > 0.0f && phase_eval_info.pdf > 0.0f && mult_trans_pdf_nee > 0.0f) {
                     float mis_weight = PowerHeuristic(light_sample_info.pdf, phase_eval_info.pdf * mult_trans_pdf_nee, 2.0f);
@@ -188,11 +189,11 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 // ========================= Phase Sampling =========================
                 // Sample phase function direction
                 vec2 phase_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-                PhaseSampleInfo phase_sample_info = PhaseSample(info, world_v, phase_sample);
+                PhaseSampleInfo phase_sample_info = PhaseSample(info, world_in, phase_sample);
                 
                 if (phase_sample_info.pdf > 0.0f) {
                     beta = Mul(beta, DivFloat(phase_sample_info.phase, phase_sample_info.pdf));
-                    world_l = phase_sample_info.world_l;
+                    world_out = phase_sample_info.world_out;
                     bsdf_phase_pdf = phase_sample_info.pdf;
                 }
                 // ========================= Phase Sampling =========================
@@ -204,7 +205,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
             if (HitLight(info)) {
                 // ========================= BSDF or Phase Sampling(MIS) =========================
                 float mis_weight = 1.0f;
-                LightEvalInfo light_eval_info = MeshLightEvaluate(world_l, info, last_position, lambda);
+                LightEvalInfo light_eval_info = MeshLightEvaluate(world_out, info, last_position, lambda);
                 
                 if (0 != bounce) {
                     mis_weight = PowerHeuristic(bsdf_phase_pdf * mult_trans_pdf, light_eval_info.pdf, 2.0f);
@@ -229,9 +230,9 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
             }
             // Handle hitting medium boundary
             else if (HitBoundaryMaterial(info)) {
-                world_v = -world_l;
+                world_in = -world_out;
                 last_position = info.position;
-                ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
+                ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
                 bounce--;  // Don't count this as a bounce
 
                 continue;
@@ -247,13 +248,14 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 SampledSpectrum visibility = DirectLightVisibility(info.position, light_sample_info, beta, lambda, mult_trans_pdf_nee, sobol_sampler);
                 
                 // Evaluate BSDF
-                MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_v, light_sample_info.world_l, lambda);
+                MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, light_sample_info.world_out, lambda);
                 
                 if (light_sample_info.pdf > 0.0f && mat_eval_info.pdf > 0.0f && mult_trans_pdf_nee > 0.0f) {
                     float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf * mult_trans_pdf_nee, 2.0f);
                     // L_light = β * visibility * mis_weight * Le * bsdf * cos / light_pdf
+                    float cosine = abs(dot(light_sample_info.world_out, info.shading_normal));
                     SampledSpectrum L_light = Mul(MulFloat(Mul(beta, visibility), mis_weight),
-                        DivFloat(Mul(light_sample_info.emission, mat_eval_info.bsdf_cosine), light_sample_info.pdf));
+                        DivFloat(Mul(light_sample_info.emission, MulFloat(mat_eval_info.bsdf, cosine)), light_sample_info.pdf));
                     
                     radiance = Add(radiance, L_light);
                 }
@@ -263,11 +265,12 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 // ========================= BSDF Sampling =========================
                 // Sample BSDF direction
                 vec2 bsdf_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
-                MaterialSampleInfo mat_sample_info = MaterialSample(info, world_v, bsdf_sample, lambda);
+                MaterialSampleInfo mat_sample_info = MaterialSample(info, world_in, bsdf_sample, lambda);
                 
                 if (mat_sample_info.pdf > 0.0f) {
-                    beta = Mul(beta, DivFloat(mat_sample_info.bsdf_cosine, mat_sample_info.pdf));
-                    world_l = mat_sample_info.world_l;
+                    float cosine = abs(dot(mat_sample_info.world_out, info.shading_normal));
+                    beta = Mul(beta, DivFloat(MulFloat(mat_eval_info.bsdf, cosine), mat_sample_info.pdf));
+                    world_out = mat_sample_info.world_out;
                     bsdf_phase_pdf = mat_sample_info.pdf;
                 }
                 // ========================= BSDF Sampling =========================
@@ -284,10 +287,10 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
         }
 
         // Update for next bounce
-        world_v = -world_l;
+        world_in = -world_out;
         mult_trans_pdf = 1.0f;
         last_position = info.position;
-        ray = SpawnRay(info.position, world_l, info.geometry_normal, 0.0f, MaxFloat);
+        ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
     }
     
     RGB radiance_linear_rgb = SampledSpectrumToRGB(radiance, lambda);

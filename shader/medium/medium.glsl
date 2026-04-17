@@ -24,7 +24,7 @@ struct PhaseEvalInfo {
  * @brief Stores the result of sampling a direction from phase function
  */
 struct PhaseSampleInfo {
-    vec3 world_l;
+    vec3 world_out;
     SampledSpectrum phase;
     float pdf;
 };
@@ -69,11 +69,11 @@ struct MediumSampleInfo {
 /**
  * @brief Evaluates the Henyey-Greenstein phase function
  * @param info Intersection information containing medium properties
- * @param world_v Incoming light direction in world space
- * @param world_l Scattered light direction in world space
+ * @param world_in Incoming light direction in world space
+ * @param world_out Scattered light direction in world space
  * @return PhaseEvalInfo containing phase function value and PDF
  */
-PhaseEvalInfo HenyeyGreensteinEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l) {
+PhaseEvalInfo HenyeyGreensteinEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out) {
     PhaseEvalInfo result;
     result.phase = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
@@ -89,7 +89,7 @@ PhaseEvalInfo HenyeyGreensteinEvaluate(IntersectionInfo info, vec3 world_v, vec3
     }
     
     // Henyey-Greenstein evaluation
-    float cos_theta = dot(normalize(world_v), normalize(world_l));
+    float cos_theta = dot(normalize(world_in), normalize(world_out));
     float cubic_term = (1.0f + g * g - 2.0f * g * cos_theta);
     float phase_value = 1.0f / (4.0f * PI) * (1.0f - g * g) / sqrt(cubic_term * cubic_term * cubic_term);
     
@@ -103,13 +103,13 @@ PhaseEvalInfo HenyeyGreensteinEvaluate(IntersectionInfo info, vec3 world_v, vec3
 /**
  * @brief Samples a scattering direction according to the Henyey-Greenstein phase function
  * @param info Intersection information containing medium properties
- * @param world_v Incoming light direction in world space
+ * @param world_in Incoming light direction in world space
  * @param sample_xy Random sample coordinates in [0,1) range
  * @return PhaseSampleInfo containing sampled direction, phase value and PDF
  */
-PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy) {
+PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy) {
     PhaseSampleInfo result;
-    result.world_l = vec3(0.0f);
+    result.world_out = vec3(0.0f);
     result.phase = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
     
@@ -118,7 +118,7 @@ PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_v, vec2
     // Handle isotropic scattering (g = 0)
     if (0.0f == g) {
         // Set phase value for all wavelengths
-        result.world_l = UniformSphereSample(sample_xy);
+        result.world_out = UniformSphereSample(sample_xy);
         result.phase = SampledSpectrumNewFloat(1.0f / (4.0f * PI));
         result.pdf = UniformSpherePDF();
 
@@ -155,7 +155,7 @@ PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_v, vec2
     // Set phase value for all wavelengths
     result.phase = SampledSpectrumNewFloat(phase_value);
     result.pdf = phase_value;
-    result.world_l = ToWorldFromUp(local_l, world_v);
+    result.world_out = ToWorldFromUp(local_l, world_in);
     
     return result;
 }
@@ -163,25 +163,25 @@ PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_v, vec2
 /**
  * @brief Unified phase function evaluation function that dispatches to the appropriate phase function model
  * @param info Intersection data containing medium properties
- * @param world_v View direction in world space (pointing toward light source)
- * @param world_l Scattering direction in world space
+ * @param world_in View direction in world space (pointing toward light source)
+ * @param world_out Scattering direction in world space
  * @return PhaseEvalInfo Structure containing phase function value and PDF
  */
-PhaseEvalInfo PhaseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l) {
+PhaseEvalInfo PhaseEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out) {
     PhaseEvalInfo result;
     result.phase = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
     
     // Dispatch based on phase function type
     if (PhaseType_HenyeyGreenstein == info.medium.phase_type) {
-        return HenyeyGreensteinEvaluate(info, world_v, world_l);
+        return HenyeyGreensteinEvaluate(info, world_in, world_out);
     }
     // Add more phase function types here in the future
     // else if (PhaseType_Rayleigh == info.medium.phase_type) {
-    //     return RayleighEvaluate(info, world_v, world_l);
+    //     return RayleighEvaluate(info, world_in, world_out);
     // }
     // else if (PhaseType_Mie == info.medium.phase_type) {
-    //     return MieEvaluate(info, world_v, world_l);
+    //     return MieEvaluate(info, world_in, world_out);
     // }
     
     // Unknown phase function type, return zero contribution
@@ -191,26 +191,26 @@ PhaseEvalInfo PhaseEvaluate(IntersectionInfo info, vec3 world_v, vec3 world_l) {
 /**
  * @brief Unified phase function sampling function that dispatches to the appropriate phase function model
  * @param info Intersection data containing medium properties
- * @param world_v View direction in world space (pointing toward light source)
+ * @param world_in View direction in world space (pointing toward light source)
  * @param sample_xy 2D random sample in [0,1) range
  * @return PhaseSampleInfo Structure containing sampled direction, phase value, and PDF
  */
-PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_v, vec2 sample_xy) {
+PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy) {
     PhaseSampleInfo result;
-    result.world_l = vec3(0.0f);
+    result.world_out = vec3(0.0f);
     result.phase = SampledSpectrumNewFloat(0.0f);
     result.pdf = 0.0f;
     
     // Dispatch based on phase function type
     if (PhaseType_HenyeyGreenstein == info.medium.phase_type) {
-        return HenyeyGreensteinSample(info, world_v, sample_xy);
+        return HenyeyGreensteinSample(info, world_in, sample_xy);
     }
     // Add more phase function types here in the future
     // else if (PhaseType_Rayleigh == info.medium.phase_type) {
-    //     return RayleighSample(info, world_v, sample_xy);
+    //     return RayleighSample(info, world_in, sample_xy);
     // }
     // else if (PhaseType_Mie == info.medium.phase_type) {
-    //     return MieSample(info, world_v, sample_xy);
+    //     return MieSample(info, world_in, sample_xy);
     // }
     
     // Unknown phase function type, return zero contribution
