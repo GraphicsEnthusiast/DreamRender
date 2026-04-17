@@ -97,11 +97,148 @@ SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sa
  * @param max_bounce Maximum number of ray bounces
  */
 void LightTracing(ivec2 pixel_coords, float max_bounce) {
+    // Create camera
+    Camera camera = CreateCamera(
+        camera_position, camera_target, camera_up,
+        resolution, camera_distance, camera_fov,
+        camera_aperture, camera_focal_distance
+    );
+
+    // Initialize Sobol sampler
+    SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);
+    SobolSamplerSetPixel(sobol_sampler, pixel_coords.x, pixel_coords.y);
+    SobolSamplerNextSamples(sobol_sampler, FrameCounter);
+
+    // Sample wavelengths
+    float wavelength_sample = SobolSamplerGet1(sobol_sampler);
+    SampledWavelengths lambda = SampledWavelengthsSampleVisible(wavelength_sample);
+
+    SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
+
+    // Generate initial light ray
+    LightRayInfo light_ray_info = GenerateLightRay(sobol_sampler, lambda);
     
+    // Calculate light cosine term: |dot(light_ray_direction, shading_normal)|
+    float light_cosine = abs(dot(light_ray_info.ray.direction, light_ray_info.shading_normal));
+    
+    // Initialize path throughput beta
+    // beta = Le * |cosθ| / pdf_light
+    if (light_ray_info.pdf > 0.0f) {
+        beta = Mul(beta, DivFloat(MulFloat(light_ray_info.emission, light_cosine), light_ray_info.pdf));
+    }
+    
+    // Connect light source directly to camera
+    vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    CameraSampleInfo camera_sample_info = CameraSample(camera, light_ray_info.ray.origin, camera_sample);
+    
+    if (camera_sample_info.pdf > 0.0f) {
+        FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
+        
+        if (filter_evaluate_info.pdf > 0.0f) {
+            SampledSpectrum visibility = DirectCameraVisibility(
+                light_ray_info.ray.origin, camera_sample_info, beta, lambda, sobol_sampler
+            );
+            
+            // Calculate camera cosine term: |dot(camera_direction, camera_forward)|
+            float camera_cosine = abs(dot(camera_sample_info.world_out, -camera.forward));
+            
+            // Contribution = beta * visibility * filter_weight * we * camera_cosine / (filter_pdf * camera_pdf)
+            SampledSpectrum L_camera = MulFloat(
+                MulFloat(Mul(beta, visibility), camera_sample_info.we * camera_cosine / camera_sample_info.pdf),
+                (filter_evaluate_info.weight / filter_evaluate_info.pdf)
+            );
+            RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
+            AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
+        }
+    }
+    
+    // Initialize ray state
+    vec3 world_in = -light_ray_info.ray.direction;  // Direction from light to current point
+    vec3 world_out = light_ray_info.ray.direction;  // Direction to next bounce
+    Ray ray = light_ray_info.ray;
+    
+    for (int bounce = 0; bounce < int(max_bounce); ++bounce) {
+        Hit hit = BVHTraverse(ray);
+        IntersectionInfo info = GetIntersectionInfo(hit, world_out, lambda);
+        
+        if (HitNothing(info)) {
+            break;  // Ray escaped scene
+        }
+        
+        // Handle medium boundary
+        if (HitBoundaryMaterial(info)) {
+            // Continue ray through boundary
+            world_in = -world_out;
+            ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
+            bounce--;  // Don't count boundary as a bounce
+
+            continue;
+        }
+        
+        // Handle surface scattering
+        // Connect surface point to camera
+        vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+        CameraSampleInfo camera_sample_info = CameraSample(camera, info.position, camera_sample);
+        
+        if (camera_sample_info.pdf > 0.0f) {
+            FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
+            
+            if (filter_evaluate_info.pdf > 0.0f) {
+                SampledSpectrum visibility = DirectCameraVisibility(
+                    info.position, camera_sample_info, beta, lambda, sobol_sampler
+                );
+                
+                // Evaluate BSDF: world_in is from previous bounce, camera direction is camera_sample_info.world_out
+                MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, camera_sample_info.world_out, lambda);
+                
+                if (mat_eval_info.pdf > 0.0f) {
+                    // Calculate camera cosine term
+                    float camera_cosine = abs(dot(camera_sample_info.world_out, -camera.forward));
+                    
+                    // Calculate BSDF cosine term: |dot(camera_direction, surface_normal)|
+                    float surface_cosine = abs(dot(camera_sample_info.world_out, info.shading_normal));
+                    
+                    // Contribution = beta * visibility * bsdf * bsdf_cosine * filter_weight * we * camera_cosine / (filter_pdf * camera_pdf)
+                    SampledSpectrum L_camera = MulFloat(
+                        Mul(Mul(beta, visibility), MulFloat(mat_eval_info.bsdf, surface_cosine)),
+                        (camera_sample_info.we * camera_cosine / camera_sample_info.pdf) *
+                        (filter_evaluate_info.weight / filter_evaluate_info.pdf)
+                    );
+                    
+                    RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
+                    AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
+                }
+            }
+        }
+        
+        // Sample BSDF for next bounce
+        vec2 bsdf_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+        MaterialSampleInfo mat_sample_info = MaterialSample(info, world_in, bsdf_sample, lambda);
+        
+        if (mat_sample_info.pdf > 0.0f) {
+            // Calculate BSDF cosine term for the sampled direction
+            float cosine = abs(dot(mat_sample_info.world_out, info.shading_normal));
+            beta = Mul(beta, DivFloat(MulFloat(mat_sample_info.bsdf, cosine), mat_sample_info.pdf));
+            world_out = mat_sample_info.world_out;
+        }
+        
+        // Russian roulette
+        if (bounce > 3 && Max(beta) < 0.1f) {
+            float q = max(0.05f, 1.0f - Max(beta));
+            if (SobolSamplerGet1(sobol_sampler) < q) {
+                break;
+            }
+            beta = DivFloat(beta, 1.0f - q);
+        }
+        
+        // Update for next bounce
+        world_in = -world_out;
+        ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
+    }
 }
 // =================================================== Light Tracing ===================================================
  
-void main2() {
+void main() {
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     if (pixel_coords.x >= int(resolution.x) || pixel_coords.y >= int(resolution.y)) {
         return;
