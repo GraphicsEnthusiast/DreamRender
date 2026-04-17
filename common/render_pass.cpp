@@ -295,7 +295,7 @@ PTPass::PTPass(unsigned int width, unsigned int height) {
 
 void PTPass::Execute() {
 	if (!shader_) {
-		ERROR("[error] Simple compute pass: Compute shader is not initialized.");
+		ERROR("[error] Path tracing pass: Compute shader is not initialized.");
 
 		return;
 	}
