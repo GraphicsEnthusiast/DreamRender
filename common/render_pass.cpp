@@ -359,6 +359,10 @@ void PTPass::Execute() {
 	RenderPass::BindCIESSBO(8);
 	shader_->SetInt("CIETable", 8);
 
+	// Bind camera UBO
+	scene_manager.BindCameraUBO(9);
+	shader_->SetInt("CameraData", 9);
+
 	shader_->SetUInt("FrameCounter", GetFrameCounter());
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
@@ -451,6 +455,10 @@ void LTPass::Execute() {
 	// Bind CIE data SSBO
 	RenderPass::BindCIESSBO(8);
 	shader_->SetInt("CIETable", 8);
+
+	// Bind camera UBO
+	scene_manager.BindCameraUBO(9);
+	shader_->SetInt("CameraData", 9);
 
 	// Set frame counter
 	shader_->SetUInt("FrameCounter", GetFrameCounter());

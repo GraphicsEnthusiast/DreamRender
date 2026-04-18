@@ -98,6 +98,20 @@ TextureHandle RenderPipeline::CreateTextureR32F(int width, int height) {
 void PTPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
+	Camera camera;
+	camera.camera_position = Point3f(15.0f);
+	camera.camera_target = Vector3f(0.0f, 3.0f, 0.0f);
+	camera.camera_up = Vector3f(0.0f, 1.0f, 0.0f);
+	camera.resolution = Point2f(1280.0f, 720.0f);
+	camera.camera_fov = 60.0f;
+	camera.camera_distance = 1.0f;
+	camera.camera_aperture = 0.1f;
+	camera.camera_focal_distance = 10.0f;
+	camera.padding[0] = 0.0f;
+	camera.padding[1] = 0.0f;
+	camera.padding[2] = 0.0f;
+	scene_manager.InitCameraData(camera);
+
 	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
 	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
 
@@ -174,6 +188,20 @@ void PTPipeline::Init() {
 
 void LTPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
+
+	Camera camera;
+	camera.camera_position = Point3f(15.0f);
+	camera.camera_target = Vector3f(0.0f, 3.0f, 0.0f);
+	camera.camera_up = Vector3f(0.0f, 1.0f, 0.0f);
+	camera.resolution = Point2f(1280.0f, 720.0f);
+	camera.camera_fov = 60.0f;
+	camera.camera_distance = 1.0f;
+	camera.camera_aperture = 0.1f;
+	camera.camera_focal_distance = 10.0f;
+	camera.padding[0] = 0.0f;
+	camera.padding[1] = 0.0f;
+	camera.padding[2] = 0.0f;
+	scene_manager.InitCameraData(camera);
 
 	// Load materials and textures
 	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";

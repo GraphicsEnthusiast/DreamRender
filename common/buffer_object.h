@@ -168,7 +168,76 @@ protected:
 protected:
     GLbitfield flags_; ///< Buffer storage creation flags
 };
-
 using SSBO = ShaderStorageBufferObject;
+
+/**
+ * @class UniformBufferObject
+ * @brief Represents an OpenGL Uniform Buffer Object (UBO)
+ */
+class UniformBufferObject : public BufferObject {
+public:
+    /**
+     * @brief Constructs a UBO with specified data
+     * @param data Pointer to the uniform data
+     * @param size Size of the uniform data in bytes
+     * @param usage Buffer usage pattern (e.g., GL_DYNAMIC_DRAW for frequent updates)
+     */
+    UniformBufferObject(const void* data, GLsizeiptr size, GLenum usage = GL_DYNAMIC_DRAW);
+
+    /**
+     * @brief Constructs an empty UBO of specified size
+     * @param size Size of the uniform buffer in bytes
+     * @param usage Buffer usage pattern
+     */
+    UniformBufferObject(GLsizeiptr size, GLenum usage = GL_DYNAMIC_DRAW);
+
+    /**
+     * @brief Destructor
+     */
+    ~UniformBufferObject() override = default;
+
+    /**
+     * @brief Binds the UBO to a specific binding point index
+     * @param index The binding point index (corresponds to 'binding' in shader layout)
+     */
+    void BindBase(GLuint index) const;
+
+    /**
+     * @brief Maps the buffer's data store to the client's address space
+     * @param access Access policy (e.g., GL_READ_ONLY, GL_WRITE_ONLY, GL_READ_WRITE)
+     * @return Pointer to the mapped data, or nullptr if failed
+     */
+    void* MapBuffer(GLenum access) const;
+
+    /**
+     * @brief Unmaps the previously mapped data store
+     * @return True if successful, false otherwise
+     */
+    bool UnmapBuffer() const;
+
+    /**
+     * @brief Updates a portion of the uniform buffer data
+     * @param offset Offset into the buffer where to start updating
+     * @param size Size of the data portion in bytes
+     * @param data Pointer to the new data
+     */
+    void UpdateData(GLintptr offset, GLsizeiptr size, const void* data);
+
+    /**
+     * @brief Updates the entire uniform buffer with new data
+     * @param data Pointer to the new data
+     */
+    void UpdateData(const void* data);
+
+protected:
+    /**
+     * @brief Initializes the uniform buffer
+     * @param data Pointer to initial data (nullptr for uninitialized)
+     * @param size Size of the buffer in bytes
+     * @param usage Buffer usage pattern
+     */
+    void Initialize(const void* data, GLsizeiptr size, GLenum usage);
+};
+using UBO = UniformBufferObject;
 
 NAMESPACE_END(dream)

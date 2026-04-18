@@ -6,16 +6,18 @@
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D OutputTex;
 layout(location = 0) uniform uint FrameCounter;
-
-// Camera parameters
-vec3 camera_position = vec3(15.0f);
-vec3 camera_target = vec3(0.0f, 3.0f, 0.0f);
-vec3 camera_up = vec3(0.0f, 1.0f, 0.0f);
-vec2 resolution = vec2(1280.0f, 720.0f);
-float camera_fov = 60.0f;
-float camera_distance = 1.0f;
-float camera_aperture = 0.1f;
-float camera_focal_distance = 10.0f;
+layout(std140, binding = 9) uniform CameraData {
+    vec3 camera_position;
+    float camera_fov;
+    vec3 camera_target;
+    float camera_distance;
+    vec3 camera_up;
+    float camera_aperture;
+    vec2 resolution;
+    float camera_focal_distance;
+    // Padding is automatically handled by std140 layout
+    // No need to explicitly declare padding[3] in GLSL
+};
 
 // =================================================== Path Tracing ===================================================
 /**

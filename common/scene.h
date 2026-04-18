@@ -23,6 +23,24 @@ public:
     static void Release();
 
     /**
+     * @brief Initializes the camera UBO with the provided camera parameters
+     * @param camera Camera parameters to initialize the UBO with
+     */
+    void InitCameraData(const Camera& camera);
+
+    /**
+     * @brief Gets the camera UBO
+     * @return Reference to the camera UBO
+     */
+    const UBO& GetCameraUBO() noexcept;
+
+    /**
+     * @brief Binds the camera UBO to a specific binding point
+     * @param index The binding point index to bind to
+     */
+    void BindCameraUBO(GLuint index) noexcept;
+
+    /**
      * @brief Encodes mesh data from TriangleMesh array into GPU-friendly format
      * @param meshes Array of TriangleMesh objects
      * @param is_light Whether array of TriangleMesh objects is light
@@ -133,8 +151,8 @@ protected:
      * @param is_light Whether input triangles is light
      * @return Vector of sorted triangles based on BVH construction
      */
-    std::vector<TriangleEncoded> BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles, std::vector<BVHNodeEncoded>& bvh_nodes,
-        bool is_light);
+    std::vector<TriangleEncoded> BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles,
+        std::vector<BVHNodeEncoded>& bvh_nodes, bool is_light);
 
     /**
      * @brief Bilinear sampling for texture resizing
@@ -171,6 +189,8 @@ protected:
     std::unique_ptr<TBO> bvh_node_tbo_;                     ///< TBO for regular BVH node data
     std::unique_ptr<TBO> bvh_node_light_tbo_;               ///< TBO for light BVH node data
     std::unique_ptr<TBO> mesh_light_alias_table_tbo_;       ///< TBO for alias table data
+
+    std::unique_ptr<UBO> camera_ubo_;                       ///< UBO for camera parameters
 
     static std::unique_ptr<SceneManager> instance_;         ///< Singleton instance pointer
 };

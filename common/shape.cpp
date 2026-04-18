@@ -1,7 +1,6 @@
 #include <shape.h>
 #include <tiny_obj_loader.h>
 #include <utils.h>
-#include <memory>
 
 NAMESPACE_BEGIN(dream)
 

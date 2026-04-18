@@ -109,4 +109,55 @@ void ShaderStorageBufferObject::InitializeStorage(GLsizeiptr size, const void* d
 	glBufferStorage(target_, size_, data, flags);
 }
 
+UniformBufferObject::UniformBufferObject(const void* data, GLsizeiptr size, GLenum usage)
+	: BufferObject(GL_UNIFORM_BUFFER, usage) {
+	Bind();
+	Initialize(data, size, usage);
+	Unbind();
+}
+
+UniformBufferObject::UniformBufferObject(GLsizeiptr size, GLenum usage)
+	: BufferObject(GL_UNIFORM_BUFFER, usage) {
+	Bind();
+	Initialize(nullptr, size, usage);
+	Unbind();
+}
+
+void UniformBufferObject::BindBase(GLuint index) const {
+	if (0 != id_) {
+		glBindBufferBase(GL_UNIFORM_BUFFER, index, id_);
+	}
+}
+
+void* UniformBufferObject::MapBuffer(GLenum access) const {
+	if (0 == id_) {
+		return nullptr;
+	}
+	return glMapBuffer(target_, access);
+}
+
+bool UniformBufferObject::UnmapBuffer() const {
+	if (0 == id_) {
+		return false;
+	}
+	return GL_TRUE == glUnmapBuffer(target_);
+}
+
+void UniformBufferObject::UpdateData(GLintptr offset, GLsizeiptr size, const void* data) {
+	Bind();
+	BufferSubData(offset, size, data);
+	Unbind();
+}
+
+void UniformBufferObject::UpdateData(const void* data) {
+	Bind();
+	BufferSubData(0, size_, data);
+	Unbind();
+}
+
+void UniformBufferObject::Initialize(const void* data, GLsizeiptr size, GLenum usage) {
+	usage_ = usage;
+	BufferData(size, data);
+}
+
 NAMESPACE_END(dream)

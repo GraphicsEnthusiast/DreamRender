@@ -1,16 +1,31 @@
 #pragma once
 
-#include <memory>
 #include <buffer_object.h>
 #include <transform.h>
 
 NAMESPACE_BEGIN(dream)
 
 /**
+ * @struct Camera
+ * @brief Camera parameters structure for UBO
+ */
+struct Camera {
+    glm::vec3 camera_position;      ///< Camera position in world space
+    float camera_fov;               ///< Camera field of view in degrees
+    glm::vec3 camera_target;        ///< Camera look at target
+    float camera_distance;          ///< Camera distance for depth of field
+    glm::vec3 camera_up;            ///< Camera up vector
+    float camera_aperture;          ///< Camera aperture for depth of field
+    glm::vec2 resolution;           ///< Render resolution (width, height)
+    float camera_focal_distance;    ///< Camera focal distance for depth of field
+    float padding[3];               ///< Padding to ensure 16-byte alignment
+};
+
+/**
  * @enum TextureType
  * @brief Enumerates texture types used in material systems
  */
-    enum class TextureType {
+enum class TextureType {
     EMISSION = 0,
     DIFFUSE = 1,    ///< Diffuse/albedo texture (base color)
     ROUGHNESS = 2,  ///< Roughness texture
