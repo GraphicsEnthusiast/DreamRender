@@ -186,7 +186,8 @@ void LTPipeline::Init() {
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
 	Material cube_material;
-	cube_material.type = MaterialType::BOUNDARY;
+	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
+	cube_material.type = MaterialType::DIFFUSE;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
 	cube_material.roughness = 0.3f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -206,9 +207,9 @@ void LTPipeline::Init() {
 
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
-		Transform::Translate(0.0f, -10.0f, 0.0f),
-		std::make_unique<Material>(cube_material),
-		std::make_unique<Medium>(Medium())
+		Transform::Scale(1.0f, 0.1f, 1.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
+		std::make_unique<Material>(cube_material)//,
+		//std::make_unique<Medium>(Medium())
 	);
 
 	std::vector<TriangleMesh> meshes2;
