@@ -1,6 +1,7 @@
 Light Tracing:
-<img width="1282" height="766" alt="lt" src="https://github.com/user-attachments/assets/343bf90f-7761-40fb-8066-abd2293f1f25" />
+<img width="1279" height="766" alt="lt" src="https://github.com/user-attachments/assets/d772e935-8d1e-45cc-b694-de8bea0f0297" />
 
 Path Tracing:
-<img width="1282" height="766" alt="pt" src="https://github.com/user-attachments/assets/92ab12a3-610a-4f20-b1f1-727ea965aaae" />
+<img width="1278" height="756" alt="pt" src="https://github.com/user-attachments/assets/d28ca352-f8d9-43be-9b8f-978ddb63b580" />
+
 
