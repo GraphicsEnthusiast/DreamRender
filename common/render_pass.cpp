@@ -194,7 +194,7 @@ void ProgressivePass::Execute() {
 		previous_frame.id, GL_TEXTURE_2D, 0, 0, 0, 0,
 		width_, height_, 1);
 
-	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
 PostProcessingPass::PostProcessingPass(unsigned int width, unsigned int height) {
@@ -233,7 +233,7 @@ void PostProcessingPass::Execute() {
 	// Dispatch compute shader
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
-	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
 ConvertPass::ConvertPass(unsigned int width, unsigned int height) {
@@ -280,7 +280,7 @@ void ConvertPass::Execute() {
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
 	// Ensure all writes are completed
-	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
 PTPass::PTPass(unsigned int width, unsigned int height) {
@@ -363,7 +363,7 @@ void PTPass::Execute() {
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
-	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
 LTPass::LTPass(unsigned int width, unsigned int height) {
@@ -397,6 +397,8 @@ void LTPass::Execute() {
 	glClearTexImage(output_texture_r_.id, 0, GL_RED, GL_FLOAT, &zero_f);
 	glClearTexImage(output_texture_g_.id, 0, GL_RED, GL_FLOAT, &zero_f);
 	glClearTexImage(output_texture_b_.id, 0, GL_RED, GL_FLOAT, &zero_f);
+
+	BufferObject::Barrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 
 	// Bind output textures as images for atomic writes
 	glBindImageTexture(0, output_texture_r_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
@@ -456,7 +458,7 @@ void LTPass::Execute() {
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
 	// Ensure all writes are completed
-	BufferObject::Barrier(GL_ALL_BARRIER_BITS);
+	BufferObject::Barrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
 TextureHandle LTPass::GetOutputTextureR() const noexcept {
