@@ -45,9 +45,7 @@ vec3 LinearToSRGB(vec3 linear) {
 void main() {
     ivec2 tex_coord = ivec2(gl_GlobalInvocationID.xy);
     
-    // Clamp coordinates to image bounds
-    ivec2 size = imageSize(InputImage);
-    if (tex_coord.x >= size.x || tex_coord.y >= size.y) {
+    if (tex_coord.x >= imageSize(OutputImage).x || tex_coord.y >= imageSize(OutputImage).y) {
         return;
     }
     
