@@ -125,7 +125,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     float light_cosine = abs(dot(light_ray_info.ray.direction, light_ray_info.shading_normal));
     
     // Initialize path throughput beta
-    // beta = Le * |cosθ| / pdf_light
+    // beta = Le * |cosθ| / light_pdf
     if (light_ray_info.pdf > 0.0f) {
         beta = Mul(beta, DivFloat(MulFloat(light_ray_info.emission, light_cosine), light_ray_info.pdf));
     }
