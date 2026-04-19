@@ -24,7 +24,7 @@ public:
 
     /**
      * @brief Initializes the camera UBO with the provided camera parameters
-     * @param camera Camera parameters to initialize the UBO with
+     * @param camera Camera parameters to initialize the UBO
      */
     void InitCameraData(const Camera& camera);
 
