@@ -133,8 +133,8 @@ vec3 GGXSampleVisible(vec3 n, vec3 ve, float alpha_u, float alpha_v, vec2 sample
     
     // Section 4.1: Orthonormal basis (with special case if cross product is zero)
     float len2 = vh.x * vh.x + vh.y * vh.y;
-    vec3 T1 = len2 > 0.0f ? vec3(-vh.y, vh.x, 0.0f) * inversesqrt(len2) : vec3(1.0f, 0.0f, 0.0f);
-    vec3 T2 = cross(vh, T1);
+    vec3 tt1 = len2 > 0.0f ? vec3(-vh.y, vh.x, 0.0f) * inversesqrt(len2) : vec3(1.0f, 0.0f, 0.0f);
+    vec3 tt2 = cross(vh, tt1);
     
     // Section 4.2: Parameterization of the projected area
     float u = sample_xy.x;
@@ -147,7 +147,7 @@ vec3 GGXSampleVisible(vec3 n, vec3 ve, float alpha_u, float alpha_v, vec2 sample
     t2 = (1.0f - s) * sqrt(1.0f - t1 * t1) + s * t2;
     
     // Section 4.3: Reprojection onto hemisphere
-    vec3 nh = t1 * T1 + t2 * T2 + sqrt(max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * vh;
+    vec3 nh = t1 * tt1 + t2 * tt2 + sqrt(max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * vh;
     
     // Section 3.4: Transforming the normal back to the ellipsoid configuration
     vec3 h_local = normalize(vec3(alpha_u * nh.x, alpha_v * nh.y, max(0.0f, nh.z)));
