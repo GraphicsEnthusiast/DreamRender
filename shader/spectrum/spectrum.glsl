@@ -206,6 +206,35 @@ SampledSpectrum Exp(SampledSpectrum s) {
 }
 
 /**
+ * @brief Compute the square root of a sampled spectrum
+ * @param s Input sampled spectrum
+ * @return Square root of the input spectrum
+ */
+SampledSpectrum Sqrt(SampledSpectrum s) {
+    SampledSpectrum r;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        r.values[i] = sqrt(s.values[i]);
+    }
+    
+    return r;
+}
+
+/**
+ * @brief Apply max operation between spectrum and a scalar value
+ * @param s Input sampled spectrum
+ * @param val Scalar value to compare with
+ * @return Spectrum with each component maxed with the scalar value
+ */
+SampledSpectrum GEFloat(SampledSpectrum s, float val) {
+    SampledSpectrum r;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        r.values[i] = max(s.values[i], val);
+    }
+
+    return r;
+}
+
+/**
  * @struct SampledWavelengths
  * @brief Stores sampled wavelengths and their probability densities
  */

@@ -1,7 +1,7 @@
 #ifndef MATERIAL_GLSL
 #define MATERIAL_GLSL
 
-#include "spectrum/spectrum.glsl"
+#include "material/microfacet.glsl"
 #include "sample/sampling.glsl"
 #include "sample/sampler.glsl"
 
@@ -191,45 +191,6 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_in, vec2 samp
 }
 
 /**
- * @brief Evaluates the BSDF and PDF for a boundary material
- * Represents a perfect transmitting boundary that doesn't alter the light path.
- * This material type is typically used for media boundaries or perfect transmitters
- * where light passes through without scattering or absorption.
- * @param info Intersection data containing material properties
- * @param world_in In direction in world space
- * @param world_out Out direction in world space
- * @param lambda Sampled wavelengths for spectral rendering
- * @return MaterialEvalInfo Structure containing BSDF and PDF values
- */
-MaterialEvalInfo BoundaryEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
-    MaterialEvalInfo m_info;
-    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
-    m_info.pdf = 0.0f;
-
-	return m_info;
-}
-
-/**
- * @brief Samples a direction for a boundary material
- * For boundary materials, the sampling direction is always the perfect specular
- * transmission direction (opposite to the incoming direction). This represents
- * a perfect transmitting surface where light passes through without deviation.
- * @param info Intersection data containing material properties
- * @param world_in In direction in world space
- * @param sample_xy 2D random sample in [0,1] range (unused for boundary materials)
- * @param lambda Sampled wavelengths for spectral rendering
- * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
- */
-MaterialSampleInfo BoundarySample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
-    MaterialSampleInfo m_info;
-    m_info.world_out = -world_in;
-    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
-    m_info.pdf = 0.0f;
-
-    return m_info;
-}
-
-/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -245,9 +206,6 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     // Dispatch based on material type
     if (MaterialType_Diffuse == info.material.type) {
         return DiffuseEvaluate(info, world_in, world_out, lambda);
-    }
-    else if (MaterialType_Boundary == info.material.type) {
-        return BoundaryEvaluate(info, world_in, world_out, lambda);
     }
     
     // Add more material types here in the future
@@ -279,9 +237,6 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, vec2 sam
     // Dispatch based on material type
     if (MaterialType_Diffuse == info.material.type) {
         return DiffuseSample(info, world_in, sample_xy, lambda);
-    }
-    else if (MaterialType_Boundary == info.material.type) {
-        return BoundarySample(info, world_in, sample_xy, lambda);
     }
     
     // Add more material types here in the future
