@@ -105,14 +105,14 @@ float GGXD(vec3 h, vec3 n, float alpha_u, float alpha_v) {
 float GGXDV(vec3 world_in, vec3 h, vec3 n, float alpha_u, float alpha_v) {
     float D = GGXD(h, n, alpha_u, alpha_v);
     float G1 = GGXG1(world_in, h, n, alpha_u, alpha_v);
-    float dot_v_h = dot(world_in, h);
-    float dot_n_v = dot(n, world_in);
+    float v_dot_h = dot(world_in, h);
+    float n_dot_v = dot(n, world_in);
     
-    if (dot_n_v <= Epsilon) {
+    if (n_dot_v <= Epsilon) {
         return 0.0f;
     }
     
-    return G1 * dot_v_h * D / dot_n_v;
+    return G1 * v_dot_h * D / n_dot_v;
 }
 
 /**
