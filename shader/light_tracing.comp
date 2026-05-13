@@ -142,12 +142,9 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 light_ray_info.ray.origin, camera_sample_info, beta, lambda, sobol_sampler
             );
             
-            // Calculate camera cosine term: |dot(camera_direction, camera_forward)|
-            float camera_cosine = abs(dot(camera_sample_info.world_out, -camera.forward));
-            
-            // Contribution = beta * visibility * filter_weight * we * camera_cosine / (filter_pdf * camera_pdf)
+            // Contribution = beta * visibility * filter_weight * we / (filter_pdf * camera_pdf)
             SampledSpectrum L_camera = MulFloat(
-                MulFloat(Mul(beta, visibility), camera_sample_info.we * camera_cosine / camera_sample_info.pdf),
+                MulFloat(Mul(beta, visibility), camera_sample_info.we / camera_sample_info.pdf),
                 (filter_evaluate_info.weight / filter_evaluate_info.pdf)
             );
 
@@ -202,13 +199,10 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                         PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_in, camera_sample_info.world_out);
                         
                         if (phase_eval_info.pdf > 0.0f) {
-                            // Calculate camera cosine term
-                            float camera_cosine = abs(dot(camera_sample_info.world_out, -camera.forward));
-                            
-                            // Contribution = beta * visibility * phase * filter_weight * we * camera_cosine / (filter_pdf * camera_pdf)
+                            // Contribution = beta * visibility * phase * filter_weight * we / (filter_pdf * camera_pdf)
                             SampledSpectrum L_camera = MulFloat(
                                 Mul(Mul(beta, visibility), phase_eval_info.phase),
-                                (camera_sample_info.we * camera_cosine / camera_sample_info.pdf) *
+                                (camera_sample_info.we / camera_sample_info.pdf) *
                                 (filter_evaluate_info.weight / filter_evaluate_info.pdf)
                             );
                             
@@ -252,16 +246,13 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                     MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, camera_sample_info.world_out, lambda);
                     
                     if (mat_eval_info.pdf > 0.0f) {
-                        // Calculate camera cosine term
-                        float camera_cosine = abs(dot(camera_sample_info.world_out, -camera.forward));
-                        
                         // Calculate BSDF cosine term: |dot(camera_direction, surface_normal)|
                         float surface_cosine = abs(dot(camera_sample_info.world_out, info.shading_normal));
                         
-                        // Contribution = beta * visibility * bsdf * bsdf_cosine * filter_weight * we * camera_cosine / (filter_pdf * camera_pdf)
+                        // Contribution = beta * visibility * bsdf * bsdf_cosine * filter_weight * we / (filter_pdf * camera_pdf)
                         SampledSpectrum L_camera = MulFloat(
                             Mul(Mul(beta, visibility), MulFloat(mat_eval_info.bsdf, surface_cosine)),
-                            (camera_sample_info.we * camera_cosine / camera_sample_info.pdf) *
+                            (camera_sample_info.we / camera_sample_info.pdf) *
                             (filter_evaluate_info.weight / filter_evaluate_info.pdf)
                         );
                         

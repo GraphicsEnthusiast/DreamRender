@@ -14,7 +14,7 @@ int main() {
 	dream::RenderPass::InitSRGBToSpectrumTable();
 	dream::RenderPass::InitSobolMatricesTable();
 	dream::RenderPass::InitCIETable();
-	auto pipeline = std::make_unique<dream::PTPipeline>(gui->GetMainWindow());
+	auto pipeline = std::make_unique<dream::LTPipeline>(gui->GetMainWindow());
 	pipeline->SetRenderingSize(dream::Point2i(1280, 720));
 	pipeline->Init();
 	gui->SetRenderPipeline(std::move(pipeline));
