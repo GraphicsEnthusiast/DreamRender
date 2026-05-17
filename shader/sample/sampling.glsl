@@ -7,7 +7,7 @@
  */
 struct BinaryTable1D {
     float cdf[NSpectrumSamples + 1];  // Cumulative distribution function
-    float pdf[NSpectrumSamples];      // Probability density function
+    float pmf[NSpectrumSamples];      // Probability mass function
 };
 
 /**
@@ -30,7 +30,7 @@ BinaryTable1D BinaryTableNew(SampledSpectrum values) {
         table.cdf[0] = 0.0f;
         for (int i = 0; i < NSpectrumSamples; i++) {
             table.cdf[i + 1] = float(i + 1) * uniform_val;
-            table.pdf[i] = uniform_val;
+            table.pmf[i] = uniform_val;
         }
 
         return table;
@@ -41,7 +41,7 @@ BinaryTable1D BinaryTableNew(SampledSpectrum values) {
     for (int i = 0; i < NSpectrumSamples; i++) {
         float normalized = values.values[i] / sum;
         table.cdf[i + 1] = table.cdf[i] + normalized;
-        table.pdf[i] = normalized;
+        table.pmf[i] = normalized;
     }
     
     // Ensure CDF ends at 1.0 (handle numerical errors)
