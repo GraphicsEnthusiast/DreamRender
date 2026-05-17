@@ -59,7 +59,7 @@ WavelengthEvalInfo MediumWavelengthEvaluate(SampledSpectrum beta, SampledSpectru
     // Create binary table from the combined spectrum
     BinaryTable1D wave_table = BinaryTableNew(history_albedo);
     
-    // Extract PDF from the binary table
+    // Extract PMF from the binary table
     for (int i = 0; i < NSpectrumSamples; i++) {
         result.pmf.values[i] = wave_table.pmf[i];
     }
@@ -85,7 +85,7 @@ WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectru
     // Create binary table from the combined spectrum
     BinaryTable1D wave_table = BinaryTableNew(history_albedo);
     
-    // Extract PDF from the binary table
+    // Extract PMF from the binary table
     for (int i = 0; i < NSpectrumSamples; i++) {
         result.pmf.values[i] = wave_table.pmf[i];
     }
@@ -109,7 +109,7 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
     result.pdf = 0.0f;
     
     float distance = info.distance;
-    // Evaluate wavelength PDF
+    // Evaluate wavelength PMF
     SampledSpectrum albedo = Div(info.medium.sigma_s, info.medium.sigma_t);
     WavelengthEvalInfo wavelength_result = MediumWavelengthEvaluate(beta, albedo);
     SampledSpectrum wavelength_pmf = wavelength_result.pmf;
