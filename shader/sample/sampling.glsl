@@ -36,7 +36,7 @@ BinaryTable1D BinaryTableNew(SampledSpectrum values) {
         return table;
     }
     
-    // Build CDF and PDF
+    // Build CDF and PMF
     table.cdf[0] = 0.0f;
     for (int i = 0; i < NSpectrumSamples; i++) {
         float normalized = values.values[i] / sum;

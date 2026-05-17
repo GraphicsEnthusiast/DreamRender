@@ -44,10 +44,10 @@ struct MediumSampleInfo {
 };
 
 /**
- * @brief Evaluates wavelength PDF for medium scattering
+ * @brief Evaluates wavelength PMF for medium scattering
  * @param beta Spectral beta (path contribution)
  * @param albedo Medium albedo spectrum
- * @return WavelengthEvalInfo containing PDF for each wavelength
+ * @return WavelengthEvalInfo containing PMF for each wavelength
  */
 WavelengthEvalInfo MediumWavelengthEvaluate(SampledSpectrum beta, SampledSpectrum albedo) {
     WavelengthEvalInfo result;
@@ -72,7 +72,7 @@ WavelengthEvalInfo MediumWavelengthEvaluate(SampledSpectrum beta, SampledSpectru
  * @param beta Spectral beta (path contribution)
  * @param albedo Medium albedo spectrum
  * @param u Random value in [0, 1)
- * @return WavelengthSampleInfo containing sampled channel and PDF
+ * @return WavelengthSampleInfo containing sampled channel and PMF
  */
 WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectrum albedo, float u) {
     WavelengthSampleInfo result;
