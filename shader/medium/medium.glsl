@@ -209,7 +209,7 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
     // comparing u with 1 - Tr(max_distance), but avoids computing Tr(max_distance) explicitly.
     // ====================================================================
     
-    // Check if we hit volume boundary (distance ≥ max_distance)
+    // P (distance ≥ max_distance) = P(u ≥ 1 - Tr(max_distance)) = Tr(max_distance)
     if (result.distance >= max_distance) {
         result.distance = max_distance;
         result.scattered = false;  // Transmission event
@@ -218,14 +218,13 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
         SampledSpectrum sigma_t_dist = MulFloat(info.medium.sigma_t, max_distance);
         SampledSpectrum trans = Exp(Negate(sigma_t_dist));  // Tr(max_distance)
         
-        // PDF for transmission event: Tr(max_distance) (probability mass, not density)
-        // This equals: P(u ≥ 1 - Tr(max_distance)) = Tr(max_distance)
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i];
         }
         
         result.transmittance = trans;
-    } 
+    }
+    // P (distance < max_distance) = 1 - P(u ≥ 1 - Tr(max_distance)) = 1 - Tr(max_distance)
     else {
         result.scattered = true;  // Scattering event
         
