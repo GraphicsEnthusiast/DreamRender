@@ -120,13 +120,17 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
     
     // Calculate PDF based on scattering status
     if (!scattered) {
-        // No scattering case
+        // No scattering case: transmission through the entire medium
+        // PDF = Tr(max_distance) - probability of reaching boundary without interaction
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i];
         }
     } 
     else {
-        // Scattering case
+        // Scattering case: interaction inside medium
+        // PDF = σ_t * Tr(distance) - joint PDF for scattering at distance t
+        // This is equivalent to: PDF = (1 - Tr(max_distance)) * [σ_t * Tr(distance) / (1 - Tr(max_distance))]
+        // where (1 - Tr(max_distance)) cancels out between numerator and denominator
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i] * info.medium.sigma_t.values[i];
         }
@@ -184,19 +188,38 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
         sample_val = 0.0f;
     }
     
+    // Sample distance t from exponential distribution: p(t) = σ_t * exp(-σ_t * t)
     result.distance = -log(max(sample_val, 0.0f)) / info.medium.sigma_t.values[channel];
     result.distance = min(MaxFloat, result.distance);
     
-    // Check if we hit volume boundary
+    // ====================================================================
+    // Key insight: Sampling distance ≥ max_distance is equivalent to random number ≥ 1 - Tr(max_distance)
+    // ====================================================================
+    // The inverse CDF of exponential distribution: t = -ln(1-u)/σ_t
+    // The probability of transmission (distance ≥ max_distance) is: P(distance ≥ max_distance) = 1 - CDF(max_distance) = exp(-σ_t * max_distance) = Tr(max_distance)
+    // This corresponds to: u ≥ 1 - Tr(max_distance)  (since 1-u ≤ Tr(max_distance) when t ≥ max_distance)
+    //
+    // Let's verify:
+    // CDF(distance) = 1 - exp(-σ_t * distance)
+    // distance = -ln(1-u)/σ_t
+    // For distance ≥ max_distance: -ln(1-u)/σ_t ≥ max_distance ⇒ ln(1-u) ≤ -σ_t * max_distance ⇒ 1-u ≤ exp(-σ_t * max_distance) = Tr(max_distance)
+    // Therefore: u ≥ 1 - Tr(max_distance) when distance ≥ max_distance
+    //
+    // In code: we sample distance and compare with max_distance, which is mathematically equivalent to
+    // comparing u with 1 - Tr(max_distance), but avoids computing Tr(max_distance) explicitly.
+    // ====================================================================
+    
+    // Check if we hit volume boundary (distance ≥ max_distance)
     if (result.distance >= max_distance) {
         result.distance = max_distance;
-        result.scattered = false;
+        result.scattered = false;  // Transmission event
         
-        // Calculate transmittance for boundary hit
+        // Calculate transmittance for boundary hit: Tr(max_distance)
         SampledSpectrum sigma_t_dist = MulFloat(info.medium.sigma_t, max_distance);
-        SampledSpectrum trans = Exp(Negate(sigma_t_dist));
+        SampledSpectrum trans = Exp(Negate(sigma_t_dist));  // Tr(max_distance)
         
-        // Calculate PDF for boundary hit
+        // PDF for transmission event: Tr(max_distance) (probability mass, not density)
+        // This equals: P(u ≥ 1 - Tr(max_distance)) = Tr(max_distance)
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i];
         }
@@ -204,18 +227,52 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
         result.transmittance = trans;
     } 
     else {
-        result.scattered = true;
+        result.scattered = true;  // Scattering event
         
-        // Calculate transmittance for scattering event
+        // Calculate transmittance at scattering point: Tr(distance)
         SampledSpectrum sigma_t_dist = MulFloat(info.medium.sigma_t, result.distance);
-        SampledSpectrum trans = Exp(Negate(sigma_t_dist));
+        SampledSpectrum trans = Exp(Negate(sigma_t_dist));  // Tr(distance)
         
-        // Calculate PDF for scattering event
+        // ====================================================================
+        // Detailed explanation of PDF calculation and (1 - Tr(max_distance)) cancellation
+        // ====================================================================
+        // 
+        // 1. Mathematical Derivation of Conditional PDF:
+        // Let p(t) = σ_t * exp(-σ_t * t) = σ_t * Tr(t) be the unconditional PDF
+        // The probability of interaction within [0, max_distance) is:
+        //   P_interact = ∫[0, max_distance] p(t) dt = 1 - exp(-σ_t * max_distance) = 1 - Tr(max_distance)
+        // 
+        // The conditional PDF given that interaction occurs within [0, max_distance) is:
+        //   p_cond(t) = p(t) / P_interact = [σ_t * Tr(t)] / [1 - Tr(max_distance)]  for 0 ≤ t < max_distance
+        // 
+        // 2. Why divide by (1 - Tr(max_distance))? Proof by integration:
+        //   ∫[0, max_distance] p_cond(t) dt = ∫[0, max_distance] [σ_t * Tr(t)] / [1 - Tr(max_distance)] dt
+        //   = (1 / [1 - Tr(max_distance)]) * ∫[0, max_distance] σ_t * Tr(t) dt
+        //   = (1 / [1 - Tr(max_distance)]) * [1 - Tr(max_distance)]
+        //   = 1
+        // This proves p_cond(t) is a valid PDF (integrates to 1) over [0, max_distance).
+        // 
+        // 3. The joint PDF for scattering at distance t is:
+        //   pdf_joint(t) = P_interact * p_cond(t) = [1 - Tr(max_distance)] * [σ_t * Tr(t) / (1 - Tr(max_distance))]
+        //   = σ_t * Tr(t)
+        // The factor (1 - Tr(max_distance)) cancels in the joint PDF!
+        // 
+        // 4. In Monte Carlo weight calculation for scattering:
+        //   weight = contribution / pdf
+        //   = [σ_s * Tr(t) * S(t)] / [σ_t * Tr(t)]
+        //   = (σ_s / σ_t) * S(t)
+        // Here, both Tr(t) cancels and the implicit (1 - Tr(max_distance)) cancels.
+        // ====================================================================
+        
+        // PDF for scattering event: σ_t * Tr(t)
+        // This is equivalent to: (1 - Tr(max_distance)) * [σ_t * Tr(t) / (1 - Tr(max_distance))]
+        // The factor (1 - Tr(max_distance)) cancels out in weight calculation
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i] * info.medium.sigma_t.values[i];
         }
         
-        result.transmittance = trans;
+        // For scattering, multiply by σ_s for the contribution
+        result.transmittance = Mul(trans, info.medium.sigma_s);
     }
     
     // Check if transmittance is valid (non-zero)
@@ -224,11 +281,6 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
         if (result.transmittance.values[i] > 0.0f) {
             valid = true;
         }
-    }
-    
-    // Apply scattering coefficient if scattered
-    if (result.scattered) {
-        result.transmittance = Mul(result.transmittance, info.medium.sigma_s);
     }
     
     // If invalid, set to zero
