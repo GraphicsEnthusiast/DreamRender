@@ -262,7 +262,6 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                     radiance = Add(radiance, L_light);
                 }
                 // ========================= Surface Light Sampling(MIS) =========================
-                
 
                 // ========================= BSDF Sampling =========================
                 // Sample BSDF direction
