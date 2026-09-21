@@ -10,7 +10,8 @@ layout(location = 4) uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Boundary = 0;
-const int MaterialType_Diffuse = 1;  ///< Diffuse material (Oren-Nayar model)
+const int MaterialType_Diffuse = 1;   ///< Diffuse material (Oren-Nayar model)
+const int MaterialType_Conductor = 2; ///< Conductor material (GGX Microfacet Model)
 
 /**
  * @struct MaterialEvalInfo
@@ -91,6 +92,67 @@ float GetFinalRoughness(IntersectionInfo info) {
     
     // Fallback: Use base roughness
     return info.material.roughness;
+}
+
+/**
+ * @brief Retrieves the final anisotropic roughness with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @return vec2 containing anisotropic roughness values (x = U direction, y = V direction);
+ *         uses texture's R and G channels if roughness_aniso_texture is available,
+ *         otherwise falls back to base material roughness_aniso
+ */
+vec2 GetFinalRoughnessAniso(IntersectionInfo info) {
+    if (info.material.roughness_aniso_texture >= 0 && info.material.roughness_aniso_texture < TextureCount) {
+        // Sample anisotropic roughness texture (R channel = U, G channel = V)
+        vec4 tex_color = SampleTextureArray(info.material.roughness_aniso_texture, info.uv);
+
+        return vec2(tex_color.r, tex_color.g);
+    }
+    
+    // Fallback: Use base anisotropic roughness
+    return info.material.roughness_aniso;
+}
+
+/**
+ * @brief Retrieves the final specular color with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @param lambda Sampled wavelengths for spectral rendering conversion
+ * @return SampledSpectrum representing the final specular color; uses texture if available, otherwise falls back to base material specular
+ */
+SampledSpectrum GetFinalSpecular(IntersectionInfo info, SampledWavelengths lambda) {
+    if (info.material.specular_texture >= 0 && info.material.specular_texture < TextureCount) {
+        // Sample specular texture
+        vec4 tex_color = SampleTextureArray(info.material.specular_texture, info.uv);
+        
+        // Convert texture RGB to spectrum
+        RGB tex_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
+        RGBAlbedoSpectrum tex_spectrum = RGBAlbedoSpectrumNew(tex_rgb);
+
+        return RGBAlbedoSpectrumSample(tex_spectrum, lambda);
+    }
+    
+    // Fallback: Use base specular color
+    return info.material.specular;
+}
+
+/**
+ * @brief Retrieves the conductor eta (real part of complex IOR)
+ * @note Eta has no texture support, always returns the constant material value
+ * @param info Intersection data containing material properties
+ * @return SampledSpectrum representing the conductor eta
+ */
+SampledSpectrum GetFinalEta(IntersectionInfo info) {
+    return info.material.eta;
+}
+
+/**
+ * @brief Retrieves the conductor k (imaginary part of complex IOR)
+ * @note K has no texture support, always returns the constant material value
+ * @param info Intersection data containing material properties
+ * @return SampledSpectrum representing the conductor k
+ */
+SampledSpectrum GetFinalK(IntersectionInfo info) {
+    return info.material.k;
 }
 
 /**
@@ -191,6 +253,112 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_in, vec2 samp
 }
 
 /**
+ * @brief Evaluates the BSDF and PDF for a conductor material (GGX microfacet)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Get anisotropic roughness (alpha_u, alpha_v)
+    vec2 aniso_roughness = GetFinalRoughnessAniso(info);
+    float alpha_u = aniso_roughness.x;
+    float alpha_v = aniso_roughness.y;
+
+    SampledSpectrum eta = GetFinalEta(info);
+    SampledSpectrum k = GetFinalK(info);
+    SampledSpectrum specular = GetFinalSpecular(info, lambda);
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
+    vec3 h = normalize(v + l);
+
+    float n_dot_v = dot(n, v);
+    float n_dot_l = dot(n, l);
+    if (n_dot_v <= 0.0f || n_dot_l <= 0.0f) {
+        return m_info;
+    }
+
+    // PDF using the visible normal distribution
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float pdf = Dv * abs(1.0f / (4.0f * dot(v, h)));
+
+    // Microfacet BRDF terms
+    SampledSpectrum F = FresnelConductor(v, h, eta, k);
+    float G = GGXG1(v, h, n, alpha_u, alpha_v) *
+              GGXG1(l, h, n, alpha_u, alpha_v);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+
+    // BRDF = specular * F * D * G / (4 * NdotV * NdotL)
+    // Multiple scattering term intentionally omitted for now
+    SampledSpectrum brdf = MulFloat(Mul(specular, F), D * G / (4.0f * n_dot_v * n_dot_l));
+
+    m_info.bsdf = brdf;
+    m_info.pdf = pdf;
+    return m_info;
+}
+
+/**
+ * @brief Samples a direction and evaluates the BSDF for a conductor material (GGX microfacet)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    vec2 aniso_roughness = GetFinalRoughnessAniso(info);
+    float alpha_u = aniso_roughness.x;
+    float alpha_v = aniso_roughness.y;
+
+    SampledSpectrum eta = GetFinalEta(info);
+    SampledSpectrum k = GetFinalK(info);
+    SampledSpectrum specular = GetFinalSpecular(info, lambda);
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+
+    // Sample visible normal distribution (returns local-space half vector)
+    vec3 local_h = GGXSampleVisible(n, v, alpha_u, alpha_v, sample_xy);
+    vec3 h = ToWorldFromUp(local_h, n);
+
+    // Reflect incident direction around sampled half vector
+    vec3 l = reflect(-v, h);
+
+    float n_dot_v = dot(n, v);
+    float n_dot_l = dot(n, l);
+    if (n_dot_v <= 0.0f || n_dot_l <= 0.0f) {
+        return m_info;
+    }
+
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float pdf = Dv * abs(1.0f / (4.0f * dot(v, h)));
+
+    SampledSpectrum F = FresnelConductor(v, h, eta, k);
+    float G = GGXG1(v, h, n, alpha_u, alpha_v) *
+              GGXG1(l, h, n, alpha_u, alpha_v);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+
+    SampledSpectrum brdf = MulFloat(Mul(specular, F), D * G / (4.0f * n_dot_v * n_dot_l));
+
+    m_info.world_out = l;
+    m_info.bsdf = brdf;
+    m_info.pdf = pdf;
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -207,11 +375,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     if (MaterialType_Diffuse == info.material.type) {
         return DiffuseEvaluate(info, world_in, world_out, lambda);
     }
-    
-    // Add more material types here in the future
-    // else if (info.material.type == MaterialType_Metal) {
-    //     return MetalEvaluate(info, world_in, world_out, lambda);
-    // }
+    else if (MaterialType_Conductor == info.material.type) {
+        return ConductorEvaluate(info, world_in, world_out, lambda);
+    }
     // else if (info.material.type == MaterialType_Dielectric) {
     //     return DielectricEvaluate(info, world_in, world_out, lambda);
     // }
@@ -238,11 +404,9 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, vec2 sam
     if (MaterialType_Diffuse == info.material.type) {
         return DiffuseSample(info, world_in, sample_xy, lambda);
     }
-    
-    // Add more material types here in the future
-    // else if (info.material.type == MaterialType_Metal) {
-    //     return MetalSample(info, world_in, sample_xy, lambda);
-    // }
+    else if (MaterialType_Conductor == info.material.type) {
+        return ConductorSample(info, world_in, sample_xy, lambda);
+    }
     // else if (info.material.type == MaterialType_Dielectric) {
     //     return DielectricSample(info, world_in, sample_xy, lambda);
     // }

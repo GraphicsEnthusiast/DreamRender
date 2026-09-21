@@ -116,14 +116,18 @@ void PTPipeline::Init() {
 	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
 
 	Material teapot_material;
-	teapot_material.type = MaterialType::DIFFUSE;
-	teapot_material.diffuse = Vector3f(0.8f, 0.7f, 0.6f);
-	teapot_material.roughness = 0.5f;
+	teapot_material.type = MaterialType::CONDUCTOR;
+	teapot_material.specular = Vector3f(1.0f);
+	float roughness_u = 0.2f;
+	float roughness_v = 0.2f;
+	teapot_material.roughness_aniso = Vector4f(roughness_u, roughness_v, -1.0f, -1.0f);
+	teapot_material.eta = Vector3f(0.14282f, 0.37414f, 1.43944f);
+	teapot_material.k = Vector3f(3.97472f, 2.38066f, 1.59981f);
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
 	Material cube_material;
 	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
-	cube_material.type = MaterialType::DIFFUSE;
+	cube_material.type = MaterialType::BOUNDARY;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
 	cube_material.roughness = 0.3f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -132,7 +136,7 @@ void PTPipeline::Init() {
 	light_material.type = MaterialType::DIFFUSE;
 	light_material.diffuse = Vector3f(0.9f);
 	light_material.roughness = 0.0f;
-	light_material.emission = Vector3f(1.5f, 1.5f, 1.0f);
+	light_material.emission = Vector3f(2.0f, 2.0f, 1.5f);
 
 	std::vector<TriangleMesh> meshes;
 	meshes.emplace_back(
@@ -140,12 +144,11 @@ void PTPipeline::Init() {
 		Transform(),
 		std::make_unique<Material>(teapot_material)
 	);
-
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
-		Transform::Scale(1.0f, 0.1f, 1.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
-		std::make_unique<Material>(cube_material)//,
-		//std::make_unique<Medium>(Medium())
+		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
+		std::make_unique<Material>(cube_material),
+		std::make_unique<Medium>(Medium())
 	);
 
 	std::vector<TriangleMesh> meshes2;

@@ -90,7 +90,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
             float u = static_cast<float>(x) / (TARGET_SIZE - 1);
             float v = static_cast<float>(y) / (TARGET_SIZE - 1);
 
-            glm::vec4 color = BilinearSample(data, width, height, channels, u, v);
+            Vector4f color = BilinearSample(data, width, height, channels, u, v);
 
             int idx = (y * TARGET_SIZE + x) * TARGET_CHANNELS;
             resized_data[idx] = color.r;
@@ -120,7 +120,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     return texture_id;
 }
 
-glm::vec4 SceneManager::BilinearSample(const float* data, int width, int height, int channels, float u, float v) const {
+Vector4f SceneManager::BilinearSample(const float* data, int width, int height, int channels, float u, float v) const {
     float x = u * (width - 1);
     float y = v * (height - 1);
 
@@ -132,7 +132,7 @@ glm::vec4 SceneManager::BilinearSample(const float* data, int width, int height,
     float wx = x - x0;
     float wy = y - y0;
 
-    glm::vec4 p00(0.0f), p10(0.0f), p01(0.0f), p11(0.0f);
+    Vector4f p00(0.0f), p10(0.0f), p01(0.0f), p11(0.0f);
 
     for (int c = 0; c < std::min(channels, 4); ++c) {
         p00[c] = data[(y0 * width + x0) * channels + c];
@@ -141,8 +141,8 @@ glm::vec4 SceneManager::BilinearSample(const float* data, int width, int height,
         p11[c] = data[(y1 * width + x1) * channels + c];
     }
 
-    glm::vec4 top = p00 * (1.0f - wx) + p10 * wx;
-    glm::vec4 bottom = p01 * (1.0f - wx) + p11 * wx;
+    Vector4f top = p00 * (1.0f - wx) + p10 * wx;
+    Vector4f bottom = p01 * (1.0f - wx) + p11 * wx;
 
     return top * (1.0f - wy) + bottom * wy;
 }
@@ -231,9 +231,11 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
         const auto& texcoords = mesh.GetTexCoords();
         const auto& indices = mesh.GetIndices();
 
-        int emission_tex_id = material->GetTextureID(TextureType::EMISSION);
-        int diffuse_tex_id = material->GetTextureID(TextureType::DIFFUSE);
-        int roughness_tex_id = material->GetTextureID(TextureType::ROUGHNESS);
+		int emission_tex_id = material->GetTextureID(TextureType::EMISSION);
+		int diffuse_tex_id = material->GetTextureID(TextureType::DIFFUSE);
+		int roughness_tex_id = material->GetTextureID(TextureType::ROUGHNESS);
+		int roughness_aniso_tex_id = material->GetTextureID(TextureType::ROUGHNESS_ANISO);
+		int specular_tex_id = material->GetTextureID(TextureType::SPECULAR);
 
         // Get media
         const Medium* in_medium = mesh.GetInMedium();
@@ -312,6 +314,39 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
                 0.0f,
                 static_cast<float>(roughness_tex_id)  // w: roughness texture ID
             );
+
+			// Anisotropic roughness (fallback to isotropic if not set)
+			Vector2f aniso = material->roughness_aniso;
+			encoded_tri.roughness_aniso = Vector4f(
+				aniso.x,                          // x: roughness_u
+				aniso.y,                          // y: roughness_v
+				static_cast<float>(roughness_aniso_tex_id),  // z: texture ID for roughness_u
+				static_cast<float>(roughness_aniso_tex_id)   // w: texture ID for roughness_v
+			);
+
+			// Specular color
+			encoded_tri.specular = Vector4f(
+				material->specular.r,
+				material->specular.g,
+				material->specular.b,
+				static_cast<float>(specular_tex_id)
+			);
+
+			// Conductor eta (no texture support, w = -1)
+			encoded_tri.eta = Vector4f(
+				material->eta.r,
+				material->eta.g,
+				material->eta.b,
+				-1.0f
+			);
+
+			// Conductor k (no texture support, w = -1)
+			encoded_tri.k = Vector4f(
+				material->k.r,
+				material->k.g,
+				material->k.b,
+				-1.0f
+			);
 
             // Encode inside medium
             float in_medium_flag = -1.0f;  // Default: no medium

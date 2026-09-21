@@ -36,14 +36,31 @@ struct Medium {
 struct Material {
     int type;
 
-    //SampledSpectrum emission;
-    //int emission_texture;
+    // Emission
+    SampledSpectrum emission;
+    int emission_texture;
 
+    // Diffuse
     SampledSpectrum diffuse;
     int diffuse_texture;
 
+    // Isotropic roughness
     float roughness;
     int roughness_texture;
+
+    // Anisotropic roughness (x = U, y = V)
+    vec2 roughness_aniso;
+    int roughness_aniso_texture;   // Texture stores R = U, G = V
+
+    // Specular color (for conductor / metals)
+    SampledSpectrum specular;
+    int specular_texture;
+
+    // Conductor complex IOR - real part (eta) - constant only
+    SampledSpectrum eta;
+
+    // Conductor complex IOR - imaginary part (k) - constant only
+    SampledSpectrum k;
 };
 
 /**
