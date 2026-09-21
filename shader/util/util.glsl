@@ -50,7 +50,8 @@ struct Material {
 
     // Anisotropic roughness (x = U, y = V)
     vec2 roughness_aniso;
-    int roughness_aniso_texture;   // Texture stores R = U, G = V
+    int roughness_aniso_texture_u;
+    int roughness_aniso_texture_v;
 
     // Specular color (for conductor / metals)
     SampledSpectrum specular;

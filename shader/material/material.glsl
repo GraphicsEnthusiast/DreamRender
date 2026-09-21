@@ -97,20 +97,33 @@ float GetFinalRoughness(IntersectionInfo info) {
 /**
  * @brief Retrieves the final anisotropic roughness with texture mapping support
  * @param info Intersection data containing material properties and UV coordinates
- * @return vec2 containing anisotropic roughness values (x = U direction, y = V direction);
- *         uses texture's R and G channels if roughness_aniso_texture is available,
- *         otherwise falls back to base material roughness_aniso
+ * @return vec2 containing anisotropic roughness values (x = U direction, y = V direction)
  */
 vec2 GetFinalRoughnessAniso(IntersectionInfo info) {
-    if (info.material.roughness_aniso_texture >= 0 && info.material.roughness_aniso_texture < TextureCount) {
-        // Sample anisotropic roughness texture (R channel = U, G channel = V)
-        vec4 tex_color = SampleTextureArray(info.material.roughness_aniso_texture, info.uv);
-
-        return vec2(tex_color.r, tex_color.g);
-    }
-    
     // Fallback: Use base anisotropic roughness
-    return info.material.roughness_aniso;
+    vec2 result = info.material.roughness_aniso;
+
+    int tex_u = info.material.roughness_aniso_texture_u;
+    int tex_v = info.material.roughness_aniso_texture_v;
+
+    if (tex_u >= 0 && tex_u < TextureCount) {
+        vec4 tex_color = SampleTextureArray(tex_u, info.uv);
+
+        // If the same texture is used for both U and V, use R and G channels
+        if (tex_u == tex_v) {
+            result = vec2(tex_color.r, tex_color.g);
+        }
+        else {
+            result.x = tex_color.r;
+        }
+    }
+
+    if (tex_v >= 0 && tex_v < TextureCount && tex_v != tex_u) {
+        vec4 tex_color = SampleTextureArray(tex_v, info.uv);
+        result.y = tex_color.r;
+    }
+
+    return result;
 }
 
 /**
@@ -267,8 +280,8 @@ MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 wo
 
     // Get anisotropic roughness (alpha_u, alpha_v)
     vec2 aniso_roughness = GetFinalRoughnessAniso(info);
-    float alpha_u = aniso_roughness.x;
-    float alpha_v = aniso_roughness.y;
+    float alpha_u = aniso_roughness.x * aniso_roughness.x;
+    float alpha_v = aniso_roughness.y * aniso_roughness.y;
 
     SampledSpectrum eta = GetFinalEta(info);
     SampledSpectrum k = GetFinalK(info);
@@ -301,6 +314,7 @@ MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 wo
 
     m_info.bsdf = brdf;
     m_info.pdf = pdf;
+
     return m_info;
 }
 
@@ -319,8 +333,8 @@ MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sa
     m_info.pdf = 0.0f;
 
     vec2 aniso_roughness = GetFinalRoughnessAniso(info);
-    float alpha_u = aniso_roughness.x;
-    float alpha_v = aniso_roughness.y;
+    float alpha_u = aniso_roughness.x * aniso_roughness.x;
+    float alpha_v = aniso_roughness.y * aniso_roughness.y;
 
     SampledSpectrum eta = GetFinalEta(info);
     SampledSpectrum k = GetFinalK(info);
@@ -355,6 +369,7 @@ MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sa
     m_info.world_out = l;
     m_info.bsdf = brdf;
     m_info.pdf = pdf;
+
     return m_info;
 }
 

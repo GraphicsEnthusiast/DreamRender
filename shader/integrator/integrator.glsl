@@ -98,6 +98,27 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     mat.roughness = tri.roughness.x;
     mat.roughness_texture = roughness_texture_id;
 
+    vec4 roughness_aniso = tri.roughness_aniso;
+    mat.roughness_aniso = vec2(roughness_aniso.x, roughness_aniso.y);
+    mat.roughness_aniso_texture_u = int(roughness_aniso.z);
+    mat.roughness_aniso_texture_v = int(roughness_aniso.w);
+
+    // Get specular reflectance (RGB color, w = texture ID)
+    RGB specular = RGBNew(tri.specular.r, tri.specular.g, tri.specular.b);
+    RGBAlbedoSpectrum specular_spectrum = RGBAlbedoSpectrumNew(specular);
+    mat.specular = RGBAlbedoSpectrumSample(specular_spectrum, lambda);
+    mat.specular_texture = int(tri.specular.w);
+
+    // Get complex IOR eta (n). (no texture support)
+    RGB eta = RGBNew(tri.eta.r, tri.eta.g, tri.eta.b);
+    RGBAlbedoSpectrum eta_spectrum = RGBAlbedoSpectrumNew(eta);
+    mat.eta = RGBAlbedoSpectrumSample(eta_spectrum, lambda);
+
+    // Get complex IOR k (absorption). (no texture support)
+    RGB k = RGBNew(tri.k.r, tri.k.g, tri.k.b);
+    RGBAlbedoSpectrum k_spectrum = RGBAlbedoSpectrumNew(k);
+    mat.k = RGBAlbedoSpectrumSample(k_spectrum, lambda);
+
     // Set the material
     info.material = mat;
 
