@@ -129,7 +129,7 @@ void PTPipeline::Init() {
 
 	Material cube_material;
 	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
-	cube_material.type = MaterialType::DIFFUSE;
+	cube_material.type = MaterialType::BOUNDARY;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
 	cube_material.roughness = 0.3f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -141,11 +141,12 @@ void PTPipeline::Init() {
 	light_material.emission = Vector3f(7.0f, 7.0f, 5.0f);
 
 	std::vector<TriangleMesh> meshes;
-	//meshes.emplace_back(
-	//	"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
-	//	Transform(),
-	//	std::make_unique<Material>(teapot_material)
-	//);
+	meshes.emplace_back(
+		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
+		Transform(),
+		std::make_unique<Material>(cube_material),
+		std::make_unique<Medium>(Medium())
+	);
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
