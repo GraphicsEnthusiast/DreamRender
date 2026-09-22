@@ -494,4 +494,128 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
     return result;
 }
 
+/**
+ * @brief Converts 3D direction on unit sphere to 2D UV coordinates [0,1]^2
+ * @param v 3D direction vector on the unit sphere
+ * @return 2D UV coordinates in the range [0,1]^2
+ */
+vec2 SphereToPlane(vec3 v) {
+    vec2 uv = vec2(atan(v.z, v.x), asin(clamp(v.y, -1.0f, 1.0f)));
+    uv *= vec2(1.0f / (2.0f * PI), 1.0f / PI);
+    uv += 0.5f;
+    
+    return uv;
+}
+
+/**
+ * @brief Converts 2D UV coordinates [0,1]^2 to 3D direction on unit sphere
+ * @param uv 2D UV coordinates in the range [0,1]^2
+ * @return Normalized 3D direction vector on the unit sphere
+ */
+vec3 PlaneToSphere(vec2 uv) {
+    float phi = 2.0f * PI * (uv.x - 0.5f);
+    float theta = PI * (uv.y - 0.5f);
+    vec3 L = vec3(cos(theta) * cos(phi), sin(theta), cos(theta) * sin(phi));
+    
+    return normalize(L);
+}
+
+/**
+ * @brief Computes the luminance of an RGB vector using CIE 1931 weights
+ * @param rgb RGB color vector
+ * @return Luminance value
+ */
+float Luminance(vec3 rgb) {
+    return 0.2126f * rgb.r + 0.7152f * rgb.g + 0.0722f * rgb.b;
+}
+
+/**
+ * @brief Evaluates HDR environment light for a given direction
+ * @param world_out Out direction (from surface to light)
+ * @param lambda Sampled wavelengths for spectral rendering conversion
+ * @return LightEvalInfo containing emission spectrum and PDF
+ */
+LightEvalInfo HDREnvEvaluate(vec3 world_out, SampledWavelengths lambda) {
+    LightEvalInfo result;
+    result.pdf = 0.0f;
+    result.emission = SampledSpectrumNewFloat(0.0f);
+
+    vec2 uv = SphereToPlane(world_out);
+    vec4 tex_color = texture(HDREnvMap, uv);
+    
+    RGB emission_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
+    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+    result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+
+    float luminance = Luminance(tex_color.rgb);
+    float theta = uv.y * PI;
+    float sinTheta = sin(theta);
+
+    if (sinTheta < Epsilon) {
+        return result;
+    }
+
+    // PDF = (Luminance / TotalWeight) * Jacobian
+    float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) * 0.5f * (1.0f / (PI * PI)) / sinTheta;
+    result.pdf = (luminance / HDREnvWeightSum) * jacobian;
+
+    return result;
+}
+
+/**
+ * @brief Samples a direction from HDR environment light using 2D Alias Table
+ * @param sobol_sampler Sobol sequence sampler for random number generation
+ * @param lambda Sampled wavelengths for spectral rendering conversion
+ * @return LightSampleInfo containing sampled direction, distance, PDF and emission spectrum
+ */
+LightSampleInfo HDREnvSample(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    LightSampleInfo result;
+    result.world_out = vec3(0.0f);
+    result.distance = MaxFloat; // Environment light is at infinity
+    result.pdf = 0.0f;
+    result.emission = SampledSpectrumNewFloat(0.0f);
+    result.has_medium = false;
+
+    // 1. Sample row and col using 2D Alias Table
+        // 1. Sample row and col using 2D Alias Table
+    // Generate 4 random numbers: 2 for column sampling, 2 for row sampling
+    vec2 sample_xy1 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    vec2 sample_xy2 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    
+    ivec2 rc = AliasTable2DSample(
+        HDREnvColAliasTable,
+        HDREnvMapHeight,
+        HDREnvWeightSum,
+        HDREnvRowAliasTable,
+        HDREnvMapWidth,
+        sample_xy1,
+        sample_xy2
+    );
+
+    // 2. Map pixel to UV and then to Sphere
+    vec2 uv = vec2((float(rc.x) + 0.5f) / float(HDREnvMapWidth), 
+                   (float(rc.y) + 0.5f) / float(HDREnvMapHeight));
+    result.world_out = PlaneToSphere(uv);
+
+    // 3. Fetch radiance and compute PDF
+    vec4 tex_color = texture(HDREnvMap, uv);
+    
+    RGB emission_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
+    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+    result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+
+    float luminance = Luminance(tex_color.rgb);
+    float theta = uv.y * PI;
+    float sinTheta = sin(theta);
+
+    if (sinTheta < Epsilon) {
+        return result;
+    }
+
+    float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) * 0.5f * (1.0f / (PI * PI)) / sinTheta;
+    result.pdf = (luminance / HDREnvWeightSum) * jacobian;
+
+    return result;
+}
+
 #endif // LIGHT_GLSL

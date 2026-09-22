@@ -143,27 +143,27 @@ public:
     const TBO& GetHDREnvColAliasTableTBO() const noexcept;
 
     /**
-    * @brief Get the width of the HDR environment map
-    * @return The width of the HDR environment map
-    */
+     * @brief Get the width of the HDR environment map
+     * @return The width of the HDR environment map
+     */
     int GetHDRWidth() const noexcept;
 
     /**
-    * @brief Get the height of the HDR environment map
-    * @return The height of the HDR environment map
-    */
+     * @brief Get the height of the HDR environment map
+     * @return The height of the HDR environment map
+     */
     int GetHDRHeight() const noexcept;
 
     /**
-    * @brief Get the texture ID of the HDR environment map
-    * @return The texture ID of the HDR environment map, or -1 if not loaded
-    */
+     * @brief Get the texture ID of the HDR environment map
+     * @return The texture ID of the HDR environment map, or -1 if not loaded
+     */
     GLuint GetHDRTextureID() const noexcept;
 
     /**
-    * @brief Get the sum of all weights in the HDR environment map
-    * @return The sum of all weights in the HDR environment map
-    */
+     * @brief Get the sum of all weights in the HDR environment map
+     * @return The sum of all weights in the HDR environment map
+     */
     float GetHDRWeightSum() const noexcept;
 
     /**

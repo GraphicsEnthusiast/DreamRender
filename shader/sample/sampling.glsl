@@ -126,19 +126,21 @@ int AliasTable1DSample(samplerBuffer alias_table, int table_size, int offset, fl
  * @param col_sum_distrib Sum of the column probability distribution
  * @param row_alias_table TBO containing all row alias table data (concatenated)
  * @param row_table_size Size of each row alias table
- * @param row_sum_distrib Sum of the row probability distribution
  * @param sample_xy1 First random sample for column selection
  * @param sample_xy2 Second random sample for row selection
  * @return 2D coordinates (x, y) of the sampled element
  */
 ivec2 AliasTable2DSample(samplerBuffer col_alias_table, int col_table_size, float col_sum_distrib,
-                           samplerBuffer row_alias_table, int row_table_size, float row_sum_distrib,
-                           vec2 sample_xy1, vec2 sample_xy2) {
+                         samplerBuffer row_alias_table, int row_table_size,
+                         vec2 sample_xy1, vec2 sample_xy2) {
     // First sample the column table to get a row index
     int row = AliasTable1DSample(col_alias_table, col_table_size, 0, col_sum_distrib, sample_xy1);
     
     // Calculate offset into the row tables TBO for this specific row
     int row_table_offset = row * row_table_size;
+    
+    // Get the sum distribution from the row alias table
+    float row_sum_distrib = texelFetch(row_alias_table, row_table_offset + row_table_size - 1).y;
     
     // Sample the specific row table to get the column index
     int col = AliasTable1DSample(row_alias_table, row_table_size, row_table_offset, row_sum_distrib, sample_xy2);
