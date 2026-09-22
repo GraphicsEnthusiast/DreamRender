@@ -6,9 +6,37 @@
 #include "medium/medium.glsl"
 
 uniform samplerBuffer MeshLightTable;
-layout(location = 1) uniform float MeshLightTableMax;
-layout(location = 2) uniform float MeshLightTableSum;
-layout(location = 3) uniform int MeshLightTableSize;
+uniform float MeshLightTableMax;
+uniform float MeshLightTableSum;
+uniform int MeshLightTableSize;
+
+uniform sampler2D HDREnvMap;
+uniform float HDREnvWeightSum;
+uniform int HDREnvMapWidth;
+uniform int HDREnvMapHeight;
+uniform samplerBuffer HDREnvRowAliasTable;
+uniform samplerBuffer HDREnvColAliasTable;
+
+void HDREnvMapDebugDummy() {
+    // 读取所有 uniform 变量，防止编译器优化掉
+    float weight_sum = HDREnvWeightSum;
+    int map_width = HDREnvMapWidth;
+    int map_height = HDREnvMapHeight;
+    
+    // 采样环境贴图中心像素
+    vec2 center_uv = vec2(0.5f, 0.5f);
+    vec4 env_color = texture(HDREnvMap, center_uv);
+    
+    // 采样行/列别名表（取第一个元素）
+    float row_alias = texelFetch(HDREnvRowAliasTable, 0).r;
+    float col_alias = texelFetch(HDREnvColAliasTable, 0).r;
+    
+    // 用读取到的值做一个简单计算，确保所有变量都被"使用"
+    float dummy = weight_sum + float(map_width) + float(map_height) + 
+                  env_color.r + env_color.g + env_color.b + env_color.a +
+                  row_alias + col_alias;
+
+}
 
 /**
  * @struct LightEvalInfo

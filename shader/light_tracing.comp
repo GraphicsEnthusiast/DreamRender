@@ -8,7 +8,7 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(r32f, binding = 0) uniform image2D OutputTexR;
 layout(r32f, binding = 1) uniform image2D OutputTexG;
 layout(r32f, binding = 2) uniform image2D OutputTexB;
-layout(location = 0) uniform uint FrameCounter;
+uniform uint FrameCounter;
 layout(std140, binding = 9) uniform CameraData {
     vec3 camera_position;
     float camera_fov;

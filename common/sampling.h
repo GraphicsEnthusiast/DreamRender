@@ -57,10 +57,10 @@ protected:
     void PrepareGPUData();
 
 protected:
-    std::vector<Element> table;             ///< Internal alias table
-    std::vector<AliasTableData> gpu_data;   ///< GPU-ready data
-    float max_table;                        ///< Max of the table
-    float sum_table;                        ///< Sum of the table
+    std::vector<Element> table_;             ///< Internal alias table
+    std::vector<AliasTableData> gpu_data_;   ///< GPU-ready data
+    float max_table_;                        ///< Max of the table
+    float sum_table_;                        ///< Sum of the table
 };
 
 /**
@@ -94,6 +94,22 @@ public:
      */
     const std::vector<AliasTableData>& GetColTableGPUData() const noexcept;
 
+    /**
+     * @brief Gets the sum of the probability distribution
+     * @return Sum of all probabilities in the distribution
+     */
+    float Sum() const noexcept;
+
+    /**
+     * @brief Gets the width of the 2D distribution
+     */
+    unsigned int GetWidth() const noexcept;
+
+    /**
+     * @brief Gets the height of the 2D distribution
+     */
+    unsigned int GetHeight() const noexcept;
+
 protected:
     /**
      * @brief Prepares GPU-friendly data from the internal table
@@ -101,13 +117,12 @@ protected:
     void PrepareGPUData();
 
 protected:
-    std::vector<AliasTable1D> row_table;              ///< Row alias table
-    AliasTable1D col_table;                            ///< Column alias table
-    std::vector<AliasTableData> row_table_gpu_data;   ///< GPU data for row table
-    std::vector<AliasTableData> col_table_gpu_data;   ///< GPU data for column table
-    unsigned int width;                                ///< Width of 2D distribution
-    unsigned int height;                               ///< Height of 2D distribution
+    std::vector<AliasTable1D> row_table_;              ///< Row alias table
+    AliasTable1D col_table_;                            ///< Column alias table
+    std::vector<AliasTableData> row_table_gpu_data_;   ///< GPU data for row table
+    std::vector<AliasTableData> col_table_gpu_data_;   ///< GPU data for column table
+    unsigned int width_;                                ///< Width of 2D distribution
+    unsigned int height_;                               ///< Height of 2D distribution
 };
-
 
 NAMESPACE_END(dream)

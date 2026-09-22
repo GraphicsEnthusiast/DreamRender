@@ -335,11 +335,13 @@ void PTPass::Execute() {
 	shader_->SetInt("BVHNodesLight", 5);
 
 	// Bind mesh light alias table texture buffer
-	scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
-	shader_->SetInt("MeshLightTable", 6);
-	shader_->SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
-	shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
-	shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
+	if (scene_manager.GetMeshLightTableSize() > 0) {
+		scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
+		shader_->SetInt("MeshLightTable", 6);
+		shader_->SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
+		shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
+		shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
+	}
 
 	GLuint texture_array = scene_manager.GetTextureArray();
 	int texture_count = scene_manager.GetTextureCount();
@@ -362,6 +364,21 @@ void PTPass::Execute() {
 	// Bind camera UBO
 	scene_manager.BindCameraUBO(9);
 	shader_->SetInt("CameraData", 9);
+
+	// Bind HDR environment map
+	if (0 != scene_manager.GetHDRTextureID()) {
+		glActiveTexture(GL_TEXTURE10);
+		glBindTexture(GL_TEXTURE_2D, scene_manager.GetHDRTextureID());
+		shader_->SetInt("HDREnvMap", 10);
+		shader_->SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
+		shader_->SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
+		shader_->SetFloat("HDREnvWeightSum", scene_manager.GetHDRWeightSum());
+
+		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
+		shader_->SetInt("HDREnvRowAliasTable", 11);
+		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
+		shader_->SetInt("HDREnvColAliasTable", 12);
+	}
 
 	shader_->SetUInt("FrameCounter", GetFrameCounter());
 
@@ -459,6 +476,21 @@ void LTPass::Execute() {
 	// Bind camera UBO
 	scene_manager.BindCameraUBO(9);
 	shader_->SetInt("CameraData", 9);
+
+	// Bind HDR environment map
+	if (0 != scene_manager.GetHDRTextureID()) {
+		glActiveTexture(GL_TEXTURE10);
+		glBindTexture(GL_TEXTURE_2D, scene_manager.GetHDRTextureID());
+		shader_->SetInt("HDREnvMap", 10);
+		shader_->SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
+		shader_->SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
+		shader_->SetFloat("HDREnvWeightSum", scene_manager.GetHDRWeightSum());
+
+		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
+		shader_->SetInt("HDREnvRowAliasTable", 11);
+		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
+		shader_->SetInt("HDREnvColAliasTable", 12);
+	}
 
 	// Set frame counter
 	shader_->SetUInt("FrameCounter", GetFrameCounter());

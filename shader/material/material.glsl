@@ -6,7 +6,7 @@
 #include "sample/sampler.glsl"
 
 uniform sampler2DArray TextureArray;
-layout(location = 4) uniform int TextureCount;
+uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Boundary = 0;

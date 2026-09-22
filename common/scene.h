@@ -124,6 +124,49 @@ public:
     int LoadTexture(const std::string& file_path, TextureType type);
 
     /**
+     * @brief Loads an HDR environment map from a file, caches its pixel data,
+     *        and precomputes luminance-based sampling weights (PDF) with solid angle correction.
+     * @param file_path The path to the HDR texture file (e.g., .hdr format).
+     */
+    void LoadHDRTexture(const std::string& file_path);
+
+    /**
+     * @brief Gets the TBO containing HDR environment row alias table data
+     * @return Reference to the row Texture Buffer Object
+     */
+    const TBO& GetHDREnvRowAliasTableTBO() const noexcept;
+
+    /**
+     * @brief Gets the TBO containing HDR environment column alias table data
+     * @return Reference to the column Texture Buffer Object
+     */
+    const TBO& GetHDREnvColAliasTableTBO() const noexcept;
+
+    /**
+    * @brief Get the width of the HDR environment map
+    * @return The width of the HDR environment map
+    */
+    int GetHDRWidth() const noexcept;
+
+    /**
+    * @brief Get the height of the HDR environment map
+    * @return The height of the HDR environment map
+    */
+    int GetHDRHeight() const noexcept;
+
+    /**
+    * @brief Get the texture ID of the HDR environment map
+    * @return The texture ID of the HDR environment map, or -1 if not loaded
+    */
+    GLuint GetHDRTextureID() const noexcept;
+
+    /**
+    * @brief Get the sum of all weights in the HDR environment map
+    * @return The sum of all weights in the HDR environment map
+    */
+    float GetHDRWeightSum() const noexcept;
+
+    /**
      * @brief Deleted copy constructor
      */
     SceneManager(const SceneManager&) = delete;
@@ -137,7 +180,12 @@ protected:
     /**
      * @brief Default constructor
      */
-    SceneManager() : texture_array_(0) {}
+    SceneManager() : texture_array_(0), hdr_env_texture_(0) {}
+
+    /**
+     * @brief Builds the 2D alias table for HDR environment lighting
+     */
+    void BuildHDREnvAliasTable();
 
     /**
      * @brief Builds alias table for light triangles considering area and emission
@@ -182,8 +230,18 @@ protected:
     std::unordered_map<std::string, int> texture_name_to_id_; ///< Texture name to ID mapping
 
     AliasTable1D mesh_light_alias_table_;                   ///< Alias table for light triangle sampling
-    std::vector<float> light_triangle_weights_;             ///< Weight for each light triangle (area + luminance)
+    std::vector<float> light_triangle_weights_;             ///< Weight for each light triangle (power)
+    
+    GLuint hdr_env_texture_;       ///< Texture ID of the loaded HDR environment map
+    int hdr_width_;                ///< Width of the HDR environment map
+    int hdr_height_;               ///< Height of the HDR environment map
+    std::vector<float> hdr_env_data_;   ///< Raw float RGBA data of the HDR environment map
 
+    AliasTable2D hdr_env_alias_table_;                      ///< 2D alias table for HDR env map
+    std::vector<float> hdr_env_weights_;                    ///< Luminance weights for HDR pixels
+
+    std::unique_ptr<TBO> hdr_env_row_alias_table_tbo_;      ///< TBO for row data
+    std::unique_ptr<TBO> hdr_env_col_alias_table_tbo_;      ///< TBO for column data
     std::unique_ptr<TBO> triangle_tbo_;                     ///< TBO for regular triangle data
     std::unique_ptr<TBO> triangle_light_tbo_;               ///< TBO for light triangle data
     std::unique_ptr<TBO> bvh_node_tbo_;                     ///< TBO for regular BVH node data

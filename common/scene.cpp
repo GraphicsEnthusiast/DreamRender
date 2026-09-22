@@ -5,6 +5,11 @@
 
 NAMESPACE_BEGIN(dream)
 
+const float PI = 3.1415926535897932385f;
+auto Luminance = [](const Vector3f& rgb) -> float {
+	return 0.2126f * rgb.r + 0.7152f * rgb.g + 0.0722f * rgb.b;
+};
+
 std::unique_ptr<SceneManager> SceneManager::instance_ = nullptr;
 
 SceneManager& SceneManager::Instance() {
@@ -118,6 +123,92 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     INFO("[info] Texture loaded: {} ({}x{}, ID: {})", file_path, TARGET_SIZE, TARGET_SIZE, texture_id);
 
     return texture_id;
+}
+
+void SceneManager::LoadHDRTexture(const std::string& file_path) {
+	// If HDR is already loaded, ignore subsequent load
+	if (0 != hdr_env_texture_) {
+		INFO("[info] HDR environment map already loaded (ID: {}). Ignoring subsequent load: {}", hdr_env_texture_, file_path);
+
+		return;
+	}
+
+	INFO("[info] Loading HDR texture: {}", file_path);
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, channels;
+
+	// Force 4 channels (RGBA) and load as 32-bit float data
+	float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, 4);
+	if (!data) {
+		ERROR("[error] Failed to load HDR texture: {}", file_path);
+
+		return;
+	}
+
+	INFO("[info] HDR texture loaded: {}x{}, original {} channels", width, height, channels);
+
+	const int target_channels = 4;
+	hdr_width_ = width;
+	hdr_height_ = height;
+	hdr_env_data_.resize(width * height * target_channels);
+	std::memcpy(hdr_env_data_.data(), data, hdr_env_data_.size() * sizeof(float));
+
+	// Create HDR texture as a standalone OpenGL texture
+	glGenTextures(1, &hdr_env_texture_);
+	glBindTexture(GL_TEXTURE_2D, hdr_env_texture_);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0,
+		GL_RGBA, GL_FLOAT, data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_image_free(data);
+
+	// Compute weights for importance sampling
+	hdr_env_weights_.resize(width * height);
+	for (int y = 0; y < height; ++y) {
+		// Solid angle correction: sin(theta), where theta is the polar angle
+		float theta = PI * (y + 0.5f) / height;
+		float sin_theta = std::sin(theta);
+
+		for (int x = 0; x < width; ++x) {
+			int idx = (y * width + x) * target_channels;
+			float r = hdr_env_data_[idx];
+			float g = hdr_env_data_[idx + 1];
+			float b = hdr_env_data_[idx + 2];
+
+			// Calculate luminance using CIE standard coefficients
+			float luminance = Luminance(Vector3f(r, g, b));
+
+			// Weight = luminance * sin(theta) to compensate for spherical distortion
+			hdr_env_weights_[y * width + x] = luminance * sin_theta;
+		}
+	}
+
+	INFO("[info] HDR texture ready: {} ({}x{}, ID: {})", file_path, width, height, hdr_env_texture_);
+
+	BuildHDREnvAliasTable();
+}
+
+void SceneManager::BuildHDREnvAliasTable() {
+    if (hdr_env_weights_.empty()) {
+        return;
+    }
+
+	hdr_env_alias_table_ = AliasTable2D(hdr_env_weights_, hdr_width_, hdr_height_);
+}
+
+const TBO& SceneManager::GetHDREnvRowAliasTableTBO() const noexcept {
+    return *hdr_env_row_alias_table_tbo_;
+}
+
+const TBO& SceneManager::GetHDREnvColAliasTableTBO() const noexcept {
+    return *hdr_env_col_alias_table_tbo_;
 }
 
 Vector4f SceneManager::BilinearSample(const float* data, int width, int height, int channels, float u, float v) const {
@@ -431,10 +522,6 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
                 Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
 
                 float area = 0.5f * glm::length(glm::cross(e1, e2));
-                const float PI = 3.1415926535897932385f;
-                auto Luminance = [](const Vector3f& rgb) -> float {
-                    return 0.2126f * rgb.r + 0.7152f * rgb.g + 0.0722f * rgb.b;
-                };
 
                 // Calculate weight: power = area * luminance * pi for importance sampling
                 float weight = area * Luminance(material->emission) * PI;
@@ -453,6 +540,26 @@ void SceneManager::BuildLightAliasTable() {
     // Construct alias table using precomputed triangle weights
     // This enables O(1) time complexity for light triangle sampling on GPU
     mesh_light_alias_table_ = AliasTable1D(light_triangle_weights_);
+}
+
+int SceneManager::GetHDRWidth() const noexcept {
+    return hdr_width_;
+}
+
+int SceneManager::GetHDRHeight() const noexcept {
+    return hdr_height_;
+}
+
+GLuint SceneManager::GetHDRTextureID() const noexcept {
+    return hdr_env_texture_;
+}
+
+float SceneManager::GetHDRWeightSum() const noexcept {
+    if (hdr_env_weights_.empty()) {
+        return 0.0f;
+    }
+
+    return hdr_env_alias_table_.Sum();
 }
 
 std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles,
@@ -582,6 +689,27 @@ void SceneManager::CreateGPUBuffers() {
             GL_RG32F,  // Each element contains alias index and probability
             GL_STATIC_DRAW
             );
+    }
+
+    // Create GPU buffers for HDR environment alias table data
+    if (!hdr_env_alias_table_.GetRowTableGPUData().empty()) {
+        // Row table TBO
+        const auto& row_data = hdr_env_alias_table_.GetRowTableGPUData();
+        hdr_env_row_alias_table_tbo_ = std::make_unique<TBO>(
+            row_data.data(),
+            row_data.size() * sizeof(AliasTableData),
+            GL_RG32F,
+            GL_STATIC_DRAW
+        );
+
+        // Column table TBO
+        const auto& col_data = hdr_env_alias_table_.GetColTableGPUData();
+        hdr_env_col_alias_table_tbo_ = std::make_unique<TBO>(
+            col_data.data(),
+            col_data.size() * sizeof(AliasTableData),
+            GL_RG32F,
+            GL_STATIC_DRAW
+        );
     }
 }
 
