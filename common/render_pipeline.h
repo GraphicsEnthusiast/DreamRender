@@ -23,13 +23,12 @@ public:
 
     /**
      * @brief Pure virtual method for pipeline configuration
-     *
      * Derived classes must implement this to:
      * 1. Add render passes to the graph
      * 2. Define resource dependencies between passes
      * 3. Set the final output texture
      */
-    virtual void Init() = 0;
+    virtual void Init();
 
     /**
      * @brief Executes the compiled render pipeline
