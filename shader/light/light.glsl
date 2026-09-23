@@ -664,7 +664,7 @@ LightSampleInfo LightSample(inout SobolSampler sobol_sampler, IntersectionInfo i
     result.has_medium = false;
     
     // Calculate total power for weighting
-    float mesh_power = MeshLightTableSum / float(MeshLightTableSize);
+    float mesh_power = MeshLightTableSum / (MeshLightTableSize != 0.0f ? float(MeshLightTableSize) : 1.0f);
     float env_power = HDREnvPower;
     float total_power = mesh_power + env_power;
     
