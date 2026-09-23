@@ -54,10 +54,11 @@ SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sa
     float shadow_distance_remaining = camera_sample_info.distance;
     vec3 shadow_origin = position;
     SampledSpectrum visibility = SampledSpectrumNewFloat(1.0f);
+    bool has_mesh_light = MeshLightTableSize > 0;
     
     while (true) {
         Ray shadow_ray = SpawnShadowRay(shadow_origin, camera_sample_info.world_out, shadow_distance_remaining);
-        Hit occlusion_hit = BVHTraverse(shadow_ray);
+        Hit occlusion_hit = BVHTraverse(shadow_ray, has_mesh_light);
         
         // If no intersection, we've reached the camera
         if (occlusion_hit.distance >= shadow_ray.tmax) {
@@ -119,7 +120,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     SampledSpectrum beta = SampledSpectrumNewFloat(1.0f);
 
     // Generate initial light ray
-    LightRayInfo light_ray_info = GenerateLightRay(sobol_sampler, lambda);
+    LightRayInfo light_ray_info = GenerateMeshLightRay(sobol_sampler, lambda);
     
     // Calculate light cosine term: |dot(light_ray_direction, shading_normal)|
     float light_cosine = abs(dot(light_ray_info.ray.direction, light_ray_info.shading_normal));
@@ -157,9 +158,10 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     vec3 world_in = -light_ray_info.ray.direction;  // Direction from light to current point
     vec3 world_out = light_ray_info.ray.direction;  // Direction to next bounce
     Ray ray = light_ray_info.ray;
+    bool has_mesh_light = MeshLightTableSize > 0;
     
     for (int bounce = 0; bounce < int(max_bounce); ++bounce) {
-        Hit hit = BVHTraverse(ray);
+        Hit hit = BVHTraverse(ray, has_mesh_light);
         IntersectionInfo info = GetIntersectionInfo(hit, world_out, lambda);
         
         // Handle medium scattering

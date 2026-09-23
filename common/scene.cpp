@@ -125,6 +125,36 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     return texture_id;
 }
 
+float SceneManager::GetSceneRadius() const {
+    // Initialize bounding box with extreme values
+    Point3f min_bound(FLT_MAX), max_bound(-FLT_MAX);
+    
+    // Process all regular triangles to update bounding box
+    for (const auto& tri : triangles_encoded_) {
+		min_bound = glm::min(min_bound, Point3f(tri.p1));
+		max_bound = glm::max(max_bound, Point3f(tri.p1));
+		min_bound = glm::min(min_bound, Point3f(tri.p2));
+		max_bound = glm::max(max_bound, Point3f(tri.p2));
+		min_bound = glm::min(min_bound, Point3f(tri.p3));
+		max_bound = glm::max(max_bound, Point3f(tri.p3));
+    }
+
+    // Process all light triangles to update bounding box
+    for (const auto& tri : triangles_light_encoded_) {
+        min_bound = glm::min(min_bound, Point3f(tri.p1));
+        max_bound = glm::max(max_bound, Point3f(tri.p1));
+        min_bound = glm::min(min_bound, Point3f(tri.p2));
+        max_bound = glm::max(max_bound, Point3f(tri.p2));
+        min_bound = glm::min(min_bound, Point3f(tri.p3));
+        max_bound = glm::max(max_bound, Point3f(tri.p3));
+    }
+
+    // Calculate bounding sphere radius from AABB
+    Vector3f extent = max_bound - min_bound;
+
+    return glm::length(extent) * 0.5f;  // Half of the AABB's diagonal length
+}
+
 void SceneManager::LoadHDRTexture(const std::string& file_path) {
 	// If HDR is already loaded, ignore subsequent load
 	if (0 != hdr_env_texture_) {
@@ -171,24 +201,32 @@ void SceneManager::LoadHDRTexture(const std::string& file_path) {
 
 	// Compute weights for importance sampling
 	hdr_env_weights_.resize(width * height);
-	for (int y = 0; y < height; ++y) {
-		// Solid angle correction: sin(theta), where theta is the polar angle
-		float theta = PI * (y + 0.5f) / height;
-		float sin_theta = std::sin(theta);
-
-		for (int x = 0; x < width; ++x) {
-			int idx = (y * width + x) * target_channels;
-			float r = hdr_env_data_[idx];
-			float g = hdr_env_data_[idx + 1];
-			float b = hdr_env_data_[idx + 2];
-
-			// Calculate luminance using CIE standard coefficients
-			float luminance = Luminance(Vector3f(r, g, b));
-
-			// Weight = luminance * sin(theta) to compensate for spherical distortion
-			hdr_env_weights_[y * width + x] = luminance * sin_theta;
-		}
-	}
+    hdr_env_total_power_ = 0.0f;
+    for (int y = 0; y < height; ++y) {
+        float theta = PI * (y + 0.5f) / height;
+        float sin_theta = std::sin(theta);
+        
+        for (int x = 0; x < width; ++x) {
+            int idx = (y * width + x) * target_channels;
+            float r = hdr_env_data_[idx];
+            float g = hdr_env_data_[idx + 1];
+            float b = hdr_env_data_[idx + 2];
+            
+            // Calculate luminance using CIE standard coefficients
+            float luminance = Luminance(Vector3f(r, g, b));
+            
+            // Weight = luminance * sin(theta) to compensate for spherical distortion
+            float weight = luminance * sin_theta;
+            hdr_env_weights_[y * width + x] = weight;
+            
+            // Accumulate total power
+            hdr_env_total_power_ += weight;
+        }
+    }
+    
+	// Integrating over the sphere, so 4pi for that.  Then one more for Pi
+	// r^2 for the area of the disk receiving illumination
+    hdr_env_total_power_ *= 4.0f * PI * PI * glm::pow2(GetSceneRadius()) / (width * height);
 
 	INFO("[info] HDR texture ready: {} ({}x{}, ID: {})", file_path, width, height, hdr_env_texture_);
 
@@ -562,6 +600,22 @@ float SceneManager::GetHDRWeightSum() const noexcept {
     return hdr_env_alias_table_.Sum();
 }
 
+float SceneManager::GetHDRWeightMax() const noexcept {
+	if (hdr_env_weights_.empty()) {
+		return 0.0f;
+	}
+
+	return hdr_env_alias_table_.Max();
+}
+
+float SceneManager::GetHDREnvTotalPower() const noexcept {
+    return hdr_env_total_power_;
+}
+
+const TBO& SceneManager::GetHDREnvRowMaxsTBO() const noexcept {
+	return *hdr_env_row_maxs_tbo_;
+}
+
 std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles,
     std::vector<BVHNodeEncoded>& bvh_nodes, bool is_light) {
 
@@ -650,7 +704,7 @@ void SceneManager::CreateGPUBuffers() {
             triangles_encoded_.size() * sizeof(TriangleEncoded),
             GL_RGBA32F,
             GL_STATIC_DRAW
-            );
+        );
     }
 
     if (!bvh_nodes_encoded_.empty()) {
@@ -659,7 +713,7 @@ void SceneManager::CreateGPUBuffers() {
             bvh_nodes_encoded_.size() * sizeof(BVHNodeEncoded),
             GL_RGBA32F,
             GL_STATIC_DRAW
-            );
+        );
     }
 
     // Create GPU buffers for light geometry
@@ -669,7 +723,7 @@ void SceneManager::CreateGPUBuffers() {
             triangles_light_encoded_.size() * sizeof(TriangleEncoded),
             GL_RGBA32F,
             GL_STATIC_DRAW
-            );
+        );
     }
 
     if (!bvh_nodes_light_encoded_.empty()) {
@@ -678,7 +732,7 @@ void SceneManager::CreateGPUBuffers() {
             bvh_nodes_light_encoded_.size() * sizeof(BVHNodeEncoded),
             GL_RGBA32F,
             GL_STATIC_DRAW
-            );
+        );
     }
 
     // Create GPU buffer for alias table data
@@ -688,7 +742,7 @@ void SceneManager::CreateGPUBuffers() {
             mesh_light_alias_table_.GetGPUData().size() * sizeof(AliasTableData),
             GL_RG32F,  // Each element contains alias index and probability
             GL_STATIC_DRAW
-            );
+        );
     }
 
     // Create GPU buffers for HDR environment alias table data
@@ -701,16 +755,29 @@ void SceneManager::CreateGPUBuffers() {
             GL_RG32F,
             GL_STATIC_DRAW
         );
-
-        // Column table TBO
-        const auto& col_data = hdr_env_alias_table_.GetColTableGPUData();
-        hdr_env_col_alias_table_tbo_ = std::make_unique<TBO>(
-            col_data.data(),
-            col_data.size() * sizeof(AliasTableData),
-            GL_RG32F,
-            GL_STATIC_DRAW
-        );
     }
+
+    if (!hdr_env_alias_table_.GetColTableGPUData().empty()) {
+		// Column table TBO
+		const auto& col_data = hdr_env_alias_table_.GetColTableGPUData();
+		hdr_env_col_alias_table_tbo_ = std::make_unique<TBO>(
+			col_data.data(),
+			col_data.size() * sizeof(AliasTableData),
+			GL_RG32F,
+			GL_STATIC_DRAW
+		);
+    }
+
+	if (!hdr_env_alias_table_.GetRowMaxsGPUData().empty()) {
+		const auto& row_sums = hdr_env_alias_table_.GetRowMaxsGPUData();
+
+		hdr_env_row_maxs_tbo_ = std::make_unique<TBO>(
+			row_sums.data(),
+			row_sums.size() * sizeof(float),
+			GL_R32F,
+			GL_STATIC_DRAW
+		);
+	}
 }
 
 const TBO& SceneManager::GetTriangleTBO() const noexcept {

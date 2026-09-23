@@ -297,14 +297,24 @@ Hit BVHTraverseSingleBuffer(const Ray ray, samplerBuffer bvh_nodes_buffer, sampl
 /**
  * @brief BVH traversal function for ray tracing that traverses both regular and light buffers
  * @param ray Ray structure containing origin, direction, min and max distance
+ * @param has_lights Whether to check for light triangle intersections
  * @return Hit structure containing intersection information with the closest hit
  */
-Hit BVHTraverse(const Ray ray) {
-    // Traverse both regular triangles and light triangles
+Hit BVHTraverse(const Ray ray, bool has_lights) {
+    // Traverse regular triangles
     Hit regular_hit = BVHTraverseSingleBuffer(ray, BVHNodes, Triangles, false);
-    Hit light_hit = BVHTraverseSingleBuffer(ray, BVHNodesLight, TrianglesLight, true);
+    
+    // Only check light triangles if requested
+    Hit light_hit;
+    if (has_lights) {
+        light_hit = BVHTraverseSingleBuffer(ray, BVHNodesLight, TrianglesLight, true);
+    }
+    else {
+        return regular_hit;
+    }
     
     return (regular_hit.distance < light_hit.distance) ? regular_hit : light_hit;
 }
+
 
 #endif // SHAPE_GLSL

@@ -5,17 +5,45 @@
 #include "material/material.glsl"
 #include "medium/medium.glsl"
 
+/**
+ * Why 1D (Mesh Light) uses Sum but 2D (HDR) uses Max:
+ *
+ * The rule is: numerator and denominator MUST be on the same scale.
+ * W = ∑w_i
+ * ── Mesh Light (1D) ──────────────────────────────────────────
+ *   weight (from GPU table) = w_i × N   (scaled by table size)
+ *   MeshLightTableSum        = W × N    (scaled total)
+ *   weight / Sum = (w_i × N) / (W × N) = w_i / W
+ *
+ * ── HDR Env (2D) ────────────────────────────────────────────
+ *   luminance (from texture) = raw pixel value (unscaled)
+ *   HDREnvWeightMax          = raw total weight (unscaled)
+ *   luminance / Max = w_i / W
+ *
+ * ── Key insight ─────────────────────────────────────────────
+ *   The difference is NOT 1D vs 2D, but whether the numerator
+ *   has been scaled by the alias table construction.
+ *   - GPU table stores scaled probabilities → need Sum
+ *   - Raw texture values are unscaled       → need Max
+ *
+ *   If mismatched:
+ *   - weight / Max     → probability × N (over-estimated)
+ *   - luminance / Sum  → probability / N (under-estimated)
+ */
+
 uniform samplerBuffer MeshLightTable;
 uniform float MeshLightTableMax;
 uniform float MeshLightTableSum;
 uniform int MeshLightTableSize;
 
 uniform sampler2D HDREnvMap;
-uniform float HDREnvWeightSum;
+uniform float HDREnvWeightMax;
+uniform float HDREnvPower;
 uniform int HDREnvMapWidth;
 uniform int HDREnvMapHeight;
 uniform samplerBuffer HDREnvRowAliasTable;
 uniform samplerBuffer HDREnvColAliasTable;
+uniform samplerBuffer HDREnvRowMaxs;
 
 /**
  * @struct LightEvalInfo
@@ -412,12 +440,12 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
 }
 
 /**
- * @brief Generates a ray from a light source for light tracing
+ * @brief Generates a ray from a mesh light source for light tracing
  * @param sobol_sampler Sobol sequence sampler for random number generation
  * @param lambda Sampled wavelengths for spectral rendering
  * @return LightRayInfo containing the generated ray, emission spectrum, and PDF
  */
-LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+LightRayInfo GenerateMeshLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     LightRayInfo result;
     result.ray.direction = vec3(0.0f);
     result.emission = SampledSpectrumNewFloat(0.0f);
@@ -549,15 +577,15 @@ LightEvalInfo HDREnvEvaluate(vec3 world_out, SampledWavelengths lambda) {
 
     float luminance = Luminance(tex_color.rgb);
     float theta = uv.y * PI;
-    float sinTheta = sin(theta);
+    float sin_theta = sin(theta);
 
-    if (sinTheta < Epsilon) {
+    if (sin_theta < Epsilon) {
         return result;
     }
 
-    // PDF = (Luminance / TotalWeight) * Jacobian
-    float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) * 0.5f * (1.0f / (PI * PI)) / sinTheta;
-    result.pdf = (luminance / HDREnvWeightSum) * jacobian;
+    float luminance_sum = HDREnvWeightMax;
+    float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) / (2.0f * PI * PI * sin_theta);
+    result.pdf = (luminance / luminance_sum) * jacobian;
 
     return result;
 }
@@ -585,9 +613,10 @@ LightSampleInfo HDREnvSample(inout SobolSampler sobol_sampler, SampledWavelength
     ivec2 rc = AliasTable2DSample(
         HDREnvColAliasTable,
         HDREnvMapHeight,
-        HDREnvWeightSum,
+        HDREnvWeightMax,
         HDREnvRowAliasTable,
         HDREnvMapWidth,
+        HDREnvRowMaxs,
         sample_xy1,
         sample_xy2
     );
@@ -606,15 +635,65 @@ LightSampleInfo HDREnvSample(inout SobolSampler sobol_sampler, SampledWavelength
 
     float luminance = Luminance(tex_color.rgb);
     float theta = uv.y * PI;
-    float sinTheta = sin(theta);
+    float sin_theta = sin(theta);
 
-    if (sinTheta < Epsilon) {
+    if (sin_theta < Epsilon) {
         return result;
     }
 
-    float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) * 0.5f * (1.0f / (PI * PI)) / sinTheta;
-    result.pdf = (luminance / HDREnvWeightSum) * jacobian;
+    float luminance_sum = HDREnvWeightMax;
+    float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) / (2.0f * PI * PI * sin_theta);
+    result.pdf = (luminance / luminance_sum) * jacobian;
 
+    return result;
+}
+
+/**
+ * @brief Unified light sampling function that combines mesh lights and environment lighting
+ * @param sobol_sampler Sobol sequence sampler for random number generation
+ * @param info Intersection information for the shading point
+ * @param lambda Sampled wavelengths
+ * @return LightSampleInfo containing sampled direction, distance, PDF and emission spectrum
+ */
+LightSampleInfo LightSample(inout SobolSampler sobol_sampler, IntersectionInfo info, SampledWavelengths lambda) {
+    LightSampleInfo result;
+    result.world_out = vec3(0.0f);
+    result.distance = 0.0f;
+    result.pdf = 0.0f;
+    result.emission = SampledSpectrumNewFloat(0.0f);
+    result.has_medium = false;
+    
+    // Calculate total power for weighting
+    float mesh_power = MeshLightTableSum / float(MeshLightTableSize);
+    float env_power = HDREnvPower;
+    float total_power = mesh_power + env_power;
+    
+    if (total_power <= 0.0f) {
+        return result;
+    }
+    
+    // Choose light type based on power weights
+    float mesh_weight = mesh_power / total_power;
+    float env_weight = env_power / total_power;
+    float rand = SobolSamplerGet1(sobol_sampler);
+    
+    if (rand < mesh_weight) {
+        // Sample mesh light
+        result = MeshLightSample(sobol_sampler, info, lambda);
+        // Adjust PDF to account for selection probability
+        if (result.pdf > 0.0f) {
+            result.pdf *= mesh_weight;
+        }
+    }
+    else {
+        // Sample environment light
+        result = HDREnvSample(sobol_sampler, lambda);
+        // Adjust PDF to account for selection probability
+        if (result.pdf > 0.0f) {
+            result.pdf *= env_weight;
+        }
+    }
+    
     return result;
 }
 

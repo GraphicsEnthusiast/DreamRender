@@ -28,8 +28,8 @@ bool HitNothing(IntersectionInfo info) {
  * @param info Intersection information
  * @return Boolean indicating if intersection is with a light source
  */
-bool HitLight(IntersectionInfo info) {
-    return info.is_light;
+bool HitMeshLight(IntersectionInfo info) {
+    return info.is_light && MaxFloat != info.distance;
 }
 
 /**

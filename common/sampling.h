@@ -24,7 +24,7 @@ public:
     /**
      * @brief Default constructor
      */
-    AliasTable1D() = default;
+    AliasTable1D() : sum_table_(0.0f), max_table_(0.0f) {}
 
     /**
      * @brief Constructs a 1D alias table from a probability distribution
@@ -101,6 +101,12 @@ public:
     float Sum() const noexcept;
 
     /**
+     * @brief Gets the max of the probability distribution
+     * @return Max of all probabilities in the distribution
+     */
+    float Max() const noexcept;
+
+    /**
      * @brief Gets the width of the 2D distribution
      */
     unsigned int GetWidth() const noexcept;
@@ -109,6 +115,12 @@ public:
      * @brief Gets the height of the 2D distribution
      */
     unsigned int GetHeight() const noexcept;
+
+    /**
+     * @brief Gets the GPU-ready row maxs (each row's scaled sum)
+     * @return Const reference to row maxs vector
+     */
+    const std::vector<float>& GetRowMaxsGPUData() const noexcept;
 
 protected:
     /**
@@ -123,6 +135,7 @@ protected:
     std::vector<AliasTableData> col_table_gpu_data_;   ///< GPU data for column table
     unsigned int width_;                                ///< Width of 2D distribution
     unsigned int height_;                               ///< Height of 2D distribution
+    std::vector<float> row_maxs_;             ///< Per-row sum for AliasTable2D
 };
 
 NAMESPACE_END(dream)

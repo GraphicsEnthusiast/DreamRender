@@ -116,6 +116,13 @@ public:
     int GetTextureCount() const noexcept;
 
     /**
+     * Calculate the radius of the scene's bounding sphere
+     * @return float The radius of the scene's bounding sphere
+     *         Returns 0.0f if no triangles are present in the scene
+     */
+    float GetSceneRadius() const;
+
+    /**
      * @brief Loads a texture from file and resizes to 2048x2048
      * @param file_path Path to texture file
      * @param type Texture type
@@ -167,6 +174,24 @@ public:
     float GetHDRWeightSum() const noexcept;
 
     /**
+     * @brief Get the max of all weights in the HDR environment map
+     * @return The max of all weights in the HDR environment map
+     */
+    float GetHDRWeightMax() const noexcept;
+
+    /**
+     * @brief Get the power of HDR environment map
+     * @return The power of HDR environment map
+     */
+    float GetHDREnvTotalPower() const noexcept;
+
+    /**
+	 * @brief Get the TBO containing per-row scaled maxs for HDR environment alias table
+	 * @return Const reference to the row maxs TBO
+	 */
+    const TBO& GetHDREnvRowMaxsTBO() const noexcept;
+
+    /**
      * @brief Deleted copy constructor
      */
     SceneManager(const SceneManager&) = delete;
@@ -180,7 +205,7 @@ protected:
     /**
      * @brief Default constructor
      */
-    SceneManager() : texture_array_(0), hdr_env_texture_(0) {}
+    SceneManager() : texture_array_(0), hdr_env_texture_(0), hdr_env_total_power_(0.0f) {}
 
     /**
      * @brief Builds the 2D alias table for HDR environment lighting
@@ -236,9 +261,11 @@ protected:
     int hdr_width_;                ///< Width of the HDR environment map
     int hdr_height_;               ///< Height of the HDR environment map
     std::vector<float> hdr_env_data_;   ///< Raw float RGBA data of the HDR environment map
+    float hdr_env_total_power_;         ///< Store total power of the environment map
 
     AliasTable2D hdr_env_alias_table_;                      ///< 2D alias table for HDR env map
     std::vector<float> hdr_env_weights_;                    ///< Luminance weights for HDR pixels
+    std::unique_ptr<TBO> hdr_env_row_maxs_tbo_;             ///< TBO for HDR row sums
 
     std::unique_ptr<TBO> hdr_env_row_alias_table_tbo_;      ///< TBO for row data
     std::unique_ptr<TBO> hdr_env_col_alias_table_tbo_;      ///< TBO for column data

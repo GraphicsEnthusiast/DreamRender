@@ -328,19 +328,24 @@ void PTPass::Execute() {
 	RenderPass::BindSobolMatricesSSBO(3);
 	shader_->SetInt("SobolMatricesTable", 3);
 
-	// Bind light geometry buffers (existing code)
-	scene_manager.GetTriangleLightTBO().BindTexture(4);
-	shader_->SetInt("TrianglesLight", 4);
-	scene_manager.GetBVHNodeLightTBO().BindTexture(5);
-	shader_->SetInt("BVHNodesLight", 5);
-
-	// Bind mesh light alias table texture buffer
 	if (scene_manager.GetMeshLightTableSize() > 0) {
+		// Bind light geometry buffers (existing code)
+		scene_manager.GetTriangleLightTBO().BindTexture(4);
+		shader_->SetInt("TrianglesLight", 4);
+		scene_manager.GetBVHNodeLightTBO().BindTexture(5);
+		shader_->SetInt("BVHNodesLight", 5);
+
+		// Bind mesh light alias table texture buffer
 		scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
 		shader_->SetInt("MeshLightTable", 6);
 		shader_->SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
 		shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
 		shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
+	}
+	else {
+		shader_->SetFloat("MeshLightTableMax", 0.0f);
+		shader_->SetFloat("MeshLightTableSum", 0.0f);
+		shader_->SetInt("MeshLightTableSize", 0);
 	}
 
 	GLuint texture_array = scene_manager.GetTextureArray();
@@ -372,12 +377,21 @@ void PTPass::Execute() {
 		shader_->SetInt("HDREnvMap", 10);
 		shader_->SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
 		shader_->SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
-		shader_->SetFloat("HDREnvWeightSum", scene_manager.GetHDRWeightSum());
+		shader_->SetFloat("HDREnvWeightMax", scene_manager.GetHDRWeightMax());
+		shader_->SetFloat("HDREnvPower", scene_manager.GetHDREnvTotalPower());
 
 		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
 		shader_->SetInt("HDREnvRowAliasTable", 11);
 		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
 		shader_->SetInt("HDREnvColAliasTable", 12);
+		scene_manager.GetHDREnvRowMaxsTBO().BindTexture(13);
+		shader_->SetInt("HDREnvRowMaxs", 13);
+	}
+	else {
+		shader_->SetInt("HDREnvMapWidth", 0);
+		shader_->SetInt("HDREnvMapHeight", 0);
+		shader_->SetFloat("HDREnvWeightMax", 0.0f);
+		shader_->SetFloat("HDREnvPower", 0.0f);
 	}
 
 	shader_->SetUInt("FrameCounter", GetFrameCounter());
@@ -484,12 +498,15 @@ void LTPass::Execute() {
 		shader_->SetInt("HDREnvMap", 10);
 		shader_->SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
 		shader_->SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
-		shader_->SetFloat("HDREnvWeightSum", scene_manager.GetHDRWeightSum());
+		shader_->SetFloat("HDREnvWeightMax", scene_manager.GetHDRWeightMax());
+		shader_->SetFloat("HDREnvPower", scene_manager.GetHDREnvTotalPower());
 
 		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
 		shader_->SetInt("HDREnvRowAliasTable", 11);
 		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
 		shader_->SetInt("HDREnvColAliasTable", 12);
+		scene_manager.GetHDREnvRowMaxsTBO().BindTexture(13);
+        shader_->SetInt("HDREnvRowMaxs", 13);
 	}
 
 	// Set frame counter

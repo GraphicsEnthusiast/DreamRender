@@ -98,8 +98,6 @@ TextureHandle RenderPipeline::CreateTextureR32F(int width, int height) {
 void PTPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
-	scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spaichingen_hill_4k.hdr");
-
 	Camera camera;
 	camera.camera_position = Point3f(15.0f);
 	camera.camera_target = Vector3f(0.0f, 3.0f, 0.0f);
@@ -129,7 +127,7 @@ void PTPipeline::Init() {
 
 	Material cube_material;
 	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
-	cube_material.type = MaterialType::BOUNDARY;
+	cube_material.type = MaterialType::DIFFUSE;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
 	cube_material.roughness = 0.3f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -138,7 +136,7 @@ void PTPipeline::Init() {
 	light_material.type = MaterialType::DIFFUSE;
 	light_material.diffuse = Vector3f(0.9f);
 	light_material.roughness = 0.0f;
-	light_material.emission = Vector3f(7.0f, 7.0f, 5.0f);
+	light_material.emission = Vector3f(8.0f, 8.0f, 6.0f);
 
 	std::vector<TriangleMesh> meshes;
 	meshes.emplace_back(
@@ -149,21 +147,26 @@ void PTPipeline::Init() {
 	);
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
-		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
-		std::make_unique<Material>(teapot_material),
+		Transform::Scale(5.0f, 1.0f, 5.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
+		std::make_unique<Material>(cube_material),
 		std::make_unique<Medium>(Medium())
 	);
 
 	std::vector<TriangleMesh> meshes2;
 	meshes2.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\quad.obj",
-		Transform::Scale(15.5f, 15.5f, 15.5f) * Transform::Translate(0.0f, 2.0f, 0.0f),
+		Transform::Scale(1.5f, 1.5f, 1.5f) * Transform::Translate(0.0f, 2.0f, 0.0f),
 		std::make_unique<Material>(light_material)
 	);
 
 	scene_manager.EncodeTriangles(meshes, false);
 	scene_manager.EncodeTriangles(meshes2, true);
 	scene_manager.BuildBVH();
+
+	// Calculating the power of ambient light depends on the size of the scene, 
+	// so loading the ambient light map must be done after loading the models and before creating gpu buffers.
+	scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spaichingen_hill_4k.hdr");
+
 	scene_manager.CreateGPUBuffers();
 
 	TextureHandle compute_output = CreateTextureRGBA32F(rendering_size_.x, rendering_size_.y);

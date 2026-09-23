@@ -225,6 +225,7 @@ const Material* TriangleMesh::GetMaterial() const noexcept {
 void TriangleMesh::SetMaterial(std::unique_ptr<Material> material) {
 	if (!material) {
 		ERROR("[error] Cannot set null material for triangle mesh");
+
 		return;
 	}
 	material_ = std::move(material);

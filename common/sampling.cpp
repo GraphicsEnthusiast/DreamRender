@@ -71,16 +71,17 @@ const std::vector<AliasTableData>& AliasTable1D::GetGPUData() const noexcept {
 AliasTable2D::AliasTable2D(const std::vector<float>& distrib, unsigned int width, unsigned int height)
     : width_(width), height_(height) {
     row_table_.reserve(height);
-    std::vector<float> colDistrib(height);
+    std::vector<float> col_distrib(height);
 
     for (unsigned int i = 0; i < height; i++) {
         std::vector<float> table(distrib.begin() + i * width, distrib.begin() + (i + 1) * width);
-        AliasTable1D rowDistrib(table);
-        row_table_.push_back(rowDistrib);
-        colDistrib[i] = rowDistrib.Sum();
+        AliasTable1D row_distrib(table);
+        row_table_.push_back(row_distrib);
+		col_distrib[i] = row_distrib.Max();
+		row_maxs_.push_back(row_distrib.Max());
     }
 
-    col_table_ = AliasTable1D(colDistrib);
+    col_table_ = AliasTable1D(col_distrib);
 
     PrepareGPUData();
 }
@@ -107,12 +108,20 @@ float AliasTable2D::Sum() const noexcept {
 	return col_table_.Sum();
 }
 
+float AliasTable2D::Max() const noexcept {
+	return col_table_.Max();
+}
+
 unsigned int AliasTable2D::GetWidth() const noexcept {
     return width_;
 }
 
 unsigned int AliasTable2D::GetHeight() const noexcept {
     return height_;
+}
+
+const std::vector<float>& AliasTable2D::GetRowMaxsGPUData() const noexcept {
+	return row_maxs_;
 }
 
 NAMESPACE_END(dream)
