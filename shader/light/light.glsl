@@ -610,9 +610,7 @@ LightSampleInfo EnvironmentLightSample(inout SobolSampler sobol_sampler, Sampled
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.has_medium = false;
 
-    // 1. Sample row and col using 2D Alias Table
-        // 1. Sample row and col using 2D Alias Table
-    // Generate 4 random numbers: 2 for column sampling, 2 for row sampling
+    // Sample row and col using 2D Alias Table
     vec2 sample_xy1 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     vec2 sample_xy2 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     
@@ -627,12 +625,12 @@ LightSampleInfo EnvironmentLightSample(inout SobolSampler sobol_sampler, Sampled
         sample_xy2
     );
 
-    // 2. Map pixel to UV and then to Sphere
+    // Map pixel to UV and then to Sphere
     vec2 uv = vec2((float(rc.x) + 0.5f) / float(HDREnvMapWidth), 
                    (float(rc.y) + 0.5f) / float(HDREnvMapHeight));
     result.world_out = PlaneToSphere(uv);
 
-    // 3. Fetch radiance and compute PDF
+    // Fetch radiance and compute PDF
     vec4 tex_color = texture(HDREnvMap, uv);
     
     RGB emission_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
@@ -667,7 +665,7 @@ LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, Sampl
     result.shading_normal = vec3(0.0f);
     result.pdf = 0.0f;
 
-    // 1. Sample a pixel from the HDR map using the 2D alias table
+    // Sample a pixel from the HDR map using the 2D alias table
     vec2 sample_xy1 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     vec2 sample_xy2 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
 
@@ -685,11 +683,11 @@ LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, Sampl
     vec2 uv = vec2((float(rc.x) + 0.5f) / float(HDREnvMapWidth),
                    (float(rc.y) + 0.5f) / float(HDREnvMapHeight));
 
-    // 2. Determine the ray direction
+    // Determine the ray direction
     vec3 w_light = PlaneToSphere(uv);
     vec3 ray_dir = -w_light;
 
-    // 3. Compute the direction PDF (same as EnvironmentLightEvaluate / EnvironmentLightSample)
+    // Compute the direction PDF
     vec4 tex_color = texture(HDREnvMap, uv);
     float luminance = Luminance(tex_color.rgb);
     float theta = uv.y * PI;
@@ -702,7 +700,7 @@ LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, Sampl
     float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) / (2.0f * PI * PI * sin_theta);
     float pdf_dir = (luminance / luminance_sum) * jacobian;
 
-    // 4. Sample a point on a disk perpendicular to the ray direction
+    // Sample a point on a disk perpendicular to the ray direction
     vec2 disk_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     vec2 cd = UniformDiskSample(disk_sample);
 
@@ -710,21 +708,21 @@ LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, Sampl
     vec3 disk_dir = ToWorldFromUp(vec3(cd.x, cd.y, 0.0f), w_light);
     vec3 p_disk = SceneCenter + SceneRadius * cd_len * disk_dir;
 
-    // 5. Offset the origin so the ray enters the scene from outside
+    // Offset the origin so the ray enters the scene from outside
     vec3 ray_origin = p_disk + SceneRadius * w_light;
 
-    // 6. Compute the position PDF and combined PDF
+    // Compute the position PDF and combined PDF
     float pdf_pos = UniformDiskPDF() / (SceneRadius * SceneRadius);
     result.pdf = pdf_dir * pdf_pos;
 
-    // 7. Set the ray parameters
+    // Set the ray parameters
     result.ray.origin = ray_origin;
     result.ray.direction = ray_dir;
     result.ray.tmin = 0.0f;
     result.ray.tmax = MaxFloat;
     result.shading_normal = ray_dir;
 
-    // 8. Compute emission radiance along the sampled direction
+    // Compute emission radiance along the sampled direction
     RGB emission_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
     RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
     result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
