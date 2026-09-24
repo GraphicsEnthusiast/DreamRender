@@ -734,7 +734,7 @@ LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, Sampl
 
 /**
  * @brief Unified light evaluation function that dispatches to mesh or environment light
- * @param light_type Light type: LightType_Mesh (0) or LightType_Environment (1)
+ * @param light_type Light type
  * @param world_out Out direction (from surface to light)
  * @param info Intersection information of the shading point (located on the light source)
  * @param last_position The previous shading point before hitting the light source (mesh light only)
