@@ -160,7 +160,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     Ray ray = light_ray_info.ray;
     bool has_mesh_light = MeshLightTableSize > 0;
     
-    for (int bounce = 0; bounce < int(max_bounce); ++bounce) {
+    for (int bounce = 0; bounce < max_bounce; ++bounce) {
         Hit hit = BVHTraverse(ray, has_mesh_light);
         IntersectionInfo info = GetIntersectionInfo(hit, world_out, lambda);
         
@@ -265,7 +265,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 // ========================= Surface Camera Sampling =========================
             }
             if (HitNothing(info) || HitMeshLight(info)) {
-                break;  // Ray escaped scene
+                break;
             }
             else if (HitBoundaryMaterial(info)) {
                 // Continue ray through boundary
