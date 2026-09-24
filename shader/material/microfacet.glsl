@@ -118,15 +118,15 @@ float GGXDV(vec3 world_in, vec3 h, vec3 n, float alpha_u, float alpha_v) {
 /**
  * @brief Samples a visible normal from the GGX distribution
  * @param n Surface normal vector
- * @param ve View direction vector in world space
+ * @param world_in View direction vector in world space
  * @param alpha_u Roughness in tangent direction
  * @param alpha_v Roughness in bitangent direction
  * @param sample_xy Random sample_xy in [0,1]^2
  * @return Sampled half-vector
  */
-vec3 GGXSampleVisible(vec3 n, vec3 ve, float alpha_u, float alpha_v, vec2 sample_xy) {
+vec3 GGXSampleVisible(vec3 n, vec3 world_in, float alpha_u, float alpha_v, vec2 sample_xy) {
     // Transform view direction to local space
-    vec3 v_local = ToLocalFromUp(ve, n);
+    vec3 v_local = ToLocalFromUp(world_in, n);
     
     // Stretch the view direction
     vec3 vh = normalize(vec3(alpha_u * v_local.x, alpha_v * v_local.y, v_local.z));
