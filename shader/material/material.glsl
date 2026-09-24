@@ -111,7 +111,7 @@ vec2 GetFinalRoughnessAniso(IntersectionInfo info) {
 
         // If the same texture is used for both U and V, use R and G channels
         if (tex_u == tex_v) {
-            result = vec2(tex_color.r, tex_color.g);
+            result = vec2(tex_color.r);
         }
         else {
             result.x = tex_color.r;
