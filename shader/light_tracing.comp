@@ -264,7 +264,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 }
                 // ========================= Surface Camera Sampling =========================
             }
-            if (HitNothing(info)) {
+            if (HitNothing(info) || HitMeshLight(info)) {
                 break;  // Ray escaped scene
             }
             else if (HitBoundaryMaterial(info)) {
