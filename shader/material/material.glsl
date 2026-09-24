@@ -298,7 +298,6 @@ MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 wo
     float D = GGXD(h, n, alpha_u, alpha_v);
 
     // BRDF = specular * F * D * G / (4 * NdotV * NdotL)
-    // Multiple scattering term intentionally omitted for now
     SampledSpectrum brdf = MulFloat(Mul(specular, F), D * G / (4.0f * n_dot_v * n_dot_l));
 
     m_info.bsdf = brdf;
