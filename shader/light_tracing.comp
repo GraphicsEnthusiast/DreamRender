@@ -246,7 +246,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                     MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, camera_sample_info.world_out, lambda);
                     
                     if (mat_eval_info.pdf > 0.0f) {
-                        float cosine = abs(dot(-world_in, info.shading_normal));
+                        float cosine = abs(dot(world_in, info.shading_normal));
                         
                         // Contribution = beta * visibility * bsdf * bsdf_cosine * filter_weight * we / (filter_pdf * camera_pdf)
                         SampledSpectrum L_camera = MulFloat(
@@ -279,7 +279,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 MaterialSampleInfo mat_sample_info = MaterialSample(info, world_in, bsdf_sample, lambda);
             
                 if (mat_sample_info.pdf > 0.0f) {
-                    float cosine = abs(dot(-world_in, info.shading_normal));
+                    float cosine = abs(dot(world_in, info.shading_normal));
                     beta = Mul(beta, DivFloat(MulFloat(mat_sample_info.bsdf, cosine), mat_sample_info.pdf));
                     world_out = mat_sample_info.world_out;
                 }
