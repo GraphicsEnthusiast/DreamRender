@@ -122,7 +122,6 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     // Generate initial light ray
     LightRayInfo light_ray_info = GenerateLightRay(sobol_sampler, lambda);
     
-    // Calculate light cosine term: |dot(light_ray_direction, shading_normal)|
     float light_cosine = abs(dot(light_ray_info.ray.direction, light_ray_info.shading_normal));
     
     // Initialize path throughput beta
@@ -248,12 +247,11 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                     MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, camera_sample_info.world_out, lambda);
                     
                     if (mat_eval_info.pdf > 0.0f) {
-                        // Calculate BSDF cosine term: |dot(camera_direction, surface_normal)|
-                        float surface_cosine = abs(dot(camera_sample_info.world_out, info.shading_normal));
+                        float cosine = abs(dot(-world_in, info.shading_normal));
                         
                         // Contribution = beta * visibility * bsdf * bsdf_cosine * filter_weight * we / (filter_pdf * camera_pdf)
                         SampledSpectrum L_camera = MulFloat(
-                            Mul(Mul(beta, visibility), MulFloat(mat_eval_info.bsdf, surface_cosine)),
+                            Mul(Mul(beta, visibility), MulFloat(mat_eval_info.bsdf, cosine)),
                             (camera_sample_info.we / camera_sample_info.pdf) *
                             (filter_evaluate_info.weight / filter_evaluate_info.pdf)
                         );
@@ -282,8 +280,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 MaterialSampleInfo mat_sample_info = MaterialSample(info, world_in, bsdf_sample, lambda);
             
                 if (mat_sample_info.pdf > 0.0f) {
-                    // Calculate BSDF cosine term for the sampled direction
-                    float cosine = abs(dot(mat_sample_info.world_out, info.shading_normal));
+                    float cosine = abs(dot(-world_in, info.shading_normal));
                     beta = Mul(beta, DivFloat(MulFloat(mat_sample_info.bsdf, cosine), mat_sample_info.pdf));
                     world_out = mat_sample_info.world_out;
                 }
