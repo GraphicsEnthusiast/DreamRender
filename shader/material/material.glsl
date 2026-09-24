@@ -269,8 +269,8 @@ MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 wo
 
     float roughness_u = GetFinalRoughnessU(info);
     float roughness_v = GetFinalRoughnessV(info);
-    float alpha_u = roughness_u * roughness_u;
-    float alpha_v = roughness_v * roughness_v;
+    float alpha_u = roughness_u;
+    float alpha_v = roughness_v;
 
     SampledSpectrum eta = GetFinalEta(info);
     SampledSpectrum k = GetFinalK(info);
@@ -321,8 +321,8 @@ MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sa
 
     float roughness_u = GetFinalRoughnessU(info);
     float roughness_v = GetFinalRoughnessV(info);
-    float alpha_u = roughness_u * roughness_u;
-    float alpha_v = roughness_v * roughness_v;
+    float alpha_u = roughness_u;
+    float alpha_v = roughness_v;
 
     SampledSpectrum eta = GetFinalEta(info);
     SampledSpectrum k = GetFinalK(info);

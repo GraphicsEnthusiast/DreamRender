@@ -54,8 +54,8 @@ void RenderPipeline::Init() {
 	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
 	cube_material.type = MaterialType::DIFFUSE;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
-	cube_material.roughness_u = 0.2f;
-	cube_material.roughness_v = 0.2f;
+	cube_material.roughness_u = 0.1f;
+	cube_material.roughness_v = 0.1f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
 	Material light_material;
@@ -87,12 +87,12 @@ void RenderPipeline::Init() {
 	);
 
 	scene_manager.EncodeTriangles(meshes, false);
-	//scene_manager.EncodeTriangles(meshes2, true);
+	scene_manager.EncodeTriangles(meshes2, true);
 	scene_manager.BuildBVH();
 
 	// Calculating the power of ambient light depends on the size of the scene, 
 	// so loading the ambient light map must be done after loading the models and before creating gpu buffers.
-	scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spaichingen_hill_4k.hdr");
+	//scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spaichingen_hill_4k.hdr");
 
 	scene_manager.CreateGPUBuffers();
 }
