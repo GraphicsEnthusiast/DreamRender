@@ -97,7 +97,7 @@ float GetFinalRoughness(IntersectionInfo info) {
 /**
  * @brief Retrieves the final anisotropic roughness with texture mapping support
  * @param info Intersection data containing material properties and UV coordinates
- * @return vec2 containing anisotropic roughness values (x = U direction, y = V direction)
+ * @return vec2 containing anisotropic roughness values
  */
 vec2 GetFinalRoughnessAniso(IntersectionInfo info) {
     // Fallback: Use base anisotropic roughness
@@ -108,17 +108,10 @@ vec2 GetFinalRoughnessAniso(IntersectionInfo info) {
 
     if (tex_u >= 0 && tex_u < TextureCount) {
         vec4 tex_color = SampleTextureArray(tex_u, info.uv);
-
-        // If the same texture is used for both U and V, use R and G channels
-        if (tex_u == tex_v) {
-            result = vec2(tex_color.r);
-        }
-        else {
-            result.x = tex_color.r;
-        }
+        result.x = tex_color.r;
     }
 
-    if (tex_v >= 0 && tex_v < TextureCount && tex_v != tex_u) {
+    if (tex_v >= 0 && tex_v < TextureCount) {
         vec4 tex_color = SampleTextureArray(tex_v, info.uv);
         result.y = tex_color.r;
     }
