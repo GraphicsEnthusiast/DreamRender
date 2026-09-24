@@ -91,7 +91,7 @@ struct LightRayInfo {
  * @param lambda Sampled wavelengths for spectral rendering conversion
  * @return SampledSpectrum representing the final emission color; uses texture if available, otherwise falls back to triangle's base emission color
  */
-SampledSpectrum GetFinalEmission(Triangle tri, vec2 uv, SampledWavelengths lambda) {
+SampledSpectrum GetFinalMeshLightEmission(Triangle tri, vec2 uv, SampledWavelengths lambda) {
     int emission_texture_id = int(tri.emission.w);
     if (emission_texture_id >= 0 && emission_texture_id < TextureCount) {
         vec4 tex_color = SampleTextureArray(emission_texture_id, uv);
@@ -316,7 +316,7 @@ LightEvalInfo MeshLightEvaluate(vec3 world_out, IntersectionInfo info, vec3 last
     
     Triangle tri = FetchTriangle(info.tri_index, TrianglesLight);
 
-    result.emission = GetFinalEmission(tri, info.uv, lambda);
+    result.emission = GetFinalMeshLightEmission(tri, info.uv, lambda);
     
     // Calculate directions from shading point to triangle vertices
     // Get triangle weight from precomputed table
@@ -419,7 +419,7 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
     result.pdf = 1.0f / solid_angle;
     result.pdf *= weight / MeshLightTableSum;
 
-    result.emission = GetFinalEmission(tri, vec2(u, v), lambda);
+    result.emission = GetFinalMeshLightEmission(tri, vec2(u, v), lambda);
 
     result.has_medium = tri.has_out_medium;
 
@@ -518,7 +518,7 @@ LightRayInfo GenerateMeshLightRay(inout SobolSampler sobol_sampler, SampledWavel
     
     // Calculate emission at sampled point and multiply by cosine term
     vec2 uv = (1.0f - u - v) * tri.t1 + u * tri.t2 + v * tri.t3;
-    SampledSpectrum emission = GetFinalEmission(tri, uv, lambda);
+    SampledSpectrum emission = GetFinalMeshLightEmission(tri, uv, lambda);
     result.emission = emission;
     
     // Set ray parameters
