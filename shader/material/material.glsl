@@ -293,8 +293,7 @@ MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 wo
 
     // Microfacet BRDF terms
     SampledSpectrum F = FresnelConductor(v, h, eta, k);
-    float G = GGXG1(v, h, n, alpha_u, alpha_v) *
-              GGXG1(l, h, n, alpha_u, alpha_v);
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
     float D = GGXD(h, n, alpha_u, alpha_v);
 
     // BRDF = specular * F * D * G / (4 * NdotV * NdotL)
@@ -349,8 +348,7 @@ MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sa
     float pdf = Dv * abs(1.0f / (4.0f * dot(v, h)));
 
     SampledSpectrum F = FresnelConductor(v, h, eta, k);
-    float G = GGXG1(v, h, n, alpha_u, alpha_v) *
-              GGXG1(l, h, n, alpha_u, alpha_v);
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
     float D = GGXD(h, n, alpha_u, alpha_v);
 
     SampledSpectrum brdf = MulFloat(Mul(specular, F), D * G / (4.0f * n_dot_v * n_dot_l));
