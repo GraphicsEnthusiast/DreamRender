@@ -121,13 +121,13 @@ SampledSpectrum AverageFresnelConductor(SampledSpectrum eta, SampledSpectrum k) 
 
 /**
  * @brief Exact Fresnel reflectance for dielectric materials.
- * @param v View direction vector.
+ * @param world_in View direction vector.
  * @param h Surface normal or half-vector depending on the use case.
  * @param eta_inv Reciprocal of the relative index of refraction,
  * @return Fresnel reflectance in [0, 1].
  */
-float FresnelDielectric(vec3 v, vec3 h, float eta_inv) {
-    float cos_theta_i = abs(dot(v, h));
+float FresnelDielectric(vec3 world_in, vec3 h, float eta_inv) {
+    float cos_theta_i = abs(dot(world_in, h));
     float sin_theta_i_2 = 1.0f - cos_theta_i * cos_theta_i;
     float cos_theta_t_2 = 1.0f - eta_inv * eta_inv * sin_theta_i_2;
 
