@@ -135,7 +135,7 @@ SSBO& RenderPass::GetCIESSBO() noexcept {
 	return *cie_ssbo_;
 }
 
-void RenderPass::SetPassParameters(Shader& shader) {
+void RenderPass::SetSceneParameters(Shader& shader) {
 	auto& scene_manager = SceneManager::Instance();
 
 	// Bind regular geometry buffers (existing code)
@@ -400,7 +400,7 @@ void PTPass::Execute() {
 
 	glBindImageTexture(0, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-	SetPassParameters(*shader_);
+	SetSceneParameters(*shader_);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
@@ -446,7 +446,7 @@ void LTPass::Execute() {
 	glBindImageTexture(1, output_texture_g_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 	glBindImageTexture(2, output_texture_b_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 
-	SetPassParameters(*shader_);
+	SetSceneParameters(*shader_);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 

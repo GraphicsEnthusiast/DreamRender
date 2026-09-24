@@ -172,7 +172,7 @@ protected:
 	 * @brief Configures the shader for the current pass.
 	 * @param shader Reference to the shader program to be configured.
 	 */
-    void SetPassParameters(Shader& shader);
+    void SetSceneParameters(Shader& shader);
 
 protected:
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
