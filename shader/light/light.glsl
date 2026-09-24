@@ -44,6 +44,12 @@ uniform int HDREnvMapHeight;
 uniform samplerBuffer HDREnvRowAliasTable;
 uniform samplerBuffer HDREnvColAliasTable;
 uniform samplerBuffer HDREnvRowMaxs;
+uniform vec3 SceneCenter;
+uniform float SceneRadius;
+
+// Light type enumeration
+const int LightType_Mesh = 0;
+const int LightType_Environment = 1;
 
 /**
  * @struct LightEvalInfo
@@ -649,6 +655,120 @@ LightSampleInfo HDREnvSample(inout SobolSampler sobol_sampler, SampledWavelength
 }
 
 /**
+ * @brief Generates a ray from the HDR environment light for light tracing
+ * @param sobol_sampler Sobol sequence sampler for random number generation
+ * @param lambda Sampled wavelengths for spectral rendering conversion
+ * @return LightRayInfo containing the generated ray, emission spectrum, and PDF
+ */
+LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    LightRayInfo result;
+    result.ray.direction = vec3(0.0f);
+    result.emission = SampledSpectrumNewFloat(0.0f);
+    result.shading_normal = vec3(0.0f);
+    result.pdf = 0.0f;
+
+    // 1. Sample a pixel from the HDR map using the 2D alias table
+    vec2 sample_xy1 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    vec2 sample_xy2 = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+
+    ivec2 rc = AliasTable2DSample(
+        HDREnvColAliasTable,
+        HDREnvMapHeight,
+        HDREnvWeightMax,
+        HDREnvRowAliasTable,
+        HDREnvMapWidth,
+        HDREnvRowMaxs,
+        sample_xy1,
+        sample_xy2
+    );
+
+    vec2 uv = vec2((float(rc.x) + 0.5f) / float(HDREnvMapWidth),
+                   (float(rc.y) + 0.5f) / float(HDREnvMapHeight));
+
+    // 2. Determine the ray direction
+    vec3 w_light = PlaneToSphere(uv);
+    vec3 ray_dir = -w_light;
+
+    // 3. Compute the direction PDF (same as HDREnvEvaluate / HDREnvSample)
+    vec4 tex_color = texture(HDREnvMap, uv);
+    float luminance = Luminance(tex_color.rgb);
+    float theta = uv.y * PI;
+    float sin_theta = sin(theta);
+    if (sin_theta < Epsilon) {
+        return result;
+    }
+
+    float luminance_sum = HDREnvWeightMax;
+    float jacobian = float(HDREnvMapWidth * HDREnvMapHeight) / (2.0f * PI * PI * sin_theta);
+    float pdf_dir = (luminance / luminance_sum) * jacobian;
+
+    // 4. Sample a point on a disk perpendicular to the ray direction
+    vec2 disk_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    vec2 cd = UniformDiskSample(disk_sample);
+
+    float cd_len = length(cd);
+    vec3 disk_dir = ToWorldFromUp(vec3(cd.x, cd.y, 0.0f), w_light);
+    vec3 p_disk = SceneCenter + SceneRadius * cd_len * disk_dir;
+
+    // 5. Offset the origin so the ray enters the scene from outside
+    vec3 ray_origin = p_disk + SceneRadius * w_light;
+
+    // 6. Compute the position PDF and combined PDF
+    float pdf_pos = UniformDiskPDF() / (SceneRadius * SceneRadius);
+    result.pdf = pdf_dir * pdf_pos;
+
+    // 7. Set the ray parameters
+    result.ray.origin = ray_origin;
+    result.ray.direction = ray_dir;
+    result.ray.tmin = 0.0f;
+    result.ray.tmax = MaxFloat;
+    result.shading_normal = ray_dir;
+
+    // 8. Compute emission radiance along the sampled direction
+    RGB emission_rgb = RGBNew(tex_color.r, tex_color.g, tex_color.b);
+    RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
+    result.emission = RGBIlluminantSpectrumSample(emission_spectrum, lambda);
+
+    return result;
+}
+
+/**
+ * @brief Unified light evaluation function that dispatches to mesh or environment light
+ * @param light_type Light type: LightType_Mesh (0) or LightType_Environment (1)
+ * @param world_out Out direction (from surface to light)
+ * @param info Intersection information of the shading point (located on the light source)
+ * @param last_position The previous shading point before hitting the light source (mesh light only)
+ * @param lambda Sampled wavelengths
+ * @return LightEvalInfo containing emission spectrum and PDF (already multiplied by selection weight)
+ */
+LightEvalInfo LightEvaluate(int light_type, vec3 world_out, IntersectionInfo info, vec3 last_position, SampledWavelengths lambda) {
+    LightEvalInfo result;
+
+    // Compute power weights — must match LightSample / GenerateLightRay
+    float mesh_power = MeshLightTableSum / (MeshLightTableSize > 0 ? float(MeshLightTableSize) : 1.0f);
+    float env_power = HDREnvPower;
+    float total_power = mesh_power + env_power;
+
+    if (total_power <= 0.0f) {
+        result.emission = SampledSpectrumNewFloat(0.0f);
+        result.pdf = 0.0f;
+
+        return result;
+    }
+
+    if (LightType_Mesh == light_type) {
+        result = MeshLightEvaluate(world_out, info, last_position, lambda);
+        result.pdf *= mesh_power / total_power;
+    }
+    else if (LightType_Environment == light_type) {
+        result = HDREnvEvaluate(world_out, lambda);
+        result.pdf *= env_power / total_power;
+    }
+
+    return result;
+}
+
+/**
  * @brief Unified light sampling function that combines mesh lights and environment lighting
  * @param sobol_sampler Sobol sequence sampler for random number generation
  * @param info Intersection information for the shading point
@@ -694,6 +814,51 @@ LightSampleInfo LightSample(inout SobolSampler sobol_sampler, IntersectionInfo i
         }
     }
     
+    return result;
+}
+
+/**
+ * @brief Unified light ray generation function that combines mesh lights and environment lighting
+ * @param sobol_sampler Sobol sequence sampler for random number generation
+ * @param lambda Sampled wavelengths for spectral rendering conversion
+ * @return LightRayInfo containing the generated ray, emission spectrum, and PDF
+ */
+LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    LightRayInfo result;
+    result.ray.direction = vec3(0.0f);
+    result.emission = SampledSpectrumNewFloat(0.0f);
+    result.shading_normal = vec3(0.0f);
+    result.pdf = 0.0f;
+
+    // Calculate total power for weighting
+    float mesh_power = MeshLightTableSum / (MeshLightTableSize > 0 ? float(MeshLightTableSize) : 1.0f);
+    float env_power = HDREnvPower;
+    float total_power = mesh_power + env_power;
+
+    if (total_power <= 0.0f) {
+        return result;
+    }
+
+    // Choose light type based on power weights
+    float mesh_weight = mesh_power / total_power;
+    float env_weight = env_power / total_power;
+    float rand = SobolSamplerGet1(sobol_sampler);
+
+    if (rand < mesh_weight) {
+        result = GenerateMeshLightRay(sobol_sampler, lambda);
+        // Adjust PDF to account for selection probability
+        if (result.pdf > 0.0f) {
+            result.pdf *= mesh_weight;
+        }
+    }
+    else {
+        result = GenerateEnvironmentLightRay(sobol_sampler, lambda);
+        // Adjust PDF to account for selection probability
+        if (result.pdf > 0.0f) {
+            result.pdf *= env_weight;
+        }
+    }
+
     return result;
 }
 

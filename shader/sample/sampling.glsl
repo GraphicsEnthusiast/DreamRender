@@ -210,4 +210,24 @@ float UniformSpherePDF() {
     return 1.0f / (4.0f * PI);
 }
 
+/**
+ * @brief Generates a uniform 2D point on the unit disk
+ * @param sample_xy 2D random sample in [0,1] range
+ * @return vec2 Point on the unit disk (components in [-1,1])
+ */
+vec2 UniformDiskSample(vec2 sample_xy) {
+    float r = sqrt(sample_xy.x);          // Radial distance (inverse CDF)
+    float phi = 2.0f * PI * sample_xy.y;  // Uniform azimuthal angle
+    
+    return vec2(r * cos(phi), r * sin(phi));
+}
+
+/**
+ * @brief Computes the PDF for uniform disk sampling
+ * @return float PDF value (inverse area)
+ */
+float UniformDiskPDF() {
+    return 1.0f / PI;
+}
+
 #endif // SAMPLING_GLSL

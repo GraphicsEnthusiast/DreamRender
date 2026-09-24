@@ -125,7 +125,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     return texture_id;
 }
 
-float SceneManager::GetSceneRadius() const {
+void SceneManager::CalculateSceneRadiusAndCenter() {
     // Initialize bounding box with extreme values
     Point3f min_bound(FLT_MAX), max_bound(-FLT_MAX);
     
@@ -152,7 +152,8 @@ float SceneManager::GetSceneRadius() const {
     // Calculate bounding sphere radius from AABB
     Vector3f extent = max_bound - min_bound;
 
-    return glm::length(extent) * 0.5f;  // Half of the AABB's diagonal length
+    scene_radius_ = glm::length(extent) * 0.5f;      // Half of the AABB's diagonal length
+    scene_center_ = 0.5f * (min_bound + max_bound);  // Center of the AABB
 }
 
 void SceneManager::LoadHDRTexture(const std::string& file_path) {
@@ -226,11 +227,19 @@ void SceneManager::LoadHDRTexture(const std::string& file_path) {
     
 	// Integrating over the sphere, so 4pi for that.  Then one more for Pi
 	// r^2 for the area of the disk receiving illumination
-    hdr_env_total_power_ *= 4.0f * PI * PI * glm::pow2(GetSceneRadius()) / (width * height);
+    hdr_env_total_power_ *= 4.0f * PI * PI * glm::pow2(scene_radius_) / (width * height);
 
 	INFO("[info] HDR texture ready: {} ({}x{}, ID: {})", file_path, width, height, hdr_env_texture_);
 
 	BuildHDREnvAliasTable();
+}
+
+float SceneManager::GetSceneRadius() const noexcept {
+    return scene_radius_;
+}
+
+Point3f SceneManager::GetSceneCenter() const noexcept {
+	return scene_center_;
 }
 
 void SceneManager::BuildHDREnvAliasTable() {
@@ -692,6 +701,8 @@ void SceneManager::BuildBVH() {
     if (triangles_encoded_.empty() && triangles_light_encoded_.empty()) {
         ERROR("[error] No triangles to build BVH!");
     }
+
+    CalculateSceneRadiusAndCenter();
 }
 
 void SceneManager::CreateGPUBuffers() {

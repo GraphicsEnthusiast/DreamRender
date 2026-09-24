@@ -135,6 +135,94 @@ SSBO& RenderPass::GetCIESSBO() noexcept {
 	return *cie_ssbo_;
 }
 
+void RenderPass::SetPassParameters(Shader& shader) {
+	auto& scene_manager = SceneManager::Instance();
+
+	// Bind regular geometry buffers (existing code)
+	scene_manager.GetTriangleTBO().BindTexture(0);
+	shader.SetInt("Triangles", 0);
+	scene_manager.GetBVHNodeTBO().BindTexture(1);
+	shader.SetInt("BVHNodes", 1);
+
+	// Bind utility SSBOs
+	RenderPass::BindSRGBToSpectrumSSBO(2);
+	shader.SetInt("SRGBToSpectrumTable", 2);
+
+	RenderPass::BindSobolMatricesSSBO(3);
+	shader.SetInt("SobolMatricesTable", 3);
+
+	if (scene_manager.GetMeshLightTableSize() > 0) {
+		// Bind light geometry buffers (existing code)
+		scene_manager.GetTriangleLightTBO().BindTexture(4);
+		shader.SetInt("TrianglesLight", 4);
+		scene_manager.GetBVHNodeLightTBO().BindTexture(5);
+		shader.SetInt("BVHNodesLight", 5);
+
+		// Bind mesh light alias table texture buffer
+		scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
+		shader.SetInt("MeshLightTable", 6);
+		shader.SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
+		shader.SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
+		shader.SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
+	}
+	else {
+		shader.SetFloat("MeshLightTableMax", 0.0f);
+		shader.SetFloat("MeshLightTableSum", 0.0f);
+		shader.SetInt("MeshLightTableSize", 0);
+	}
+
+	GLuint texture_array = scene_manager.GetTextureArray();
+	int texture_count = scene_manager.GetTextureCount();
+
+	if (0 != texture_array && texture_count > 0) {
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
+		shader.SetInt("TextureArray", 7);
+		shader.SetInt("TextureCount", texture_count);
+	}
+	else {
+		shader.SetInt("TextureArray", 7);
+		shader.SetInt("TextureCount", 0);
+	}
+
+	// Bind CIE data SSBO
+	RenderPass::BindCIESSBO(8);
+	shader.SetInt("CIETable", 8);
+
+	// Bind camera UBO
+	scene_manager.BindCameraUBO(9);
+	shader.SetInt("CameraData", 9);
+
+	// Bind HDR environment map
+	if (0 != scene_manager.GetHDRTextureID()) {
+		glActiveTexture(GL_TEXTURE10);
+		glBindTexture(GL_TEXTURE_2D, scene_manager.GetHDRTextureID());
+		shader.SetInt("HDREnvMap", 10);
+		shader.SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
+		shader.SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
+		shader.SetFloat("HDREnvWeightMax", scene_manager.GetHDRWeightMax());
+		shader.SetFloat("HDREnvPower", scene_manager.GetHDREnvTotalPower());
+
+		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
+		shader.SetInt("HDREnvRowAliasTable", 11);
+		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
+		shader.SetInt("HDREnvColAliasTable", 12);
+		scene_manager.GetHDREnvRowMaxsTBO().BindTexture(13);
+		shader.SetInt("HDREnvRowMaxs", 13);
+	}
+	else {
+		shader.SetInt("HDREnvMapWidth", 0);
+		shader.SetInt("HDREnvMapHeight", 0);
+		shader.SetFloat("HDREnvWeightMax", 0.0f);
+		shader.SetFloat("HDREnvPower", 0.0f);
+	}
+
+	shader.SetVector("SceneCenter", scene_manager.GetSceneCenter());
+	shader.SetFloat("SceneRadius", scene_manager.GetSceneRadius());
+
+	shader.SetUInt("FrameCounter", GetFrameCounter());
+}
+
 void RenderPass::BindSRGBToSpectrumSSBO(GLuint index) noexcept {
 	if (srgb_to_spectrum_ssbo_) {
 		srgb_to_spectrum_ssbo_->BindBase(index);
@@ -302,7 +390,6 @@ void PTPass::Execute() {
 
 	// Use (bind) the compute shader program
 	shader_->Use();
-
 	// Retrieve and validate the output texture handle
 	TextureHandle output_texture = GetOutputTexture("Output");
 	if (!output_texture.IsValid()) {
@@ -313,88 +400,7 @@ void PTPass::Execute() {
 
 	glBindImageTexture(0, output_texture.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-	auto& scene_manager = SceneManager::Instance();
-
-	// Bind regular geometry buffers (existing code)
-	scene_manager.GetTriangleTBO().BindTexture(0);
-	shader_->SetInt("Triangles", 0);
-	scene_manager.GetBVHNodeTBO().BindTexture(1);
-	shader_->SetInt("BVHNodes", 1);
-
-	// Bind utility SSBOs
-	RenderPass::BindSRGBToSpectrumSSBO(2);
-	shader_->SetInt("SRGBToSpectrumTable", 2);
-
-	RenderPass::BindSobolMatricesSSBO(3);
-	shader_->SetInt("SobolMatricesTable", 3);
-
-	if (scene_manager.GetMeshLightTableSize() > 0) {
-		// Bind light geometry buffers (existing code)
-		scene_manager.GetTriangleLightTBO().BindTexture(4);
-		shader_->SetInt("TrianglesLight", 4);
-		scene_manager.GetBVHNodeLightTBO().BindTexture(5);
-		shader_->SetInt("BVHNodesLight", 5);
-
-		// Bind mesh light alias table texture buffer
-		scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
-		shader_->SetInt("MeshLightTable", 6);
-		shader_->SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
-		shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
-		shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
-	}
-	else {
-		shader_->SetFloat("MeshLightTableMax", 0.0f);
-		shader_->SetFloat("MeshLightTableSum", 0.0f);
-		shader_->SetInt("MeshLightTableSize", 0);
-	}
-
-	GLuint texture_array = scene_manager.GetTextureArray();
-	int texture_count = scene_manager.GetTextureCount();
-
-	if (0 != texture_array && texture_count > 0) {
-		glActiveTexture(GL_TEXTURE7);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
-		shader_->SetInt("TextureArray", 7);
-		shader_->SetInt("TextureCount", texture_count);
-	}
-	else {
-		shader_->SetInt("TextureArray", 7);
-		shader_->SetInt("TextureCount", 0);
-	}
-
-	// Bind CIE data SSBO
-	RenderPass::BindCIESSBO(8);
-	shader_->SetInt("CIETable", 8);
-
-	// Bind camera UBO
-	scene_manager.BindCameraUBO(9);
-	shader_->SetInt("CameraData", 9);
-
-	// Bind HDR environment map
-	if (0 != scene_manager.GetHDRTextureID()) {
-		glActiveTexture(GL_TEXTURE10);
-		glBindTexture(GL_TEXTURE_2D, scene_manager.GetHDRTextureID());
-		shader_->SetInt("HDREnvMap", 10);
-		shader_->SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
-		shader_->SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
-		shader_->SetFloat("HDREnvWeightMax", scene_manager.GetHDRWeightMax());
-		shader_->SetFloat("HDREnvPower", scene_manager.GetHDREnvTotalPower());
-
-		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
-		shader_->SetInt("HDREnvRowAliasTable", 11);
-		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
-		shader_->SetInt("HDREnvColAliasTable", 12);
-		scene_manager.GetHDREnvRowMaxsTBO().BindTexture(13);
-		shader_->SetInt("HDREnvRowMaxs", 13);
-	}
-	else {
-		shader_->SetInt("HDREnvMapWidth", 0);
-		shader_->SetInt("HDREnvMapHeight", 0);
-		shader_->SetFloat("HDREnvWeightMax", 0.0f);
-		shader_->SetFloat("HDREnvPower", 0.0f);
-	}
-
-	shader_->SetUInt("FrameCounter", GetFrameCounter());
+	SetPassParameters(*shader_);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 
@@ -440,77 +446,7 @@ void LTPass::Execute() {
 	glBindImageTexture(1, output_texture_g_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 	glBindImageTexture(2, output_texture_b_.id, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 
-	auto& scene_manager = SceneManager::Instance();
-
-	// Bind regular geometry buffers
-	scene_manager.GetTriangleTBO().BindTexture(0);
-	shader_->SetInt("Triangles", 0);
-	scene_manager.GetBVHNodeTBO().BindTexture(1);
-	shader_->SetInt("BVHNodes", 1);
-
-	// Bind utility SSBOs
-	RenderPass::BindSRGBToSpectrumSSBO(2);
-	shader_->SetInt("SRGBToSpectrumTable", 2);
-
-	RenderPass::BindSobolMatricesSSBO(3);
-	shader_->SetInt("SobolMatricesTable", 3);
-
-	// Bind light geometry buffers
-	scene_manager.GetTriangleLightTBO().BindTexture(4);
-	shader_->SetInt("TrianglesLight", 4);
-	scene_manager.GetBVHNodeLightTBO().BindTexture(5);
-	shader_->SetInt("BVHNodesLight", 5);
-
-	// Bind mesh light alias table texture buffer
-	scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
-	shader_->SetInt("MeshLightTable", 6);
-	shader_->SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
-	shader_->SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
-	shader_->SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
-
-	// Bind texture array
-	GLuint texture_array = scene_manager.GetTextureArray();
-	int texture_count = scene_manager.GetTextureCount();
-
-	if (0 != texture_array && texture_count > 0) {
-		glActiveTexture(GL_TEXTURE7);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
-		shader_->SetInt("TextureArray", 7);
-		shader_->SetInt("TextureCount", texture_count);
-	}
-	else {
-		shader_->SetInt("TextureArray", 7);
-		shader_->SetInt("TextureCount", 0);
-	}
-
-	// Bind CIE data SSBO
-	RenderPass::BindCIESSBO(8);
-	shader_->SetInt("CIETable", 8);
-
-	// Bind camera UBO
-	scene_manager.BindCameraUBO(9);
-	shader_->SetInt("CameraData", 9);
-
-	// Bind HDR environment map
-	if (0 != scene_manager.GetHDRTextureID()) {
-		glActiveTexture(GL_TEXTURE10);
-		glBindTexture(GL_TEXTURE_2D, scene_manager.GetHDRTextureID());
-		shader_->SetInt("HDREnvMap", 10);
-		shader_->SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
-		shader_->SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
-		shader_->SetFloat("HDREnvWeightMax", scene_manager.GetHDRWeightMax());
-		shader_->SetFloat("HDREnvPower", scene_manager.GetHDREnvTotalPower());
-
-		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
-		shader_->SetInt("HDREnvRowAliasTable", 11);
-		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
-		shader_->SetInt("HDREnvColAliasTable", 12);
-		scene_manager.GetHDREnvRowMaxsTBO().BindTexture(13);
-        shader_->SetInt("HDREnvRowMaxs", 13);
-	}
-
-	// Set frame counter
-	shader_->SetUInt("FrameCounter", GetFrameCounter());
+	SetPassParameters(*shader_);
 
 	glDispatchCompute(width_ / 16, height_ / 16, 1);
 

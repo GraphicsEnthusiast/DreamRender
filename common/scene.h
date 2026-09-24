@@ -116,13 +116,6 @@ public:
     int GetTextureCount() const noexcept;
 
     /**
-     * Calculate the radius of the scene's bounding sphere
-     * @return float The radius of the scene's bounding sphere
-     *         Returns 0.0f if no triangles are present in the scene
-     */
-    float GetSceneRadius() const;
-
-    /**
      * @brief Loads a texture from file and resizes to 2048x2048
      * @param file_path Path to texture file
      * @param type Texture type
@@ -192,6 +185,18 @@ public:
     const TBO& GetHDREnvRowMaxsTBO() const noexcept;
 
     /**
+	 * Get the radius of the scene's bounding sphere
+	 * @return float The radius of the scene's bounding sphere
+	 */
+    float GetSceneRadius() const noexcept;
+
+    /**
+     * Get the center of the scene's bounding sphere
+     * @return Vector3f The center of the scene's bounding sphere
+     */
+    Vector3f GetSceneCenter() const noexcept;
+
+    /**
      * @brief Deleted copy constructor
      */
     SceneManager(const SceneManager&) = delete;
@@ -205,7 +210,14 @@ protected:
     /**
      * @brief Default constructor
      */
-    SceneManager() : texture_array_(0), hdr_env_texture_(0), hdr_env_total_power_(0.0f) {}
+    SceneManager() : texture_array_(0), hdr_env_texture_(0), hdr_env_total_power_(0.0f), scene_radius_(0.0f), scene_center_(Point3f(0.0f)) {}
+
+    /**
+     * Calculate the radius and center of the scene's bounding sphere
+     * @return float The radius of the scene's bounding sphere
+     *         Returns 0.0f if no triangles are present in the scene
+     */
+    void CalculateSceneRadiusAndCenter();
 
     /**
      * @brief Builds the 2D alias table for HDR environment lighting
@@ -256,6 +268,9 @@ protected:
 
     AliasTable1D mesh_light_alias_table_;                   ///< Alias table for light triangle sampling
     std::vector<float> light_triangle_weights_;             ///< Weight for each light triangle (power)
+
+    float scene_radius_;           ///< The radius of the whole scene
+    Point3f scene_center_;         ///< The center of the whole scene
     
     GLuint hdr_env_texture_;       ///< Texture ID of the loaded HDR environment map
     int hdr_width_;                ///< Width of the HDR environment map

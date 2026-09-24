@@ -168,6 +168,13 @@ public:
     static SSBO& GetCIESSBO() noexcept;
 
 protected:
+    /**
+	 * @brief Configures the shader for the current pass.
+	 * @param shader Reference to the shader program to be configured.
+	 */
+    void SetPassParameters(Shader& shader);
+
+protected:
     InputSlotMap input_map_;             ///< Input slot name to resource mapping
     OutputSlotMap output_map_;           ///< Output slot name to resource mapping
     std::string name_;

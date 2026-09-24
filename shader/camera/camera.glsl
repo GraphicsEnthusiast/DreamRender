@@ -105,6 +105,19 @@ struct Camera {
 };
 
 /**
+ * @brief Result structure for camera evaluation
+ */
+struct CameraEvalInfo {
+    vec3 world_out;       ///< Direction from shading point to camera (normalized)
+    float distance;       ///< Distance to the lens point
+    float pdf;            ///< PDF with respect to solid angle at the shading point
+    float we;             ///< Camera importance
+    vec2 raster_ndc;      ///< Raster NDC coordinates [0,1]^2
+    ivec2 raster;         ///< Pixel coordinates
+    bool valid;           ///< True if the direction hits the camera lens
+};
+
+/**
  * @brief Result structure for camera sampling
  */
 struct CameraSampleInfo {
@@ -200,40 +213,74 @@ float CameraPDF(Camera camera, vec3 dir) {
 }
 
 /**
- * @brief Generates a primary ray from camera with PDF and we
+ * @brief Evaluates the camera sampling PDF and importance for a given direction
  * @param camera Camera structure
- * @param pixel_x Pixel x-coordinate
- * @param pixel_y Pixel y-coordinate
- * @param sample_xy Random sample for depth of field
- * @return CameraRayInfo containing ray, PDF, and we
+ * @param position Shading point position in world space
+ * @param world_out Direction from shading point toward camera (normalized)
+ * @return CameraEvalInfo containing PDF, importance, and pixel coordinates (if valid)
  */
-CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec2 sample_xy) {
-    CameraRayInfo result;
-    
-    float screen_x = pixel_x * camera.pixel_to_screen.x - camera.width;
-    float screen_y = pixel_y * camera.pixel_to_screen.y - camera.height;
+CameraEvalInfo CameraEvaluate(Camera camera, vec3 position, vec3 world_out) {
+    CameraEvalInfo result;
+    result.world_out = world_out;
+    result.distance = 0.0f;
+    result.pdf = 0.0f;
+    result.we = 0.0f;
+    result.raster_ndc = vec2(0.0f);
+    result.raster = ivec2(0);
+    result.valid = false;
 
-    vec3 dir;
-    vec3 origin = camera.position;
+    vec3 d = normalize(world_out);
+    // Direction from camera to shading point
+    vec3 camera_dir = -d;
 
-    vec2 aperture_xy = sample_xy * camera.aperture_radius;
-    float focal_x = camera.ratio * screen_x;
-    float focal_y = camera.ratio * screen_y;
-    vec3 aperture_offset = vec3(aperture_xy, 0.0f);
-    vec3 focal_point = vec3(focal_x, focal_y, -camera.focal_distance);
+    // Transform to camera local space
+    vec3 camera_space_dir = ToLocal(camera_dir, camera.right, camera.up, camera.forward);
+    if (camera_space_dir.z >= 0.0f) {
+        return result;  // Behind the camera
+    }
 
-    dir = focal_point - aperture_offset; 
-    dir = dir.x * camera.right + dir.y * camera.up + dir.z * camera.forward;
-    origin += (aperture_offset.x * camera.right + aperture_offset.y * camera.up);
+    float cos_theta = -camera_space_dir.z;
 
-    result.ray.origin = origin;
-    result.ray.direction = normalize(dir);
-    result.ray.tmin = 0.0f;
-    result.ray.tmax = MaxFloat;
-    
-    // Compute PDF and we for the generated ray
-    result.we = CameraWe(camera, result.ray.direction);
-    result.pdf = CameraPDF(camera, result.ray.direction);
+    // Project onto the image plane
+    float scale = -camera.distance / camera_space_dir.z;
+    vec2 plane = camera_space_dir.xy * scale;
+    plane /= vec2(camera.width, camera.height);
+    if (plane.x > 1.0f || plane.x < -1.0f || plane.y > 1.0f || plane.y < -1.0f) {
+        return result;  // Outside the image plane
+    }
+
+    // Compute intersection with the lens plane (plane through camera.position, normal = -camera.forward)
+    float denom = dot(d, -camera.forward);
+    if (abs(denom) < Epsilon) {
+        return result;
+    }
+    float t = dot(camera.position - position, -camera.forward) / denom;
+    if (t <= 0.0f) {
+        return result;
+    }
+    vec3 lens_point = position + d * t;
+    vec3 lens_offset = lens_point - camera.position;
+    if (dot(lens_offset, lens_offset) > camera.aperture_radius * camera.aperture_radius) {
+        return result;  // Ray misses the lens disk
+    }
+
+    // Fill results
+    result.world_out = d;
+    result.distance = t;
+
+    result.raster_ndc = plane * 0.5f + vec2(0.5f);
+    int pixel_x = int(floor(result.raster_ndc.x * (camera.resolution.x - 1.0f) + 0.5f));
+    int pixel_y = int(floor(result.raster_ndc.y * (camera.resolution.y - 1.0f) + 0.5f));
+    result.raster = ivec2(pixel_x, pixel_y);
+
+    // PDF: p_ω = r² / (cosθ * lens_area), same as CameraSample
+    float r2 = dot(lens_point - position, lens_point - position);
+    result.pdf = r2 / (cos_theta * camera.lens_area);
+
+    // Importance: CameraWe expects the direction from camera to shading point
+    result.we = CameraWe(camera, camera_dir);
+
+    result.valid = true;
     
     return result;
 }
@@ -290,6 +337,45 @@ CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
     result.pdf = dot(dir, dir) / (cos_theta * camera.lens_area);
     result.we = CameraWe(camera, negative_dir);
 
+    return result;
+}
+
+/**
+ * @brief Generates a primary ray from camera with PDF and we
+ * @param camera Camera structure
+ * @param pixel_x Pixel x-coordinate
+ * @param pixel_y Pixel y-coordinate
+ * @param sample_xy Random sample for depth of field
+ * @return CameraRayInfo containing ray, PDF, and we
+ */
+CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec2 sample_xy) {
+    CameraRayInfo result;
+    
+    float screen_x = pixel_x * camera.pixel_to_screen.x - camera.width;
+    float screen_y = pixel_y * camera.pixel_to_screen.y - camera.height;
+
+    vec3 dir;
+    vec3 origin = camera.position;
+
+    vec2 aperture_xy = sample_xy * camera.aperture_radius;
+    float focal_x = camera.ratio * screen_x;
+    float focal_y = camera.ratio * screen_y;
+    vec3 aperture_offset = vec3(aperture_xy, 0.0f);
+    vec3 focal_point = vec3(focal_x, focal_y, -camera.focal_distance);
+
+    dir = focal_point - aperture_offset; 
+    dir = dir.x * camera.right + dir.y * camera.up + dir.z * camera.forward;
+    origin += (aperture_offset.x * camera.right + aperture_offset.y * camera.up);
+
+    result.ray.origin = origin;
+    result.ray.direction = normalize(dir);
+    result.ray.tmin = 0.0f;
+    result.ray.tmax = MaxFloat;
+    
+    // Compute PDF and we for the generated ray
+    result.we = CameraWe(camera, result.ray.direction);
+    result.pdf = CameraPDF(camera, result.ray.direction);
+    
     return result;
 }
 

@@ -62,7 +62,7 @@ void RenderPipeline::Init() {
 	light_material.type = MaterialType::DIFFUSE;
 	light_material.diffuse = Vector3f(0.9f);
 	light_material.roughness = 0.0f;
-	light_material.emission = Vector3f(8.0f, 8.0f, 6.0f);
+	light_material.emission = Vector3f(3.0f, 3.0f, 2.0f);
 
 	std::vector<TriangleMesh> meshes;
 	meshes.emplace_back(
@@ -86,7 +86,7 @@ void RenderPipeline::Init() {
 	);
 
 	scene_manager.EncodeTriangles(meshes, false);
-	scene_manager.EncodeTriangles(meshes2, true);
+	//scene_manager.EncodeTriangles(meshes2, true);
 	scene_manager.BuildBVH();
 
 	// Calculating the power of ambient light depends on the size of the scene, 
