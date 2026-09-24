@@ -121,7 +121,6 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
 
     // Generate initial light ray
     LightRayInfo light_ray_info = GenerateLightRay(sobol_sampler, lambda);
-    
     float light_cosine = abs(dot(light_ray_info.ray.direction, light_ray_info.shading_normal));
     
     // Initialize path throughput beta
@@ -134,7 +133,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     CameraSampleInfo camera_sample_info = CameraSample(camera, light_ray_info.ray.origin, camera_sample);
     
-    if (camera_sample_info.pdf > 0.0f) {
+    if (camera_sample_info.pdf > 0.0f && dot(camera_sample_info.world_out, light_ray_info.shading_normal) > 0.0f) {
         FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
         
         if (filter_evaluate_info.pdf > 0.0f) {
