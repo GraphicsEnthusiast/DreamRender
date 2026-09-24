@@ -86,7 +86,7 @@ void RenderPipeline::Init() {
 	);
 
 	scene_manager.EncodeTriangles(meshes, false);
-	//scene_manager.EncodeTriangles(meshes2, true);
+	scene_manager.EncodeTriangles(meshes2, true);
 	scene_manager.BuildBVH();
 
 	// Calculating the power of ambient light depends on the size of the scene, 

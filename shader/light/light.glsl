@@ -569,7 +569,7 @@ float Luminance(vec3 rgb) {
  * @param lambda Sampled wavelengths for spectral rendering conversion
  * @return LightEvalInfo containing emission spectrum and PDF
  */
-LightEvalInfo HDREnvEvaluate(vec3 world_out, SampledWavelengths lambda) {
+LightEvalInfo EnvironmentLightEvaluate(vec3 world_out, SampledWavelengths lambda) {
     LightEvalInfo result;
     result.pdf = 0.0f;
     result.emission = SampledSpectrumNewFloat(0.0f);
@@ -602,7 +602,7 @@ LightEvalInfo HDREnvEvaluate(vec3 world_out, SampledWavelengths lambda) {
  * @param lambda Sampled wavelengths for spectral rendering conversion
  * @return LightSampleInfo containing sampled direction, distance, PDF and emission spectrum
  */
-LightSampleInfo HDREnvSample(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+LightSampleInfo EnvironmentLightSample(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     LightSampleInfo result;
     result.world_out = vec3(0.0f);
     result.distance = MaxFloat; // Environment light is at infinity
@@ -689,7 +689,7 @@ LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, Sampl
     vec3 w_light = PlaneToSphere(uv);
     vec3 ray_dir = -w_light;
 
-    // 3. Compute the direction PDF (same as HDREnvEvaluate / HDREnvSample)
+    // 3. Compute the direction PDF (same as EnvironmentLightEvaluate / EnvironmentLightSample)
     vec4 tex_color = texture(HDREnvMap, uv);
     float luminance = Luminance(tex_color.rgb);
     float theta = uv.y * PI;
@@ -761,7 +761,7 @@ LightEvalInfo LightEvaluate(int light_type, vec3 world_out, IntersectionInfo inf
         result.pdf *= mesh_power / total_power;
     }
     else if (LightType_Environment == light_type) {
-        result = HDREnvEvaluate(world_out, lambda);
+        result = EnvironmentLightEvaluate(world_out, lambda);
         result.pdf *= env_power / total_power;
     }
 
@@ -807,7 +807,7 @@ LightSampleInfo LightSample(inout SobolSampler sobol_sampler, IntersectionInfo i
     }
     else {
         // Sample environment light
-        result = HDREnvSample(sobol_sampler, lambda);
+        result = EnvironmentLightSample(sobol_sampler, lambda);
         // Adjust PDF to account for selection probability
         if (result.pdf > 0.0f) {
             result.pdf *= env_weight;
