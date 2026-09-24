@@ -268,7 +268,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 
                 if (mat_sample_info.pdf > 0.0f) {
                     float cosine = abs(dot(mat_sample_info.world_out, info.shading_normal));
-                    beta = Mul(beta, DivFloat(MulFloat(mat_eval_info.bsdf, cosine), mat_sample_info.pdf));
+                    beta = Mul(beta, DivFloat(MulFloat(mat_sample_info.bsdf, cosine), mat_sample_info.pdf));
                     world_out = mat_sample_info.world_out;
                     bsdf_phase_pdf = mat_sample_info.pdf;
                 }
