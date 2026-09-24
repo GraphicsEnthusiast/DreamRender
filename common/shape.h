@@ -27,10 +27,10 @@ struct Camera {
  */
 enum class TextureType {
     EMISSION = 0,
-    DIFFUSE = 1,          ///< Diffuse/albedo texture (base color)
-    ROUGHNESS = 2,        ///< Roughness texture
-    ROUGHNESS_ANISO = 3,  ///< Anisotropic roughness texture (u, v in R, G channels)
-    SPECULAR = 4,         ///< Specular reflection color texture
+    DIFFUSE = 1,            ///< Diffuse/albedo texture (base color)
+    ROUGHNESS_U = 2,        ///< Roughness texture (u)
+    ROUGHNESS_V = 3,        ///< Anisotropic roughness texture (v)
+    SPECULAR = 4,           ///< Specular reflection color texture
 };
 
 /**
@@ -81,16 +81,16 @@ struct Material {
 
     Vector3f emission;                                ///< Emission strength
     Vector3f diffuse;                                 ///< Diffuse color (when no texture)
-    float roughness;                                  ///< Roughness value (0.0-1.0)
+    float roughness_u;                                ///< Roughness value (0.0-1.0, default use)
+    float roughness_v;                                ///< Roughness value (0.0-1.0)
 	Vector3f eta;                                     ///< Real part of complex index of refraction (RGB)
 	Vector3f k;                                       ///< Imaginary part of complex index of refraction (RGB)
 	Vector3f specular;                                ///< Specular reflection color
-	Vector2f roughness_aniso;                         ///< Anisotropic roughness (u, v)
 
     /**
      * @brief Default constructor
      */
-    Material();
+    Material() = default;
 
     /**
      * @brief Checks if material has a specific texture type
@@ -285,8 +285,7 @@ struct alignas(16) TriangleEncoded {
     alignas(16) Vector4f material_type; ///< Only x is useful, representing the material type, such as 0 for diffuse
     alignas(16) Vector4f emission;      ///< Emission (xyz components) and texture flag (w component: -1 = constant color, other = texture)
     alignas(16) Vector4f diffuse;       ///< Diffuse color (xyz components) and texture flag (w component: -1 = constant color, other = texture)
-    alignas(16) Vector4f roughness;     ///< Roughness (x components) and texture flag (w component: -1 = constant color, other = texture)
-	alignas(16) Vector4f roughness_aniso;  ///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
+	alignas(16) Vector4f roughness;     ///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 	alignas(16) Vector4f specular;         ///< Specular color (xyz) and texture flag (w = texture ID, -1 for constant)
 	alignas(16) Vector4f eta;              ///< Real part of complex IOR (xyz) and constant flag (w = -1, no texture support)
 	alignas(16) Vector4f k;                ///< Imaginary part of complex IOR (xyz) and constant flag (w = -1, no texture support)

@@ -94,14 +94,11 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     mat.diffuse = RGBAlbedoSpectrumSample(diffuse_spectrum, lambda);
     mat.diffuse_texture = diffuse_texture_id;
 
-    // Get roughness
-    mat.roughness = tri.roughness.x;
-    mat.roughness_texture = roughness_texture_id;
-
-    vec4 roughness_aniso = tri.roughness_aniso;
-    mat.roughness_aniso = vec2(roughness_aniso.x, roughness_aniso.y);
-    mat.roughness_aniso_texture_u = int(roughness_aniso.z);
-    mat.roughness_aniso_texture_v = int(roughness_aniso.w);
+    // Get anisotropic roughness (x = U, y = V, z/w = texture IDs)
+    mat.roughness_u = tri.roughness.x;
+    mat.roughness_v = tri.roughness.y;
+    mat.roughness_aniso_texture_u = int(tri.roughness.z);
+    mat.roughness_aniso_texture_v = int(tri.roughness.w);
 
     // Get specular reflectance (RGB color, w = texture ID)
     RGB specular = RGBNew(tri.specular.r, tri.specular.g, tri.specular.b);

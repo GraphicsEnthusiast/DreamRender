@@ -31,8 +31,7 @@ struct Triangle {
     int material_type;
     vec4 emission;
     vec4 diffuse;    ///< Diffuse color (rgb) and texture flag (a: 0=const, 1=texture)
-    vec4 roughness;  ///< Roughness (x) and texture flag (a: 0=const, 1=texture)
-    vec4 roughness_aniso; ///< (x,y) anisotropic roughness; (z,w) texture flags for U,V (-1=const, >=0=texture)
+    vec4 roughness;  ///< (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
     vec4 specular;        ///< Specular color (rgb) and texture flag (a: -1=const, >=0=texture)
     vec3 eta;             ///< Conductor complex IOR real part (constant only)
     vec3 k;               ///< Conductor complex IOR imaginary part (constant only)
@@ -69,7 +68,7 @@ struct BVHNode {
  * @return Fetched Triangle structure with position and normal data
  */
 Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
-    int base = index * 20; // 20 vec4 per triangle
+    int base = index * 19; // 19 vec4 per triangle
 
     Triangle tri;
 
@@ -108,20 +107,18 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.roughness = roughness_data;
 
     // Fetch conductor / metal material parameters
-    vec4 roughness_aniso_data = texelFetch(trangles_buffer, base + 10);
-    vec4 specular_data = texelFetch(trangles_buffer, base + 11);
-    vec4 eta_data = texelFetch(trangles_buffer, base + 12);
-    vec4 k_data = texelFetch(trangles_buffer, base + 13);
+    vec4 specular_data = texelFetch(trangles_buffer, base + 10);
+    vec4 eta_data = texelFetch(trangles_buffer, base + 11);
+    vec4 k_data = texelFetch(trangles_buffer, base + 12);
 
-    tri.roughness_aniso = roughness_aniso_data;
     tri.specular = specular_data;
     tri.eta = eta_data.xyz;
     tri.k = k_data.xyz;
 
     // Fetch inside medium parameters
-    vec4 in_type_info = texelFetch(trangles_buffer, base + 14);
-    vec4 in_sigma_s_data = texelFetch(trangles_buffer, base + 15);
-    vec4 in_sigma_t_data = texelFetch(trangles_buffer, base + 16);
+    vec4 in_type_info = texelFetch(trangles_buffer, base + 13);
+    vec4 in_sigma_s_data = texelFetch(trangles_buffer, base + 14);
+    vec4 in_sigma_t_data = texelFetch(trangles_buffer, base + 15);
 
     tri.in_phase_type = int(in_type_info.x);
     tri.in_g = in_type_info.y;
@@ -131,9 +128,9 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.in_sigma_t = in_sigma_t_data.xyz;
 
     // Fetch outside medium parameters
-    vec4 out_type_info = texelFetch(trangles_buffer, base + 17);
-    vec4 out_sigma_s_data = texelFetch(trangles_buffer, base + 18);
-    vec4 out_sigma_t_data = texelFetch(trangles_buffer, base + 19);
+    vec4 out_type_info = texelFetch(trangles_buffer, base + 16);
+    vec4 out_sigma_s_data = texelFetch(trangles_buffer, base + 17);
+    vec4 out_sigma_t_data = texelFetch(trangles_buffer, base + 18);
 
     tri.out_phase_type = int(out_type_info.x);
     tri.out_g = out_type_info.y;

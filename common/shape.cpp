@@ -24,12 +24,6 @@ Medium::Medium()
 	, sigma_t(1.0f) {
 }
 
-Material::Material()
-	: type(MaterialType::DIFFUSE)
-	, diffuse(0.8f, 0.8f, 0.8f)
-	, roughness(0.5f)
-	, emission(0.0f, 0.0f, 0.0f) {}
-
 bool Material::HasTexture(TextureType type) const {
 	auto it = texture_ids.find(type);
 

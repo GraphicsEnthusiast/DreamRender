@@ -371,8 +371,8 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 
 		int emission_tex_id = material->GetTextureID(TextureType::EMISSION);
 		int diffuse_tex_id = material->GetTextureID(TextureType::DIFFUSE);
-		int roughness_tex_id = material->GetTextureID(TextureType::ROUGHNESS);
-		int roughness_aniso_tex_id = material->GetTextureID(TextureType::ROUGHNESS_ANISO);
+		int roughness_u_tex_id = material->GetTextureID(TextureType::ROUGHNESS_U);
+		int roughness_v_tex_id = material->GetTextureID(TextureType::ROUGHNESS_V);
 		int specular_tex_id = material->GetTextureID(TextureType::SPECULAR);
 
         // Get media
@@ -447,20 +447,11 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
             );
 
             encoded_tri.roughness = Vector4f(
-                material->roughness,
-                0.0f,
-                0.0f,
-                static_cast<float>(roughness_tex_id)  // w: roughness texture ID
+                material->roughness_u,
+                material->roughness_v,
+                static_cast<float>(roughness_u_tex_id),
+                static_cast<float>(roughness_v_tex_id)  // w: roughness texture ID
             );
-
-			// Anisotropic roughness (fallback to isotropic if not set)
-			Vector2f aniso = material->roughness_aniso;
-			encoded_tri.roughness_aniso = Vector4f(
-				aniso.x,                          // x: roughness_u
-				aniso.y,                          // y: roughness_v
-				static_cast<float>(roughness_aniso_tex_id),  // z: texture ID for roughness_u
-				static_cast<float>(roughness_aniso_tex_id)   // w: texture ID for roughness_v
-			);
 
 			// Specular color
 			encoded_tri.specular = Vector4f(

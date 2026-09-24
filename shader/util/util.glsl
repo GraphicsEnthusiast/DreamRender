@@ -49,7 +49,8 @@ struct Material {
     int roughness_texture;
 
     // Anisotropic roughness (x = U, y = V)
-    vec2 roughness_aniso;
+    float roughness_u;
+    float roughness_v;
     int roughness_aniso_texture_u;
     int roughness_aniso_texture_v;
 

@@ -44,9 +44,8 @@ void RenderPipeline::Init() {
 	Material teapot_material;
 	teapot_material.type = MaterialType::CONDUCTOR;
 	teapot_material.specular = Vector3f(1.0f);
-	float roughness_u = 0.2f;
-	float roughness_v = 0.2f;
-	teapot_material.roughness_aniso = Vector2f(roughness_u, roughness_v);
+	teapot_material.roughness_u = 0.2f;
+	teapot_material.roughness_v = 0.2f;
 	teapot_material.eta = Vector3f(0.14282f, 0.37414f, 1.43944f);
 	teapot_material.k = Vector3f(3.97472f, 2.38066f, 1.59981f);
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -55,27 +54,29 @@ void RenderPipeline::Init() {
 	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
 	cube_material.type = MaterialType::DIFFUSE;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
-	cube_material.roughness = 0.3f;
+	cube_material.roughness_u = 0.2f;
+	cube_material.roughness_v = 0.2f;
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
 	Material light_material;
 	light_material.type = MaterialType::DIFFUSE;
 	light_material.diffuse = Vector3f(0.0f);
-	light_material.roughness = 0.0f;
+	light_material.roughness_u = 0.2f;
+	light_material.roughness_v = 0.2f;
 	light_material.emission = Vector3f(3.0f, 3.0f, 2.0f);
 
 	std::vector<TriangleMesh> meshes;
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
 		Transform(),
-		std::make_unique<Material>(cube_material),
-		std::make_unique<Medium>(Medium())
+		std::make_unique<Material>(teapot_material)//,
+		//std::make_unique<Medium>(Medium())
 	);
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 		Transform::Scale(5.0f, 1.0f, 5.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
-		std::make_unique<Material>(cube_material),
-		std::make_unique<Medium>(Medium())
+		std::make_unique<Material>(cube_material)//,
+		//std::make_unique<Medium>(Medium())
 	);
 
 	std::vector<TriangleMesh> meshes2;

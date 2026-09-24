@@ -78,42 +78,38 @@ SampledSpectrum GetFinalDiffuse(IntersectionInfo info, SampledWavelengths lambda
 }
 
 /**
- * @brief Retrieves the final roughness value with texture mapping support
+ * @brief Retrieves the final anisotropic roughness U with texture mapping support
  * @param info Intersection data containing material properties and UV coordinates
- * @return Final roughness value; uses texture's red channel if roughness texture is available, otherwise falls back to base material roughness
+ * @return float containing anisotropic roughness U value
  */
-float GetFinalRoughness(IntersectionInfo info) {
-    if (info.material.roughness_texture >= 0 && info.material.roughness_texture < TextureCount) {
-        // Sample roughness texture (usually in red channel)
-        vec4 tex_color = SampleTextureArray(info.material.roughness_texture, info.uv);
-
-        return tex_color.r;
-    }
-    
-    // Fallback: Use base roughness
-    return info.material.roughness;
-}
-
-/**
- * @brief Retrieves the final anisotropic roughness with texture mapping support
- * @param info Intersection data containing material properties and UV coordinates
- * @return vec2 containing anisotropic roughness values
- */
-vec2 GetFinalRoughnessAniso(IntersectionInfo info) {
-    // Fallback: Use base anisotropic roughness
-    vec2 result = info.material.roughness_aniso;
+float GetFinalRoughnessU(IntersectionInfo info) {
+    // Fallback: Use base anisotropic roughness U
+    float result = info.material.roughness_u;
 
     int tex_u = info.material.roughness_aniso_texture_u;
-    int tex_v = info.material.roughness_aniso_texture_v;
 
     if (tex_u >= 0 && tex_u < TextureCount) {
         vec4 tex_color = SampleTextureArray(tex_u, info.uv);
-        result.x = tex_color.r;
+        result = tex_color.r;
     }
+
+    return result;
+}
+
+/**
+ * @brief Retrieves the final anisotropic roughness V with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @return float containing anisotropic roughness V value
+ */
+float GetFinalRoughnessV(IntersectionInfo info) {
+    // Fallback: Use base anisotropic roughness V
+    float result = info.material.roughness_v;
+
+    int tex_v = info.material.roughness_aniso_texture_v;
 
     if (tex_v >= 0 && tex_v < TextureCount) {
         vec4 tex_color = SampleTextureArray(tex_v, info.uv);
-        result.y = tex_color.r;
+        result = tex_color.r;
     }
 
     return result;
@@ -175,7 +171,7 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_in, vec3 worl
     m_info.pdf = 0.0f;
 
     SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);
-    float roughness = GetFinalRoughness(info);
+    float roughness = GetFinalRoughnessU(info);
 
 	vec3 v = normalize(world_in);
 	vec3 l = normalize(world_out);
@@ -222,7 +218,7 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_in, vec2 samp
     m_info.pdf = 0.0f;
 
     SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);
-    float roughness = GetFinalRoughness(info);
+    float roughness = GetFinalRoughnessU(info);
 
     vec3 n = normalize(info.shading_normal);
     vec3 local_l = CosineHemisphereSample(sample_xy);
@@ -271,10 +267,10 @@ MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 wo
     m_info.bsdf = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
-    // Get anisotropic roughness (alpha_u, alpha_v)
-    vec2 aniso_roughness = GetFinalRoughnessAniso(info);
-    float alpha_u = aniso_roughness.x * aniso_roughness.x;
-    float alpha_v = aniso_roughness.y * aniso_roughness.y;
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
 
     SampledSpectrum eta = GetFinalEta(info);
     SampledSpectrum k = GetFinalK(info);
@@ -325,9 +321,10 @@ MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sa
     m_info.bsdf = SampledSpectrumNewFloat(0.0f);
     m_info.pdf = 0.0f;
 
-    vec2 aniso_roughness = GetFinalRoughnessAniso(info);
-    float alpha_u = aniso_roughness.x * aniso_roughness.x;
-    float alpha_v = aniso_roughness.y * aniso_roughness.y;
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
 
     SampledSpectrum eta = GetFinalEta(info);
     SampledSpectrum k = GetFinalK(info);
