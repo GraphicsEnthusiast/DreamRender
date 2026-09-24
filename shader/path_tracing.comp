@@ -133,8 +133,8 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
     }
 
     if (camera_ray_info.pdf > 0.0f) {
-        float cosine = abs(dot(camera_ray_info.ray.direction, -camera.forward));
-        beta = MulFloat(beta, camera_ray_info.we * cosine / camera_ray_info.pdf);
+        float camera_cosine = abs(dot(camera_ray_info.ray.direction, -camera.forward));
+        beta = MulFloat(beta, camera_ray_info.we * camera_cosine / camera_ray_info.pdf);
     }
 
     vec3 world_in = -ray.direction;
