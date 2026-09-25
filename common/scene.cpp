@@ -98,13 +98,32 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 				float u = (static_cast<float>(x) + 0.5f) / target_size;
 				float v = (static_cast<float>(y) + 0.5f) / target_size;
 
-				Vector4f color = BilinearSample(data, width, height, channels, u, v);
+				if (type == TextureType::NORMAL) {
+					// Nearest-neighbor sampling (source image coordinates)
+					int px = std::max(0, std::min(static_cast<int>(u * width), width - 1));
+					int py = std::max(0, std::min(static_cast<int>(v * height), height - 1));
 
-				int idx = (y * target_size + x) * target_channels;
-				resized_data[idx] = color.r;
-				resized_data[idx + 1] = color.g;
-				resized_data[idx + 2] = color.b;
-                resized_data[idx + 3] = color.a;
+					// Source image data index
+					int src_idx = (py * width + px) * target_channels;
+
+					// Target image data index
+					int dst_idx = (y * target_size + x) * target_channels;
+
+					// Copy RGBA channels from source to target
+					resized_data[dst_idx] = data[src_idx];
+					resized_data[dst_idx + 1] = data[src_idx + 1];
+					resized_data[dst_idx + 2] = data[src_idx + 2];
+					resized_data[dst_idx + 3] = data[src_idx + 3];
+				}
+                else {
+					Vector4f color = BilinearSample(data, width, height, target_channels, u, v);
+
+					int idx = (y * target_size + x) * target_channels;
+					resized_data[idx] = color.r;
+					resized_data[idx + 1] = color.g;
+					resized_data[idx + 2] = color.b;
+					resized_data[idx + 3] = color.a;
+                }
 			}
 		}
     }
