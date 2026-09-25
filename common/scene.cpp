@@ -64,7 +64,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 
     // Check if texture already loaded
     auto it = texture_name_to_id_.find(file_path);
-    if (it != texture_name_to_id_.end()) {
+    if (texture_name_to_id_.end() != it) {
         INFO("[info] Texture already loaded: {} (ID: {})", file_path, it->second);
 
         return it->second;
