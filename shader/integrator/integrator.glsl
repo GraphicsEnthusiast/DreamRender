@@ -116,6 +116,9 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     RGBAlbedoSpectrum k_spectrum = RGBAlbedoSpectrumNew(k);
     mat.k = RGBAlbedoSpectrumSample(k_spectrum, lambda);
 
+    mat.in_ior = tri.in_ior;
+    mat.out_ior = tri.out_ior;
+
     // Set the material
     info.material = mat;
 

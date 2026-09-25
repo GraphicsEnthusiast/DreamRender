@@ -35,6 +35,8 @@ struct Triangle {
     vec4 specular;        ///< Specular color (rgb) and texture flag (a: -1=const, >=0=texture)
     vec3 eta;             ///< Conductor complex IOR real part (constant only)
     vec3 k;               ///< Conductor complex IOR imaginary part (constant only)
+    float in_ior;          ///< Inside medium index of refraction
+    float out_ior;         ///< Outside medium index of refraction
 
     int in_phase_type;      ///< Inside medium phase function type
     float in_g;             ///< Inside medium asymmetry parameter
@@ -114,6 +116,8 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.specular = specular_data;
     tri.eta = eta_data.xyz;
     tri.k = k_data.xyz;
+    tri.in_ior = eta_data.w;
+    tri.out_ior = k_data.w;
 
     // Fetch inside medium parameters
     vec4 in_type_info = texelFetch(trangles_buffer, base + 13);

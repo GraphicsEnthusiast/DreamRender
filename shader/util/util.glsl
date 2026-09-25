@@ -63,6 +63,11 @@ struct Material {
 
     // Conductor complex IOR - imaginary part (k) - constant only
     SampledSpectrum k;
+
+    // Index of refraction for the interior medium
+    float in_ior;
+    // Index of refraction for the exterior medium
+    float out_ior;
 };
 
 /**

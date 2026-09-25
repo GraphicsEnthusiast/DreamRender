@@ -44,8 +44,8 @@ void RenderPipeline::Init() {
 	Material teapot_material;
 	teapot_material.type = MaterialType::CONDUCTOR;
 	teapot_material.specular = Vector3f(1.0f);
-	teapot_material.roughness_u = 0.2f;
-	teapot_material.roughness_v = 0.2f;
+	teapot_material.roughness_u = 0.3f;
+	teapot_material.roughness_v = 0.1f;
 	teapot_material.eta = Vector3f(0.14282f, 0.37414f, 1.43944f);
 	teapot_material.k = Vector3f(3.97472f, 2.38066f, 1.59981f);
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);

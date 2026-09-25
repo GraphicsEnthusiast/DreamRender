@@ -12,6 +12,7 @@ uniform int TextureCount;
 const int MaterialType_Boundary = 0;
 const int MaterialType_Diffuse = 1;   ///< Diffuse material (Oren-Nayar model)
 const int MaterialType_Conductor = 2; ///< Conductor material (GGX Microfacet Model)
+const int MaterialType_Dielectric = 3; ///< Dielectric material (GGX Microfacet Model)
 
 /**
  * @struct MaterialEvalInfo
@@ -139,7 +140,6 @@ SampledSpectrum GetFinalSpecular(IntersectionInfo info, SampledWavelengths lambd
 
 /**
  * @brief Retrieves the conductor eta (real part of complex IOR)
- * @note Eta has no texture support, always returns the constant material value
  * @param info Intersection data containing material properties
  * @return SampledSpectrum representing the conductor eta
  */
@@ -149,12 +149,29 @@ SampledSpectrum GetFinalEta(IntersectionInfo info) {
 
 /**
  * @brief Retrieves the conductor k (imaginary part of complex IOR)
- * @note K has no texture support, always returns the constant material value
  * @param info Intersection data containing material properties
  * @return SampledSpectrum representing the conductor k
  */
 SampledSpectrum GetFinalK(IntersectionInfo info) {
     return info.material.k;
+}
+
+/**
+ * @brief Retrieves the internal medium's index of refraction (IOR)
+ * @param info Intersection data containing material properties
+ * @return Float representing the internal IOR (e.g., 1.5f for glass)
+ */
+float GetInIOR(IntersectionInfo info) {
+    return info.material.in_ior;
+}
+
+/**
+ * @brief Retrieves the external medium's index of refraction (IOR)
+ * @param info Intersection data containing material properties
+ * @return Float representing the external IOR (e.g., 1.0f for vacuum/air)
+ */
+float GetOutIOR(IntersectionInfo info) {
+    return info.material.out_ior;
 }
 
 /**

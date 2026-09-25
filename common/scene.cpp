@@ -466,7 +466,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				material->eta.r,
 				material->eta.g,
 				material->eta.b,
-				-1.0f
+                material->in_ior
 			);
 
 			// Conductor k (no texture support, w = -1)
@@ -474,7 +474,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				material->k.r,
 				material->k.g,
 				material->k.b,
-				-1.0f
+				material->out_ior
 			);
 
             // Encode inside medium
