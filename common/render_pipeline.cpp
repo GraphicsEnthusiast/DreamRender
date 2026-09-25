@@ -69,15 +69,15 @@ void RenderPipeline::Init() {
 	light_material.emission = Vector3f(3.0f, 3.0f, 2.0f);
 
  	std::vector<TriangleMesh> meshes;
-// 	meshes.emplace_back(
-// 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
-// 		Transform(),
-// 		std::make_unique<Material>(teapot_material)//,
-// 		//std::make_unique<Medium>(Medium())
-// 	);
+ 	meshes.emplace_back(
+ 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
+ 		Transform(),
+ 		std::make_unique<Material>(teapot_material)//,
+ 		//std::make_unique<Medium>(Medium())
+ 	);
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
-		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
+		Transform::Scale(5.0f, 1.0f, 5.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
 		std::make_unique<Material>(cube_material)//,
 		//std::make_unique<Medium>(Medium())
 	);

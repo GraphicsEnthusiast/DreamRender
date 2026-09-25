@@ -249,7 +249,7 @@ protected:
      * @param v Normalized v coordinate
      * @return Sampled color
      */
-    glm::vec4 BilinearSample(const float* data, int width, int height, int channels, float u, float v) const;
+    Vector4f BilinearSample(const float* data, int width, int height, int channels, float u, float v) const;
 
     /**
      * @brief Creates texture array from loaded textures

@@ -72,9 +72,11 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 
     stbi_set_flip_vertically_on_load(true);
     int width, height, channels;
+	const int target_size = 2048;
+	const int target_channels = 4;  // RGBA
 
     // Load texture as float data
-    float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, 4);
+    float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, target_channels);
     if (!data) {
         ERROR("[error] Failed to load texture: {}", file_path);
 
@@ -83,26 +85,28 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 
     INFO("[info] Original texture: {}x{}, {} channels", width, height, channels);
 
-    const int TARGET_SIZE = 2048;
-    const int TARGET_CHANNELS = 4;  // RGBA
-
     // Resize texture to 2048x2048
-    std::vector<float> resized_data(TARGET_SIZE * TARGET_SIZE * TARGET_CHANNELS, 1.0f);
+    std::vector<float> resized_data(target_size * target_size * target_channels, 1.0f);
 
-    // Use bilinear interpolation for resizing
-    for (int y = 0; y < TARGET_SIZE; ++y) {
-        for (int x = 0; x < TARGET_SIZE; ++x) {
-            float u = static_cast<float>(x) / (TARGET_SIZE - 1);
-            float v = static_cast<float>(y) / (TARGET_SIZE - 1);
+    if (target_size == width && target_size == height) {
+        resized_data.assign(data, data + target_size * target_size * target_channels);
+    }
+    else {
+		// Use bilinear interpolation for resizing
+		for (int y = 0; y < target_size; ++y) {
+			for (int x = 0; x < target_size; ++x) {
+				float u = (static_cast<float>(x) + 0.5f) / target_size;
+				float v = (static_cast<float>(y) + 0.5f) / target_size;
 
-            Vector4f color = BilinearSample(data, width, height, channels, u, v);
+				Vector4f color = BilinearSample(data, width, height, channels, u, v);
 
-            int idx = (y * TARGET_SIZE + x) * TARGET_CHANNELS;
-            resized_data[idx] = color.r;
-            resized_data[idx + 1] = color.g;
-            resized_data[idx + 2] = color.b;
-            resized_data[idx + 3] = color.a;
-        }
+				int idx = (y * target_size + x) * target_channels;
+				resized_data[idx] = color.r;
+				resized_data[idx + 1] = color.g;
+				resized_data[idx + 2] = color.b;
+                resized_data[idx + 3] = color.a;
+			}
+		}
     }
 
     stbi_image_free(data);
@@ -110,9 +114,9 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     // Create texture object
     Texture texture;
     texture.path = file_path;
-    texture.width = TARGET_SIZE;
-    texture.height = TARGET_SIZE;
-    texture.channels = TARGET_CHANNELS;
+    texture.width = target_size;
+    texture.height = target_size;
+    texture.channels = target_channels;
     texture.data = std::move(resized_data);
     texture.texture_array_layer = -1;  // Will be set when creating texture array
 
@@ -120,7 +124,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     textures_.push_back(std::move(texture));
     texture_name_to_id_[file_path] = texture_id;
 
-    INFO("[info] Texture loaded: {} ({}x{}, ID: {})", file_path, TARGET_SIZE, TARGET_SIZE, texture_id);
+    INFO("[info] Texture loaded: {} ({}x{}, ID: {})", file_path, target_size, target_size, texture_id);
 
     return texture_id;
 }
@@ -259,30 +263,33 @@ const TBO& SceneManager::GetHDREnvColAliasTableTBO() const noexcept {
 }
 
 Vector4f SceneManager::BilinearSample(const float* data, int width, int height, int channels, float u, float v) const {
-    float x = u * (width - 1);
-    float y = v * (height - 1);
+	float x = u * width - 0.5f;
+	float y = v * height - 0.5f;
 
-    int x0 = static_cast<int>(std::floor(x));
-    int y0 = static_cast<int>(std::floor(y));
-    int x1 = std::min(x0 + 1, width - 1);
-    int y1 = std::min(y0 + 1, height - 1);
+	x = std::max(0.0f, std::min(static_cast<float>(width - 1), x));
+	y = std::max(0.0f, std::min(static_cast<float>(height - 1), y));
 
-    float wx = x - x0;
-    float wy = y - y0;
+	int x0 = static_cast<int>(std::floor(x));
+	int y0 = static_cast<int>(std::floor(y));
+	int x1 = std::min(x0 + 1, width - 1);
+	int y1 = std::min(y0 + 1, height - 1);
 
-    Vector4f p00(0.0f), p10(0.0f), p01(0.0f), p11(0.0f);
+	float wx = x - x0;
+	float wy = y - y0;
 
-    for (int c = 0; c < std::min(channels, 4); ++c) {
-        p00[c] = data[(y0 * width + x0) * channels + c];
-        p10[c] = data[(y0 * width + x1) * channels + c];
-        p01[c] = data[(y1 * width + x0) * channels + c];
-        p11[c] = data[(y1 * width + x1) * channels + c];
-    }
+	Vector4f p00(0.0f), p10(0.0f), p01(0.0f), p11(0.0f);
 
-    Vector4f top = p00 * (1.0f - wx) + p10 * wx;
-    Vector4f bottom = p01 * (1.0f - wx) + p11 * wx;
+	for (int c = 0; c < std::min(channels, 4); ++c) {
+		p00[c] = data[(y0 * width + x0) * channels + c];
+		p10[c] = data[(y0 * width + x1) * channels + c];
+		p01[c] = data[(y1 * width + x0) * channels + c];
+		p11[c] = data[(y1 * width + x1) * channels + c];
+	}
 
-    return top * (1.0f - wy) + bottom * wy;
+	Vector4f top = p00 * (1.0f - wx) + p10 * wx;
+	Vector4f bottom = p01 * (1.0f - wx) + p11 * wx;
+
+	return top * (1.0f - wy) + bottom * wy;
 }
 
 void SceneManager::CreateTextureArray() {
@@ -298,16 +305,10 @@ void SceneManager::CreateTextureArray() {
     glGenTextures(1, &texture_array_);
     glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array_);
 
-    // Calculate mipmap levels
-    int mip_levels = 1;
-    int size = 2048;  // Target size
-    while (size > 1) {
-        size >>= 1;
-        mip_levels++;
-    }
+    int target_size = 2048;  // Target size
 
     // Allocate storage for texture array
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, mip_levels, GL_RGBA32F, 2048, 2048, static_cast<GLsizei>(textures_.size()));
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, target_size, target_size, static_cast<GLsizei>(textures_.size()));
 
     // Upload each texture
     for (unsigned int i = 0; i < textures_.size(); ++i) {
@@ -315,19 +316,14 @@ void SceneManager::CreateTextureArray() {
 
         glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
             0, 0, static_cast<GLint>(i),  // layer
-            2048, 2048, 1,
+            target_size, target_size, 1,
             GL_RGBA, GL_FLOAT,
             textures_[i].data.data());
     }
 
     // Set texture parameters
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    // Generate mipmaps
-    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
