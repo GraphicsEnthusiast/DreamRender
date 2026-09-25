@@ -71,12 +71,19 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     info.position = position;
     info.uv = uv;
 
+    int normal_texture_id = int(tri.material_type.y);
+    if (normal_texture_id >= 0 && normal_texture_id < TextureCount) {
+        vec3 tangent_normal = SampleTextureArray(normal_texture_id, uv).xyz;
+        tangent_normal = normalize(tangent_normal * 2.0f - 1.0f);
+        shading_normal = ToWorldFromUp(tangent_normal, shading_normal);
+    }
+
     // Set and adjust normal information
     info = SetNormal(info, ray_direction, geometry_normal, shading_normal);
 
     // Create material
     Material mat;
-    mat.type = tri.material_type;
+    mat.type = int(tri.material_type.x);
 
     //int emission_texture_id = int(tri.emission.w);
     int diffuse_texture_id = int(tri.diffuse.w);

@@ -374,6 +374,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		int roughness_u_tex_id = material->GetTextureID(TextureType::ROUGHNESS_U);
 		int roughness_v_tex_id = material->GetTextureID(TextureType::ROUGHNESS_V);
 		int specular_tex_id = material->GetTextureID(TextureType::SPECULAR);
+        int normal_tex_id = material->GetTextureID(TextureType::NORMAL);
 
         // Get media
         const Medium* in_medium = mesh.GetInMedium();
@@ -427,7 +428,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
             // Set material parameters
             encoded_tri.material_type = Vector4f(
                 static_cast<float>(material->type),
-                0.0f,
+                static_cast<float>(normal_tex_id),
                 0.0f,
                 0.0f
             );

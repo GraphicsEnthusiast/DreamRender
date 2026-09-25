@@ -31,6 +31,7 @@ enum class TextureType {
     ROUGHNESS_U = 2,        ///< Roughness texture (u)
     ROUGHNESS_V = 3,        ///< Anisotropic roughness texture (v)
     SPECULAR = 4,           ///< Specular reflection color texture
+    NORMAL = 5,             ///< Normal map texture
 };
 
 /**
@@ -285,7 +286,7 @@ struct alignas(16) TriangleEncoded {
     alignas(16) Vector4f n2;   ///< Vertex normals (w stores uv2.y)
     alignas(16) Vector4f n3;   ///< Vertex normals (w stores uv3.y)
 
-    alignas(16) Vector4f material_type; ///< Only x is useful, representing the material type, such as 0 for diffuse
+    alignas(16) Vector4f material_type; ///< x = material type, y = normal texture ID (-1 = no normal map, >=0 = texture layer index)
     alignas(16) Vector4f emission;      ///< Emission (xyz components) and texture flag (w component: -1 = constant color, other = texture)
     alignas(16) Vector4f diffuse;       ///< Diffuse color (xyz components) and texture flag (w component: -1 = constant color, other = texture)
 	alignas(16) Vector4f roughness;     ///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)

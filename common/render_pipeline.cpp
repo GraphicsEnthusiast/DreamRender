@@ -38,8 +38,10 @@ void RenderPipeline::Init() {
 	camera.padding[2] = 0.0f;
 	scene_manager.InitCameraData(camera);
 
-	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\rustediron2_basecolor.png";
+	const std::string cube_diffuse_path = "C:\\Users\\17199\\Desktop\\DreamRender\\albedo.png";
 	int cube_diffuse_id = scene_manager.LoadTexture(cube_diffuse_path, TextureType::DIFFUSE);
+	const std::string cube_normal_path = "C:\\Users\\17199\\Desktop\\DreamRender\\normal.png";
+	int cube_normal_id = scene_manager.LoadTexture(cube_normal_path, TextureType::NORMAL);
 
 	Material teapot_material;
 	teapot_material.type = MaterialType::CONDUCTOR;
@@ -52,6 +54,7 @@ void RenderPipeline::Init() {
 
 	Material cube_material;
 	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
+	cube_material.SetTexture(TextureType::NORMAL, cube_normal_id);
 	cube_material.type = MaterialType::DIFFUSE;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
 	cube_material.roughness_u = 0.1f;
@@ -65,16 +68,16 @@ void RenderPipeline::Init() {
 	light_material.roughness_v = 0.2f;
 	light_material.emission = Vector3f(3.0f, 3.0f, 2.0f);
 
-	std::vector<TriangleMesh> meshes;
-	meshes.emplace_back(
-		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
-		Transform(),
-		std::make_unique<Material>(teapot_material)//,
-		//std::make_unique<Medium>(Medium())
-	);
+ 	std::vector<TriangleMesh> meshes;
+// 	meshes.emplace_back(
+// 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
+// 		Transform(),
+// 		std::make_unique<Material>(teapot_material)//,
+// 		//std::make_unique<Medium>(Medium())
+// 	);
 	meshes.emplace_back(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
-		Transform::Scale(5.0f, 1.0f, 5.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
+		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
 		std::make_unique<Material>(cube_material)//,
 		//std::make_unique<Medium>(Medium())
 	);

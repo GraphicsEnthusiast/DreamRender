@@ -28,7 +28,7 @@ struct Triangle {
     vec3 n1, n2, n3; ///< Vertex normals
     vec2 t1, t2, t3; ///< Vertex texcoords
 
-    int material_type;
+    vec4 material_type;
     vec4 emission;
     vec4 diffuse;    ///< Diffuse color (rgb) and texture flag (a: 0=const, 1=texture)
     vec4 roughness;  ///< (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
@@ -103,7 +103,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     vec4 diffuse_data = texelFetch(trangles_buffer, base + 8);
     vec4 roughness_data = texelFetch(trangles_buffer, base + 9);
 
-    tri.material_type = int(mat_type_data.x);
+    tri.material_type = mat_type_data;
     tri.emission = emission_data;
     tri.diffuse = diffuse_data;
     tri.roughness = roughness_data;

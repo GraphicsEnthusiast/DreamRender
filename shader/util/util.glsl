@@ -44,10 +44,6 @@ struct Material {
     SampledSpectrum diffuse;
     int diffuse_texture;
 
-    // Isotropic roughness
-    float roughness;
-    int roughness_texture;
-
     // Anisotropic roughness (x = U, y = V)
     float roughness_u;
     float roughness_v;
