@@ -12,6 +12,9 @@ const float PI = 3.1415926535897932385f;
 const float MaxFloat = 3.402823466e+38f;
 const float Epsilon = 1e-4f;
 
+const int TransportMode_Radiance = 0;   // Radiance transport mode: light travels from the eye to light sources (path tracing)
+const int TransportMode_Importance = 1; // Importance transport mode: light travels from light sources to the eye (light tracing)
+
 /**
  * @struct SampledSpectrum
  * @brief Represents spectral distribution with discrete wavelength samples
@@ -82,6 +85,7 @@ struct IntersectionInfo {
     bool has_medium;
     Material material;
     Medium medium;
+    int transport_mode;
 };
 
 /**
@@ -177,6 +181,87 @@ vec3 ToWorldFromUp(vec3 dir, vec3 up) {
     vec3 world_vec = dir.x * b + dir.y * c + dir.z * up;
 
     return normalize(world_vec); // Ensure output remains unit length
+}
+
+/**
+ * @brief Ray structure for ray tracing parameters
+ */
+struct Ray {
+    vec3 origin;    ///< Ray origin point
+    vec3 direction; ///< Ray direction vector (normalized)
+    float tmin;     ///< Minimum ray distance (avoid self-intersection)
+    float tmax;     ///< Maximum ray distance
+    int transport_mode; ///< Transport mode for ray tracing (radiance or importance)
+};
+
+const float OriginScale = 1.0f / 32.0f;
+const float FloatScale = 1.0f / 65536.0f;
+const float IntScale = 256.0f;
+
+/**
+ * @brief Computes the offset ray origin to avoid self-intersection
+ * @param p Original intersection point
+ * @param n Surface normal (points outward for rays exiting the surface, else is flipped)
+ * @return Offset point
+ */
+vec3 OffsetRayOrigin(vec3 p, vec3 n) {
+    // Compute integer offset scaled by int_scale
+    ivec3 of_i = ivec3(int(IntScale * n.x), 
+                       int(IntScale * n.y), 
+                       int(IntScale * n.z));
+    
+    // Convert float to int, apply integer offset, then convert back to float
+    vec3 p_i = vec3(
+        intBitsToFloat(floatBitsToInt(p.x) + ((p.x < 0.0) ? -of_i.x : of_i.x)),
+        intBitsToFloat(floatBitsToInt(p.y) + ((p.y < 0.0) ? -of_i.y : of_i.y)),
+        intBitsToFloat(floatBitsToInt(p.z) + ((p.z < 0.0) ? -of_i.z : of_i.z))
+    );
+    
+    // Apply appropriate offset based on coordinate magnitude
+    return vec3(
+        abs(p.x) < OriginScale ? p.x + FloatScale * n.x : p_i.x,
+        abs(p.y) < OriginScale ? p.y + FloatScale * n.y : p_i.y,
+        abs(p.z) < OriginScale ? p.z + FloatScale * n.z : p_i.z
+    );
+}
+
+/**
+ * @brief Generates a new ray from an intersection point with origin offset to avoid self-intersection
+ * @param position Intersection point in world space
+ * @param direction Ray direction vector (should be normalized)
+ * @param normal Surface normal at the intersection point (should be normalized)
+ * @param tmin Minimum ray distance to prevent self-intersection
+ * @param tmax Maximum ray distance for intersection testing
+ * @return New ray with properly offset origin to prevent numerical precision issues
+ */
+Ray SpawnRay(vec3 position, vec3 direction, vec3 normal, float tmin, float tmax) {
+    vec3 offset_normal = (dot(normal, direction) >= 0.0f) ? normal : -normal;
+    vec3 offset_origin = OffsetRayOrigin(position, offset_normal);
+    
+    Ray ray;
+    ray.origin = offset_origin;
+    ray.direction = direction;
+    ray.tmin = tmin;
+    ray.tmax = tmax;
+    
+    return ray;
+}
+
+/**
+ * @brief Generates a new ray from an intersection point with origin offset to avoid self-intersection
+ * @param position Intersection point in world space
+ * @param direction Ray direction vector (should be normalized)
+ * @param distance Maximum distance to the target point (typically to light source)
+ * @return New ray with properly offset origin to prevent numerical precision issues
+ */
+Ray SpawnShadowRay(vec3 position, vec3 direction, float distance) {
+    Ray ray;
+    ray.origin = position;
+    ray.direction = direction;
+    ray.tmin = Epsilon;
+    ray.tmax = distance - Epsilon;
+    
+    return ray;
 }
 
 #endif // UTIL_GLSL

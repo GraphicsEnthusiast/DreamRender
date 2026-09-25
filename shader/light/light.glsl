@@ -453,7 +453,6 @@ LightSampleInfo MeshLightSample(inout SobolSampler sobol_sampler, IntersectionIn
  */
 LightRayInfo GenerateMeshLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     LightRayInfo result;
-    result.ray.direction = vec3(0.0f);
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.shading_normal = vec3(0.0f);
     result.pdf = 0.0f;
@@ -660,7 +659,6 @@ LightSampleInfo EnvironmentLightSample(inout SobolSampler sobol_sampler, Sampled
  */
 LightRayInfo GenerateEnvironmentLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     LightRayInfo result;
-    result.ray.direction = vec3(0.0f);
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.shading_normal = vec3(0.0f);
     result.pdf = 0.0f;
@@ -823,7 +821,6 @@ LightSampleInfo LightSample(inout SobolSampler sobol_sampler, IntersectionInfo i
  */
 LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     LightRayInfo result;
-    result.ray.direction = vec3(0.0f);
     result.emission = SampledSpectrumNewFloat(0.0f);
     result.shading_normal = vec3(0.0f);
     result.pdf = 0.0f;
@@ -856,6 +853,7 @@ LightRayInfo GenerateLightRay(inout SobolSampler sobol_sampler, SampledWavelengt
             result.pdf *= env_weight;
         }
     }
+    result.ray.transport_mode = TransportMode_Importance;
 
     return result;
 }

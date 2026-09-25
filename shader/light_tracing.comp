@@ -161,6 +161,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     for (int bounce = 0; bounce < max_bounce; ++bounce) {
         Hit hit = BVHTraverse(ray, has_mesh_light);
         IntersectionInfo info = GetIntersectionInfo(hit, world_out, lambda);
+        info.transport_mode = ray.transport_mode;
         
         // Handle medium scattering
         bool is_medium_scattered = false;
