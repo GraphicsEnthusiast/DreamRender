@@ -98,7 +98,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 				float u = (static_cast<float>(x) + 0.5f) / target_size;
 				float v = (static_cast<float>(y) + 0.5f) / target_size;
 
-				if (type == TextureType::NORMAL) {
+				if (TextureType::NORMAL == type) {
 					// Nearest-neighbor sampling (source image coordinates)
 					int px = std::max(0, std::min(static_cast<int>(u * width), width - 1));
 					int py = std::max(0, std::min(static_cast<int>(v * height), height - 1));

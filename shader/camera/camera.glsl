@@ -28,7 +28,6 @@ struct Camera {
  * @brief Result structure for camera evaluation
  */
 struct CameraEvalInfo {
-    vec3 world_out;       ///< Direction from shading point to camera (normalized)
     float distance;       ///< Distance to the lens point
     float pdf;            ///< PDF with respect to solid angle at the shading point
     float we;             ///< Camera importance
@@ -141,7 +140,6 @@ float CameraPDF(Camera camera, vec3 dir) {
  */
 CameraEvalInfo CameraEvaluate(Camera camera, vec3 position, vec3 world_out) {
     CameraEvalInfo result;
-    result.world_out = world_out;
     result.distance = 0.0f;
     result.pdf = 0.0f;
     result.we = 0.0f;
@@ -185,7 +183,6 @@ CameraEvalInfo CameraEvaluate(Camera camera, vec3 position, vec3 world_out) {
     }
 
     // Fill results
-    result.world_out = d;
     result.distance = t;
 
     result.raster_ndc = plane * 0.5f + vec2(0.5f);
