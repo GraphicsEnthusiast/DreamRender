@@ -378,6 +378,194 @@ MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sa
 }
 
 /**
+ * @brief Evaluates the BSDF and PDF for a dielectric material (GGX microfacet)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo DielectricEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    SampledSpectrum specular = GetFinalSpecular(info, lambda);
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+    float etai_over_etat = info.front_face ? (1.0f / GetInIOR(info)) : GetInIOR(info);
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
+    
+    // Compute half vector based on reflection or refraction
+    vec3 h;
+    bool is_reflect = dot(n, l) * dot(n, v) > 0.0f;
+    if (is_reflect) {
+        h = normalize(v + l);
+    }
+    else {
+        h = -normalize(etai_over_etat * v + l);
+        if (dot(n, h) < 0.0f) {
+            h = -h;
+        }
+    }
+
+    // PDF using the visible normal distribution
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float pdf = Dv * abs(1.0f / (4.0f * dot(v, h)));
+
+    float n_dot_v = abs(dot(n, v));
+    float n_dot_l = abs(dot(n, l));
+
+    float F = FresnelDielectric(v, h, etai_over_etat);
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+
+    SampledSpectrum bsdf;
+    if (is_reflect) {
+        float dwh_dwi = abs(1.0f / (4.0f * dot(v, h)));
+        m_info.pdf = F * Dv * dwh_dwi;
+
+        bsdf = MulFloat(specular, F * D * G / (4.0f * n_dot_v * n_dot_l));
+    }
+    else {
+        float h_dot_v = dot(h, v);
+        float h_dot_l = dot(h, l);
+        float sqrt_denom = etai_over_etat * h_dot_v + h_dot_l;
+        float factor = abs(h_dot_l * h_dot_v / (n_dot_l * n_dot_v));
+
+        float dwh_dwi = abs(h_dot_l) / (sqrt_denom * sqrt_denom);
+        m_info.pdf = (1.0f - F) * Dv * dwh_dwi;
+
+        // Mitsuba-style: solid angle compression factor for radiance transport
+        // Only apply in Radiance mode (path tracing: light travels from eye to light)
+        // In Importance mode (light tracing: light travels from light to eye), factor = 1
+        float eta_factor = 1.0f;
+        if (TransportMode_Radiance == info.transport_mode) {
+            // When front_face (entering from outside): factor = etai_over_etat
+            // When !front_face (exiting to outside): factor = 1 / etai_over_etat
+            float solid_angle_factor = info.front_face ? etai_over_etat : (1.0f / etai_over_etat);
+            eta_factor = solid_angle_factor * solid_angle_factor;
+        }
+        
+        bsdf = MulFloat(specular, (1.0f - F) * D * G * factor * eta_factor / (sqrt_denom * sqrt_denom));
+    }
+
+    m_info.bsdf = bsdf;
+    
+    return m_info;
+}
+
+/**
+ * @brief Samples a direction and evaluates the BSDF for a dielectric material (GGX microfacet)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    SampledSpectrum specular = GetFinalSpecular(info, lambda);
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+    float etai_over_etat = info.front_face ? (1.0f / GetInIOR(info)) : GetInIOR(info);
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+
+    // Sample visible normal distribution (returns local-space half vector)
+    vec3 local_h = GGXSampleVisible(n, v, alpha_u, alpha_v, sample_xy);
+    vec3 h = ToWorldFromUp(local_h, n);
+
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float F = FresnelDielectric(v, h, etai_over_etat);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+
+    SampledSpectrum bsdf;
+    if (sample_xy.x < F) {
+        // Reflection
+        vec3 l = reflect(-v, h);
+
+        float n_dot_v = abs(dot(n, v));
+        float n_dot_l = abs(dot(n, l));
+
+        if (n_dot_l <= 0.0f || n_dot_v <= 0.0f) {
+            m_info.pdf = 0.0f;
+
+            return m_info;
+        }
+
+        n_dot_v = abs(n_dot_v);
+        n_dot_l = abs(n_dot_l);
+
+        float dwh_dwi = abs(1.0f / (4.0f * dot(v, h)));
+        m_info.pdf = F * Dv * dwh_dwi;
+
+        float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+
+        bsdf = MulFloat(specular, F * D * G / (4.0f * n_dot_v * n_dot_l));
+        
+        m_info.world_out = l;
+    }
+    else {
+        // Refraction
+        vec3 l = refract(-v, h, etai_over_etat);
+
+        float n_dot_v = abs(dot(n, v));
+        float n_dot_l = abs(dot(n, l));
+
+        if (n_dot_l * n_dot_v >= 0.0f) {
+            m_info.pdf = 0.0f;
+
+            return m_info;
+        }
+
+        n_dot_v = abs(n_dot_v);
+        n_dot_l = abs(n_dot_l);
+
+        float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+
+        float h_dot_v = dot(h, v);
+        float h_dot_l = dot(h, l);
+        float sqrt_denom = etai_over_etat * h_dot_v + h_dot_l;
+        float factor = abs(h_dot_l * h_dot_v / (n_dot_l * n_dot_v));
+
+        float dwh_dwi = abs(h_dot_l) / (sqrt_denom * sqrt_denom);
+        m_info.pdf = (1.0f - F) * Dv * dwh_dwi;
+
+        // Mitsuba-style: solid angle compression factor for radiance transport
+        // Only apply in Radiance mode (path tracing: light travels from eye to light)
+        // In Importance mode (light tracing: light travels from light to eye), factor = 1
+        float eta_factor = 1.0f;
+        if (info.transport_mode == TransportMode_Radiance) {
+            // When front_face (entering from outside): factor = etai_over_etat
+            // When !front_face (exiting to outside): factor = 1 / etai_over_etat
+            float solid_angle_factor = info.front_face ? etai_over_etat : (1.0f / etai_over_etat);
+            eta_factor = solid_angle_factor * solid_angle_factor;
+        }
+        
+        bsdf = MulFloat(specular, (1.0f - F) * D * G * factor * eta_factor / (sqrt_denom * sqrt_denom));
+        
+        m_info.world_out = l;
+    }
+
+    m_info.bsdf = bsdf;
+
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -397,9 +585,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     else if (MaterialType_Conductor == info.material.type) {
         return ConductorEvaluate(info, world_in, world_out, lambda);
     }
-    // else if (info.material.type == MaterialType_Dielectric) {
-    //     return DielectricEvaluate(info, world_in, world_out, lambda);
-    // }
+    else if (MaterialType_Dielectric == info.material.type) {
+        return DielectricEvaluate(info, world_in, world_out, lambda);
+    }
     
     // Unknown material type, return zero contribution
     return result;
@@ -426,9 +614,9 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, vec2 sam
     else if (MaterialType_Conductor == info.material.type) {
         return ConductorSample(info, world_in, sample_xy, lambda);
     }
-    // else if (info.material.type == MaterialType_Dielectric) {
-    //     return DielectricSample(info, world_in, sample_xy, lambda);
-    // }
+    else if (MaterialType_Dielectric == info.material.type) {
+        return DielectricSample(info, world_in, sample_xy, lambda);
+    }
     
     // Unknown material type, return zero contribution
     return result;
