@@ -234,7 +234,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
             // Connect surface point to camera
             vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
             CameraSampleInfo camera_sample_info = CameraSample(camera, info.position, camera_sample);
-            
+
             if (camera_sample_info.pdf > 0.0f) {
                 FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
                 
@@ -243,15 +243,33 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                         info.position, camera_sample_info, beta, lambda, sobol_sampler
                     );
                     
-                    // Evaluate BSDF: world_in is from previous bounce, camera direction is camera_sample_info.world_out
                     MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, camera_sample_info.world_out, lambda);
                     
                     if (mat_eval_info.pdf > 0.0f) {
+                        // Shading normal correction (Veach p.155, p.158)
+                        // Check geometric vs shading normal consistency to prevent light leaks
+                        float wi_dot_geo_n = dot(world_in, info.geometry_normal);
+                        float wo_dot_geo_n = dot(camera_sample_info.world_out, info.geometry_normal);
+                        float wi_dot_shading_n = dot(world_in, info.shading_normal);
+                        float wo_dot_shading_n = dot(camera_sample_info.world_out, info.shading_normal);
+                        
+                        // Reject if shading normal and geometric normal disagree on orientation
+                        if (wi_dot_geo_n * wi_dot_shading_n <= 0.0f ||
+                            wo_dot_geo_n * wo_dot_shading_n <= 0.0f) {
+                            break;
+                        }
+                        
+                        // Adjoint BSDF correction for shading normals
+                        float correction = abs(
+                            (wi_dot_shading_n * wo_dot_geo_n) /
+                            (wo_dot_shading_n * wi_dot_geo_n)
+                        );
+                        
                         float cosine = abs(dot(world_in, info.shading_normal));
                         
-                        // Contribution = beta * visibility * bsdf * bsdf_cosine * filter_weight * we / (filter_pdf * camera_pdf)
+                        // Contribution = beta * visibility * bsdf * bsdf_cosine * correction * filter_weight * we / (filter_pdf * camera_pdf)
                         SampledSpectrum L_camera = MulFloat(
-                            Mul(Mul(beta, visibility), MulFloat(mat_eval_info.bsdf, cosine)),
+                            Mul(Mul(beta, visibility), MulFloat(MulFloat(mat_eval_info.bsdf, cosine), correction)),
                             (camera_sample_info.we / camera_sample_info.pdf) *
                             (filter_evaluate_info.weight / filter_evaluate_info.pdf)
                         );
