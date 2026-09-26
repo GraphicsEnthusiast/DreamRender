@@ -495,8 +495,8 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 s
         // Reflection
         vec3 l = reflect(-v, h);
 
-        float n_dot_v = abs(dot(n, v));
-        float n_dot_l = abs(dot(n, l));
+        float n_dot_v = dot(n, v);
+        float n_dot_l = dot(n, l);
 
         if (n_dot_l <= 0.0f || n_dot_v <= 0.0f) {
             m_info.pdf = 0.0f;
@@ -520,8 +520,8 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 s
         // Refraction
         vec3 l = refract(-v, h, etai_over_etat);
 
-        float n_dot_v = abs(dot(n, v));
-        float n_dot_l = abs(dot(n, l));
+        float n_dot_v = dot(n, v);
+        float n_dot_l = dot(n, l);
 
         if (n_dot_l * n_dot_v >= 0.0f) {
             m_info.pdf = 0.0f;
