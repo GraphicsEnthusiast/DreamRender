@@ -210,6 +210,9 @@ vec3 RGBToVec3(RGB rgb) {
     if (any(isnan(color)) || any(isinf(color))) {
         return vec3(0.0f);
     }
+    if (any(lessThan(color, vec3(0.0f)))) {
+        return vec3(0.0f);
+    }
 
     return color;
 }
