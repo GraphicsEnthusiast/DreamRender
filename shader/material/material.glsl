@@ -446,10 +446,8 @@ MaterialEvalInfo DielectricEvaluate(IntersectionInfo info, vec3 world_in, vec3 w
         // In Importance mode (light tracing: light travels from light to eye), factor = 1
         float eta_factor = 1.0f;
         if (TransportMode_Radiance == info.transport_mode) {
-            // When front_face (entering from outside): factor = etai_over_etat
-            // When !front_face (exiting to outside): factor = 1 / etai_over_etat
-            float solid_angle_factor = info.front_face ? etai_over_etat : (1.0f / etai_over_etat);
-            eta_factor = solid_angle_factor * solid_angle_factor;
+            float inv_eta = 1.0f / etai_over_etat;
+            eta_factor = inv_eta * inv_eta;
         }
         
         bsdf = MulFloat(specular, (1.0f - F) * D * G * factor * eta_factor / (sqrt_denom * sqrt_denom));
@@ -548,11 +546,9 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 s
         // Only apply in Radiance mode (path tracing: light travels from eye to light)
         // In Importance mode (light tracing: light travels from light to eye), factor = 1
         float eta_factor = 1.0f;
-        if (info.transport_mode == TransportMode_Radiance) {
-            // When front_face (entering from outside): factor = etai_over_etat
-            // When !front_face (exiting to outside): factor = 1 / etai_over_etat
-            float solid_angle_factor = info.front_face ? etai_over_etat : (1.0f / etai_over_etat);
-            eta_factor = solid_angle_factor * solid_angle_factor;
+        if (TransportMode_Radiance == info.transport_mode) {
+            float inv_eta = 1.0f / etai_over_etat;
+            eta_factor = inv_eta * inv_eta;
         }
         
         bsdf = MulFloat(specular, (1.0f - F) * D * G * factor * eta_factor / (sqrt_denom * sqrt_denom));
