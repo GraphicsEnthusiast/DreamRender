@@ -298,8 +298,27 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 MaterialSampleInfo mat_sample_info = MaterialSample(info, world_in, bsdf_sample, lambda);
             
                 if (mat_sample_info.pdf > 0.0f) {
+                    // Shading normal correction (Veach p.155, p.158)
+                    // Check geometric vs shading normal consistency to prevent light leaks
+                    float wi_dot_geo_n = dot(world_in, info.geometry_normal);
+                    float wo_dot_geo_n = dot(mat_sample_info.world_out, info.geometry_normal);
+                    float wi_dot_shading_n = dot(world_in, info.shading_normal);
+                    float wo_dot_shading_n = dot(mat_sample_info.world_out, info.shading_normal);
+                        
+                    // Reject if shading normal and geometric normal disagree on orientation
+                    if (wi_dot_geo_n * wi_dot_shading_n <= 0.0f ||
+                        wo_dot_geo_n * wo_dot_shading_n <= 0.0f) {
+                        break;
+                    }
+                        
+                    // Adjoint BSDF correction for shading normals
+                    float correction = abs(
+                        (wi_dot_shading_n * wo_dot_geo_n) /
+                        (wo_dot_shading_n * wi_dot_geo_n)
+                    );
+
                     float cosine = abs(dot(world_in, info.shading_normal));
-                    beta = Mul(beta, DivFloat(MulFloat(mat_sample_info.bsdf, cosine), mat_sample_info.pdf));
+                    beta = Mul(beta, DivFloat(MulFloat(mat_sample_info.bsdf, cosine * correction), mat_sample_info.pdf));
                     world_out = mat_sample_info.world_out;
                 }
                 // ========================= BSDF Sampling =========================
