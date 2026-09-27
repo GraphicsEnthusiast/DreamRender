@@ -130,7 +130,7 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
         // Scattering case: interaction inside medium
         // PDF = σ_t * Tr(distance) - joint PDF for scattering at distance t
         // This is equivalent to: PDF = (1 - Tr(max_distance)) * [σ_t * Tr(distance) / (1 - Tr(max_distance))]
-        // where (1 - Tr(max_distance)) cancels out between numerator and denominator
+        // where (1 - Tr(max_distance)) cancels between numerator and denominator
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i] * info.medium.sigma_t.values[i];
         }
@@ -163,10 +163,10 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
  * @brief Samples a distance in homogeneous medium
  * @param info Intersection info containing medium properties
  * @param beta Spectral beta (path contribution)
- * @param sample_xy Random value in [0, 1)
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec2 sample_xy) {
+MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, inout SobolSampler sobol_sampler) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
@@ -177,12 +177,13 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
     
     // Sample wavelength channel
     SampledSpectrum albedo = Div(info.medium.sigma_s, info.medium.sigma_t);
-    WavelengthSampleInfo wavelength_result = MediumWavelengthSample(beta, albedo, sample_xy.x);
+    float wavelength_sample = SobolSamplerGet1(sobol_sampler);
+    WavelengthSampleInfo wavelength_result = MediumWavelengthSample(beta, albedo, wavelength_sample);
     int channel = wavelength_result.channel;
     SampledSpectrum wavelength_pmf = wavelength_result.pmf;
     
     // Sample collision-free distance using exponential distribution
-    float u = sample_xy.y;
+    float u = SobolSamplerGet1(sobol_sampler);
     float sample_val = 1.0f - u;
     if (sample_val <= 0.0f) {
         sample_val = 0.0f;
@@ -315,10 +316,10 @@ MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum bet
  * @brief Unified medium distance sampling function that dispatches to the appropriate medium model
  * @param info Intersection data containing medium properties
  * @param beta Spectral beta (path contribution)
- * @param sample_xy Random value in [0, 1)
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec2 sample_xy) {
+MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum beta, inout SobolSampler sobol_sampler) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
@@ -327,11 +328,11 @@ MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum bet
     
     // Dispatch based on medium type
     if (MediumType_Homogeneous == info.medium.type) {
-        return HomogeneousDistanceSample(info, beta, sample_xy);
+        return HomogeneousDistanceSample(info, beta, sobol_sampler);
     }
     
     // Unknown medium type, return zero contribution
     return result;
 }
 
-#endif // MEDIUM_GLSL
+#endif

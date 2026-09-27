@@ -3,6 +3,7 @@
 
 #include "util/util.glsl"
 #include "sample/sampling.glsl"
+#include "sample/sampler.glsl"
 
 // Phase type enumeration, consistent with C++ side
 const int PhaseType_HenyeyGreenstein = 0; ///< Henyey-Greenstein phase function
@@ -64,10 +65,10 @@ PhaseEvalInfo HenyeyGreensteinEvaluate(IntersectionInfo info, vec3 world_in, vec
  * @brief Samples a scattering direction according to the Henyey-Greenstein phase function
  * @param info Intersection information containing medium properties
  * @param world_in Incoming light direction in world space
- * @param sample_xy Random sample coordinates in [0,1) range
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @return PhaseSampleInfo containing sampled direction, phase value and PDF
  */
-PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy) {
+PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler) {
     PhaseSampleInfo result;
     result.world_out = vec3(0.0f);
     result.phase = SampledSpectrumNewFloat(0.0f);
@@ -78,6 +79,7 @@ PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_in, vec
     // Handle isotropic scattering (g = 0)
     if (0.0f == g) {
         // Set phase value for all wavelengths
+        vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
         result.world_out = UniformSphereSample(sample_xy);
         result.phase = SampledSpectrumNewFloat(1.0f / (4.0f * PI));
         result.pdf = UniformSpherePDF();
@@ -85,6 +87,7 @@ PhaseSampleInfo HenyeyGreensteinSample(IntersectionInfo info, vec3 world_in, vec
         return result;
     }
 
+    vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     float u1 = sample_xy.x;
     float u2 = sample_xy.y;
     
@@ -136,13 +139,6 @@ PhaseEvalInfo PhaseEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out
     if (PhaseType_HenyeyGreenstein == info.medium.phase_type) {
         return HenyeyGreensteinEvaluate(info, world_in, world_out);
     }
-    // Add more phase function types here in the future
-    // else if (PhaseType_Rayleigh == info.medium.phase_type) {
-    //     return RayleighEvaluate(info, world_in, world_out);
-    // }
-    // else if (PhaseType_Mie == info.medium.phase_type) {
-    //     return MieEvaluate(info, world_in, world_out);
-    // }
     
     // Unknown phase function type, return zero contribution
     return result;
@@ -152,10 +148,10 @@ PhaseEvalInfo PhaseEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out
  * @brief Unified phase function sampling function that dispatches to the appropriate phase function model
  * @param info Intersection data containing medium properties
  * @param world_in View direction in world space (pointing toward light source)
- * @param sample_xy 2D random sample in [0,1) range
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @return PhaseSampleInfo Structure containing sampled direction, phase value, and PDF
  */
-PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy) {
+PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler) {
     PhaseSampleInfo result;
     result.world_out = vec3(0.0f);
     result.phase = SampledSpectrumNewFloat(0.0f);
@@ -163,15 +159,8 @@ PhaseSampleInfo PhaseSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy
     
     // Dispatch based on phase function type
     if (PhaseType_HenyeyGreenstein == info.medium.phase_type) {
-        return HenyeyGreensteinSample(info, world_in, sample_xy);
+        return HenyeyGreensteinSample(info, world_in, sobol_sampler);
     }
-    // Add more phase function types here in the future
-    // else if (PhaseType_Rayleigh == info.medium.phase_type) {
-    //     return RayleighSample(info, world_in, sample_xy);
-    // }
-    // else if (PhaseType_Mie == info.medium.phase_type) {
-    //     return MieSample(info, world_in, sample_xy);
-    // }
     
     // Unknown phase function type, return zero contribution
     return result;

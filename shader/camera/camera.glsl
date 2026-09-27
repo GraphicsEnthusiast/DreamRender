@@ -2,6 +2,7 @@
 #define CAMERA_GLSL
 
 #include "util/util.glsl"
+#include "sample/sampler.glsl"
 
 /**
  * @brief Camera structure for ray generation and sampling
@@ -203,17 +204,19 @@ CameraEvalInfo CameraEvaluate(Camera camera, vec3 position, vec3 world_out) {
 }
 
 /**
- * @brief Samples the camera from a given position
+ * @brief Samples the camera from a given position using the provided sampler
  * @param camera Camera structure
  * @param position Shading point position
- * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
- * @return CameraSampleInfo structure with sampling results
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
+ * @return CameraSampleResult structure with sampling results
  */
-CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
+CameraSampleInfo CameraSample(Camera camera, vec3 position, inout SobolSampler sobol_sampler) {
     CameraSampleInfo result;
-    result.pdf = 0.0f; // Default to invalid
+    result.pdf = 0.0f;
     result.we = 0.0f;
 
+    // Sample lens position using 2D sample
+    vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     float r = sqrt(sample_xy.x);
     float theta = 2.0f * PI * sample_xy.y;
     vec2 disk_sample = vec2(r * cos(theta), r * sin(theta)) * camera.aperture_radius;
@@ -262,10 +265,10 @@ CameraSampleInfo CameraSample(Camera camera, vec3 position, vec2 sample_xy) {
  * @param camera Camera structure
  * @param pixel_x Pixel x-coordinate
  * @param pixel_y Pixel y-coordinate
- * @param sample_xy Random sample for depth of field
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @return CameraRayInfo containing ray, PDF, and we
  */
-CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec2 sample_xy) {
+CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, inout SobolSampler sobol_sampler) {
     CameraRayInfo result;
     
     float screen_x = pixel_x * camera.pixel_to_screen.x - camera.width;
@@ -274,6 +277,8 @@ CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec
     vec3 dir;
     vec3 origin = camera.position;
 
+    // Sample aperture position using 2D sample
+    vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     vec2 aperture_xy = sample_xy * camera.aperture_radius;
     float focal_x = camera.ratio * screen_x;
     float focal_y = camera.ratio * screen_y;
@@ -290,7 +295,7 @@ CameraRayInfo GenerateCameraRay(Camera camera, float pixel_x, float pixel_y, vec
     result.ray.tmax = MaxFloat;
     result.ray.transport_mode = TransportMode_Radiance;
     
-    // Compute PDF and we for the generated ray
+    // Compute PDF and weight for the generated ray
     result.we = CameraWe(camera, result.ray.direction);
     result.pdf = CameraPDF(camera, result.ray.direction);
     

@@ -224,11 +224,11 @@ MaterialEvalInfo DiffuseEvaluate(IntersectionInfo info, vec3 world_in, vec3 worl
  * @brief Samples a direction and evaluates the BSDF for a diffuse material(Oren-Nayar diffuse model calculation)
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
- * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
+MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     MaterialSampleInfo m_info;
     m_info.world_out = vec3(0.0f);
     m_info.bsdf = SampledSpectrumNewFloat(0.0f);
@@ -238,6 +238,7 @@ MaterialSampleInfo DiffuseSample(IntersectionInfo info, vec3 world_in, vec2 samp
     float roughness = GetFinalRoughnessU(info);
 
     vec3 n = normalize(info.shading_normal);
+    vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     vec3 local_l = CosineHemisphereSample(sample_xy);
     vec3 world_out = ToWorldFromUp(local_l, n);
     vec3 v = normalize(world_in);
@@ -326,11 +327,11 @@ MaterialEvalInfo ConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 wo
  * @brief Samples a direction and evaluates the BSDF for a conductor material (GGX microfacet)
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
- * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
+MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     MaterialSampleInfo m_info;
     m_info.world_out = vec3(0.0f);
     m_info.bsdf = SampledSpectrumNewFloat(0.0f);
@@ -349,6 +350,7 @@ MaterialSampleInfo ConductorSample(IntersectionInfo info, vec3 world_in, vec2 sa
     vec3 v = normalize(world_in);
 
     // Sample visible normal distribution (returns local-space half vector)
+    vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     vec3 local_h = GGXSampleVisible(n, v, alpha_u, alpha_v, sample_xy);
     vec3 h = ToWorldFromUp(local_h, n);
 
@@ -462,11 +464,11 @@ MaterialEvalInfo DielectricEvaluate(IntersectionInfo info, vec3 world_in, vec3 w
  * @brief Samples a direction and evaluates the BSDF for a dielectric material (GGX microfacet)
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
- * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
+MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     MaterialSampleInfo m_info;
     m_info.world_out = vec3(0.0f);
     m_info.bsdf = SampledSpectrumNewFloat(0.0f);
@@ -483,6 +485,7 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 s
     vec3 v = normalize(world_in);
 
     // Sample visible normal distribution (returns local-space half vector)
+    vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     vec3 local_h = GGXSampleVisible(n, v, alpha_u, alpha_v, sample_xy);
     vec3 h = ToWorldFromUp(local_h, n);
 
@@ -491,7 +494,7 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 s
     float D = GGXD(h, n, alpha_u, alpha_v);
 
     SampledSpectrum bsdf;
-    if (sample_xy.x < F) {
+    if (SobolSamplerGet1(sobol_sampler) < F) {
         // Reflection
         vec3 l = reflect(-v, h);
 
@@ -589,11 +592,11 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
  * @brief Unified material sampling function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
- * @param sample_xy 2D random sample in [0,1] range (typically from low-discrepancy sequence)
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @param lambda Sampled wavelengths for spectral rendering
  * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
  */
-MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, vec2 sample_xy, SampledWavelengths lambda) {
+MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
     MaterialSampleInfo result;
     result.world_out = vec3(0.0f);
     result.bsdf = SampledSpectrumNewFloat(0.0f);
@@ -601,13 +604,13 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, vec2 sam
     
     // Dispatch based on material type
     if (MaterialType_Diffuse == info.material.type) {
-        return DiffuseSample(info, world_in, sample_xy, lambda);
+        return DiffuseSample(info, world_in, sobol_sampler, lambda);
     }
     else if (MaterialType_Conductor == info.material.type) {
-        return ConductorSample(info, world_in, sample_xy, lambda);
+        return ConductorSample(info, world_in, sobol_sampler, lambda);
     }
     else if (MaterialType_Dielectric == info.material.type) {
-        return DielectricSample(info, world_in, sample_xy, lambda);
+        return DielectricSample(info, world_in, sobol_sampler, lambda);
     }
     
     // Unknown material type, return zero contribution
