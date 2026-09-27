@@ -303,6 +303,8 @@ void Interface::RenderThread() {
 	if (fence) {
 		glDeleteSync(fence);
 	}
+
+	glfwMakeContextCurrent(nullptr);
 }
 
 void Interface::RenderOutput() {
