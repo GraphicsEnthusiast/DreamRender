@@ -499,8 +499,6 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 s
         float n_dot_l = dot(n, l);
 
         if (n_dot_l <= 0.0f || n_dot_v <= 0.0f) {
-            m_info.pdf = 0.0f;
-
             return m_info;
         }
 
@@ -524,8 +522,6 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, vec2 s
         float n_dot_l = dot(n, l);
 
         if (n_dot_l * n_dot_v >= 0.0f) {
-            m_info.pdf = 0.0f;
-
             return m_info;
         }
 
