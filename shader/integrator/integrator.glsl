@@ -37,9 +37,10 @@ bool HitMeshLight(IntersectionInfo info) {
  * @param hit Hit information
  * @param ray_direction The direction of the incoming ray (normalized)
  * @param lambda Sampled wavelengths
+ * @param transport_mode Transport mode (Radiance or Importance)
  * @return IntersectionInfo with material, texture, and medium data
  */
-IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelengths lambda) {
+IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelengths lambda, int transport_mode) {
     IntersectionInfo info;
     Triangle tri;
     if (hit.is_light) {
@@ -50,6 +51,7 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     }
 
     info.is_light = hit.is_light;
+    info.transport_mode = transport_mode;
 
     // Interpolate position
     vec3 position = (1.0f - hit.u - hit.v) * tri.p1 + hit.u * tri.p2 + hit.v * tri.p3;
