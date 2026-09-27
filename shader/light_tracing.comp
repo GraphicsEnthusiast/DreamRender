@@ -81,7 +81,7 @@ SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sa
             if (occlusion_info.has_medium) {
                 MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(occlusion_info, beta, false);
                 
-                if (medium_eval_info.pdf > 0.0f) {
+                if (Valid(medium_eval_info.pdf)) {
                     // Update transmittance and PDF
                     visibility = Mul(visibility, DivFloat(medium_eval_info.transmittance, medium_eval_info.pdf));
                 }
@@ -125,7 +125,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     
     // Initialize path throughput beta
     // beta = Le * |cosθ| / light_pdf
-    if (light_ray_info.pdf > 0.0f) {
+    if (Valid(light_ray_info.pdf)) {
         beta = Mul(beta, DivFloat(MulFloat(light_ray_info.emission, light_cosine), light_ray_info.pdf));
     }
     
@@ -133,10 +133,10 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     CameraSampleInfo camera_sample_info = CameraSample(camera, light_ray_info.ray.origin, camera_sample);
     
-    if (camera_sample_info.pdf > 0.0f && dot(camera_sample_info.world_out, light_ray_info.shading_normal) > 0.0f) {
+    if (Valid(camera_sample_info.pdf) && dot(camera_sample_info.world_out, light_ray_info.shading_normal) > 0.0f) {
         FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
         
-        if (filter_evaluate_info.pdf > 0.0f) {
+        if (Valid(filter_evaluate_info.pdf)) {
             SampledSpectrum visibility = DirectCameraVisibility(
                 light_ray_info.ray.origin, camera_sample_info, beta, lambda, sobol_sampler
             );
@@ -171,7 +171,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
             vec2 medium_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
             MediumSampleInfo medium_sample_info = MediumDistanceSample(info, beta, medium_sample);
             
-            if (medium_sample_info.pdf > 0.0f) {
+            if (Valid(medium_sample_info.pdf)) {
                 // Update path throughput with medium transmittance
                 beta = Mul(beta, DivFloat(medium_sample_info.transmittance, medium_sample_info.pdf));
             }
@@ -188,10 +188,10 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
                 CameraSampleInfo camera_sample_info = CameraSample(camera, info.position, camera_sample);
                 
-                if (camera_sample_info.pdf > 0.0f) {
+                if (Valid(camera_sample_info.pdf)) {
                     FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
                     
-                    if (filter_evaluate_info.pdf > 0.0f) {
+                    if (Valid(filter_evaluate_info.pdf)) {
                         SampledSpectrum visibility = DirectCameraVisibility(
                             info.position, camera_sample_info, beta, lambda, sobol_sampler
                         );
@@ -199,7 +199,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                         // Evaluate phase function at scattering point
                         PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_in, camera_sample_info.world_out);
                         
-                        if (phase_eval_info.pdf > 0.0f) {
+                        if (Valid(phase_eval_info.pdf)) {
                             // Contribution = beta * visibility * phase * filter_weight * we / (filter_pdf * camera_pdf)
                             SampledSpectrum L_camera = MulFloat(
                                 Mul(Mul(beta, visibility), phase_eval_info.phase),
@@ -219,7 +219,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 vec2 phase_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
                 PhaseSampleInfo phase_sample_info = PhaseSample(info, world_in, phase_sample);
                 
-                if (phase_sample_info.pdf > 0.0f) {
+                if (Valid(phase_sample_info.pdf)) {
                     // Update path throughput with phase function
                     beta = Mul(beta, DivFloat(phase_sample_info.phase, phase_sample_info.pdf));
                     world_out = phase_sample_info.world_out;
@@ -235,17 +235,17 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
             vec2 camera_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
             CameraSampleInfo camera_sample_info = CameraSample(camera, info.position, camera_sample);
 
-            if (camera_sample_info.pdf > 0.0f) {
+            if (Valid(camera_sample_info.pdf)) {
                 FilterEvaluateInfo filter_evaluate_info = GaussianFilterEvaluate(0.5f, camera_sample_info.raster_ndc);
                 
-                if (filter_evaluate_info.pdf > 0.0f) {
+                if (Valid(filter_evaluate_info.pdf)) {
                     SampledSpectrum visibility = DirectCameraVisibility(
                         info.position, camera_sample_info, beta, lambda, sobol_sampler
                     );
                     
                     MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, camera_sample_info.world_out, lambda);
                     
-                    if (mat_eval_info.pdf > 0.0f) {
+                    if (Valid(mat_eval_info.pdf)) {
                         // Shading normal correction (Veach p.155, p.158)
                         // Check geometric vs shading normal consistency to prevent light leaks
                         float wi_dot_geo_n = dot(world_in, info.geometry_normal);
@@ -297,7 +297,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
                 vec2 bsdf_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
                 MaterialSampleInfo mat_sample_info = MaterialSample(info, world_in, bsdf_sample, lambda);
             
-                if (mat_sample_info.pdf > 0.0f) {
+                if (Valid(mat_sample_info.pdf)) {
                     // Shading normal correction (Veach p.155, p.158)
                     // Check geometric vs shading normal consistency to prevent light leaks
                     float wi_dot_geo_n = dot(world_in, info.geometry_normal);

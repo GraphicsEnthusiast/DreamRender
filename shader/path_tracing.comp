@@ -53,7 +53,7 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
                 
                 MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(medium_info, beta, false);
                 
-                if (medium_eval_info.pdf > 0.0f) {
+                if (Valid(medium_eval_info.pdf)) {
                     // Update transmittance and PDF
                     mult_trans_pdf *= medium_eval_info.pdf;
                     visibility = Mul(visibility, DivFloat(medium_eval_info.transmittance, medium_eval_info.pdf));
@@ -79,7 +79,7 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
             if (occlusion_info.has_medium) {
                 MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(occlusion_info, beta, false);
                 
-                if (medium_eval_info.pdf > 0.0f) {
+                if (Valid(medium_eval_info.pdf)) {
                     // Update transmittance and PDF
                     mult_trans_pdf *= medium_eval_info.pdf;
                     visibility = Mul(visibility, DivFloat(medium_eval_info.transmittance, medium_eval_info.pdf));
@@ -128,11 +128,11 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
     CameraRayInfo camera_ray_info = GenerateCameraRay(camera, pixel_center.x, pixel_center.y, lens_sample);
     Ray ray = camera_ray_info.ray;
 
-    if (filter_sample_info.pdf > 0.0f) {
+    if (Valid(filter_sample_info.pdf)) {
         beta = MulFloat(beta, filter_sample_info.weight / filter_sample_info.pdf);
     }
 
-    if (camera_ray_info.pdf > 0.0f) {
+    if (Valid(camera_ray_info.pdf)) {
         float camera_cosine = abs(dot(camera_ray_info.ray.direction, -camera.forward));
         beta = MulFloat(beta, camera_ray_info.we * camera_cosine / camera_ray_info.pdf);
     }
@@ -157,7 +157,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
             vec2 medium_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
             MediumSampleInfo medium_sample_info = MediumDistanceSample(info, beta, medium_sample);
             
-            if (medium_sample_info.pdf > 0.0f) {
+            if (Valid(medium_sample_info.pdf)) {
                 beta = Mul(beta, DivFloat(medium_sample_info.transmittance, medium_sample_info.pdf));
                 mult_trans_pdf *= medium_sample_info.pdf;
             }
@@ -180,7 +180,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 // Evaluate phase function
                 PhaseEvalInfo phase_eval_info = PhaseEvaluate(info, world_in, light_sample_info.world_out);
                 
-                if (light_sample_info.pdf > 0.0f && phase_eval_info.pdf > 0.0f && mult_trans_pdf_nee > 0.0f) {
+                if (Valid(light_sample_info.pdf) && Valid(phase_eval_info.pdf) && Valid(mult_trans_pdf_nee)) {
                     float mis_weight = PowerHeuristic(light_sample_info.pdf, phase_eval_info.pdf * mult_trans_pdf_nee, 2.0f);
 
                     // L_light = β * visibility * mis_weight * Le * phase / light_pdf
@@ -196,7 +196,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 vec2 phase_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
                 PhaseSampleInfo phase_sample_info = PhaseSample(info, world_in, phase_sample);
                 
-                if (phase_sample_info.pdf > 0.0f) {
+                if (Valid(phase_sample_info.pdf)) {
                     beta = Mul(beta, DivFloat(phase_sample_info.phase, phase_sample_info.pdf));
                     world_out = phase_sample_info.world_out;
                     bsdf_phase_pdf = phase_sample_info.pdf;
@@ -219,7 +219,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                     mis_weight = PowerHeuristic(bsdf_phase_pdf * mult_trans_pdf, light_eval_info.pdf, 2.0f);
                 }
 
-                if (light_eval_info.pdf > 0.0f && bsdf_phase_pdf > 0.0f && mult_trans_pdf > 0.0f) {
+                if (Valid(light_eval_info.pdf) && Valid(bsdf_phase_pdf) && Valid(mult_trans_pdf)) {
                     // L_material_or_medium = β * visibility * mis_weight * Le * (bsdf * cos or phase) / bsdf_phase_pdf
                     //                      = β' * mis_weight * Le
                     SampledSpectrum L_material_or_medium = MulFloat(Mul(beta, light_eval_info.emission), mis_weight);
@@ -251,7 +251,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 // Evaluate BSDF
                 MaterialEvalInfo mat_eval_info = MaterialEvaluate(info, world_in, light_sample_info.world_out, lambda);
                 
-                if (light_sample_info.pdf > 0.0f && mat_eval_info.pdf > 0.0f && mult_trans_pdf_nee > 0.0f) {
+                if (Valid(light_sample_info.pdf) && Valid(mat_eval_info.pdf) && Valid(mult_trans_pdf_nee)) {
                     float mis_weight = PowerHeuristic(light_sample_info.pdf, mat_eval_info.pdf * mult_trans_pdf_nee, 2.0f);
                     // L_light = β * visibility * mis_weight * Le * bsdf * cos / light_pdf
                     float cosine = abs(dot(light_sample_info.world_out, info.shading_normal));
@@ -267,7 +267,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
                 vec2 bsdf_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
                 MaterialSampleInfo mat_sample_info = MaterialSample(info, world_in, bsdf_sample, lambda);
                 
-                if (mat_sample_info.pdf > 0.0f) {
+                if (Valid(mat_sample_info.pdf)) {
                     float cosine = abs(dot(mat_sample_info.world_out, info.shading_normal));
                     beta = Mul(beta, DivFloat(MulFloat(mat_sample_info.bsdf, cosine), mat_sample_info.pdf));
                     world_out = mat_sample_info.world_out;

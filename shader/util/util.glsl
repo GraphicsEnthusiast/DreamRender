@@ -23,6 +23,10 @@ struct SampledSpectrum {
     float values[NSpectrumSamples];  // Spectral values at sampled wavelengths
 };
 
+/**
+ * @struct Medium
+ * @brief Medium information structure containing optical properties
+ */
 struct Medium {
     int phase_type;
     float g;
@@ -262,6 +266,15 @@ Ray SpawnShadowRay(vec3 position, vec3 direction, float distance) {
     ray.tmax = distance - Epsilon;
     
     return ray;
+}
+
+/**
+ * @brief Checks if a float value is valid for use in rendering calculations
+ * @param value The float value to validate
+ * @return true if the value is finite and above the epsilon threshold, false otherwise
+ */
+bool Valid(float value) {
+    return !isnan(value) && !isinf(value) && value > Epsilon;
 }
 
 #endif // UTIL_GLSL
