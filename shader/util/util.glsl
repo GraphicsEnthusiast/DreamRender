@@ -276,7 +276,7 @@ Ray SpawnShadowRay(vec3 position, vec3 direction, float distance) {
  * @return true if the value is finite and above the epsilon threshold, false otherwise
  */
 bool Valid(float value) {
-    return !isnan(value) && !isinf(value) && value > Epsilon;
+    return !isnan(value) && !isinf(value) && value > 0.0f;
 }
 
 #endif // UTIL_GLSL
