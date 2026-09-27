@@ -236,9 +236,10 @@ vec3 OffsetRayOrigin(vec3 p, vec3 n) {
  * @param normal Surface normal at the intersection point (should be normalized)
  * @param tmin Minimum ray distance to prevent self-intersection
  * @param tmax Maximum ray distance for intersection testing
+ * @param transport_mode Transport mode for the ray (Radiance or Importance)
  * @return New ray with properly offset origin to prevent numerical precision issues
  */
-Ray SpawnRay(vec3 position, vec3 direction, vec3 normal, float tmin, float tmax) {
+Ray SpawnRay(vec3 position, vec3 direction, vec3 normal, float tmin, float tmax, int transport_mode) {
     vec3 offset_normal = (dot(normal, direction) >= 0.0f) ? normal : -normal;
     vec3 offset_origin = OffsetRayOrigin(position, offset_normal);
     
@@ -247,6 +248,7 @@ Ray SpawnRay(vec3 position, vec3 direction, vec3 normal, float tmin, float tmax)
     ray.direction = direction;
     ray.tmin = tmin;
     ray.tmax = tmax;
+    ray.transport_mode = transport_mode;
     
     return ray;
 }

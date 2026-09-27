@@ -153,9 +153,9 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
     }
     
     // Initialize ray state
-    vec3 world_in = -light_ray_info.ray.direction;  // Direction from light to current point
-    vec3 world_out = light_ray_info.ray.direction;  // Direction to next bounce
     Ray ray = light_ray_info.ray;
+    vec3 world_in = -ray.direction;  // Direction from light to current point
+    vec3 world_out = ray.direction;  // Direction to next bounce
     bool has_mesh_light = MeshLightTableSize > 0;
     
     for (int bounce = 0; bounce < max_bounce; ++bounce) {
@@ -286,7 +286,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
             else if (HitBoundaryMaterial(info)) {
                 // Continue ray through boundary
                 world_in = -world_out;
-                ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
+                ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat, TransportMode_Importance);
                 bounce--;  // Don't count boundary as a bounce
 
                 continue;
@@ -336,7 +336,7 @@ void LightTracing(ivec2 pixel_coords, float max_bounce) {
         
         // Update for next bounce
         world_in = -world_out;
-        ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
+        ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat, TransportMode_Importance);
     }
 }
 // =================================================== Light Tracing ===================================================

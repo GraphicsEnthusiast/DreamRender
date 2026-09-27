@@ -126,7 +126,6 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
     
     vec2 lens_sample = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
     CameraRayInfo camera_ray_info = GenerateCameraRay(camera, pixel_center.x, pixel_center.y, lens_sample);
-    Ray ray = camera_ray_info.ray;
 
     if (Valid(filter_sample_info.pdf)) {
         beta = MulFloat(beta, filter_sample_info.weight / filter_sample_info.pdf);
@@ -137,6 +136,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
         beta = MulFloat(beta, camera_ray_info.we * camera_cosine / camera_ray_info.pdf);
     }
 
+    Ray ray = camera_ray_info.ray;
     vec3 world_in = -ray.direction;
     vec3 world_out = ray.direction;
     vec3 last_position = ray.origin;
@@ -233,7 +233,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
             else if (HitBoundaryMaterial(info)) {
                 world_in = -world_out;
                 last_position = info.position;
-                ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
+                ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat, TransportMode_Radiance);
                 bounce--;  // Don't count this as a bounce
 
                 continue;
@@ -290,7 +290,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
         world_in = -world_out;
         mult_trans_pdf = 1.0f;
         last_position = info.position;
-        ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat);
+        ray = SpawnRay(info.position, world_out, info.geometry_normal, 0.0f, MaxFloat, TransportMode_Radiance);
     }
     
     RGB radiance_linear_rgb = SampledSpectrumToRGB(radiance, lambda);
