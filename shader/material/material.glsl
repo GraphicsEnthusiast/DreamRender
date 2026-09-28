@@ -787,27 +787,17 @@ MaterialEvalInfo MetalWorkflowEvaluate(IntersectionInfo info, vec3 world_in, vec
         return m_info;
     }
 
-    // Mix diffuse and specular based on metallic
-    float dielectric_brdf = 1.0f - metallic;
-    float diffuse_weight = dielectric_brdf;
-    float specular_weight = metallic + dielectric_brdf;
-    float denom = diffuse_weight + specular_weight;
-    float p_diffuse = diffuse_weight / max(denom, 1e-6f);
+    float p_diffuse = (1.0f - metallic) / (2.0f - metallic);
 
     // GGX terms
     float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
     float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
     float D = GGXD(h, n, alpha_u, alpha_v);
 
-    // Fresnel: mix between dielectric F0 (0.04) and diffuse based on metallic
-    // F0 = mix(0.04, diffuse, metallic)
-    SampledSpectrum F0 = MulFloat(diffuse, metallic);
-    F0 = Add(MulFloat(SampledSpectrumNewFloat(0.04f), 1.0f - metallic), F0);
-    
-    // F = F0 + (1 - F0) * (1 - cosθ)^5
-    float cos_theta = dot(v, h);
-    float fresnel_factor = pow(1.0f - cos_theta, 5.0f);
-    SampledSpectrum F = Add(F0, MulFloat(Sub(SampledSpectrumNewFloat(1.0f), F0), fresnel_factor));
+    // Fresnel: F0 = mix(0.04, diffuse, metallic), F = Schlick(F0, cosθ)
+    SampledSpectrum f0 = Add(MulFloat(SampledSpectrumNewFloat(0.04f), 1.0f - metallic), 
+                             MulFloat(diffuse, metallic));
+    SampledSpectrum F = FresnelSchlick(f0, v, h);
 
     // Specular BRDF: D * F * G / (4 * NdotL * NdotV)
     SampledSpectrum specular_brdf = MulFloat(F, D * G / (4.0f * n_dot_l * n_dot_v));
@@ -856,12 +846,7 @@ MaterialSampleInfo MetalWorkflowSample(IntersectionInfo info, vec3 world_in, ino
         return m_info;
     }
 
-    // Mix diffuse and specular based on metallic
-    float dielectric_brdf = 1.0f - metallic;
-    float diffuse_weight = dielectric_brdf;
-    float specular_weight = metallic + dielectric_brdf;
-    float denom = diffuse_weight + specular_weight;
-    float p_diffuse = diffuse_weight / max(denom, 1e-6f);
+    float p_diffuse = (1.0f - metallic) / (2.0f - metallic);
 
     vec3 l = vec3(0.0f);
     vec3 h = vec3(0.0f);
@@ -900,13 +885,10 @@ MaterialSampleInfo MetalWorkflowSample(IntersectionInfo info, vec3 world_in, ino
     float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
     float D = GGXD(h, n, alpha_u, alpha_v);
 
-    // Fresnel: mix between dielectric F0 (0.04) and diffuse based on metallic
-    SampledSpectrum F0 = MulFloat(diffuse, metallic);
-    F0 = Add(MulFloat(SampledSpectrumNewFloat(0.04f), 1.0f - metallic), F0);
-    
-    float cos_theta = dot(v, h);
-    float fresnel_factor = pow(1.0f - cos_theta, 5.0f);
-    SampledSpectrum F = Add(F0, MulFloat(Sub(SampledSpectrumNewFloat(1.0f), F0), fresnel_factor));
+    // Fresnel: F0 = mix(0.04, diffuse, metallic), F = Schlick(F0, cosθ)
+    SampledSpectrum f0 = Add(MulFloat(SampledSpectrumNewFloat(0.04f), 1.0f - metallic), 
+                             MulFloat(diffuse, metallic));
+    SampledSpectrum F = FresnelSchlick(f0, v, h);
 
     // Specular BRDF
     SampledSpectrum specular_brdf = MulFloat(F, D * G / (4.0f * n_dot_l * n_dot_v));

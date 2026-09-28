@@ -4,6 +4,25 @@
 #include "spectrum/spectrum.glsl"
 
 /**
+ * @brief Computes Schlick Fresnel approximation
+ * F = F0 + (1 - F0) * (1 - cosθ)^5
+ * @param f0 Fresnel reflectance at normal incidence (F0)
+ * @param v View direction
+ * @param h Half vector
+ * @return SampledSpectrum Fresnel reflectance
+ */
+SampledSpectrum FresnelSchlick(SampledSpectrum f0, vec3 v, vec3 h) {
+    // cos_theta = dot(v, h)
+    float cos_theta = dot(v, h);
+    
+    // F = F0 + (1 - F0) * (1 - cosθ)^5
+    float fresnel_factor = pow(1.0f - cos_theta, 5.0f);
+    SampledSpectrum f = Add(f0, MulFloat(Sub(SampledSpectrumNewFloat(1.0f), f0), fresnel_factor));
+    
+    return f;
+}
+
+/**
  * @brief Computes Fresnel reflectance for conductors using complex refractive indices.
  * @param v View direction vector.
  * @param h Half-vector (or surface normal for normal incidence).
