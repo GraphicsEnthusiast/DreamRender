@@ -32,6 +32,7 @@ enum class TextureType {
     ROUGHNESS_V = 3,        ///< Anisotropic roughness texture (v)
     SPECULAR = 4,           ///< Specular reflection color texture
     NORMAL = 5,             ///< Normal map texture
+    Metallic = 6,           ///< Metallic texture
 };
 
 /**
@@ -68,10 +69,11 @@ struct Texture {
  */
 enum class MaterialType {
     BOUNDARY = 0,
-    DIFFUSE = 1,    ///< Diffuse material (Oren-Nayar model)
-    CONDUCTOR = 2,  ///< Conductor material (GGX Microfacet Model)
-    DIELECTRIC = 3, ///< Dielectric material (GGX Microfacet Model)
-    PLASTIC = 4,    ///< Plastic material (GGX Microfacet Model)
+    DIFFUSE = 1,                ///< Diffuse material (Oren-Nayar model)
+    CONDUCTOR = 2,              ///< Conductor material (GGX Microfacet Model)
+    DIELECTRIC = 3,             ///< Dielectric material (GGX Microfacet Model)
+    PLASTIC = 4,                ///< Plastic material (GGX Microfacet Model)
+    METALWORKFLOW = 5,          ///< Metallic workflow material (GGX Microfacet Model)
 };
 
 /**
@@ -91,6 +93,7 @@ struct Material {
 	Vector3f specular;                                ///< Specular reflection color
     float in_ior;
     float out_ior;
+    float metallic;
 
     /**
      * @brief Default constructor
@@ -294,6 +297,7 @@ struct alignas(16) TriangleEncoded {
 	alignas(16) Vector4f specular;      ///< Specular color (xyz) and texture flag (w = texture ID, -1 for constant)
 	alignas(16) Vector4f eta;           ///< xyz = eta_rgb, w = ior_in
 	alignas(16) Vector4f k;             ///< xyz = k_rgb, w = ior_out
+    alignas(16) Vector4f metallic;     ///< Metallic (x components) and texture flag (y component: -1 = constant color, other = texture)
 
     alignas(16) Vector4f in_type_info;    ///< Inside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
     alignas(16) Vector4f in_sigma_s;      ///< Inside medium scattering coefficient (xyz components)

@@ -10,10 +10,11 @@ uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Boundary = 0;
-const int MaterialType_Diffuse = 1;    ///< Diffuse material (Oren-Nayar model)
-const int MaterialType_Conductor = 2;  ///< Conductor material (GGX Microfacet Model)
-const int MaterialType_Dielectric = 3; ///< Dielectric material (GGX Microfacet Model)
-const int MaterialType_Plastic = 4;    ///< Plastic material (GGX Microfacet Model)
+const int MaterialType_Diffuse = 1;          ///< Diffuse material (Oren-Nayar model)
+const int MaterialType_Conductor = 2;        ///< Conductor material (GGX Microfacet Model)
+const int MaterialType_Dielectric = 3;       ///< Dielectric material (GGX Microfacet Model)
+const int MaterialType_Plastic = 4;          ///< Plastic material (GGX Microfacet Model)
+const int MaterialType_MetalWorkflow = 5; ///< Metallic workflow material (GGX Microfacet Model)
 
 /**
  * @struct MaterialEvalInfo
@@ -77,6 +78,25 @@ SampledSpectrum GetFinalDiffuse(IntersectionInfo info, SampledWavelengths lambda
     
     // Fallback: Use base diffuse color
     return info.material.diffuse;
+}
+
+/**
+ * @brief Retrieves the final metallic with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @return float containing metallic value
+ */
+float GetFinalMetallic(IntersectionInfo info) {
+    // Fallback: Use base metallic
+    float result = info.material.metallic;
+
+    int tex_u = info.material.metallic_texture;
+
+    if (tex_u >= 0 && tex_u < TextureCount) {
+        vec4 tex_color = SampleTextureArray(tex_u, info.uv);
+        result = tex_color.r;
+    }
+
+    return result;
 }
 
 /**
@@ -575,7 +595,7 @@ MaterialEvalInfo PlasticEvaluate(IntersectionInfo info, vec3 world_in, vec3 worl
     m_info.pdf = 0.0f;
 
     // Material properties
-    SampledSpectrum kd = GetFinalDiffuse(info, lambda);    // Diffuse albedo
+    SampledSpectrum kd = GetFinalDiffuse(info, lambda);    // Diffuse diffuse
     SampledSpectrum ks = GetFinalSpecular(info, lambda);   // Specular reflectance
     
     float d_sum = Sum(kd);
@@ -736,6 +756,177 @@ MaterialSampleInfo PlasticSample(IntersectionInfo info, vec3 world_in, inout Sob
 }
 
 /**
+ * @brief Evaluates the BSDF and PDF for a metal workflow material (PBR metallic-roughness)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo MetalWorkflowEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Material properties
+    SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);  // Base color / diffuse
+    float metallic = GetFinalMetallic(info);
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
+    vec3 h = normalize(v + l);
+
+    float n_dot_v = dot(n, v);
+    float n_dot_l = dot(n, l);
+    if (n_dot_v <= 0.0f || n_dot_l <= 0.0f) {
+        return m_info;
+    }
+
+    // Mix diffuse and specular based on metallic
+    float dielectric_brdf = 1.0f - metallic;
+    float diffuse_weight = dielectric_brdf;
+    float specular_weight = metallic + dielectric_brdf;
+    float denom = diffuse_weight + specular_weight;
+    float p_diffuse = diffuse_weight / max(denom, 1e-6f);
+
+    // GGX terms
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+
+    // Fresnel: mix between dielectric F0 (0.04) and diffuse based on metallic
+    // F0 = mix(0.04, diffuse, metallic)
+    SampledSpectrum F0 = MulFloat(diffuse, metallic);
+    F0 = Add(MulFloat(SampledSpectrumNewFloat(0.04f), 1.0f - metallic), F0);
+    
+    // F = F0 + (1 - F0) * (1 - cosθ)^5
+    float cos_theta = dot(v, h);
+    float fresnel_factor = pow(1.0f - cos_theta, 5.0f);
+    SampledSpectrum F = Add(F0, MulFloat(Sub(SampledSpectrumNewFloat(1.0f), F0), fresnel_factor));
+
+    // Specular BRDF: D * F * G / (4 * NdotL * NdotV)
+    SampledSpectrum specular_brdf = MulFloat(F, D * G / (4.0f * n_dot_l * n_dot_v));
+    
+    // Diffuse BRDF: diffuse / π
+    SampledSpectrum diffuse_brdf = MulFloat(diffuse, 1.0f / PI);
+
+    // Mix
+    m_info.bsdf = Add(MulFloat(diffuse_brdf, p_diffuse), MulFloat(specular_brdf, 1.0f - p_diffuse));
+    
+    // PDF: specular (VNDF) + diffuse (cosine)
+    float pdf_spec = Dv * abs(1.0f / (4.0f * dot(v, h)));
+    float pdf_diff = CosineHemispherePDF(n_dot_l);
+    m_info.pdf = (1.0f - p_diffuse) * pdf_spec + p_diffuse * pdf_diff;
+
+    return m_info;
+}
+
+/**
+ * @brief Samples a direction and evaluates the BSDF for a metal workflow material
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param sobol_sampler Sobol sequence sampler
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo MetalWorkflowSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Material properties
+    SampledSpectrum diffuse = GetFinalDiffuse(info, lambda);
+    float metallic = GetFinalMetallic(info);
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+
+    float n_dot_v = dot(n, v);
+    if (n_dot_v <= 0.0f) {
+        return m_info;
+    }
+
+    // Mix diffuse and specular based on metallic
+    float dielectric_brdf = 1.0f - metallic;
+    float diffuse_weight = dielectric_brdf;
+    float specular_weight = metallic + dielectric_brdf;
+    float denom = diffuse_weight + specular_weight;
+    float p_diffuse = diffuse_weight / max(denom, 1e-6f);
+
+    vec3 l = vec3(0.0f);
+    vec3 h = vec3(0.0f);
+    float n_dot_l = 0.0f;
+
+    // Sample diffuse or specular based on probability
+    if (SobolSamplerGet1(sobol_sampler) < p_diffuse) {
+        // Diffuse: cosine hemisphere sample
+        vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+        vec3 local_l = CosineHemisphereSample(sample_xy);
+        l = ToWorldFromUp(local_l, n);
+        
+        h = normalize(v + l);
+        
+        n_dot_l = dot(n, l);
+        if (n_dot_l <= 0.0f) {
+            return m_info;
+        }
+    }
+    else {
+        // Specular: VNDF sample half vector
+        vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+        vec3 local_h = GGXSampleVisible(n, v, alpha_u, alpha_v, sample_xy);
+        h = ToWorldFromUp(local_h, n);
+        
+        l = reflect(-v, h);
+        
+        n_dot_l = dot(n, l);
+        if (n_dot_l <= 0.0f) {
+            return m_info;
+        }
+    }
+
+    // Evaluate BSDF at sampled direction
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+
+    // Fresnel: mix between dielectric F0 (0.04) and diffuse based on metallic
+    SampledSpectrum F0 = MulFloat(diffuse, metallic);
+    F0 = Add(MulFloat(SampledSpectrumNewFloat(0.04f), 1.0f - metallic), F0);
+    
+    float cos_theta = dot(v, h);
+    float fresnel_factor = pow(1.0f - cos_theta, 5.0f);
+    SampledSpectrum F = Add(F0, MulFloat(Sub(SampledSpectrumNewFloat(1.0f), F0), fresnel_factor));
+
+    // Specular BRDF
+    SampledSpectrum specular_brdf = MulFloat(F, D * G / (4.0f * n_dot_l * n_dot_v));
+    
+    // Diffuse BRDF
+    SampledSpectrum diffuse_brdf = MulFloat(diffuse, 1.0f / PI);
+
+    // Mix
+    m_info.world_out = l;
+    m_info.bsdf = Add(MulFloat(diffuse_brdf, p_diffuse), MulFloat(specular_brdf, 1.0f - p_diffuse));
+    
+    // PDF
+    float pdf_spec = Dv * abs(1.0f / (4.0f * dot(v, h)));
+    float pdf_diff = CosineHemispherePDF(n_dot_l);
+    m_info.pdf = (1.0f - p_diffuse) * pdf_spec + p_diffuse * pdf_diff;
+
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -760,6 +951,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     }
     else if (MaterialType_Plastic == info.material.type) {
         return PlasticEvaluate(info, world_in, world_out, lambda);
+    }
+    else if (MaterialType_MetalWorkflow == info.material.type) {
+        return MetalWorkflowEvaluate(info, world_in, world_out, lambda);
     }
     
     // Unknown material type, return zero contribution
@@ -793,6 +987,10 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, inout So
     else if (MaterialType_Plastic == info.material.type) {
         return PlasticSample(info, world_in, sobol_sampler, lambda);
     }
+    else if (MaterialType_MetalWorkflow == info.material.type) {
+        return MetalWorkflowSample(info, world_in, sobol_sampler, lambda);
+    }
+
     // Unknown material type, return zero contribution
     return result;
 }

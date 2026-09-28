@@ -44,7 +44,8 @@ void RenderPipeline::Init() {
 	int cube_normal_id = scene_manager.LoadTexture(cube_normal_path, TextureType::NORMAL);
 
 	Material teapot_material;
-	teapot_material.type = MaterialType::PLASTIC;
+	teapot_material.type = MaterialType::METALWORKFLOW;
+	teapot_material.metallic = 0.7f;
 	teapot_material.in_ior = 1.5f;
     teapot_material.out_ior = 1.0f;
 	teapot_material.diffuse = Vector3f(0.7f, 0.7f, 0.5f);

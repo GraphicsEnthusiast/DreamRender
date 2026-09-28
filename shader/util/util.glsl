@@ -71,6 +71,11 @@ struct Material {
     float in_ior;
     // Index of refraction for the exterior medium
     float out_ior;
+
+    // Metallic workflow parameter
+    float metallic;
+    // Metallic workflow texture index
+    int metallic_texture;
 };
 
 /**
