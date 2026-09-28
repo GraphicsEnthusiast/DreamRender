@@ -10,9 +10,10 @@ uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Boundary = 0;
-const int MaterialType_Diffuse = 1;   ///< Diffuse material (Oren-Nayar model)
-const int MaterialType_Conductor = 2; ///< Conductor material (GGX Microfacet Model)
+const int MaterialType_Diffuse = 1;    ///< Diffuse material (Oren-Nayar model)
+const int MaterialType_Conductor = 2;  ///< Conductor material (GGX Microfacet Model)
 const int MaterialType_Dielectric = 3; ///< Dielectric material (GGX Microfacet Model)
+const int MaterialType_Plastic = 4;    ///< Plastic material (GGX Microfacet Model)
 
 /**
  * @struct MaterialEvalInfo
@@ -561,6 +562,180 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, inout 
 }
 
 /**
+ * @brief Evaluates the BSDF and PDF for a plastic material
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo PlasticEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Material properties
+    SampledSpectrum kd = GetFinalDiffuse(info, lambda);    // Diffuse albedo
+    SampledSpectrum ks = GetFinalSpecular(info, lambda);   // Specular reflectance
+    
+    float d_sum = Sum(kd);
+    float s_sum = Sum(ks);
+    
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+    float eta = GetInIOR(info) / GetOutIOR(info);
+    float F_avg = FresnelAverageDielectric(eta);
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
+    vec3 h = normalize(v + l);
+
+    float n_dot_v = dot(n, v);
+    float n_dot_l = dot(n, l);
+    if (n_dot_v <= 0.0f || n_dot_l <= 0.0f) {
+        return m_info;
+    }
+
+    // Fresnel terms
+    float Fo = FresnelDielectric(v, n, 1.0f / eta);
+    float Fi = FresnelDielectric(l, n, 1.0f / eta);
+    
+    // Specular sampling weight (based on energy ratio)
+    float specular_sampling_weight = s_sum / max(s_sum + d_sum, 1e-6f);
+    float pdf_specular = Fi * specular_sampling_weight;
+    float pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);
+    pdf_specular = pdf_specular / max(pdf_specular + pdf_diffuse, 1e-6f);
+
+    // GGX terms
+    float F = FresnelDielectric(l, h, 1.0f / eta);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+
+    // Diffuse term (nonlinear energy-conserving)
+    SampledSpectrum diffuse_brdf = Div(kd, Sub(SampledSpectrumNewFloat(1.0f), MulFloat(kd, F_avg)));
+    diffuse_brdf = MulFloat(diffuse_brdf, (1.0f - Fi) * (1.0f - Fo) / PI);
+    
+    // Specular term
+    SampledSpectrum specular_brdf = MulFloat(ks, F * D * G / (4.0f * n_dot_l * n_dot_v));
+
+    m_info.bsdf = Add(diffuse_brdf, specular_brdf);
+    
+    // PDF: specular (VNDF) + diffuse (cosine)
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float pdf_spec = Dv * abs(1.0f / (4.0f * dot(v, h)));
+    float pdf_diff = CosineHemispherePDF(n_dot_l);
+    m_info.pdf = pdf_specular * pdf_spec + (1.0f - pdf_specular) * pdf_diff;
+
+    return m_info;
+}
+
+/**
+ * @brief Samples a direction and evaluates the BSDF for a plastic material
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param sobol_sampler Sobol sequence sampler
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo PlasticSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Material properties
+    SampledSpectrum kd = GetFinalDiffuse(info, lambda);
+    SampledSpectrum ks = GetFinalSpecular(info, lambda);
+    
+    float d_sum = Sum(kd);
+    float s_sum = Sum(ks);
+
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+    float eta = GetInIOR(info) / GetOutIOR(info);
+    float F_avg = FresnelAverageDielectric(eta);
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+
+    float n_dot_v = dot(n, v);
+    if (n_dot_v <= 0.0f) {
+        return m_info;
+    }
+
+    // Fresnel at view direction
+    float Fo = FresnelDielectric(v, n, 1.0f / eta);
+    float Fi = Fo;
+    
+    // Specular sampling weight
+    float specular_sampling_weight = s_sum / max(s_sum + d_sum, 1e-6f);
+    float pdf_specular = Fi * specular_sampling_weight;
+    float pdf_diffuse = (1.0f - Fi) * (1.0f - specular_sampling_weight);
+    pdf_specular = pdf_specular / max(pdf_specular + pdf_diffuse, 1e-6f);
+
+    vec3 l = vec3(0.0f);
+    vec3 h = vec3(0.0f);
+    float n_dot_l = 0.0f;
+
+    // Sample specular or diffuse based on probability
+    if (SobolSamplerGet1(sobol_sampler) < pdf_specular) {
+        // Specular: VNDF sample half vector
+        vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+        vec3 local_h = GGXSampleVisible(n, v, alpha_u, alpha_v, sample_xy);
+        h = ToWorldFromUp(local_h, n);
+        
+        l = reflect(-v, h);
+        
+        n_dot_l = dot(n, l);
+        if (n_dot_l <= 0.0f) {
+            return m_info;
+        }
+    }
+    else {
+        // Diffuse: cosine hemisphere sample
+        vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+        vec3 local_l = CosineHemisphereSample(sample_xy);
+        l = ToWorldFromUp(local_l, n);
+        
+        h = normalize(v + l);
+        Fi = FresnelDielectric(l, n, 1.0f / eta);
+        
+        n_dot_l = dot(n, l);
+        if (n_dot_l <= 0.0f) {
+            return m_info;
+        }
+    }
+
+    // Evaluate BSDF at sampled direction
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+    float D = GGXD(h, n, alpha_u, alpha_v);
+    float F = FresnelDielectric(l, h, 1.0f / eta);
+
+    // Diffuse term
+    SampledSpectrum diffuse_brdf = Div(kd, Sub(SampledSpectrumNewFloat(1.0f), MulFloat(kd, F_avg)));
+    diffuse_brdf = MulFloat(diffuse_brdf, (1.0f - Fi) * (1.0f - Fo) / PI);
+    
+    // Specular term
+    SampledSpectrum specular_brdf = MulFloat(ks, F * D * G / (4.0f * n_dot_l * n_dot_v));
+
+    m_info.world_out = l;
+    m_info.bsdf = Add(diffuse_brdf, specular_brdf);
+    
+    // PDF
+    float pdf_spec = Dv * abs(1.0f / (4.0f * dot(v, h)));
+    float pdf_diff = CosineHemispherePDF(n_dot_l);
+    m_info.pdf = pdf_specular * pdf_spec + (1.0f - pdf_specular) * pdf_diff;
+
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -582,6 +757,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     }
     else if (MaterialType_Dielectric == info.material.type) {
         return DielectricEvaluate(info, world_in, world_out, lambda);
+    }
+    else if (MaterialType_Plastic == info.material.type) {
+        return PlasticEvaluate(info, world_in, world_out, lambda);
     }
     
     // Unknown material type, return zero contribution
@@ -612,7 +790,9 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, inout So
     else if (MaterialType_Dielectric == info.material.type) {
         return DielectricSample(info, world_in, sobol_sampler, lambda);
     }
-    
+    else if (MaterialType_Plastic == info.material.type) {
+        return PlasticSample(info, world_in, sobol_sampler, lambda);
+    }
     // Unknown material type, return zero contribution
     return result;
 }

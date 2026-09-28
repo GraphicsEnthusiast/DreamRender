@@ -68,9 +68,10 @@ struct Texture {
  */
 enum class MaterialType {
     BOUNDARY = 0,
-    DIFFUSE = 1,   ///< Diffuse material (Oren-Nayar model)
-    CONDUCTOR = 2, ///< Conductor material (GGX Microfacet Model)
-    DIELECTRIC = 3 ///< Dielectric material (GGX Microfacet Model)
+    DIFFUSE = 1,    ///< Diffuse material (Oren-Nayar model)
+    CONDUCTOR = 2,  ///< Conductor material (GGX Microfacet Model)
+    DIELECTRIC = 3, ///< Dielectric material (GGX Microfacet Model)
+    PLASTIC = 4,    ///< Plastic material (GGX Microfacet Model)
 };
 
 /**

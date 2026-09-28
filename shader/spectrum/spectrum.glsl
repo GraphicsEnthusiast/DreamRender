@@ -192,6 +192,20 @@ float Avg(SampledSpectrum s) {
 }
 
 /**
+ * @brief Computes the sum of spectral components
+ * @param s Input spectrum
+ * @return Sum of all spectral samples
+ */
+float Sum(SampledSpectrum s) {
+    float sum = s.values[0];
+    for (int i = 1; i < NSpectrumSamples; i++) {
+        sum += s.values[i];
+    }
+
+    return sum;
+}
+
+/**
  * @brief Computes the exponential of each spectral component
  * @param s Input spectrum
  * @return Spectrum with exponentiated components
