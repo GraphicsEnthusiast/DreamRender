@@ -1134,7 +1134,7 @@ MaterialEvalInfo ClearCoatedConductorEvaluate(IntersectionInfo info, vec3 world_
 
     // Evaluate the base conductor (using its own roughness)
     MaterialEvalInfo nested = ConductorEvaluate(info, world_in, world_out, lambda);
-    SampledSpectrum attenuation_nested = nested.bsdf;
+    SampledSpectrum brdf_nested = nested.bsdf;
     float pdf_nested = nested.pdf;
 
     // Compute clear coat contribution
@@ -1143,7 +1143,7 @@ MaterialEvalInfo ClearCoatedConductorEvaluate(IntersectionInfo info, vec3 world_
     float weight_coat = clear_coat * F_coat;
 
     float pdf_coat = 0.0f;
-    SampledSpectrum attenuation_coat = SampledSpectrumNewFloat(0.0f);
+    SampledSpectrum brdf_coat = SampledSpectrumNewFloat(0.0f);
 
     float D_coat = GGXD(h, n, coat_alpha_u, coat_alpha_v);
     if (D_coat > 0.0f) {
@@ -1151,12 +1151,12 @@ MaterialEvalInfo ClearCoatedConductorEvaluate(IntersectionInfo info, vec3 world_
         if (cos_theta_i > 0.0f) {
             pdf_coat = D_coat * abs(1.0f / (4.0f * dot(v, h)));
             float G_coat = GGXG2(v, l, h, n, coat_alpha_u, coat_alpha_v);
-            attenuation_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
+            brdf_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
         }
     }
 
     // Mix the two layers
-    m_info.bsdf = Add(MulFloat(attenuation_nested, 1.0f - weight_coat), MulFloat(attenuation_coat, clear_coat));
+    m_info.bsdf = Add(MulFloat(brdf_nested, 1.0f - weight_coat), MulFloat(brdf_coat, clear_coat));
     m_info.pdf = pdf_nested * (1.0f - weight_coat) + weight_coat * pdf_coat;
 
     return m_info;
@@ -1198,8 +1198,8 @@ MaterialSampleInfo ClearCoatedConductorSample(IntersectionInfo info, vec3 world_
 
     vec3 l = vec3(0.0f);
     vec3 h = vec3(0.0f);
-    SampledSpectrum attenuation_nested = SampledSpectrumNewFloat(0.0f);
-    SampledSpectrum attenuation_coat = SampledSpectrumNewFloat(0.0f);
+    SampledSpectrum brdf_nested = SampledSpectrumNewFloat(0.0f);
+    SampledSpectrum brdf_coat = SampledSpectrumNewFloat(0.0f);
     float pdf_nested = 0.0f;
     float pdf_coat = 0.0f;
 
@@ -1225,18 +1225,18 @@ MaterialSampleInfo ClearCoatedConductorSample(IntersectionInfo info, vec3 world_
 
         // Evaluate base conductor (for mixing)
         MaterialEvalInfo nested = ConductorEvaluate(info, world_in, l, lambda);
-        attenuation_nested = nested.bsdf;
+        brdf_nested = nested.bsdf;
         pdf_nested = nested.pdf;
 
-        // Clear coat attenuation
+        // Clear coat brdf
         float G_coat = GGXG2(v, l, h, n, coat_alpha_u, coat_alpha_v);
-        attenuation_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
+        brdf_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
     }
     else {
         // Sample base conductor (through clear coat)
         MaterialSampleInfo nested = ConductorSample(info, world_in, sobol_sampler, lambda);
         l = nested.world_out;
-        attenuation_nested = nested.bsdf;
+        brdf_nested = nested.bsdf;
         pdf_nested = nested.pdf;
 
         float cos_theta_i = dot(n, l);
@@ -1253,13 +1253,13 @@ MaterialSampleInfo ClearCoatedConductorSample(IntersectionInfo info, vec3 world_
         if (D_coat > 0.0f) {
             pdf_coat = D_coat * abs(1.0f / (4.0f * dot(v, h)));
             float G_coat = GGXG2(v, l, h, n, coat_alpha_u, coat_alpha_v);
-            attenuation_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
+            brdf_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
         }
     }
 
     // Mix the two layers
     m_info.world_out = l;
-    m_info.bsdf = Add(MulFloat(attenuation_nested, 1.0f - weight_coat), MulFloat(attenuation_coat, clear_coat));
+    m_info.bsdf = Add(MulFloat(brdf_nested, 1.0f - weight_coat), MulFloat(brdf_coat, clear_coat));
     m_info.pdf = pdf_nested * (1.0f - weight_coat) + weight_coat * pdf_coat;
 
     return m_info;
