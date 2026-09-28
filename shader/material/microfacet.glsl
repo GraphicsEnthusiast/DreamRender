@@ -22,7 +22,7 @@ float GGXG1(vec3 v, vec3 h, vec3 n, float alpha_u, float alpha_v) {
     }
 
     // Avoid division by zero at normal incidence
-    if (abs(v_dot_n - 1.0f) < 1e-6f) {
+    if (abs(v_dot_n - 1.0f) < Epsilon) {
         return 1.0f;
     }
 
