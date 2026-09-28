@@ -4,8 +4,7 @@
 #include "spectrum/spectrum.glsl"
 
 /**
- * @brief Computes Schlick Fresnel approximation
- * F = F0 + (1 - F0) * (1 - cosθ)^5
+ * @brief Computes Schlick Fresnel approximation (F = F0 + (1 - F0) * (1 - cosθ)^5)
  * @param f0 Fresnel reflectance at normal incidence (F0)
  * @param v View direction
  * @param h Half vector

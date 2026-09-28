@@ -91,9 +91,9 @@ struct Material {
 	Vector3f eta;                                     ///< Real part of complex index of refraction (RGB)
 	Vector3f k;                                       ///< Imaginary part of complex index of refraction (RGB)
 	Vector3f specular;                                ///< Specular reflection color
-    float in_ior;
-    float out_ior;
-    float metallic;
+	float in_ior;                                     ///< Index of refraction of the incident medium (inside)
+	float out_ior;                                    ///< Index of refraction of the exiting medium (outside)
+	float metallic;                                   ///< Metallic factor (0.0 = dielectric, 1.0 = pure metal)
 
     /**
      * @brief Default constructor

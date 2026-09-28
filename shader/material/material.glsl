@@ -10,11 +10,11 @@ uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Boundary = 0;
-const int MaterialType_Diffuse = 1;          ///< Diffuse material (Oren-Nayar model)
+const int MaterialType_Diffuse = 1;          ///< Diffuse material (Oren-Nayar Model)
 const int MaterialType_Conductor = 2;        ///< Conductor material (GGX Microfacet Model)
 const int MaterialType_Dielectric = 3;       ///< Dielectric material (GGX Microfacet Model)
 const int MaterialType_Plastic = 4;          ///< Plastic material (GGX Microfacet Model)
-const int MaterialType_MetalWorkflow = 5; ///< Metallic workflow material (GGX Microfacet Model)
+const int MaterialType_MetalWorkflow = 5;    ///< Metallic workflow material (GGX Microfacet Model)
 
 /**
  * @struct MaterialEvalInfo
@@ -803,7 +803,7 @@ MaterialEvalInfo MetalWorkflowEvaluate(IntersectionInfo info, vec3 world_in, vec
     SampledSpectrum specular_brdf = MulFloat(F, D * G / (4.0f * n_dot_l * n_dot_v));
     
     // Diffuse BRDF: diffuse / π
-    SampledSpectrum diffuse_brdf = MulFloat(diffuse, 1.0f / PI);
+    SampledSpectrum diffuse_brdf = DivFloat(diffuse, PI);
 
     // Mix
     m_info.bsdf = Add(MulFloat(diffuse_brdf, p_diffuse), MulFloat(specular_brdf, 1.0f - p_diffuse));
@@ -894,7 +894,7 @@ MaterialSampleInfo MetalWorkflowSample(IntersectionInfo info, vec3 world_in, ino
     SampledSpectrum specular_brdf = MulFloat(F, D * G / (4.0f * n_dot_l * n_dot_v));
     
     // Diffuse BRDF
-    SampledSpectrum diffuse_brdf = MulFloat(diffuse, 1.0f / PI);
+    SampledSpectrum diffuse_brdf = DivFloat(diffuse, PI);
 
     // Mix
     m_info.world_out = l;
