@@ -76,6 +76,13 @@ struct Material {
     float metallic;
     // Metallic workflow texture index
     int metallic_texture;
+
+    float clear_coat;
+
+    float coat_roughness_u;
+    float coat_roughness_v;
+    int coat_roughness_aniso_texture_u;
+    int coat_roughness_aniso_texture_v;
 };
 
 /**

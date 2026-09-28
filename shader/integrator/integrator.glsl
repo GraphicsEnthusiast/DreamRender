@@ -88,9 +88,6 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     mat.type = int(tri.material_type.x);
 
     //int emission_texture_id = int(tri.emission.w);
-    int diffuse_texture_id = int(tri.diffuse.w);
-    int roughness_texture_id = int(tri.roughness.w);
-
     // Get emission
     //RGB emission_rgb = RGBNew(tri.emission.r, tri.emission.g, tri.emission.b);
     //RGBIlluminantSpectrum emission_spectrum = RGBIlluminantSpectrumNew(emission_rgb);
@@ -101,7 +98,7 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     RGB diffuse = RGBNew(tri.diffuse.r, tri.diffuse.g, tri.diffuse.b);
     RGBAlbedoSpectrum diffuse_spectrum = RGBAlbedoSpectrumNew(diffuse);
     mat.diffuse = RGBAlbedoSpectrumSample(diffuse_spectrum, lambda);
-    mat.diffuse_texture = diffuse_texture_id;
+    mat.diffuse_texture = int(tri.diffuse.w);
 
     // Get anisotropic roughness (x = U, y = V, z/w = texture IDs)
     mat.roughness_u = tri.roughness.x;
@@ -127,6 +124,16 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
 
     mat.in_ior = tri.in_ior;
     mat.out_ior = tri.out_ior;
+
+    mat.metallic = tri.metallic.x;
+    mat.metallic_texture = int(tri.metallic.y);
+    mat.clear_coat = tri.metallic.z;
+
+    // Get anisotropic roughness (x = U, y = V, z/w = texture IDs)
+    mat.coat_roughness_u = tri.coat_roughness.x;
+    mat.coat_roughness_v = tri.coat_roughness.y;
+    mat.coat_roughness_aniso_texture_u = int(tri.coat_roughness.z);
+    mat.coat_roughness_aniso_texture_v = int(tri.coat_roughness.w);
 
     // Set the material
     info.material = mat;

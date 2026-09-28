@@ -37,7 +37,8 @@ struct Triangle {
     vec3 k;               ///< Conductor complex IOR imaginary part (constant only)
     float in_ior;          ///< Inside medium index of refraction
     float out_ior;         ///< Outside medium index of refraction
-    vec4 metallic;         ///< Metallic workflow parameters (x = metallic, y: -1=const, >=0=textures)
+    vec4 metallic;         ///< Metallic workflow parameters (x = metallic, y: -1=const, >=0=textures), z = clear coat
+    vec4 coat_roughness;   ///< Clear coat roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 
     int in_phase_type;      ///< Inside medium phase function type
     float in_g;             ///< Inside medium asymmetry parameter
@@ -71,7 +72,7 @@ struct BVHNode {
  * @return Fetched Triangle structure with position and normal data
  */
 Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
-    int base = index * 20; // 20 vec4 per triangle
+    int base = index * 21; // 21 vec4 per triangle
 
     Triangle tri;
 
@@ -103,7 +104,6 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     vec4 emission_data = texelFetch(trangles_buffer, base + 7);
     vec4 diffuse_data = texelFetch(trangles_buffer, base + 8);
     vec4 roughness_data = texelFetch(trangles_buffer, base + 9);
-
     tri.material_type = mat_type_data;
     tri.emission = emission_data;
     tri.diffuse = diffuse_data;
@@ -114,6 +114,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     vec4 eta_data = texelFetch(trangles_buffer, base + 11);
     vec4 k_data = texelFetch(trangles_buffer, base + 12);
     vec4 metallic_data = texelFetch(trangles_buffer, base + 13);
+    vec4 coat_roughness_data = texelFetch(trangles_buffer, base + 14);
 
     tri.specular = specular_data;
     tri.eta = eta_data.xyz;
@@ -121,11 +122,12 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.in_ior = eta_data.w;
     tri.out_ior = k_data.w;
     tri.metallic = metallic_data;
+    tri.coat_roughness = coat_roughness_data;
 
     // Fetch inside medium parameters
-    vec4 in_type_info = texelFetch(trangles_buffer, base + 14);
-    vec4 in_sigma_s_data = texelFetch(trangles_buffer, base + 15);
-    vec4 in_sigma_t_data = texelFetch(trangles_buffer, base + 16);
+    vec4 in_type_info = texelFetch(trangles_buffer, base + 15);
+    vec4 in_sigma_s_data = texelFetch(trangles_buffer, base + 16);
+    vec4 in_sigma_t_data = texelFetch(trangles_buffer, base + 17);
 
     tri.in_phase_type = int(in_type_info.x);
     tri.in_g = in_type_info.y;
@@ -135,9 +137,9 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.in_sigma_t = in_sigma_t_data.xyz;
 
     // Fetch outside medium parameters
-    vec4 out_type_info = texelFetch(trangles_buffer, base + 17);
-    vec4 out_sigma_s_data = texelFetch(trangles_buffer, base + 18);
-    vec4 out_sigma_t_data = texelFetch(trangles_buffer, base + 19);
+    vec4 out_type_info = texelFetch(trangles_buffer, base + 18);
+    vec4 out_sigma_s_data = texelFetch(trangles_buffer, base + 19);
+    vec4 out_sigma_t_data = texelFetch(trangles_buffer, base + 20);
 
     tri.out_phase_type = int(out_type_info.x);
     tri.out_g = out_type_info.y;

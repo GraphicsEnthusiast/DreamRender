@@ -10,12 +10,13 @@ uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Boundary = 0;
-const int MaterialType_Diffuse = 1;          ///< Diffuse material (Oren-Nayar Model)
-const int MaterialType_Conductor = 2;        ///< Conductor material (GGX Microfacet Model)
-const int MaterialType_Dielectric = 3;       ///< Dielectric material (GGX Microfacet Model)
-const int MaterialType_Plastic = 4;          ///< Plastic material (GGX Microfacet Model)
-const int MaterialType_MetalWorkflow = 5;    ///< Metallic workflow material (GGX Microfacet Model + Lambert Model)
-const int MaterialType_ThinDielectric = 6;   ///< Thin dielectric material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_Diffuse = 1;                ///< Diffuse material (Oren-Nayar Model)
+const int MaterialType_Conductor = 2;              ///< Conductor material (GGX Microfacet Model)
+const int MaterialType_Dielectric = 3;             ///< Dielectric material (GGX Microfacet Model)
+const int MaterialType_Plastic = 4;                ///< Plastic material (GGX Microfacet Model)
+const int MaterialType_MetalWorkflow = 5;          ///< Metallic workflow material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_ThinDielectric = 6;         ///< Thin dielectric material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_ClearCoatedConductor = 7;   ///< Clear coated conductor material (GGX Microfacet Model + Lambert Model)
 
 /**
  * @struct MaterialEvalInfo
@@ -136,6 +137,53 @@ float GetFinalRoughnessV(IntersectionInfo info) {
     }
 
     return result;
+}
+
+/**
+ * @brief Retrieves the final anisotropic roughness U with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @return float containing anisotropic roughness U value
+ */
+float GetFinalCoatRoughnessU(IntersectionInfo info) {
+    // Fallback: Use base anisotropic roughness U
+    float result = info.material.coat_roughness_u;
+
+    int tex_u = info.material.coat_roughness_aniso_texture_u;
+
+    if (tex_u >= 0 && tex_u < TextureCount) {
+        vec4 tex_color = SampleTextureArray(tex_u, info.uv);
+        result = tex_color.r;
+    }
+
+    return result;
+}
+
+/**
+ * @brief Retrieves the final anisotropic roughness V with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @return float containing anisotropic roughness V value
+ */
+float GetFinalCoatRoughnessV(IntersectionInfo info) {
+    // Fallback: Use base anisotropic roughness V
+    float result = info.material.coat_roughness_v;
+
+    int tex_v = info.material.coat_roughness_aniso_texture_v;
+
+    if (tex_v >= 0 && tex_v < TextureCount) {
+        vec4 tex_color = SampleTextureArray(tex_v, info.uv);
+        result = tex_color.r;
+    }
+
+    return result;
+}
+
+/**
+ * @brief Retrieves the final clear coat strength with texture mapping support
+ * @param info Intersection data containing material properties and UV coordinates
+ * @return float containing clear coat strength value
+ */
+float GetFinalClearCoat(IntersectionInfo info) {
+    return info.material.clear_coat;
 }
 
 /**
@@ -1054,6 +1102,170 @@ MaterialSampleInfo ThinDielectricSample(IntersectionInfo info, vec3 world_in, in
 }
 
 /**
+ * @brief Evaluates the BSDF and PDF for a clear coated conductor material
+ * (A conductor base with a dielectric clear coat layer on top)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo ClearCoatedConductorEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Clear coat properties
+    float clear_coat = GetFinalClearCoat(info);
+    float coat_roughness_u = GetFinalCoatRoughnessU(info);
+    float coat_roughness_v = GetFinalCoatRoughnessV(info);
+    float coat_alpha_u = coat_roughness_u * coat_roughness_u;
+    float coat_alpha_v = coat_roughness_v * coat_roughness_v;
+    float coat_eta = 1.5f;  // Clear coat IOR (assumed to be resin/glass)
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
+
+    float cos_theta_o = dot(n, v);
+    if (cos_theta_o <= 0.0f) {
+        return m_info;
+    }
+
+    // Evaluate the base conductor (using its own roughness)
+    MaterialEvalInfo nested = ConductorEvaluate(info, world_in, world_out, lambda);
+    SampledSpectrum attenuation_nested = nested.bsdf;
+    float pdf_nested = nested.pdf;
+
+    // Compute clear coat contribution
+    vec3 h = normalize(l + v);
+    float F_coat = FresnelDielectric(v, h, 1.0f / coat_eta);
+    float weight_coat = clear_coat * F_coat;
+
+    float pdf_coat = 0.0f;
+    SampledSpectrum attenuation_coat = SampledSpectrumNewFloat(0.0f);
+
+    float D_coat = GGXD(h, n, coat_alpha_u, coat_alpha_v);
+    if (D_coat > 0.0f) {
+        float cos_theta_i = dot(n, l);
+        if (cos_theta_i > 0.0f) {
+            pdf_coat = D_coat * abs(1.0f / (4.0f * dot(v, h)));
+            float G_coat = GGXG2(v, l, h, n, coat_alpha_u, coat_alpha_v);
+            attenuation_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
+        }
+    }
+
+    // Mix the two layers
+    m_info.bsdf = Add(MulFloat(attenuation_nested, 1.0f - weight_coat), MulFloat(attenuation_coat, clear_coat));
+    m_info.pdf = pdf_nested * (1.0f - weight_coat) + weight_coat * pdf_coat;
+
+    return m_info;
+}
+
+/**
+ * @brief Samples a direction and evaluates the BSDF for a clear coated conductor material
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param sobol_sampler Sobol sequence sampler
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo ClearCoatedConductorSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Clear coat properties
+    float clear_coat = GetFinalClearCoat(info);
+    float coat_roughness_u = GetFinalCoatRoughnessU(info);
+    float coat_roughness_v = GetFinalCoatRoughnessV(info);
+    float coat_alpha_u = coat_roughness_u * coat_roughness_u;
+    float coat_alpha_v = coat_roughness_v * coat_roughness_v;
+    float coat_eta = 1.5f;
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+
+    float cos_theta_o = dot(n, v);
+    if (cos_theta_o <= 0.0f) {
+        return m_info;
+    }
+
+    // Compute clear coat sampling weight (using Fresnel at incident direction)
+    float F_coat_initial = FresnelDielectric(-v, n, 1.0f / coat_eta);
+    float weight_coat = clear_coat * F_coat_initial;
+
+    vec3 l = vec3(0.0f);
+    vec3 h = vec3(0.0f);
+    SampledSpectrum attenuation_nested = SampledSpectrumNewFloat(0.0f);
+    SampledSpectrum attenuation_coat = SampledSpectrumNewFloat(0.0f);
+    float pdf_nested = 0.0f;
+    float pdf_coat = 0.0f;
+
+    if (SobolSamplerGet1(sobol_sampler) < weight_coat) {
+        // Sample clear coat reflection
+        vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+        vec3 local_h = GGXSampleVisible(n, v, coat_alpha_u, coat_alpha_v, sample_xy);
+        h = ToWorldFromUp(local_h, n);
+        
+        l = reflect(-v, h);
+        
+        float cos_theta_i = dot(n, l);
+        if (cos_theta_i <= 0.0f) {
+            return m_info;
+        }
+
+        // Recompute weight (using sampled h)
+        float F_coat = FresnelDielectric(v, h, 1.0f / coat_eta);
+        weight_coat = clear_coat * F_coat;
+
+        float D_coat = GGXD(h, n, coat_alpha_u, coat_alpha_v);
+        pdf_coat = D_coat * abs(1.0f / (4.0f * dot(v, h)));
+
+        // Evaluate base conductor (for mixing)
+        MaterialEvalInfo nested = ConductorEvaluate(info, world_in, l, lambda);
+        attenuation_nested = nested.bsdf;
+        pdf_nested = nested.pdf;
+
+        // Clear coat attenuation
+        float G_coat = GGXG2(v, l, h, n, coat_alpha_u, coat_alpha_v);
+        attenuation_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
+    }
+    else {
+        // Sample base conductor (through clear coat)
+        MaterialSampleInfo nested = ConductorSample(info, world_in, sobol_sampler, lambda);
+        l = nested.world_out;
+        attenuation_nested = nested.bsdf;
+        pdf_nested = nested.pdf;
+
+        float cos_theta_i = dot(n, l);
+        if (cos_theta_i <= 0.0f) {
+            return m_info;
+        }
+
+        // Compute clear coat contribution (for PDF mixing)
+        h = normalize(l + v);
+        float F_coat = FresnelDielectric(v, h, 1.0f / coat_eta);
+        weight_coat = clear_coat * F_coat;
+
+        float D_coat = GGXD(h, n, coat_alpha_u, coat_alpha_v);
+        if (D_coat > 0.0f) {
+            pdf_coat = D_coat * abs(1.0f / (4.0f * dot(v, h)));
+            float G_coat = GGXG2(v, l, h, n, coat_alpha_u, coat_alpha_v);
+            attenuation_coat = MulFloat(SampledSpectrumNewFloat(F_coat * D_coat * G_coat / abs(4.0f * cos_theta_i * cos_theta_o)), cos_theta_i);
+        }
+    }
+
+    // Mix the two layers
+    m_info.world_out = l;
+    m_info.bsdf = Add(MulFloat(attenuation_nested, 1.0f - weight_coat), MulFloat(attenuation_coat, clear_coat));
+    m_info.pdf = pdf_nested * (1.0f - weight_coat) + weight_coat * pdf_coat;
+
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -1084,6 +1296,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     }
     else if (MaterialType_ThinDielectric == info.material.type) {
         return ThinDielectricEvaluate(info, world_in, world_out, lambda);
+    }
+    else if (MaterialType_ClearCoatedConductor == info.material.type) {
+        return ClearCoatedConductorEvaluate(info, world_in, world_out, lambda);
     }
     
     // Unknown material type, return zero contribution
@@ -1123,7 +1338,9 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, inout So
     else if (MaterialType_ThinDielectric == info.material.type) {
         return ThinDielectricSample(info, world_in, sobol_sampler, lambda);
     }
-
+    else if (MaterialType_ClearCoatedConductor == info.material.type) {
+        return ClearCoatedConductorSample(info, world_in, sobol_sampler, lambda);
+    }
     // Unknown material type, return zero contribution
     return result;
 }

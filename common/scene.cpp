@@ -390,6 +390,9 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		int roughness_v_tex_id = material->GetTextureID(TextureType::ROUGHNESS_V);
 		int specular_tex_id = material->GetTextureID(TextureType::SPECULAR);
         int normal_tex_id = material->GetTextureID(TextureType::NORMAL);
+        int metallic_tex_id = material->GetTextureID(TextureType::METALLIC);
+		int coat_roughness_u_tex_id = material->GetTextureID(TextureType::COATROUGHNESS_U);
+		int coat_roughness_v_tex_id = material->GetTextureID(TextureType::COATROUGHNESS_V);
 
         // Get media
         const Medium* in_medium = mesh.GetInMedium();
@@ -466,7 +469,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
                 material->roughness_u,
                 material->roughness_v,
                 static_cast<float>(roughness_u_tex_id),
-                static_cast<float>(roughness_v_tex_id)  // w: roughness texture ID
+                static_cast<float>(roughness_v_tex_id)
             );
 
 			// Specular color
@@ -491,6 +494,20 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				material->k.g,
 				material->k.b,
 				material->out_ior
+			);
+
+			encoded_tri.metallic = Vector4f(
+				material->metallic,
+                static_cast<float>(metallic_tex_id),
+				material->clear_coat,
+				0.0f
+			);
+
+			encoded_tri.coat_roughness = Vector4f(
+				material->coat_roughness_u,
+				material->coat_roughness_v,
+				static_cast<float>(coat_roughness_u_tex_id),
+				static_cast<float>(coat_roughness_v_tex_id)
 			);
 
             // Encode inside medium
