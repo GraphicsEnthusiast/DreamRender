@@ -221,6 +221,7 @@ void RenderPass::SetSceneParameters(Shader& shader) {
 	shader.SetFloat("SceneRadius", scene_manager.GetSceneRadius());
 
 	shader.SetUInt("FrameCounter", GetFrameCounter());
+	shader.SetInt("MaxBounce", 30);
 }
 
 void RenderPass::BindSRGBToSpectrumSSBO(GLuint index) noexcept {

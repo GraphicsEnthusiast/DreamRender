@@ -6,6 +6,7 @@
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D OutputTex;
 uniform uint FrameCounter;
+uniform uint MaxBounce;
 layout(std140, binding = 9) uniform CameraData {
     vec3 camera_position;
     float camera_fov;
@@ -97,9 +98,8 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
 /**
  * @brief Path tracing integrator with multiple importance sampling
  * @param pixel_coords Current pixel coordinates
- * @param max_bounce Maximum number of ray bounces
  */
-void PathTracing(ivec2 pixel_coords, float max_bounce) {
+void PathTracing(ivec2 pixel_coords) {
     // Create camera
     Camera camera = CreateCamera(
         camera_position, camera_target, camera_up,
@@ -143,7 +143,7 @@ void PathTracing(ivec2 pixel_coords, float max_bounce) {
     float mult_trans_pdf = 1.0f;
     bool has_mesh_light = MeshLightTableSize > 0;
 
-    for (int bounce = 0; bounce < max_bounce; ++bounce) {
+    for (int bounce = 0; bounce < MaxBounce; ++bounce) {
         Hit hit = BVHTraverse(ray, has_mesh_light);
         IntersectionInfo info = GetIntersectionInfo(hit, world_out, lambda, ray.transport_mode);
         
@@ -299,5 +299,5 @@ void main() {
         return;
     }
 
-    PathTracing(pixel_coords, 50);
+    PathTracing(pixel_coords);
 }
