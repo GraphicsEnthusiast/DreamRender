@@ -72,8 +72,9 @@ enum class MaterialType {
     DIFFUSE = 1,                ///< Diffuse material (Oren-Nayar model)
     CONDUCTOR = 2,              ///< Conductor material (GGX Microfacet Model)
     DIELECTRIC = 3,             ///< Dielectric material (GGX Microfacet Model)
-    PLASTIC = 4,                ///< Plastic material (GGX Microfacet Model)
-    METALWORKFLOW = 5,          ///< Metallic workflow material (GGX Microfacet Model)
+	PLASTIC = 4,                ///< Plastic material (GGX Microfacet Model + Lambert Model)
+    METALWORKFLOW = 5,          ///< Metallic workflow material (GGX Microfacet Model + Lambert Model)
+    THINDIELECTRIC = 6,         ///< Thin Dielectric material (GGX Microfacet Model)
 };
 
 /**

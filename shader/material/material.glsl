@@ -14,7 +14,8 @@ const int MaterialType_Diffuse = 1;          ///< Diffuse material (Oren-Nayar M
 const int MaterialType_Conductor = 2;        ///< Conductor material (GGX Microfacet Model)
 const int MaterialType_Dielectric = 3;       ///< Dielectric material (GGX Microfacet Model)
 const int MaterialType_Plastic = 4;          ///< Plastic material (GGX Microfacet Model)
-const int MaterialType_MetalWorkflow = 5;    ///< Metallic workflow material (GGX Microfacet Model)
+const int MaterialType_MetalWorkflow = 5;    ///< Metallic workflow material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_ThinDielectric = 6;   ///< Thin dielectric material (GGX Microfacet Model + Lambert Model)
 
 /**
  * @struct MaterialEvalInfo
@@ -909,6 +910,150 @@ MaterialSampleInfo MetalWorkflowSample(IntersectionInfo info, vec3 world_in, ino
 }
 
 /**
+ * @brief Evaluates the BSDF and PDF for a thin dielectric material (e.g., glass, water surface)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space (view direction)
+ * @param world_out Out direction in world space (light direction)
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo ThinDielectricEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    float eta = info.material.in_ior / info.material.out_ior;
+    SampledSpectrum specular = GetFinalSpecular(info, lambda);
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
+    vec3 h = vec3(0.0f);
+
+    // Determine if this is reflection or transmission based on hemisphere
+    bool is_reflect = dot(n, l) * dot(n, v) > 0.0f;
+    if (is_reflect) {
+        h = normalize(v + l);
+    }
+    else {
+        vec3 v_reflected = ToWorldFromUp(ToLocalFromUp(v, -n), n);
+        h = normalize(v_reflected + l);
+        if (dot(n, h) < 0.0f) {
+            h = -h;
+        }
+    }
+
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float F = FresnelDielectric(v, h, 1.0f / eta);
+    if (F < 1.0f) {
+        F *= 2.0f / (1.0f + F);
+    }
+    float D = GGXD(h, n, alpha_u, alpha_v);
+    float dwh_dwi = abs(1.0f / (4.0f * dot(v, h)));
+    float n_dot_v = abs(dot(n, v));
+    float n_dot_l = abs(dot(n, l));
+    float G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+
+    if (is_reflect) {
+        if (dot(n, l) <= 0.0f) {
+            return m_info;
+        }
+
+        m_info.pdf = F * Dv * dwh_dwi;
+        m_info.bsdf = MulFloat(specular, F * D * G / (4.0f * n_dot_v * n_dot_l));
+    }
+    else {
+        if (dot(n, l) * dot(n, v) >= 0.0f) {
+            return m_info;
+        }
+
+        m_info.pdf = (1.0f - F) * Dv * dwh_dwi;
+        m_info.bsdf = MulFloat(specular, (1.0f - F) * D * G / (4.0f * n_dot_v * n_dot_l));
+    }
+
+    return m_info;
+}
+
+/**
+ * @brief Samples a direction and evaluates the BSDF for a thin dielectric material
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space (view direction)
+ * @param sobol_sampler Sobol sequence sampler
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo ThinDielectricSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    float eta = info.material.in_ior / info.material.out_ior;
+    SampledSpectrum specular = GetFinalSpecular(info, lambda);
+    float roughness_u = GetFinalRoughnessU(info);
+    float roughness_v = GetFinalRoughnessV(info);
+    float alpha_u = roughness_u * roughness_u;
+    float alpha_v = roughness_v * roughness_v;
+
+    vec3 n = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+
+    // Sample half vector using VNDF
+    vec2 sample_xy = vec2(SobolSamplerGet1(sobol_sampler), SobolSamplerGet1(sobol_sampler));
+    vec3 local_h = GGXSampleVisible(n, v, alpha_u, alpha_v, sample_xy);
+    vec3 h = ToWorldFromUp(local_h, n);
+
+    float Dv = GGXDV(v, h, n, alpha_u, alpha_v);
+    float F = FresnelDielectric(v, h, 1.0f / eta);
+    if (F < 1.0f) {
+        F *= 2.0f / (1.0f + F);
+    }
+    float D = GGXD(h, n, alpha_u, alpha_v);
+
+    vec3 l = vec3(0.0f);
+    float n_dot_v = abs(dot(n, v));
+    float n_dot_l = 0.0f;
+    float dwh_dwi = abs(1.0f / (4.0f * dot(v, h)));
+    float G = 0.0f;
+
+    // Randomly choose reflection or transmission based on Fresnel
+    if (SobolSamplerGet1(sobol_sampler) < F) {
+        // Reflection
+        l = reflect(-v, h);
+        n_dot_l = abs(dot(n, l));
+
+        if (dot(n, l) <= 0.0f) {
+            return m_info;
+        }
+
+        G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+        m_info.pdf = F * Dv * dwh_dwi;
+        m_info.bsdf = MulFloat(specular, F * D * G / (4.0f * n_dot_v * n_dot_l));
+    }
+    else {
+        // Transmission (thin dielectric: light passes straight through)
+        l = -v;
+        n_dot_l = abs(dot(n, l));
+
+        if (dot(n, l) * dot(n, v) >= 0.0f) {
+            return m_info;
+        }
+
+        G = GGXG2(v, l, h, n, alpha_u, alpha_v);
+        m_info.pdf = (1.0f - F) * Dv * dwh_dwi;
+        m_info.bsdf = MulFloat(specular, (1.0f - F) * D * G / (4.0f * n_dot_v * n_dot_l));
+    }
+
+    m_info.world_out = l;
+    
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -936,6 +1081,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     }
     else if (MaterialType_MetalWorkflow == info.material.type) {
         return MetalWorkflowEvaluate(info, world_in, world_out, lambda);
+    }
+    else if (MaterialType_ThinDielectric == info.material.type) {
+        return ThinDielectricEvaluate(info, world_in, world_out, lambda);
     }
     
     // Unknown material type, return zero contribution
@@ -971,6 +1119,9 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, inout So
     }
     else if (MaterialType_MetalWorkflow == info.material.type) {
         return MetalWorkflowSample(info, world_in, sobol_sampler, lambda);
+    }
+    else if (MaterialType_ThinDielectric == info.material.type) {
+        return ThinDielectricSample(info, world_in, sobol_sampler, lambda);
     }
 
     // Unknown material type, return zero contribution

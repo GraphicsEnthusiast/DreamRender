@@ -44,7 +44,7 @@ void RenderPipeline::Init() {
 	int cube_normal_id = scene_manager.LoadTexture(cube_normal_path, TextureType::NORMAL);
 
 	Material teapot_material;
-	teapot_material.type = MaterialType::METALWORKFLOW;
+	teapot_material.type = MaterialType::THINDIELECTRIC;
 	teapot_material.metallic = 0.7f;
 	teapot_material.in_ior = 1.5f;
     teapot_material.out_ior = 1.0f;
@@ -94,7 +94,7 @@ void RenderPipeline::Init() {
 	);
 
 	scene_manager.EncodeTriangles(meshes, false);
-	//scene_manager.EncodeTriangles(meshes2, true);
+	scene_manager.EncodeTriangles(meshes2, true);
 	scene_manager.BuildBVH();
 
 	// Calculating the power of ambient light depends on the size of the scene, 
