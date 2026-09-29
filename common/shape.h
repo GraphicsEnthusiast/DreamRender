@@ -161,7 +161,7 @@ enum class PhaseType {
  * @brief Enumerates medium types for volumetric scattering
  */
 enum class MediumType {
-    HOMOGENEOUS = 0,  ///< Homogeneous medium
+    HOMOGENEOUS = 0,    ///< Homogeneous medium
 };
 
 /**
@@ -304,7 +304,7 @@ struct alignas(16) TriangleEncoded {
 	alignas(16) Vector4f specular;      ///< Specular color (xyz) and texture flag (w = texture ID, -1 for constant)
 	alignas(16) Vector4f eta;           ///< xyz = eta_rgb, w = ior_in
 	alignas(16) Vector4f k;             ///< xyz = k_rgb, w = ior_out
-    alignas(16) Vector4f metallic;      ///< Metallic (x components) and texture flag (y component: -1 = constant color, other = texture), z = clear coat
+    alignas(16) Vector4f metallic_coat;      ///< Metallic (x components) and texture flag (y component: -1 = constant color, other = texture), z = clear coat
     alignas(16) Vector4f coat_roughness;///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 
     alignas(16) Vector4f in_type_info;    ///< Inside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)

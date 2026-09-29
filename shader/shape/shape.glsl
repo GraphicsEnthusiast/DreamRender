@@ -37,7 +37,7 @@ struct Triangle {
     vec3 k;               ///< Conductor complex IOR imaginary part (constant only)
     float in_ior;          ///< Inside medium index of refraction
     float out_ior;         ///< Outside medium index of refraction
-    vec4 metallic;         ///< Metallic workflow parameters (x = metallic, y: -1=const, >=0=textures), z = clear coat
+    vec4 metallic_coat;         ///< Metallic workflow parameters (x = metallic, y: -1=const, >=0=textures), z = clear coat
     vec4 coat_roughness;   ///< Clear coat roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 
     int in_phase_type;      ///< Inside medium phase function type
@@ -113,7 +113,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     vec4 specular_data = texelFetch(trangles_buffer, base + 10);
     vec4 eta_data = texelFetch(trangles_buffer, base + 11);
     vec4 k_data = texelFetch(trangles_buffer, base + 12);
-    vec4 metallic_data = texelFetch(trangles_buffer, base + 13);
+    vec4 metallic_coat_data = texelFetch(trangles_buffer, base + 13);
     vec4 coat_roughness_data = texelFetch(trangles_buffer, base + 14);
 
     tri.specular = specular_data;
@@ -121,7 +121,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.k = k_data.xyz;
     tri.in_ior = eta_data.w;
     tri.out_ior = k_data.w;
-    tri.metallic = metallic_data;
+    tri.metallic_coat = metallic_coat_data;
     tri.coat_roughness = coat_roughness_data;
 
     // Fetch inside medium parameters

@@ -125,9 +125,9 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     mat.in_ior = tri.in_ior;
     mat.out_ior = tri.out_ior;
 
-    mat.metallic = tri.metallic.x;
-    mat.metallic_texture = int(tri.metallic.y);
-    mat.clear_coat = tri.metallic.z;
+    mat.metallic = tri.metallic_coat.x;
+    mat.metallic_texture = int(tri.metallic_coat.y);
+    mat.clear_coat = tri.metallic_coat.z;
 
     // Get anisotropic roughness (x = U, y = V, z/w = texture IDs)
     mat.coat_roughness_u = tri.coat_roughness.x;

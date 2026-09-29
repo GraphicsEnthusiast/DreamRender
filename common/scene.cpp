@@ -496,7 +496,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				material->out_ior
 			);
 
-			encoded_tri.metallic = Vector4f(
+			encoded_tri.metallic_coat = Vector4f(
 				material->metallic,
                 static_cast<float>(metallic_tex_id),
 				material->clear_coat,
