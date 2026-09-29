@@ -217,6 +217,12 @@ void RenderPass::SetSceneParameters(Shader& shader) {
 		shader.SetFloat("HDREnvPower", 0.0f);
 	}
 
+	// Bind density field TBO (unified buffer for all heterogeneous media)
+	if (scene_manager.HasDensityField()) {
+		scene_manager.GetDensityTBO().BindTexture(14);
+		shader.SetInt("Density", 14);
+	}
+
 	shader.SetVector("SceneCenter", scene_manager.GetSceneCenter());
 	shader.SetFloat("SceneRadius", scene_manager.GetSceneRadius());
 

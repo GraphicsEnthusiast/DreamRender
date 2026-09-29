@@ -156,6 +156,12 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
+
+            medium.density_offset = tri.out_density_offset;
+            medium.max_density = tri.out_max_density;
+            medium.min_corner = tri.out_min_corner;
+            medium.max_corner = tri.out_max_corner;
+            medium.grid_size = tri.out_size;
         }
     }
     else {
@@ -171,6 +177,12 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
+
+            medium.density_offset = tri.in_density_offset;
+            medium.max_density = tri.in_max_density;
+            medium.min_corner = tri.in_min_corner;
+            medium.max_corner = tri.in_max_corner;
+            medium.grid_size = tri.in_size;
         }
     }
 

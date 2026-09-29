@@ -24,6 +24,33 @@ Medium::Medium()
 	, sigma_t(1.0f) {
 }
 
+std::vector<float> Medium::ReadDensityFromFile(const char* file, int nx, int ny, int nz) {
+	std::vector<float> density(nx * ny * nz);
+
+	FILE* fp = fopen(file, "r");
+	if (!fp) {
+		ERROR("[error] Failed to open density file: {}", file);
+
+		return {};
+	}
+
+	for (int i = 0; i < nx * ny * nz; ++i) {
+		float c;
+		if (fscanf(fp, "%f\n", &c) != 1) {
+			ERROR("[error] Failed to read density value at index {}", i);
+			fclose(fp);
+
+			return {};
+		}
+		density[i] = c;
+	}
+
+	fclose(fp);
+	INFO("[info] Density field loaded: {} ({}x{}x{})", file, nx, ny, nz);
+
+	return density;
+}
+
 bool Material::HasTexture(TextureType type) const {
 	auto it = texture_ids.find(type);
 

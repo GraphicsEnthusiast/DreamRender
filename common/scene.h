@@ -197,6 +197,25 @@ public:
     Vector3f GetSceneCenter() const noexcept;
 
     /**
+     * @brief Adds a density field to the unified density TBO
+     * @param density Voxel density grid data
+     * @return offset of the density field in the TBO, or -1 if failed
+     */
+    int AddDensityField(const std::vector<float>& density);
+
+    /**
+     * @brief Gets the TBO containing all density fields
+     * @return Reference to the density Texture Buffer Object
+     */
+    const TBO& GetDensityTBO() const noexcept;
+
+    /**
+	 * @brief Checks whether any density fields have been added
+	 * @return true if the density TBO has been created, false otherwise
+	 */
+    bool HasDensityField() const noexcept;
+
+    /**
      * @brief Deleted copy constructor
      */
     SceneManager(const SceneManager&) = delete;
@@ -291,6 +310,9 @@ protected:
     std::unique_ptr<TBO> mesh_light_alias_table_tbo_;       ///< TBO for alias table data
 
     std::unique_ptr<UBO> camera_ubo_;                       ///< UBO for camera parameters
+
+	std::vector<float> density_data_;                     ///< Unified density field data buffer
+	std::unique_ptr<TBO> density_tbo_;                    ///< TBO for all density fields
 
     static std::unique_ptr<SceneManager> instance_;         ///< Singleton instance pointer
 };
