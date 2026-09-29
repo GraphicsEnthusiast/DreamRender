@@ -209,31 +209,6 @@ void Interface::CreateMenuBar() {
 			ImGui::EndMenu();
 		}
 
-		// Rendering controls menu
-		if (ImGui::BeginMenu("Rendering")) {
-			// Add toggle for FPS overlay window
-			if (ImGui::MenuItem("Show FPS Overlay", nullptr, &show_fps_overlay_)) {
-				// Additional logic can be added here if needed
-			}
-
-			bool flag = true;
-			SelectableOptionFromFlag("Wireframe", flag);
-
-			if (ImGui::MenuItem("Disabled option", "[No shortcut]", false, false)) {
-			}
-			ImGui::Separator();
-			if (ImGui::MenuItem("Do nothing", "CTRL+X")) {
-			}
-			ImGui::EndMenu();
-		}
-
-		// Visualization settings menu
-		if (ImGui::BeginMenu("Visualization")) {
-			bool flag = true;
-			SelectableOptionFromFlag("Actuator", flag);
-			ImGui::EndMenu();
-		}
-
 		// View controls menu
 		if (ImGui::BeginMenu("View")) {
 			if (ImGui::MenuItem("Show FPS Overlay", nullptr, &show_fps_overlay_)) {
