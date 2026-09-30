@@ -27,6 +27,10 @@ set(GLM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glm/include)
 set(SPDLOG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog)
 
+# Add nanovdb
+set(NANOVDB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/nanovdb)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/nanovdb)
+
 # Add imgui
 set(IMGUI_INCLUDE_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
@@ -78,6 +82,7 @@ include_directories(
     ${TINY_INCLUDE_DIR}
     ${BVH_INCLUDE_DIR}
     ${COMMON_INCLUDE_DIR}
+    ${NANOVDB_INCLUDE_DIR}
 )
 
 add_executable(${PROJECT_NAME}
@@ -92,6 +97,7 @@ target_link_libraries(${PROJECT_NAME}
     imgui
     fmt
     common
+    nanovdb
 )
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
