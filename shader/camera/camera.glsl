@@ -23,6 +23,8 @@ struct Camera {
     float ratio;          ///< Focal distance ratio
     float sensor_area;    ///< Image plane area (sensor area)
     float lens_area;      ///< Lens area (calculated from aperture_radius)
+    bool has_medium;      ///< Indicates if the camera is inside a medium
+    Medium medium;        ///< Camera medium
 };
 
 /**
@@ -47,6 +49,8 @@ struct CameraSampleInfo {
     float pdf;
     vec2 raster_ndc;
     ivec2 raster;
+    Medium out_medium;
+    bool has_medium;
 };
 
 /**
@@ -68,9 +72,12 @@ struct CameraRayInfo {
  * @param angle Field of view in degrees
  * @param radius Aperture radius
  * @param focal Focal distance
+ * @param has_medium Indicates if the camera is inside a medium
+ * @param medium Camera medium (can be null/empty)
  * @return Initialized Camera structure looking at target
  */
-Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, float angle, float radius, float focal) {
+Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, float angle, float radius, float focal, 
+    bool has_medium, Medium medium) {
     Camera camera;
     camera.position = pos;
     camera.resolution = res;
@@ -78,6 +85,8 @@ Camera CreateCamera(vec3 pos, vec3 target, vec3 world_up, vec2 res, float dist, 
     camera.fov = angle;
     camera.aperture_radius = max(0.01f, radius);
     camera.focal_distance = focal;
+    camera.has_medium = has_medium;
+    camera.medium = medium;
     
     // Compute camera basis vectors using LookAt method
     camera.forward = normalize(pos - target);
@@ -256,6 +265,9 @@ CameraSampleInfo CameraSample(Camera camera, vec3 position, inout SobolSampler s
     // where r² = dot(dir, dir)
     result.pdf = dot(dir, dir) / (cos_theta * camera.lens_area);
     result.we = CameraWe(camera, negative_dir);
+
+    result.has_medium = camera.has_medium;
+    result.out_medium = camera.medium;
 
     return result;
 }

@@ -19,9 +19,40 @@ layout(std140, binding = 9) uniform CameraData {
     float camera_aperture;
     vec2 resolution;
     float camera_focal_distance;
+    float has_medium; // 0 if no medium, 1 if medium
+    float medium_type;
+    float phase_type;
+    float g;
+    vec3 sigma_s;
+    vec3 sigma_t;
     // Padding is automatically handled by std140 layout
     // No need to explicitly declare padding[3] in GLSL
 };
+
+/**
+ * @brief Init camera parameters and create a camera object
+ */
+Camera InitCamera() {
+    Medium camera_medium;
+    camera_medium.type = int(medium_type);
+    camera_medium.phase_type = int(phase_type);
+    camera_medium.g = g;
+    RGB sigma_s_rgb = RGBNew(sigma_s.r, sigma_s.g, sigma_s.b);
+    RGB sigma_t_rgb = RGBNew(sigma_t.r, sigma_t.g, sigma_t.b);
+    RGBAlbedoSpectrum sigma_s_spectrum = RGBAlbedoSpectrumNew(sigma_s_rgb);
+    RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
+    camera_medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, SampledWavelengthsSampleVisible(0.5f));
+    camera_medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, SampledWavelengthsSampleVisible(0.5f));
+    
+    Camera camera = CreateCamera(
+        camera_position, camera_target, camera_up,
+        resolution, camera_distance, camera_fov,
+        camera_aperture, camera_focal_distance,
+        1.0f == has_medium, camera_medium
+    );
+    
+    return camera;
+}
 
 /**
  * @brief Atomically accumulate color to a pixel
@@ -63,6 +94,20 @@ SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sa
         
         // If no intersection, we've reached the camera
         if (occlusion_hit.distance >= shadow_ray.tmax) {
+            if (camera_sample_info.has_medium) {
+                IntersectionInfo medium_info;
+                medium_info.has_medium = true;
+                medium_info.medium = camera_sample_info.out_medium;
+                medium_info = UpdateIntersectionInfoByMedium(medium_info, shadow_distance_remaining, shadow_origin, camera_sample_info.world_out);
+                
+                MediumEvalInfo medium_eval_info = MediumDistanceEvaluate(medium_info, beta, false);
+                
+                if (Valid(medium_eval_info.pdf)) {
+                    // Update transmittance and PDF
+                    visibility = Mul(visibility, DivFloat(medium_eval_info.transmittance, medium_eval_info.pdf));
+                }
+            }
+
             // Successfully reached the camera
             break;
         }
@@ -102,11 +147,7 @@ SampledSpectrum DirectCameraVisibility(vec3 position, CameraSampleInfo camera_sa
  */
 void LightTracing(ivec2 pixel_coords) {
     // Create camera
-    Camera camera = CreateCamera(
-        camera_position, camera_target, camera_up,
-        resolution, camera_distance, camera_fov,
-        camera_aperture, camera_focal_distance
-    );
+    Camera camera = InitCamera();
 
     // Initialize Sobol sampler
     SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);

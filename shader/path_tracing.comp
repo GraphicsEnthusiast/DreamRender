@@ -16,9 +16,40 @@ layout(std140, binding = 9) uniform CameraData {
     float camera_aperture;
     vec2 resolution;
     float camera_focal_distance;
+    float has_medium; // 0.0f if no medium, 1.0f if medium
+    float medium_type;
+    float phase_type;
+    float g;
+    vec3 sigma_s;
+    vec3 sigma_t;
     // Padding is automatically handled by std140 layout
     // No need to explicitly declare padding[3] in GLSL
 };
+
+/**
+ * @brief Init camera parameters and create a camera object
+ */
+Camera InitCamera() {
+    Medium camera_medium;
+    camera_medium.type = int(medium_type);
+    camera_medium.phase_type = int(phase_type);
+    camera_medium.g = g;
+    RGB sigma_s_rgb = RGBNew(sigma_s.r, sigma_s.g, sigma_s.b);
+    RGB sigma_t_rgb = RGBNew(sigma_t.r, sigma_t.g, sigma_t.b);
+    RGBAlbedoSpectrum sigma_s_spectrum = RGBAlbedoSpectrumNew(sigma_s_rgb);
+    RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
+    camera_medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, SampledWavelengthsSampleVisible(0.5f));
+    camera_medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, SampledWavelengthsSampleVisible(0.5f));
+    
+    Camera camera = CreateCamera(
+        camera_position, camera_target, camera_up,
+        resolution, camera_distance, camera_fov,
+        camera_aperture, camera_focal_distance,
+        1.0f == has_medium, camera_medium
+    );
+    
+    return camera;
+}
 
 // =================================================== Path Tracing ===================================================
 /**
@@ -101,11 +132,7 @@ SampledSpectrum DirectLightVisibility(vec3 position, LightSampleInfo light_sampl
  */
 void PathTracing(ivec2 pixel_coords) {
     // Create camera
-    Camera camera = CreateCamera(
-        camera_position, camera_target, camera_up,
-        resolution, camera_distance, camera_fov,
-        camera_aperture, camera_focal_distance
-    );
+    Camera camera = InitCamera();
 
     // Initialize Sobol sampler
     SobolSampler sobol_sampler = SobolSamplerNew(FrameCounter);

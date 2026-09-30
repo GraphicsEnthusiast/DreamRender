@@ -33,6 +33,7 @@ void RenderPipeline::Init() {
 	camera.camera_distance = 1.0f;
 	camera.camera_aperture = 0.1f;
 	camera.camera_focal_distance = 10.0f;
+	camera.has_medium = static_cast<float>(false);
 	camera.padding[0] = 0.0f;
 	camera.padding[1] = 0.0f;
 	camera.padding[2] = 0.0f;

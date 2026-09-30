@@ -10,14 +10,20 @@ NAMESPACE_BEGIN(dream)
  * @brief Camera parameters structure for UBO
  */
 struct Camera {
-    glm::vec3 camera_position;      ///< Camera position in world space
+    Vector3f camera_position;       ///< Camera position in world space
     float camera_fov;               ///< Camera field of view in degrees
-    glm::vec3 camera_target;        ///< Camera look at target
+    Vector3f camera_target;         ///< Camera look at target
     float camera_distance;          ///< Camera distance for depth of field
-    glm::vec3 camera_up;            ///< Camera up vector
+    Vector3f camera_up;             ///< Camera up vector
     float camera_aperture;          ///< Camera aperture for depth of field
-    glm::vec2 resolution;           ///< Render resolution (width, height)
+    Vector2f resolution;            ///< Render resolution (width, height)
     float camera_focal_distance;    ///< Camera focal distance for depth of field
+    float has_medium;               ///< Flag indicating if medium is present
+	float medium_type;              ///< Medium type (0 = homogeneous, -1 = none)
+	float phase_type;               ///< Phase function type (0 = Henyey-Greenstein)
+	float g;                        ///< Phase function asymmetry parameter (-1 to 1)
+	Vector3f sigma_s;               ///< Scattering coefficient (RGB)
+	Vector3f sigma_t;               ///< Extinction coefficient (sigma_a + sigma_s) (RGB)
     float padding[3];               ///< Padding to ensure 16-byte alignment
 };
 
