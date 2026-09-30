@@ -34,12 +34,6 @@ struct Medium {
     int type;
     SampledSpectrum sigma_s;
     SampledSpectrum sigma_t;
-
-    int density_offset;        // Density field offset (offset into density TBO)
-    float max_density;     // 1 / max_density for normalization
-    vec3 min_corner;           // Density grid min corner in world space
-    vec3 max_corner;           // Density grid max corner in world space
-    vec3 grid_size;            // Density grid dimensions
 };
 
 /**

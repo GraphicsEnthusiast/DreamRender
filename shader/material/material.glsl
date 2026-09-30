@@ -10,13 +10,13 @@ uniform int TextureCount;
 
 // Material type enumeration, consistent with C++ side
 const int MaterialType_Boundary = 0;
-const int MaterialType_Diffuse = 1;                // Diffuse material (Oren-Nayar Model)
-const int MaterialType_Conductor = 2;              // Conductor material (GGX Microfacet Model)
-const int MaterialType_Dielectric = 3;             // Dielectric material (GGX Microfacet Model)
-const int MaterialType_Plastic = 4;                // Plastic material (GGX Microfacet Model)
-const int MaterialType_MetalWorkflow = 5;          // Metallic workflow material (GGX Microfacet Model + Lambert Model)
-const int MaterialType_ThinDielectric = 6;         // Thin dielectric material (GGX Microfacet Model + Lambert Model)
-const int MaterialType_ClearCoatedConductor = 7;   // Clear coated conductor material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_Diffuse = 1;                ///< Diffuse material (Oren-Nayar Model)
+const int MaterialType_Conductor = 2;              ///< Conductor material (GGX Microfacet Model)
+const int MaterialType_Dielectric = 3;             ///< Dielectric material (GGX Microfacet Model)
+const int MaterialType_Plastic = 4;                ///< Plastic material (GGX Microfacet Model)
+const int MaterialType_MetalWorkflow = 5;          ///< Metallic workflow material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_ThinDielectric = 6;         ///< Thin dielectric material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_ClearCoatedConductor = 7;   ///< Clear coated conductor material (GGX Microfacet Model + Lambert Model)
 
 /**
  * @struct MaterialEvalInfo

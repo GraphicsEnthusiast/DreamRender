@@ -350,127 +350,127 @@ void SceneManager::CreateTextureArray() {
 }
 
 void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool is_light) {
-	unsigned int total_count = 0;
+    unsigned int total_count = 0;
 
-	// Single pass: count total triangles for the current batch
-	for (const auto& mesh : meshes) {
-		total_count += mesh.GetNumTriangles();
-	}
+    // Single pass: count total triangles for the current batch
+    for (const auto& mesh : meshes) {
+        total_count += mesh.GetNumTriangles();
+    }
 
-	// Reset weight data for light triangles
-	if (is_light) {
-		light_triangle_weights_.clear();
-		light_triangle_weights_.reserve(total_count);
-	}
+    // Reset weight data for light triangles
+    if (is_light) {
+        light_triangle_weights_.clear();
+        light_triangle_weights_.reserve(total_count);
+    }
 
-	// Resize appropriate container based on the is_light parameter
-	if (is_light) {
-		triangles_light_encoded_.resize(total_count);
-	}
-	else {
-		triangles_encoded_.resize(total_count);
-	}
+    // Resize appropriate container based on the is_light parameter
+    if (is_light) {
+        triangles_light_encoded_.resize(total_count);
+    }
+    else {
+        triangles_encoded_.resize(total_count);
+    }
 
-	unsigned int index = 0;
+    unsigned int index = 0;
 
-	// Encode triangles into the appropriate container
-	for (unsigned int mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
-		const auto& mesh = meshes[mesh_idx];
-		const Material* material = mesh.GetMaterial();
+    // Encode triangles into the appropriate container
+    for (unsigned int mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
+        const auto& mesh = meshes[mesh_idx];
+        const Material* material = mesh.GetMaterial();
 
-		const unsigned int mesh_triangle_count = mesh.GetNumTriangles();
-		const auto& vertices = mesh.GetVertices();
-		const auto& normals = mesh.GetNormals();
-		const auto& texcoords = mesh.GetTexCoords();
-		const auto& indices = mesh.GetIndices();
+        const unsigned int mesh_triangle_count = mesh.GetNumTriangles();
+        const auto& vertices = mesh.GetVertices();
+        const auto& normals = mesh.GetNormals();
+        const auto& texcoords = mesh.GetTexCoords();
+        const auto& indices = mesh.GetIndices();
 
 		int emission_tex_id = material->GetTextureID(TextureType::EMISSION);
 		int diffuse_tex_id = material->GetTextureID(TextureType::DIFFUSE);
 		int roughness_u_tex_id = material->GetTextureID(TextureType::ROUGHNESS_U);
 		int roughness_v_tex_id = material->GetTextureID(TextureType::ROUGHNESS_V);
 		int specular_tex_id = material->GetTextureID(TextureType::SPECULAR);
-		int normal_tex_id = material->GetTextureID(TextureType::NORMAL);
-		int metallic_tex_id = material->GetTextureID(TextureType::METALLIC);
+        int normal_tex_id = material->GetTextureID(TextureType::NORMAL);
+        int metallic_tex_id = material->GetTextureID(TextureType::METALLIC);
 		int coat_roughness_u_tex_id = material->GetTextureID(TextureType::COATROUGHNESS_U);
 		int coat_roughness_v_tex_id = material->GetTextureID(TextureType::COATROUGHNESS_V);
 
-		// Get media
-		const Medium* in_medium = mesh.GetInMedium();
-		const Medium* out_medium = mesh.GetOutMedium();
+        // Get media
+        const Medium* in_medium = mesh.GetInMedium();
+        const Medium* out_medium = mesh.GetOutMedium();
 
-		for (unsigned int i = 0; i < mesh_triangle_count; ++i) {
-			const unsigned int idx0 = indices[i * 3];
-			const unsigned int idx1 = indices[i * 3 + 1];
-			const unsigned int idx2 = indices[i * 3 + 2];
+        for (unsigned int i = 0; i < mesh_triangle_count; ++i) {
+            const unsigned int idx0 = indices[i * 3];
+            const unsigned int idx1 = indices[i * 3 + 1];
+            const unsigned int idx2 = indices[i * 3 + 2];
 
-			TriangleEncoded encoded_tri;
+            TriangleEncoded encoded_tri;
 
-			// Extract vertex positions using indices and pack uv.x in w component
-			encoded_tri.p1 = Point4f(
-				vertices[idx0 * 3],
-				vertices[idx0 * 3 + 1],
-				vertices[idx0 * 3 + 2],
-				texcoords[idx0 * 2]);
+            // Extract vertex positions using indices and pack uv.x in w component
+            encoded_tri.p1 = Point4f(
+                vertices[idx0 * 3],
+                vertices[idx0 * 3 + 1],
+                vertices[idx0 * 3 + 2],
+                texcoords[idx0 * 2]);
 
-			encoded_tri.p2 = Point4f(
-				vertices[idx1 * 3],
-				vertices[idx1 * 3 + 1],
-				vertices[idx1 * 3 + 2],
-				texcoords[idx1 * 2]);
+            encoded_tri.p2 = Point4f(
+                vertices[idx1 * 3],
+                vertices[idx1 * 3 + 1],
+                vertices[idx1 * 3 + 2],
+                texcoords[idx1 * 2]);
 
-			encoded_tri.p3 = Point4f(
-				vertices[idx2 * 3],
-				vertices[idx2 * 3 + 1],
-				vertices[idx2 * 3 + 2],
-				texcoords[idx2 * 2]);
+            encoded_tri.p3 = Point4f(
+                vertices[idx2 * 3],
+                vertices[idx2 * 3 + 1],
+                vertices[idx2 * 3 + 2],
+                texcoords[idx2 * 2]);
 
-			// Extract normals using indices and pack uv.y in w component
-			encoded_tri.n1 = Vector4f(
-				normals[idx0 * 3],
-				normals[idx0 * 3 + 1],
-				normals[idx0 * 3 + 2],
-				texcoords[idx0 * 2 + 1]);
+            // Extract normals using indices and pack uv.y in w component
+            encoded_tri.n1 = Vector4f(
+                normals[idx0 * 3],
+                normals[idx0 * 3 + 1],
+                normals[idx0 * 3 + 2],
+                texcoords[idx0 * 2 + 1]);
 
-			encoded_tri.n2 = Vector4f(
-				normals[idx1 * 3],
-				normals[idx1 * 3 + 1],
-				normals[idx1 * 3 + 2],
-				texcoords[idx1 * 2 + 1]);
+            encoded_tri.n2 = Vector4f(
+                normals[idx1 * 3],
+                normals[idx1 * 3 + 1],
+                normals[idx1 * 3 + 2],
+                texcoords[idx1 * 2 + 1]);
 
-			encoded_tri.n3 = Vector4f(
-				normals[idx2 * 3],
-				normals[idx2 * 3 + 1],
-				normals[idx2 * 3 + 2],
-				texcoords[idx2 * 2 + 1]);
+            encoded_tri.n3 = Vector4f(
+                normals[idx2 * 3],
+                normals[idx2 * 3 + 1],
+                normals[idx2 * 3 + 2],
+                texcoords[idx2 * 2 + 1]);
 
-			// Set material parameters
-			encoded_tri.material_type = Vector4f(
-				static_cast<float>(material->type),
-				static_cast<float>(normal_tex_id),
-				0.0f,
-				0.0f
-			);
+            // Set material parameters
+            encoded_tri.material_type = Vector4f(
+                static_cast<float>(material->type),
+                static_cast<float>(normal_tex_id),
+                0.0f,
+                0.0f
+            );
 
-			encoded_tri.emission = Vector4f(
-				material->emission.x,
-				material->emission.y,
-				material->emission.z,
-				static_cast<float>(emission_tex_id)  // w: emission texture ID
-			);
+            encoded_tri.emission = Vector4f(
+                material->emission.x,
+                material->emission.y,
+                material->emission.z,
+                static_cast<float>(emission_tex_id)  // w: emission texture ID
+            );
 
-			encoded_tri.diffuse = Vector4f(
-				material->diffuse.r,          // x: diffuse color R
-				material->diffuse.g,          // y: diffuse color G
-				material->diffuse.b,          // z: diffuse color B
-				static_cast<float>(diffuse_tex_id)  // w: diffuse texture ID
-			);
+            encoded_tri.diffuse = Vector4f(
+                material->diffuse.r,          // x: diffuse color R
+                material->diffuse.g,          // y: diffuse color G
+                material->diffuse.b,          // z: diffuse color B
+                static_cast<float>(diffuse_tex_id)  // w: diffuse texture ID
+            );
 
-			encoded_tri.roughness = Vector4f(
-				material->roughness_u,
-				material->roughness_v,
-				static_cast<float>(roughness_u_tex_id),
-				static_cast<float>(roughness_v_tex_id)
-			);
+            encoded_tri.roughness = Vector4f(
+                material->roughness_u,
+                material->roughness_v,
+                static_cast<float>(roughness_u_tex_id),
+                static_cast<float>(roughness_v_tex_id)
+            );
 
 			// Specular color
 			encoded_tri.specular = Vector4f(
@@ -480,15 +480,15 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				static_cast<float>(specular_tex_id)
 			);
 
-			// Conductor eta (w stores in_ior)
+			// Conductor eta (no texture support, w = -1)
 			encoded_tri.eta = Vector4f(
 				material->eta.r,
 				material->eta.g,
 				material->eta.b,
-				material->in_ior
+                material->in_ior
 			);
 
-			// Conductor k (w stores out_ior)
+			// Conductor k (no texture support, w = -1)
 			encoded_tri.k = Vector4f(
 				material->k.r,
 				material->k.g,
@@ -498,7 +498,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 
 			encoded_tri.metallic_coat = Vector4f(
 				material->metallic,
-				static_cast<float>(metallic_tex_id),
+                static_cast<float>(metallic_tex_id),
 				material->clear_coat,
 				0.0f
 			);
@@ -510,179 +510,101 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				static_cast<float>(coat_roughness_v_tex_id)
 			);
 
-			float in_medium_flag = -1.0f;  // Default: no medium
-			float in_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
-			float in_g = 0.0f;
-			float in_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
-			Vector3f in_sigma_s(0.0f, 0.0f, 0.0f);
-			Vector3f in_sigma_t(0.0f, 0.0f, 0.0f);
+            // Encode inside medium
+            float in_medium_flag = -1.0f;  // Default: no medium
+            float in_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
+            float in_g = 0.0f;
+            float in_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
+            Vector3f in_sigma_s(0.0f, 0.0f, 0.0f);
+            Vector3f in_sigma_t(0.0f, 0.0f, 0.0f);
 
-			// Heterogeneous medium parameters
-			float in_density_offset = -1.0f;  // Default: no density field (ID into density TBO)
-			float in_max_density = 0.0f;
-			Vector3f in_min_corner(0.0f);
-			Vector3f in_max_corner(0.0f);
-			Vector3f in_size(0.0f);
+            if (in_medium) {
+                in_medium_flag = 0.0f;  // Has medium
+                in_phase_type = static_cast<float>(in_medium->phase_type);
+                in_g = in_medium->g;
+                in_medium_type = static_cast<float>(in_medium->type);
+                in_sigma_s = in_medium->sigma_s;
+                in_sigma_t = in_medium->sigma_t;
+            }
 
-			if (in_medium) {
-				in_medium_flag = 0.0f;  // Has medium
-				in_phase_type = static_cast<float>(in_medium->phase_type);
-				in_g = in_medium->g;
-				in_medium_type = static_cast<float>(in_medium->type);
-				in_sigma_s = in_medium->sigma_s;
-				in_sigma_t = in_medium->sigma_t;
+            encoded_tri.in_type_info = Vector4f(
+                in_phase_type,   // x: phase_type
+                in_g,            // y: g (asymmetry parameter)
+                in_medium_type,  // z: medium_type
+                in_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
+            );
 
-				// Heterogeneous medium: encode density field info
-				if (in_medium->type == MediumType::HETEROGENEOUS) {
-					in_density_offset = static_cast<float>(in_medium->offset);
-					in_max_density = in_medium->max_density;
-					in_min_corner = in_medium->min_corner;
-					in_max_corner = in_medium->max_corner;
-					in_size = in_medium->size;
-				}
-			}
+            encoded_tri.in_sigma_s = Vector4f(
+                in_sigma_s.x,
+                in_sigma_s.y,
+                in_sigma_s.z,
+                0.0f
+            );
 
-			encoded_tri.in_type_info = Vector4f(
-				in_phase_type,   // x: phase_type
-				in_g,            // y: g (asymmetry parameter)
-				in_medium_type,  // z: medium_type
-				in_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
-			);
+            encoded_tri.in_sigma_t = Vector4f(
+                in_sigma_t.x,
+                in_sigma_t.y,
+                in_sigma_t.z,
+                0.0f
+            );
 
-			encoded_tri.in_sigma_s = Vector4f(
-				in_sigma_s.x,
-				in_sigma_s.y,
-				in_sigma_s.z,
-				0.0f
-			);
+            // Encode outside medium
+            float out_medium_flag = -1.0f;  // Default: no medium
+            float out_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
+            float out_g = 0.0f;
+            float out_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
+            Vector3f out_sigma_s(0.0f);
+            Vector3f out_sigma_t(0.0f);
 
-			encoded_tri.in_sigma_t = Vector4f(
-				in_sigma_t.x,
-				in_sigma_t.y,
-				in_sigma_t.z,
-				0.0f
-			);
+            if (out_medium) {
+                out_medium_flag = 0.0f;  // Has medium
+                out_phase_type = static_cast<float>(out_medium->phase_type);
+                out_g = out_medium->g;
+                out_medium_type = static_cast<float>(out_medium->type);
+                out_sigma_s = out_medium->sigma_s;
+                out_sigma_t = out_medium->sigma_t;
+            }
 
-			// Heterogeneous medium: min_corner.w stores density field ID
-			encoded_tri.in_min_corner = Vector4f(
-				in_min_corner.x,
-				in_min_corner.y,
-				in_min_corner.z,
-				in_density_offset  // w: density field ID (offset into density TBO)
-			);
+            encoded_tri.out_type_info = Vector4f(
+                out_phase_type,   // x: phase_type
+                out_g,            // y: g (asymmetry parameter)
+                out_medium_type,  // z: medium_type
+                out_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
+            );
 
-			// Heterogeneous medium: max_corner.w stores max_density
-			encoded_tri.in_max_corner = Vector4f(
-				in_max_corner.x,
-				in_max_corner.y,
-				in_max_corner.z,
-				in_max_density  // w: 1 / max_density
-			);
+            encoded_tri.out_sigma_s = Vector4f(
+                out_sigma_s.x,
+                out_sigma_s.y,
+                out_sigma_s.z,
+                0.0f
+            );
 
-			// Heterogeneous medium: size (grid dimensions)
-			encoded_tri.in_size = Vector4f(
-				in_size.x,
-				in_size.y,
-				in_size.z,
-				0.0f
-			);
+            encoded_tri.out_sigma_t = Vector4f(
+                out_sigma_t.x,
+                out_sigma_t.y,
+                out_sigma_t.z,
+                0.0f
+            );
 
-			float out_medium_flag = -1.0f;  // Default: no medium
-			float out_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
-			float out_g = 0.0f;
-			float out_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
-			Vector3f out_sigma_s(0.0f);
-			Vector3f out_sigma_t(0.0f);
+            // Store in appropriate container based on the is_light parameter
+            if (is_light) {
+                // Calculate triangle area for importance sampling
+                Vector3f e1 = Point3f(encoded_tri.p2) - Point3f(encoded_tri.p1);
+                Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
 
-			// Heterogeneous medium parameters
-			float out_density_offset = -1.0f;  // Default: no density field (ID into density TBO)
-			float out_max_density = 0.0f;
-			Vector3f out_min_corner(0.0f);
-			Vector3f out_max_corner(0.0f);
-			Vector3f out_size(0.0f);
+                float area = 0.5f * glm::length(glm::cross(e1, e2));
 
-			if (out_medium) {
-				out_medium_flag = 0.0f;  // Has medium
-				out_phase_type = static_cast<float>(out_medium->phase_type);
-				out_g = out_medium->g;
-				out_medium_type = static_cast<float>(out_medium->type);
-				out_sigma_s = out_medium->sigma_s;
-				out_sigma_t = out_medium->sigma_t;
+                // Calculate weight: power = area * luminance * pi for importance sampling
+                float weight = area * Luminance(material->emission) * PI;
 
-				// Heterogeneous medium: encode density field info
-				if (out_medium->type == MediumType::HETEROGENEOUS) {
-					out_density_offset = static_cast<float>(out_medium->offset);
-					out_max_density = out_medium->max_density;
-					out_min_corner = out_medium->min_corner;
-					out_max_corner = out_medium->max_corner;
-					out_size = out_medium->size;
-				}
-			}
-
-			encoded_tri.out_type_info = Vector4f(
-				out_phase_type,   // x: phase_type
-				out_g,            // y: g (asymmetry parameter)
-				out_medium_type,  // z: medium_type
-				out_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
-			);
-
-			encoded_tri.out_sigma_s = Vector4f(
-				out_sigma_s.x,
-				out_sigma_s.y,
-				out_sigma_s.z,
-				0.0f
-			);
-
-			encoded_tri.out_sigma_t = Vector4f(
-				out_sigma_t.x,
-				out_sigma_t.y,
-				out_sigma_t.z,
-				0.0f
-			);
-
-			// Heterogeneous medium: min_corner.w stores density field ID
-			encoded_tri.out_min_corner = Vector4f(
-				out_min_corner.x,
-				out_min_corner.y,
-				out_min_corner.z,
-				out_density_offset  // w: density field ID (offset into density TBO)
-			);
-
-			// Heterogeneous medium: max_corner.w stores max_density
-			encoded_tri.out_max_corner = Vector4f(
-				out_max_corner.x,
-				out_max_corner.y,
-				out_max_corner.z,
-				out_max_density  // w: 1 / max_density
-			);
-
-			// Heterogeneous medium: size (grid dimensions)
-			encoded_tri.out_size = Vector4f(
-				out_size.x,
-				out_size.y,
-				out_size.z,
-				0.0f
-			);
-
-			// Store in appropriate container based on the is_light parameter
-			if (is_light) {
-				// Calculate triangle area for importance sampling
-				Vector3f e1 = Point3f(encoded_tri.p2) - Point3f(encoded_tri.p1);
-				Vector3f e2 = Point3f(encoded_tri.p3) - Point3f(encoded_tri.p1);
-
-				float area = 0.5f * glm::length(glm::cross(e1, e2));
-
-				// Calculate weight: power = area * luminance * pi for importance sampling
-				float weight = area * Luminance(material->emission) * PI;
-
-				light_triangle_weights_.push_back(weight);
-				triangles_light_encoded_[index++] = encoded_tri;
-			}
-			else {
-				triangles_encoded_[index++] = encoded_tri;
-			}
-		}
-	}
+                light_triangle_weights_.push_back(weight);
+                triangles_light_encoded_[index++] = encoded_tri;
+            }
+            else {
+                triangles_encoded_[index++] = encoded_tri;
+            }
+        }
+    }
 }
 
 void SceneManager::BuildLightAliasTable() {
@@ -891,16 +813,6 @@ void SceneManager::CreateGPUBuffers() {
 			GL_STATIC_DRAW
 		);
 	}
-
-	// Create density field TBO (unified buffer for all heterogeneous media)
-	if (!density_data_.empty()) {
-		density_tbo_ = std::make_unique<TBO>(
-			density_data_.data(),
-			density_data_.size() * sizeof(float),
-			GL_R32F,
-			GL_STATIC_DRAW
-		);
-	}
 }
 
 const TBO& SceneManager::GetTriangleTBO() const noexcept {
@@ -941,38 +853,6 @@ GLuint SceneManager::GetTextureArray() const noexcept {
 
 int SceneManager::GetTextureCount() const noexcept {
     return static_cast<int>(textures_.size());
-}
-
-int SceneManager::AddDensityField(const std::vector<float>& density) {
-	if (density.empty()) {
-		ERROR("[error] Density field is empty!");
-
-		return -1;
-	}
-
-	// Static local variable to track the offset across calls
-	static int density_tbo_offset = 0;
-
-	// Record the current offset as the ID
-	int offset = density_tbo_offset;
-
-	// Append density data to the unified buffer
-	density_data_.insert(density_data_.end(), density.begin(), density.end());
-
-	// Update the offset for the next density field
-	density_tbo_offset += static_cast<int>(density.size());
-
-	INFO("[info] Density field added (ID: {}, size: {} floats)", offset, density.size());
-
-	return offset;
-}
-
-const TBO& SceneManager::GetDensityTBO() const noexcept {
-	return *density_tbo_;
-}
-
-bool SceneManager::HasDensityField() const noexcept {
-	return nullptr != density_tbo_;
 }
 
 NAMESPACE_END(dream)

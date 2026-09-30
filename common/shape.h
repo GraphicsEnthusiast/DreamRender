@@ -162,7 +162,6 @@ enum class PhaseType {
  */
 enum class MediumType {
     HOMOGENEOUS = 0,    ///< Homogeneous medium
-    HETEROGENEOUS = 1,  ///< Heterogeneous medium
 };
 
 /**
@@ -177,27 +176,10 @@ struct Medium {
     Vector3f sigma_s;                 ///< Scattering coefficient (RGB)
     Vector3f sigma_t;                 ///< Extinction coefficient (sigma_a + sigma_s) (RGB)
 
-    int offset;                       ///< Voxel density grid tbo offset
-	std::vector<float> density;       ///< Voxel density grid for heterogeneous media; normalized to [0,1] via max_density
-	float max_density;            ///< 1 / max_density; used for Woodcock (delta) tracking and ratio tracking acceptance tests
-    Vector3f size;                    ///< Size for the density grid
-	Point3f min_corner;               ///< World-space min corner of the density grid bounding box
-	Point3f max_corner;               ///< World-space max corner of the density grid bounding box
-
     /**
      * @brief Default constructor
      */
     Medium();
-
-    /**
-     * @brief Reads density field data from a text file
-     * @param file Path to the density data file
-     * @param nx Grid width
-     * @param ny Grid height
-     * @param nz Grid depth
-     * @return Vector of density values (size = nx * ny * nz)
-     */
-    static std::vector<float> ReadDensityFromFile(const char* file, int nx, int ny, int nz);
 };
 
 /**
@@ -322,22 +304,16 @@ struct alignas(16) TriangleEncoded {
 	alignas(16) Vector4f specular;      ///< Specular color (xyz) and texture flag (w = texture ID, -1 for constant)
 	alignas(16) Vector4f eta;           ///< xyz = eta_rgb, w = ior_in
 	alignas(16) Vector4f k;             ///< xyz = k_rgb, w = ior_out
-    alignas(16) Vector4f metallic_coat; ///< Metallic (x components) and texture flag (y component: -1 = constant color, other = texture), z = clear coat
+    alignas(16) Vector4f metallic_coat;      ///< Metallic (x components) and texture flag (y component: -1 = constant color, other = texture), z = clear coat
     alignas(16) Vector4f coat_roughness;///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 
     alignas(16) Vector4f in_type_info;    ///< Inside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
     alignas(16) Vector4f in_sigma_s;      ///< Inside medium scattering coefficient (xyz components)
     alignas(16) Vector4f in_sigma_t;      ///< Inside medium extinction coefficient (xyz components)
-	alignas(16) Vector4f in_min_corner;   ///< Inside heterogeneous medium: xyz = min_corner, w = density TBO ID
-	alignas(16) Vector4f in_max_corner;   ///< Inside heterogeneous medium: xyz = max_corner, w = max_density
-	alignas(16) Vector4f in_size;         ///< Inside heterogeneous medium: xyz = size, w = unused
 
     alignas(16) Vector4f out_type_info;   ///< Outside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
     alignas(16) Vector4f out_sigma_s;     ///< Outside medium scattering coefficient (xyz components)
     alignas(16) Vector4f out_sigma_t;     ///< Outside medium extinction coefficient (xyz components)
-	alignas(16) Vector4f out_min_corner;  ///< Outside heterogeneous medium: xyz = min_corner, w = density TBO offset
-	alignas(16) Vector4f out_max_corner;  ///< Outside heterogeneous medium: xyz = max_corner, w = max_density
-	alignas(16) Vector4f out_size;        ///< Outside heterogeneous medium: xyz = size, w = unused
 };
 
 /**
