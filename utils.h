@@ -54,10 +54,8 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/callback_sink.h>
 #include <fmt/core.h>
-#include <nanovdb/NanoVDB.h>
-#include <nanovdb/util/GridHandle.h>
-#include <nanovdb/util/IO.h>
-#include <nanovdb/util/SampleFromVoxels.h>
+#include <NanoVDB.h>
+#include <util/GridHandle.h>
 
 NAMESPACE_BEGIN(dream)
 
