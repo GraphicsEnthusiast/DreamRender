@@ -34,6 +34,12 @@ struct Medium {
     int type;
     SampledSpectrum sigma_s;
     SampledSpectrum sigma_t;
+
+    vec3 density_min;         ///< World-space lower corner of density grid
+    vec3 density_max;         ///< World-space upper corner of density grid
+    ivec3 density_resolution; ///< Grid resolution (nx, ny, nz)
+    float inv_max_density;    ///< 1.0 / max density, for delta tracking
+    int density_offset;       ///< Offset into the global density TBO
 };
 
 /**

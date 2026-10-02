@@ -156,6 +156,17 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
+
+            // Heterogeneous density data
+            medium.density_min = tri.out_density_min.xyz;
+            medium.density_max = tri.out_density_max.xyz;
+            medium.density_resolution = ivec3(
+                int(tri.out_density_min.w),
+                int(tri.out_density_max.w),
+                int(tri.out_density_data.x)
+            );
+            medium.inv_max_density = tri.out_density_data.y;
+            medium.density_offset = int(tri.out_density_data.z);
         }
     }
     else {
@@ -171,6 +182,17 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
+
+            // Heterogeneous density data
+            medium.density_min = tri.in_density_min.xyz;
+            medium.density_max = tri.in_density_max.xyz;
+            medium.density_resolution = ivec3(
+                int(tri.in_density_min.w),
+                int(tri.in_density_max.w),
+                int(tri.in_density_data.x)
+            );
+            medium.inv_max_density = tri.in_density_data.y;
+            medium.density_offset = int(tri.in_density_data.z);
         }
     }
 

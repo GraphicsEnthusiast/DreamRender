@@ -24,9 +24,30 @@ RenderPipeline::~RenderPipeline() {
 void RenderPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
+	auto smoke_medium = std::make_unique<Medium>();
+	smoke_medium->phase_type = PhaseType::HenyeyGreenstein;
+	smoke_medium->g = 0.0f;
+	smoke_medium->type = MediumType::HETEROGENEOUS;
+	smoke_medium->sigma_s = Vector3f(90.0f);
+	smoke_medium->sigma_t = Vector3f(100.0f);
+
+	smoke_medium->density_resolution = Vector3i(100, 100, 40);
+	smoke_medium->density_min = Vector3f(-0.63, 0.27, -0.2415);
+	smoke_medium->density_max = Vector3f(0.693, 1.593, 0.2415);
+
+	auto [density_offset, max_density] = scene_manager.ReadDensityFromFile(
+		"C:\\Users\\17199\\Desktop\\DreamRender\\density.d",
+		100, 100, 40
+	);
+
+	if (density_offset >= 0) {
+		smoke_medium->density_offset = density_offset;
+		smoke_medium->inv_max_density = 1.0f / max_density;
+	}
+
 	Camera camera;
-	camera.camera_position = Point3f(15.0f);
-	camera.camera_target = Vector3f(0.0f, 3.0f, 0.0f);
+	camera.camera_position = Point3f(2.0f, 1.5f, 0.5f);
+	camera.camera_target = Vector3f(0.0f, 1.0f, 0.0f);
 	camera.camera_up = Vector3f(0.0f, 1.0f, 0.0f);
 	camera.resolution = Point2f(1280.0f, 720.0f);
 	camera.camera_fov = 60.0f;
@@ -63,7 +84,7 @@ void RenderPipeline::Init() {
 	Material cube_material;
 	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
 	cube_material.SetTexture(TextureType::NORMAL, cube_normal_id);
-	cube_material.type = MaterialType::DIFFUSE;
+	cube_material.type = MaterialType::BOUNDARY;
 	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
 	cube_material.roughness_u = 0.1f;
 	cube_material.roughness_v = 0.1f;
@@ -74,20 +95,28 @@ void RenderPipeline::Init() {
 	light_material.diffuse = Vector3f(0.0f);
 	light_material.roughness_u = 0.2f;
 	light_material.roughness_v = 0.2f;
-	light_material.emission = Vector3f(3.0f, 3.0f, 2.0f);
+	light_material.emission = Vector3f(30.0f, 30.0f, 20.0f);
+
+	Medium medium;
+	medium.phase_type = PhaseType::HenyeyGreenstein;
+	medium.g = 0.0f;
+	medium.type = MediumType::HOMOGENEOUS;
+	medium.sigma_s = Vector3f(0.5f);
+	medium.sigma_t = Vector3f(1.0f);
 
  	std::vector<TriangleMesh> meshes;
- 	meshes.emplace_back(
- 		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
- 		Transform(),
- 		std::make_unique<Material>(teapot_material)//,
- 		//std::make_unique<Medium>(Medium())
- 	);
+	//meshes.emplace_back(
+	//	"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
+	//	Transform(),
+	//	std::make_unique<Material>(teapot_material)//,
+	//	//std::make_unique<Medium>(Medium())
+	//);
 	meshes.emplace_back(
-		"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
-		Transform::Scale(5.0f, 1.0f, 5.0f) * Transform::Translate(0.0f, -10.0f, 0.0f),
-		std::make_unique<Material>(cube_material)//,
-		//std::make_unique<Medium>(Medium())
+		"C:\\Users\\17199\\Desktop\\DreamRender\\density_render.obj",
+		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, 0.0f, 0.0f),
+		std::make_unique<Material>(cube_material),
+		//std::make_unique<Medium>(medium)
+		std::move(smoke_medium)
 	);
 
 	std::vector<TriangleMesh> meshes2;
@@ -103,7 +132,7 @@ void RenderPipeline::Init() {
 
 	// Calculating the power of ambient light depends on the size of the scene, 
 	// so loading the ambient light map must be done after loading the models and before creating gpu buffers.
-	scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spaichingen_hill_4k.hdr");
+	//scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spaichingen_hill_4k.hdr");
 
 	scene_manager.CreateGPUBuffers();
 }

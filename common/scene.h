@@ -185,6 +185,18 @@ public:
     const TBO& GetHDREnvRowMaxsTBO() const noexcept;
 
     /**
+	 * @brief Get the TBO containing medium density
+	 * @return Const reference to the density TBO
+	 */
+    const TBO& GetDensityTBO() const noexcept;
+
+    /**
+     * @brief Check if density data has been loaded
+     * @return True if density data exists, false otherwise
+     */
+    bool HasDensity() const noexcept;
+
+    /**
 	 * Get the radius of the scene's bounding sphere
 	 * @return float The radius of the scene's bounding sphere
 	 */
@@ -195,6 +207,16 @@ public:
      * @return Vector3f The center of the scene's bounding sphere
      */
     Vector3f GetSceneCenter() const noexcept;
+
+    /**
+     * @brief Reads density data from a text file and appends it to the global density buffer.
+     * @param file_path Path to the density file.
+     * @param nx Number of voxels along the x-axis.
+     * @param ny Number of voxels along the y-axis.
+     * @param nz Number of voxels along the z-axis.
+     * @return std::pair<int, float> First: offset of the appended density block in the global buffer (-1 on failure). Second: max density value of the block.
+     */
+    std::pair<int, float> ReadDensityFromFile(const std::string& file_path, int nx, int ny, int nz);
 
     /**
      * @brief Deleted copy constructor
@@ -291,6 +313,9 @@ protected:
     std::unique_ptr<TBO> mesh_light_alias_table_tbo_;       ///< TBO for alias table data
 
     std::unique_ptr<UBO> camera_ubo_;                       ///< UBO for camera parameters
+
+	std::vector<float> density_data_;                       ///< Global density buffer for all heterogeneous media
+	std::unique_ptr<TBO> density_tbo_;                      ///< TBO storing all density data
 
     static std::unique_ptr<SceneManager> instance_;         ///< Singleton instance pointer
 };

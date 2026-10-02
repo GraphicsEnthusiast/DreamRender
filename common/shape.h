@@ -168,6 +168,7 @@ enum class PhaseType {
  */
 enum class MediumType {
     HOMOGENEOUS = 0,    ///< Homogeneous medium
+    HETEROGENEOUS = 1,  ///< Heterogeneous medium with a 3D density grid
 };
 
 /**
@@ -175,17 +176,23 @@ enum class MediumType {
  * @brief Represents a volumetric medium with scattering and absorption properties
  */
 struct Medium {
-    PhaseType phase_type;             ///< Type of phase function
-    float g;                          ///< Phase function asymmetry parameter (-1 to 1)
+	PhaseType phase_type;             ///< Type of phase function
+	float g;                          ///< Phase function asymmetry parameter (-1 to 1)
 
-    MediumType type;                  ///< Type of medium (homogeneous, heterogeneous, etc.)
-    Vector3f sigma_s;                 ///< Scattering coefficient (RGB)
-    Vector3f sigma_t;                 ///< Extinction coefficient (sigma_a + sigma_s) (RGB)
+	MediumType type;                  ///< Type of medium (homogeneous, heterogeneous, etc.)
+	Vector3f sigma_s;                 ///< Scattering coefficient (RGB)
+	Vector3f sigma_t;                 ///< Extinction coefficient (sigma_a + sigma_s) (RGB)
+
+	Vector3f density_min;             ///< World-space lower corner of the density grid
+	Vector3f density_max;             ///< World-space upper corner of the density grid
+	Vector3i density_resolution;      ///< Grid resolution (nx, ny, nz)
+	float inv_max_density;            ///< 1.0 / max(density_data), used for delta tracking
+	int density_offset;               ///< Precomputed offset into the global density buffer (filled at load time)
 
     /**
      * @brief Default constructor
      */
-    Medium();
+	Medium() = default;
 };
 
 /**
@@ -313,13 +320,21 @@ struct alignas(16) TriangleEncoded {
     alignas(16) Vector4f metallic_coat;      ///< Metallic (x components) and texture flag (y component: -1 = constant color, other = texture), z = clear coat
     alignas(16) Vector4f coat_roughness;///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 
-    alignas(16) Vector4f in_type_info;    ///< Inside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
-    alignas(16) Vector4f in_sigma_s;      ///< Inside medium scattering coefficient (xyz components)
-    alignas(16) Vector4f in_sigma_t;      ///< Inside medium extinction coefficient (xyz components)
+	alignas(16) Vector4f in_type_info;    ///< Inside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
+	alignas(16) Vector4f in_sigma_s;      ///< Inside medium scattering coefficient (xyz components)
+	alignas(16) Vector4f in_sigma_t;      ///< Inside medium extinction coefficient (xyz components)
 
-    alignas(16) Vector4f out_type_info;   ///< Outside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
-    alignas(16) Vector4f out_sigma_s;     ///< Outside medium scattering coefficient (xyz components)
-    alignas(16) Vector4f out_sigma_t;     ///< Outside medium extinction coefficient (xyz components)
+	alignas(16) Vector4f in_density_min;    ///< Heterogeneous inside medium: min corner (xyz), nx (w)
+	alignas(16) Vector4f in_density_max;    ///< Heterogeneous inside medium: max corner (xyz), ny (w)
+	alignas(16) Vector4f in_density_data;   ///< Heterogeneous inside medium: nz (x), inv_max_density (y), density_offset (z), reserved (w)
+
+	alignas(16) Vector4f out_type_info;   ///< Outside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
+	alignas(16) Vector4f out_sigma_s;     ///< Outside medium scattering coefficient (xyz components)
+	alignas(16) Vector4f out_sigma_t;     ///< Outside medium extinction coefficient (xyz components)
+
+	alignas(16) Vector4f out_density_min;   ///< Heterogeneous outside medium: min corner (xyz), nx (w)
+	alignas(16) Vector4f out_density_max;   ///< Heterogeneous outside medium: max corner (xyz), ny (w)
+	alignas(16) Vector4f out_density_data;  ///< Heterogeneous outside medium: nz (x), inv_max_density (y), density_offset (z), reserved (w)
 };
 
 /**

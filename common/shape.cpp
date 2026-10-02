@@ -16,14 +16,6 @@ int Texture::GetPixelCount() const noexcept {
 	return width * height;
 }
 
-Medium::Medium()
-	: phase_type(PhaseType::HenyeyGreenstein)
-	, g(0.0f)
-	, type(MediumType::HOMOGENEOUS)
-	, sigma_s(0.5f)
-	, sigma_t(1.0f) {
-}
-
 bool Material::HasTexture(TextureType type) const {
 	auto it = texture_ids.find(type);
 

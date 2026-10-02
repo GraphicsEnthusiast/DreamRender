@@ -53,6 +53,14 @@ struct Triangle {
     bool has_out_medium;
     vec3 out_sigma_s;       ///< Outside medium scattering coefficient
     vec3 out_sigma_t;       ///< Outside medium extinction coefficient
+
+    vec4 in_density_min;    ///< Inside: min corner (xyz), nx (w)
+    vec4 in_density_max;    ///< Inside: max corner (xyz), ny (w)
+    vec4 in_density_data;   ///< Inside: nz (x), inv_max_density (y), density_offset (z), reserved (w)
+
+    vec4 out_density_min;   ///< Outside: min corner (xyz), nx (w)
+    vec4 out_density_max;   ///< Outside: max corner (xyz), ny (w)
+    vec4 out_density_data;  ///< Outside: nz (x), inv_max_density (y), density_offset (z), reserved (w)
 };
 
 /**
@@ -72,7 +80,7 @@ struct BVHNode {
  * @return Fetched Triangle structure with position and normal data
  */
 Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
-    int base = index * 21; // 21 vec4 per triangle
+    int base = index * 27; // 27 vec4 per triangle
 
     Triangle tri;
 
@@ -128,6 +136,9 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     vec4 in_type_info = texelFetch(trangles_buffer, base + 15);
     vec4 in_sigma_s_data = texelFetch(trangles_buffer, base + 16);
     vec4 in_sigma_t_data = texelFetch(trangles_buffer, base + 17);
+    vec4 in_density_min_data = texelFetch(trangles_buffer, base + 18);
+    vec4 in_density_max_data = texelFetch(trangles_buffer, base + 19);
+    vec4 in_density_data = texelFetch(trangles_buffer, base + 20);
 
     tri.in_phase_type = int(in_type_info.x);
     tri.in_g = in_type_info.y;
@@ -135,11 +146,17 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.has_in_medium = in_type_info.w >= 0.0f ? true : false;
     tri.in_sigma_s = in_sigma_s_data.xyz;
     tri.in_sigma_t = in_sigma_t_data.xyz;
+    tri.in_density_min = in_density_min_data;
+    tri.in_density_max = in_density_max_data;
+    tri.in_density_data = in_density_data;
 
     // Fetch outside medium parameters
-    vec4 out_type_info = texelFetch(trangles_buffer, base + 18);
-    vec4 out_sigma_s_data = texelFetch(trangles_buffer, base + 19);
-    vec4 out_sigma_t_data = texelFetch(trangles_buffer, base + 20);
+    vec4 out_type_info = texelFetch(trangles_buffer, base + 21);
+    vec4 out_sigma_s_data = texelFetch(trangles_buffer, base + 22);
+    vec4 out_sigma_t_data = texelFetch(trangles_buffer, base + 23);
+    vec4 out_density_min_data = texelFetch(trangles_buffer, base + 24);
+    vec4 out_density_max_data = texelFetch(trangles_buffer, base + 25);
+    vec4 out_density_data = texelFetch(trangles_buffer, base + 26);
 
     tri.out_phase_type = int(out_type_info.x);
     tri.out_g = out_type_info.y;
@@ -147,6 +164,9 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.has_out_medium = out_type_info.w >= 0.0f ? true : false;
     tri.out_sigma_s = out_sigma_s_data.xyz;
     tri.out_sigma_t = out_sigma_t_data.xyz;
+    tri.out_density_min = out_density_min_data;
+    tri.out_density_max = out_density_max_data;
+    tri.out_density_data = out_density_data;
 
     return tri;
 }

@@ -72,7 +72,7 @@ void RenderPass::InitSRGBToSpectrumTable() {
 		SRGBToSpectrumTableData,
 		GL_DYNAMIC_READ,
 		GL_MAP_READ_BIT
-		);
+	);
 
 	srgb_to_spectrum_ssbo_->BindBase(2);
 }
@@ -89,7 +89,7 @@ void RenderPass::InitSobolMatricesTable() {
 		SobolMatricesTableData,
 		GL_DYNAMIC_READ,
 		GL_MAP_READ_BIT
-		);
+	);
 
 	sobol_matrices_ssbo_->BindBase(3);
 }
@@ -118,7 +118,7 @@ void RenderPass::InitCIETable() {
 		cie_data.data(),
 		GL_STATIC_READ,
 		GL_MAP_READ_BIT
-		);
+	);
 
 	cie_ssbo_->BindBase(8);  // Bind to binding point 8
 }
@@ -215,6 +215,12 @@ void RenderPass::SetSceneParameters(Shader& shader) {
 		shader.SetInt("HDREnvMapHeight", 0);
 		shader.SetFloat("HDREnvWeightMax", 0.0f);
 		shader.SetFloat("HDREnvPower", 0.0f);
+	}
+
+	// Bind density TBO for heterogeneous media (if any)
+	if (scene_manager.HasDensity()) {
+		scene_manager.GetDensityTBO().BindTexture(14);
+		shader.SetInt("DensityData", 14);
 	}
 
 	shader.SetVector("SceneCenter", scene_manager.GetSceneCenter());
