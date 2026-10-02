@@ -39,7 +39,6 @@ include_directories(
     ${FMT_INCLUDE_DIR}
     ${LOADER_INCLUDE_DIR}
     ${BVH_INCLUDE_DIR}
-    ${NANOVDB_INCLUDE_DIR}
 )
 
 add_library(${PROJECT_NAME} ${COMMON_SRCS})
@@ -50,5 +49,4 @@ target_link_libraries(${PROJECT_NAME}
     spdlog
     imgui
     fmt
-    nanovdb
 )

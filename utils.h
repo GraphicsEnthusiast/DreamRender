@@ -54,8 +54,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/callback_sink.h>
 #include <fmt/core.h>
-#include <NanoVDB.h>
-#include <util/GridHandle.h>
 
 NAMESPACE_BEGIN(dream)
 
