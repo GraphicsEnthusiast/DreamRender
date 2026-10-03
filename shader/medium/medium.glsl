@@ -230,7 +230,8 @@ MediumEvalInfo DeltaTrackingEvaluate(Medium medium, vec3 origin, vec3 ray_dir, f
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i];
         }
-    } else {
+    }
+    else {
         // Scattering case: PDF = σ_t * Tr(distance)
         for (int i = 0; i < NSpectrumSamples; i++) {
             result.pdf += wavelength_pmf.values[i] * trans.values[i] * medium.sigma_t.values[i];
