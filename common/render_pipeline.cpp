@@ -26,14 +26,14 @@ void RenderPipeline::Init() {
 
 	auto smoke_medium = std::make_unique<Medium>();
 	smoke_medium->phase_type = PhaseType::HenyeyGreenstein;
-	smoke_medium->g = 0.0f;
+	smoke_medium->g = 0.2f;
 	smoke_medium->type = MediumType::HETEROGENEOUS;
 	smoke_medium->sigma_s = Vector3f(90.0f);
 	smoke_medium->sigma_t = Vector3f(100.0f);
 
 	smoke_medium->density_resolution = Vector3i(100, 100, 40);
-	smoke_medium->density_min = Vector3f(-0.63, 0.27, -0.2415);
-	smoke_medium->density_max = Vector3f(0.693, 1.593, 0.2415);
+	smoke_medium->density_min = Vector3f(-0.63f, 0.27f, -0.2415f);
+	smoke_medium->density_max = Vector3f(0.693f, 1.593f, 0.2415f);
 
 	auto [density_offset, max_density] = scene_manager.ReadDensityFromFile(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\density.d",
@@ -46,7 +46,7 @@ void RenderPipeline::Init() {
 	}
 
 	Camera camera;
-	camera.camera_position = Point3f(2.0f, 1.5f, 0.5f);
+	camera.camera_position = Point3f(-0.3f, 1.3f, -1.3f);
 	camera.camera_target = Vector3f(0.0f, 1.0f, 0.0f);
 	camera.camera_up = Vector3f(0.0f, 1.0f, 0.0f);
 	camera.resolution = Point2f(1280.0f, 720.0f);
@@ -95,7 +95,7 @@ void RenderPipeline::Init() {
 	light_material.diffuse = Vector3f(0.0f);
 	light_material.roughness_u = 0.2f;
 	light_material.roughness_v = 0.2f;
-	light_material.emission = Vector3f(30.0f, 30.0f, 20.0f);
+	light_material.emission = Vector3f(10.0f, 10.0f, 8.0f);
 
 	Medium medium;
 	medium.phase_type = PhaseType::HenyeyGreenstein;
@@ -104,10 +104,10 @@ void RenderPipeline::Init() {
 	medium.sigma_s = Vector3f(0.5f);
 	medium.sigma_t = Vector3f(1.0f);
 
- 	std::vector<TriangleMesh> meshes;
+	std::vector<TriangleMesh> meshes;
 	//meshes.emplace_back(
 	//	"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
-	//	Transform(),
+	//	Transform::Scale(0.1f, 0.1f, 0.1f),
 	//	std::make_unique<Material>(teapot_material)//,
 	//	//std::make_unique<Medium>(Medium())
 	//);
@@ -118,6 +118,12 @@ void RenderPipeline::Init() {
 		//std::make_unique<Medium>(medium)
 		std::move(smoke_medium)
 	);
+	//meshes.emplace_back(
+	//	"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
+	//	Transform::Scale(0.5f, 0.01f, 0.5f) * Transform::Translate(0.0f, -2.0f, 0.0f),
+	//	std::make_unique<Material>(teapot_material)//,
+	//	//std::make_unique<Medium>(medium)
+	//);
 
 	std::vector<TriangleMesh> meshes2;
 	meshes2.emplace_back(
@@ -132,7 +138,7 @@ void RenderPipeline::Init() {
 
 	// Calculating the power of ambient light depends on the size of the scene, 
 	// so loading the ambient light map must be done after loading the models and before creating gpu buffers.
-	//scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spaichingen_hill_4k.hdr");
+	//scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spruit_sunrise_4k.hdr");
 
 	scene_manager.CreateGPUBuffers();
 }
