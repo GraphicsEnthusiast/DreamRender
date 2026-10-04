@@ -173,7 +173,6 @@ MediumEvalInfo DeltaTrackingEvaluate(Medium medium, vec3 origin, vec3 ray_dir, f
     float inv_majorant = 1.0f / majorant;
     
     // Sample wavelength channel for transmittance evaluation
-    // Use Vec3f(1) as throughput and albedo (like reference implementation)
     SampledSpectrum albedo = Div(medium.sigma_s, medium.sigma_t);
     float wavelength_sample = SobolSamplerGet1(sobol_sampler);
     WavelengthSampleInfo wavelength_result = MediumWavelengthSample(beta, albedo, wavelength_sample);
