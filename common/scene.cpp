@@ -960,7 +960,7 @@ std::pair<int, float> SceneManager::ReadDensityFromFile(const std::string& file_
 	float max_density = 0.0f;
 	for (int i = 0; i < nx * ny * nz; ++i) {
 		float c;
-		if (fscanf(fp, "%f\n", &c) != 1) {
+		if (1 != fscanf(fp, "%f\n", &c)) {
 			ERROR("[error] Density file format error at index {}: {}", i, file_path);
 			fclose(fp);
 			density_data_.resize(start);
