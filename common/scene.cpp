@@ -60,12 +60,12 @@ void SceneManager::BindCameraUBO(GLuint index) noexcept {
 }
 
 int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
-    INFO("[info] Loading texture: {}", file_path);
+    INFO("[info] Loading texture: {}.", file_path);
 
     // Check if texture already loaded
     auto it = texture_name_to_id_.find(file_path);
     if (texture_name_to_id_.end() != it) {
-        INFO("[info] Texture already loaded: {} (ID: {})", file_path, it->second);
+        INFO("[info] Texture already loaded: {} (ID: {}).", file_path, it->second);
 
         return it->second;
     }
@@ -78,12 +78,12 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     // Load texture as float data
     float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, target_channels);
     if (!data) {
-        ERROR("[error] Failed to load texture: {}", file_path);
+        ERROR("[error] Failed to load texture: {}.", file_path);
 
         return -1;
     }
 
-    INFO("[info] Original texture: {}x{}, {} channels", width, height, channels);
+    INFO("[info] Original texture: {}x{}, {} channels.", width, height, channels);
 
     // Resize texture to 2048x2048
     std::vector<float> resized_data(target_size * target_size * target_channels, 1.0f);
@@ -143,7 +143,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
     textures_.push_back(std::move(texture));
     texture_name_to_id_[file_path] = texture_id;
 
-    INFO("[info] Texture loaded: {} ({}x{}, ID: {})", file_path, target_size, target_size, texture_id);
+    INFO("[info] Texture loaded: {} ({}x{}, ID: {}).", file_path, target_size, target_size, texture_id);
 
     return texture_id;
 }
@@ -182,24 +182,24 @@ void SceneManager::CalculateSceneRadiusAndCenter() {
 void SceneManager::LoadHDRTexture(const std::string& file_path) {
 	// If HDR is already loaded, ignore subsequent load
 	if (0 != hdr_env_texture_) {
-		INFO("[info] HDR environment map already loaded (ID: {}). Ignoring subsequent load: {}", hdr_env_texture_, file_path);
+		INFO("[info] HDR environment map already loaded (ID: {}). Ignoring subsequent load: {}.", hdr_env_texture_, file_path);
 
 		return;
 	}
 
-	INFO("[info] Loading HDR texture: {}", file_path);
+	INFO("[info] Loading HDR texture: {}.", file_path);
 	stbi_set_flip_vertically_on_load(true);
 	int width, height, channels;
 
 	// Force 4 channels (RGBA) and load as 32-bit float data
 	float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, 4);
 	if (!data) {
-		ERROR("[error] Failed to load HDR texture: {}", file_path);
+		ERROR("[error] Failed to load HDR texture: {}.", file_path);
 
 		return;
 	}
 
-	INFO("[info] HDR texture loaded: {}x{}, original {} channels", width, height, channels);
+	INFO("[info] HDR texture loaded: {}x{}, original {} channels.", width, height, channels);
 
 	const int target_channels = 4;
 	hdr_width_ = width;
@@ -252,7 +252,7 @@ void SceneManager::LoadHDRTexture(const std::string& file_path) {
 	// r^2 for the area of the disk receiving illumination
     hdr_env_total_power_ *= 4.0f * PI * PI * glm::pow2(scene_radius_) / (width * height);
 
-	INFO("[info] HDR texture ready: {} ({}x{}, ID: {})", file_path, width, height, hdr_env_texture_);
+	INFO("[info] HDR texture ready: {} ({}x{}, ID: {}).", file_path, width, height, hdr_env_texture_);
 
 	BuildHDREnvAliasTable();
 }
@@ -346,7 +346,7 @@ void SceneManager::CreateTextureArray() {
 
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
-    INFO("[info] Texture array created: ID={}, {} textures", texture_array_, textures_.size());
+    INFO("[info] Texture array created: ID={}, {} textures.", texture_array_, textures_.size());
 }
 
 void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool is_light) {
@@ -961,7 +961,7 @@ std::pair<int, float> SceneManager::ReadDensityFromFile(const std::string& file_
 	for (int i = 0; i < nx * ny * nz; ++i) {
 		float c;
 		if (1 != fscanf(fp, "%f\n", &c)) {
-			ERROR("[error] Density file format error at index {}: {}", i, file_path);
+			ERROR("[error] Density file format error at index {}: {}.", i, file_path);
 			fclose(fp);
 			density_data_.resize(start);
 
@@ -974,7 +974,7 @@ std::pair<int, float> SceneManager::ReadDensityFromFile(const std::string& file_
 	}
 
 	fclose(fp);
-	INFO("[info] Density loaded: {} ({}x{}x{}, offset={}, max_density={:.4f})",
+	INFO("[info] Density loaded: {} ({}x{}x{}, offset={}, max_density={:.4f}).",
 		file_path, nx, ny, nz, start, max_density);
 
 	return { start, max_density };
