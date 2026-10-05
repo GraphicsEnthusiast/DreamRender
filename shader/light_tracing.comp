@@ -25,8 +25,8 @@ layout(std140, binding = 9) uniform CameraData {
     float g;
     vec3 sigma_s;
     vec3 sigma_t;
-    vec3  density_min;
-    vec3  density_max;
+    vec3 density_min;
+    vec3 density_max;
     float density_res_x;
     float density_res_y;
     float density_res_z;
