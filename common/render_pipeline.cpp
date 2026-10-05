@@ -186,9 +186,9 @@ void RenderPipeline::SetFinalOutput(const TextureHandle& output) {
 }
 
 TextureHandle RenderPipeline::CreateTextureRGBA32F(int width, int height) {
-	GLuint textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
+	GLuint texture_id;
+	glGenTextures(1, &texture_id);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0,
 		GL_RGBA, GL_FLOAT, nullptr);
@@ -198,13 +198,13 @@ TextureHandle RenderPipeline::CreateTextureRGBA32F(int width, int height) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	return TextureHandle{ textureID };
+	return TextureHandle{ texture_id };
 }
 
 TextureHandle RenderPipeline::CreateTextureR32F(int width, int height) {
-	GLuint textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
+	GLuint texture_id;
+	glGenTextures(1, &texture_id);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0,
 		GL_RED, GL_FLOAT, nullptr);
@@ -214,7 +214,7 @@ TextureHandle RenderPipeline::CreateTextureR32F(int width, int height) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	return TextureHandle{ textureID };
+	return TextureHandle{ texture_id };
 }
 
 void PTPipeline::Init() {
