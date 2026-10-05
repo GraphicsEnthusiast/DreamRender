@@ -16,7 +16,7 @@ SceneManager& SceneManager::Instance() {
     static std::once_flag init_flag;
     std::call_once(init_flag, []() {
         instance_ = std::unique_ptr<SceneManager>(new SceneManager());
-        });
+    });
 
     return *instance_;
 }
@@ -56,6 +56,7 @@ void SceneManager::BindCameraUBO(GLuint index) noexcept {
 
         return;
     }
+
     camera_ubo_->BindBase(index);
 }
 
