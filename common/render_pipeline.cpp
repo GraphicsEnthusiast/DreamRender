@@ -24,26 +24,29 @@ RenderPipeline::~RenderPipeline() {
 void RenderPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
+	Material medium_material;
+	medium_material.type = MaterialType::BOUNDARY;
+	TriangleMesh medium_mesh("C:\\Users\\17199\\Desktop\\DreamRender\\density_render.obj",
+		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, 0.0f, 0.0f),
+		std::make_unique<Material>(medium_material));
 	auto smoke_medium = std::make_unique<Medium>();
 	smoke_medium->phase_type = PhaseType::HenyeyGreenstein;
 	smoke_medium->g = 0.2f;
 	smoke_medium->type = MediumType::HETEROGENEOUS;
 	smoke_medium->sigma_s = Vector3f(90.0f);
 	smoke_medium->sigma_t = Vector3f(100.0f);
-
 	smoke_medium->density_resolution = Vector3i(100, 100, 40);
-	smoke_medium->density_min = Vector3f(-0.63f, 0.27f, -0.2415f);
-	smoke_medium->density_max = Vector3f(0.693f, 1.593f, 0.2415f);
-
+	smoke_medium->density_min = medium_mesh.GetMinBound();
+	smoke_medium->density_max = medium_mesh.GetMaxBound();
 	auto [density_offset, max_density] = scene_manager.ReadDensityFromFile(
 		"C:\\Users\\17199\\Desktop\\DreamRender\\density.d",
-		100, 100, 40
+		smoke_medium->density_resolution.x,
+		smoke_medium->density_resolution.y,
+		smoke_medium->density_resolution.z
 	);
-
-	if (density_offset >= 0) {
-		smoke_medium->density_offset = density_offset;
-		smoke_medium->inv_max_density = 1.0f / max_density;
-	}
+	smoke_medium->density_offset = density_offset;
+	smoke_medium->inv_max_density = 1.0f / max_density;
+	medium_mesh.SetInMedium(std::move(smoke_medium));
 
 	Camera camera;
 	camera.camera_position = Point3f(-0.3f, 1.3f, -1.3f);
@@ -65,6 +68,15 @@ void RenderPipeline::Init() {
 	const std::string cube_normal_path = "C:\\Users\\17199\\Desktop\\DreamRender\\normal.png";
 	int cube_normal_id = scene_manager.LoadTexture(cube_normal_path, TextureType::NORMAL);
 
+	Material cube_material;
+	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
+	cube_material.SetTexture(TextureType::NORMAL, cube_normal_id);
+	cube_material.type = MaterialType::BOUNDARY;
+	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
+	cube_material.roughness_u = 0.1f;
+	cube_material.roughness_v = 0.1f;
+	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
+
 	Material teapot_material;
 	teapot_material.type = MaterialType::CLEARCOATEDCONDUCTOR;
 	teapot_material.clear_coat = 0.7f;
@@ -80,15 +92,6 @@ void RenderPipeline::Init() {
 	teapot_material.eta = Vector3f(0.14282f, 0.37414f, 1.43944f);
 	teapot_material.k = Vector3f(3.97472f, 2.38066f, 1.59981f);
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
-
-	Material cube_material;
-	cube_material.SetTexture(TextureType::DIFFUSE, cube_diffuse_id);
-	cube_material.SetTexture(TextureType::NORMAL, cube_normal_id);
-	cube_material.type = MaterialType::BOUNDARY;
-	cube_material.diffuse = Vector3f(0.7f, 0.7f, 0.9f);
-	cube_material.roughness_u = 0.1f;
-	cube_material.roughness_v = 0.1f;
-	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
 	Material light_material;
 	light_material.type = MaterialType::DIFFUSE;
@@ -111,13 +114,7 @@ void RenderPipeline::Init() {
 	//	std::make_unique<Material>(teapot_material)//,
 	//	//std::make_unique<Medium>(Medium())
 	//);
-	meshes.emplace_back(
-		"C:\\Users\\17199\\Desktop\\DreamRender\\density_render.obj",
-		Transform::Scale(1.0f, 1.0f, 1.0f) * Transform::Translate(0.0f, 0.0f, 0.0f),
-		std::make_unique<Material>(cube_material),
-		//std::make_unique<Medium>(medium)
-		std::move(smoke_medium)
-	);
+	meshes.emplace_back(std::move(medium_mesh));
 	//meshes.emplace_back(
 	//	"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 	//	Transform::Scale(0.5f, 0.01f, 0.5f) * Transform::Translate(0.0f, -2.0f, 0.0f),

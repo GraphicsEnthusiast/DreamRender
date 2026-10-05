@@ -287,6 +287,18 @@ public:
      */
     void SetOutMedium(std::unique_ptr<Medium> medium);
 
+    /**
+	 * @brief Computes the minimum corner of the mesh's axis-aligned bounding box (AABB)
+	 * @return Minimum corner point (x, y, z)
+	 */
+    Point3f GetMinBound() const noexcept;
+
+    /**
+     * @brief Computes the maximum corner of the mesh's axis-aligned bounding box (AABB)
+     * @return Maximum corner point (x, y, z)
+     */
+    Point3f GetMaxBound() const noexcept;
+
 private:
     Transform transform_;                    ///< Transformation applied to the mesh vertices
     std::vector<float> vertices_;            ///< Array of vertex positions (x, y, z coordinates)

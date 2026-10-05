@@ -233,4 +233,36 @@ void TriangleMesh::SetOutMedium(std::unique_ptr<Medium> medium) {
 	out_medium_ = std::move(medium);
 }
 
+Point3f TriangleMesh::GetMinBound() const noexcept {
+	if (vertices_.empty()) {
+		return Point3f(0.0f);
+	}
+
+	Point3f min_bound(std::numeric_limits<float>::max());
+
+	for (int i = 0; i < vertices_.size(); i += 3) {
+		min_bound.x = std::min(min_bound.x, vertices_[i]);
+		min_bound.y = std::min(min_bound.y, vertices_[i + 1]);
+		min_bound.z = std::min(min_bound.z, vertices_[i + 2]);
+	}
+
+	return min_bound;
+}
+
+Point3f TriangleMesh::GetMaxBound() const noexcept {
+	if (vertices_.empty()) {
+		return Point3f(0.0f);
+	}
+
+	Point3f max_bound(std::numeric_limits<float>::lowest());
+
+	for (int i = 0; i < vertices_.size(); i += 3) {
+		max_bound.x = std::max(max_bound.x, vertices_[i]);
+		max_bound.y = std::max(max_bound.y, vertices_[i + 1]);
+		max_bound.z = std::max(max_bound.z, vertices_[i + 2]);
+	}
+
+	return max_bound;
+}
+
 NAMESPACE_END(dream)

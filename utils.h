@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <cctype>
+#include <limits>
 #include <functional>
 #include <numeric>
 #include <memory>
