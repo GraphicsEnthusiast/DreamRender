@@ -16,38 +16,53 @@ layout(std140, binding = 9) uniform CameraData {
     float camera_aperture;
     vec2 resolution;
     float camera_focal_distance;
-    float has_medium; // 0.0f if no medium, 1.0f if medium
+    float has_medium; // 0 if no medium, 1 if medium
     float medium_type;
     float phase_type;
     float g;
     vec3 sigma_s;
     vec3 sigma_t;
-    // Padding is automatically handled by std140 layout
-    // No need to explicitly declare padding[3] in GLSL
+    vec3  density_min;
+    vec3  density_max;
+    float density_res_x;
+    float density_res_y;
+    float density_res_z;
+    float inv_max_density;
+    float density_offset;
+    float padding[2];
 };
 
 /**
  * @brief Init camera parameters and create a camera object
  */
 Camera InitCamera() {
+    // --- Construct medium from global UBO parameters ---
     Medium camera_medium;
     camera_medium.type = int(medium_type);
     camera_medium.phase_type = int(phase_type);
     camera_medium.g = g;
+
+    // Sample sigma_s / sigma_t at a representative wavelength (0.5 µm)
     RGB sigma_s_rgb = RGBNew(sigma_s.r, sigma_s.g, sigma_s.b);
     RGB sigma_t_rgb = RGBNew(sigma_t.r, sigma_t.g, sigma_t.b);
     RGBAlbedoSpectrum sigma_s_spectrum = RGBAlbedoSpectrumNew(sigma_s_rgb);
     RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
     camera_medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, SampledWavelengthsSampleVisible(0.5f));
     camera_medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, SampledWavelengthsSampleVisible(0.5f));
-    
+
+    camera_medium.density_min = density_min;
+    camera_medium.density_max = density_max;
+    camera_medium.density_resolution = ivec3(density_res_x, density_res_y, density_res_z);
+    camera_medium.inv_max_density = inv_max_density;
+    camera_medium.density_offset = int(density_offset);
+
     Camera camera = CreateCamera(
         camera_position, camera_target, camera_up,
         resolution, camera_distance, camera_fov,
         camera_aperture, camera_focal_distance,
         1.0f == has_medium, camera_medium
     );
-    
+
     return camera;
 }
 

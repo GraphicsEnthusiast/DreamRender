@@ -10,21 +10,28 @@ NAMESPACE_BEGIN(dream)
  * @brief Camera parameters structure for UBO
  */
 struct Camera {
-    Vector3f camera_position;       ///< Camera position in world space
-    float camera_fov;               ///< Camera field of view in degrees
-    Vector3f camera_target;         ///< Camera look at target
-    float camera_distance;          ///< Camera distance for depth of field
-    Vector3f camera_up;             ///< Camera up vector
-    float camera_aperture;          ///< Camera aperture for depth of field
-    Vector2f resolution;            ///< Render resolution (width, height)
-    float camera_focal_distance;    ///< Camera focal distance for depth of field
-    float has_medium;               ///< Flag indicating if medium is present
-	float medium_type;              ///< Medium type (0 = homogeneous, -1 = none)
+	Vector3f camera_position;       ///< Camera position in world space
+	float camera_fov;               ///< Camera field of view in degrees
+	Vector3f camera_target;         ///< Camera look at target
+	float camera_distance;          ///< Camera distance for depth of field
+	Vector3f camera_up;             ///< Camera up vector
+	float camera_aperture;          ///< Camera aperture for depth of field
+	Vector2f resolution;            ///< Render resolution (width, height)
+	float camera_focal_distance;    ///< Camera focal distance for depth of field
+	float has_medium;               ///< Flag indicating if medium is present
+	float medium_type;              ///< Medium type (0 = homogeneous, 1 = heterogeneous)
 	float phase_type;               ///< Phase function type (0 = Henyey-Greenstein)
 	float g;                        ///< Phase function asymmetry parameter (-1 to 1)
 	Vector3f sigma_s;               ///< Scattering coefficient (RGB)
 	Vector3f sigma_t;               ///< Extinction coefficient (sigma_a + sigma_s) (RGB)
-    float padding[3];               ///< Padding to ensure 16-byte alignment
+	Vector3f density_min;           ///< World-space lower corner of the density grid
+	Vector3f density_max;           ///< World-space upper corner of the density grid
+	float density_res_x;            ///< Grid resolution x
+	float density_res_y;            ///< Grid resolution y
+	float density_res_z;            ///< Grid resolution z
+	float inv_max_density;          ///< 1.0 / max(density_data)
+	float density_offset;           ///< Offset into global density buffer (linear xyz array)
+	float padding[2];               ///< Padding to ensure 16-byte alignment
 };
 
 /**
