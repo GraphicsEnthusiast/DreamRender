@@ -103,7 +103,7 @@ void RenderPipeline::Init() {
 	light_material.diffuse = Vector3f(0.0f);
 	light_material.roughness_u = 0.2f;
 	light_material.roughness_v = 0.2f;
-	light_material.emission = Vector3f(0.0f);
+	light_material.emission = Vector3f(5.0f, 5.0f, 3.0f);
 
 	Medium medium;
 	medium.phase_type = PhaseType::HenyeyGreenstein;
