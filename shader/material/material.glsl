@@ -17,6 +17,7 @@ const int MaterialType_Plastic = 4;                ///< Plastic material (GGX Mi
 const int MaterialType_MetalWorkflow = 5;          ///< Metallic workflow material (GGX Microfacet Model + Lambert Model)
 const int MaterialType_ThinDielectric = 6;         ///< Thin dielectric material (GGX Microfacet Model + Lambert Model)
 const int MaterialType_ClearCoatedConductor = 7;   ///< Clear coated conductor material (GGX Microfacet Model + Lambert Model)
+const int MaterialType_DreamWorksFabric = 8;       ///< DreamWorks fabric material
 
 /**
  * @struct MaterialEvalInfo
@@ -1266,6 +1267,208 @@ MaterialSampleInfo ClearCoatedConductorSample(IntersectionInfo info, vec3 world_
 }
 
 /**
+ * @brief Precomputed normalization factors for the DreamWorks Fabric BSDF
+ */
+const float FabricIo[31] = float[31](
+    1.0f,
+    2.8940486842194333f,
+    2.2222280639882688f,
+    1.7799811477539214f,
+    1.4782676746300139f,
+    1.2586055052059806f,
+    1.091160038064419f,
+    0.9663610057614532f,
+    0.863513773340171f,
+    0.7814109559340429f,
+    0.7137752648620034f,
+    0.6541324313325798f,
+    0.6055742415342557f,
+    0.5655469687813609f,
+    0.5282206487797431f,
+    0.495548970716811f,
+    0.46634257270295826f,
+    0.44320020661126064f,
+    0.4203041901821831f,
+    0.3950607574408712f,
+    0.3797362155641827f,
+    0.36018559294675406f,
+    0.3448490864133722f,
+    0.3314408633470552f,
+    0.3184121551593867f,
+    0.3059846179205859f,
+    0.29343499125533884f,
+    0.28337741041333286f,
+    0.2748070518482051f,
+    0.26459726964555563f,
+    0.2573839594563025f
+);
+
+/**
+ * @brief Computes the fabric BSDF exponent n from roughness.
+ * @param roughness Surface roughness in [0,1]
+ * @return Integer exponent n in [1,30]
+ */
+int FabricComputeExponent(float roughness) {
+    float clamped = clamp(roughness, 0.0f, 1.0f);
+
+    return int(ceil(1.0f + 29.0f * (1.0f - clamped) * (1.0f - clamped)));
+}
+
+/**
+ * @brief Evaluates the BSDF and PDF for a fabric material (DreamWorks Fabric BSDF)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param world_out Out direction in world space
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialEvalInfo Structure containing BSDF and PDF values
+ */
+MaterialEvalInfo DreamWorksFabricEvaluate(IntersectionInfo info, vec3 world_in, vec3 world_out, SampledWavelengths lambda) {
+    MaterialEvalInfo m_info;
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Material properties
+    SampledSpectrum color = GetFinalDiffuse(info, lambda);
+    float roughness = GetFinalRoughnessU(info);
+
+    // Compute exponent from roughness
+    int n = FabricComputeExponent(roughness);
+
+    vec3 n_vec = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+    vec3 l = normalize(world_out);
+
+    // Check if both directions are in the same hemisphere
+    float n_dot_v = dot(n_vec, v);
+    float n_dot_l = dot(n_vec, l);
+    if (n_dot_v <= 0.0f || n_dot_l <= 0.0f) {
+        return m_info;
+    }
+
+    // Compute half vector in local shading space
+    // Transform to local space first
+    vec3 v_local = ToLocalFromUp(v, n_vec);
+    vec3 l_local = ToLocalFromUp(l, n_vec);
+    vec3 h_local = normalize(v_local + l_local);
+
+    // S = (1 - |wh.x|)^n
+    float S = pow(1.0f - abs(h_local.x), float(n));
+
+    // BSDF = color * S / Io[n]
+    float inv_io = 1.0f / FabricIo[n];
+    m_info.bsdf = MulFloat(color, S * inv_io);
+
+    // PDF = (n+1) * S / (8 * PI * dot(wi, wh))
+    float dot_wi_wh = dot(v_local, h_local);
+    if (dot_wi_wh <= 0.0f) {
+        return m_info;
+    }
+
+    m_info.pdf = float(n + 1) * S / (8.0f * PI * dot_wi_wh);
+
+    return m_info;
+}
+
+/**
+ * @brief Samples a direction and evaluates the BSDF for a fabric material (DreamWorks Fabric BSDF)
+ * @param info Intersection data containing material properties and surface normal
+ * @param world_in In direction in world space
+ * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
+ * @param lambda Sampled wavelengths for spectral rendering
+ * @return MaterialSampleInfo Structure containing sampled direction, BSDF, and PDF
+ */
+MaterialSampleInfo DreamWorksFabricSample(IntersectionInfo info, vec3 world_in, inout SobolSampler sobol_sampler, SampledWavelengths lambda) {
+    MaterialSampleInfo m_info;
+    m_info.world_out = vec3(0.0f);
+    m_info.bsdf = SampledSpectrumNewFloat(0.0f);
+    m_info.pdf = 0.0f;
+
+    // Material properties
+    SampledSpectrum color = GetFinalDiffuse(info, lambda);
+    float roughness = GetFinalRoughnessU(info);
+
+    // Compute exponent from roughness
+    int n = FabricComputeExponent(roughness);
+
+    vec3 n_vec = normalize(info.shading_normal);
+    vec3 v = normalize(world_in);
+
+    float n_dot_v = dot(n_vec, v);
+    if (n_dot_v <= 0.0f) {
+        return m_info;
+    }
+
+    // Transform to local space
+    vec3 v_local = ToLocalFromUp(v, n_vec);
+
+    // Sample theta_h
+    // CDF: u = (1 - sin_theta_h)^(n+1)
+    // => sin_theta_h = 1 - u^(1/(n+1))
+
+    // Sample sign of sin_theta_h (left/right hemisphere)
+    float sign_sin_theta_h;
+    float new_sam_u;
+
+    float sam_u = SobolSamplerGet1(sobol_sampler);
+    if (sam_u < 0.5f) {
+        sign_sin_theta_h = 1.0f;
+        new_sam_u = 2.0f * sam_u;
+    }
+    else {
+        sign_sin_theta_h = -1.0f;
+        new_sam_u = 2.0f * sam_u - 1.0f;
+    }
+
+    // sin_theta_h = sign * (1 - u^(1/(n+1)))
+    float sin_theta_h = sign_sin_theta_h * clamp(1.0f - pow(new_sam_u, 1.0f / float(n + 1)), 0.0f, 1.0f);
+    float cos_theta_h = sqrt(max(1.0f - sin_theta_h * sin_theta_h, 0.0f));
+
+    // Sample phi_h uniformly in [0, PI]
+    float phi_h = SobolSamplerGet1(sobol_sampler) * PI;
+
+    // Construct half vector in local space
+    // Note: The original code uses:
+    //   lwh = { sin_theta_h, cos_theta_h * cos(phi_h), cos_theta_h * sin(phi_h) }
+    // This is a specific coordinate system where x is the "tangent" direction
+    vec3 h_local = vec3(
+        sin_theta_h,
+        cos_theta_h * cos(phi_h),
+        cos_theta_h * sin(phi_h)
+    );
+
+    // Transform half vector to world space
+    vec3 h_world = ToWorldFromUp(h_local, n_vec);
+
+    // Reflect v around h to get l
+    vec3 l = reflect(-v, h_world);
+
+    // Check if l is in the correct hemisphere
+    float n_dot_l = dot(n_vec, l);
+    if (n_dot_l <= 0.0f) {
+        return m_info;
+    }
+
+    // Compute BSDF value
+    // S = (1 - |sin_theta_h|)^n
+    float S = pow(1.0f - abs(sin_theta_h), float(n));
+
+    // BSDF = color * S / Io[n]
+    float inv_io = 1.0f / FabricIo[n];
+    m_info.bsdf = MulFloat(color, S * inv_io);
+
+    // PDF = (n+1) * S / (8 * PI * dot(wi, wh))
+    float dot_wi_wh = dot(l, h_world);
+    if (dot_wi_wh <= 0.0f) {
+        return m_info;
+    }
+
+    m_info.pdf = float(n + 1) * S / (8.0f * PI * dot_wi_wh);
+    m_info.world_out = l;
+
+    return m_info;
+}
+
+/**
  * @brief Unified material evaluation function that dispatches to the appropriate material model
  * @param info Intersection data containing material properties and surface normal
  * @param world_in In direction in world space
@@ -1299,6 +1502,9 @@ MaterialEvalInfo MaterialEvaluate(IntersectionInfo info, vec3 world_in, vec3 wor
     }
     else if (MaterialType_ClearCoatedConductor == info.material.type) {
         return ClearCoatedConductorEvaluate(info, world_in, world_out, lambda);
+    }
+    else if (MaterialType_DreamWorksFabric == info.material.type) {
+        return DreamWorksFabricEvaluate(info, world_in, world_out, lambda);
     }
     
     // Unknown material type, return zero contribution
@@ -1341,6 +1547,10 @@ MaterialSampleInfo MaterialSample(IntersectionInfo info, vec3 world_in, inout So
     else if (MaterialType_ClearCoatedConductor == info.material.type) {
         return ClearCoatedConductorSample(info, world_in, sobol_sampler, lambda);
     }
+    else if (MaterialType_DreamWorksFabric == info.material.type) {
+        return DreamWorksFabricSample(info, world_in, sobol_sampler, lambda);
+    }
+
     // Unknown material type, return zero contribution
     return result;
 }

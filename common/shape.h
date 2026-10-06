@@ -47,7 +47,7 @@ enum class TextureType {
     NORMAL = 5,             ///< Normal map texture
     METALLIC = 6,           ///< Metallic texture
     COATROUGHNESS_U = 7,
-    COATROUGHNESS_V = 8
+    COATROUGHNESS_V = 8,
 };
 
 /**
@@ -90,7 +90,8 @@ enum class MaterialType {
 	PLASTIC = 4,                ///< Plastic material (GGX Microfacet Model + Lambert Model)
     METALWORKFLOW = 5,          ///< Metallic workflow material (GGX Microfacet Model + Lambert Model)
     THINDIELECTRIC = 6,         ///< Thin Dielectric material (GGX Microfacet Model)
-    CLEARCOATEDCONDUCTOR = 7    ///< Clear coated conductor material (GGX Microfacet Model)       
+    CLEARCOATEDCONDUCTOR = 7,   ///< Clear coated conductor material (GGX Microfacet Model)
+    DREAMWORKSFABRIC = 8,       ///< DreamWorks Fabric material
 };
 
 /**

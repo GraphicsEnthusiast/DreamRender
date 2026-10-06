@@ -50,6 +50,7 @@ void RenderPipeline::Init() {
 
 	Camera camera;
 	camera.camera_position = Point3f(-0.3f, 1.3f, -1.3f);
+	camera.camera_position = Point3f(10.0f);
 	camera.camera_target = Vector3f(0.0f, 1.0f, 0.0f);
 	camera.camera_up = Vector3f(0.0f, 1.0f, 0.0f);
 	camera.resolution = Point2f(1280.0f, 720.0f);
@@ -75,17 +76,17 @@ void RenderPipeline::Init() {
 	cube_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
 
 	Material teapot_material;
-	teapot_material.type = MaterialType::CLEARCOATEDCONDUCTOR;
+	teapot_material.type = MaterialType::DREAMWORKSFABRIC;
 	teapot_material.clear_coat = 0.7f;
 	teapot_material.coat_roughness_u = 0.1f;
 	teapot_material.coat_roughness_v = 0.1f;
 	teapot_material.metallic = 0.7f;
 	teapot_material.in_ior = 1.5f;
     teapot_material.out_ior = 1.0f;
-	teapot_material.diffuse = Vector3f(0.7f, 0.7f, 0.5f);
+	teapot_material.diffuse = Vector3f(0.55f, 0.18f, 0.75f);
 	teapot_material.specular = Vector3f(1.0f);
-	teapot_material.roughness_u = 0.7f;
-	teapot_material.roughness_v = 0.7f;
+	teapot_material.roughness_u = 0.8f;
+	teapot_material.roughness_v = 0.8f;
 	teapot_material.eta = Vector3f(0.14282f, 0.37414f, 1.43944f);
 	teapot_material.k = Vector3f(3.97472f, 2.38066f, 1.59981f);
 	teapot_material.emission = Vector3f(0.0f, 0.0f, 0.0f);
@@ -105,13 +106,13 @@ void RenderPipeline::Init() {
 	medium.sigma_t = Vector3f(1.0f);
 
 	std::vector<TriangleMesh> meshes;
-	//meshes.emplace_back(
-	//	"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
-	//	Transform::Scale(0.1f, 0.1f, 0.1f),
-	//	std::make_unique<Material>(teapot_material)//,
-	//	//std::make_unique<Medium>(Medium())
-	//);
-	meshes.emplace_back(std::move(medium_mesh));
+	meshes.emplace_back(
+		"C:\\Users\\17199\\Desktop\\DreamRender\\teapot.obj",
+		Transform::Scale(1.1f, 1.1f, 1.1f),
+		std::make_unique<Material>(teapot_material)//,
+		//std::make_unique<Medium>(Medium())
+	);
+	//meshes.emplace_back(std::move(medium_mesh));
 	//meshes.emplace_back(
 	//	"C:\\Users\\17199\\Desktop\\DreamRender\\cube.obj",
 	//	Transform::Scale(0.5f, 0.01f, 0.5f) * Transform::Translate(0.0f, -2.0f, 0.0f),
@@ -127,12 +128,12 @@ void RenderPipeline::Init() {
 	);
 
 	scene_manager.EncodeTriangles(meshes, false);
-	scene_manager.EncodeTriangles(meshes2, true);
+	//scene_manager.EncodeTriangles(meshes2, true);
 	scene_manager.BuildBVH();
 
 	// Calculating the power of ambient light depends on the size of the scene, 
 	// so loading the ambient light map must be done after loading the models and before creating gpu buffers.
-	//scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\spruit_sunrise_4k.hdr");
+	scene_manager.LoadHDRTexture("C:\\Users\\17199\\Desktop\\DreamRender\\brown_photostudio_02_2k.hdr");
 
 	scene_manager.CreateGPUBuffers();
 }
