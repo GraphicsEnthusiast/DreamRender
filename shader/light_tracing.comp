@@ -228,7 +228,6 @@ void LightTracing(ivec2 pixel_coords) {
                 beta = Mul(beta, DivFloat(medium_sample_info.transmittance, medium_sample_info.pdf));
             }
 
-            radiance = Add(radiance, medium_sample_info.emission);
             // ========================= Medium Distance Sampling =========================
             
             if (medium_sample_info.scattered) {
@@ -254,11 +253,15 @@ void LightTracing(ivec2 pixel_coords) {
                         
                         if (Valid(phase_eval_info.pdf)) {
                             // Contribution = beta * visibility * phase * filter_weight * we / (filter_pdf * camera_pdf)
-                            SampledSpectrum L_camera = MulFloat(
+                            SampledSpectrum L_camera = Add(MulFloat(
                                 Mul(Mul(beta, visibility), phase_eval_info.phase),
                                 (camera_sample_info.we / camera_sample_info.pdf) *
                                 (filter_evaluate_info.weight / filter_evaluate_info.pdf)
-                            );
+                            ), MulFloat(
+                                    Mul(medium_sample_info.emission, visibility),
+                                    (camera_sample_info.we / camera_sample_info.pdf) *
+                                    (filter_evaluate_info.weight / filter_evaluate_info.pdf)
+                                ));
                             
                             RGB radiance_linear_rgb = SampledSpectrumToRGB(L_camera, lambda);
                             AtomicAddColor(camera_sample_info.raster, RGBToVec3(radiance_linear_rgb));
