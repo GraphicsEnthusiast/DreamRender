@@ -1,7 +1,7 @@
 #ifndef SAMPLER_GLSL
 #define SAMPLER_GLSL
 
-layout(std430, binding = 3) readonly buffer SobolMatricesSSBO {
+layout(std430, binding = 1) readonly buffer SobolMatricesSSBO {
     uint SobolMatricesTableData[];
 };
 

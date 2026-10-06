@@ -10,7 +10,7 @@ layout(r32f, binding = 1) uniform image2D OutputTexG;
 layout(r32f, binding = 2) uniform image2D OutputTexB;
 uniform uint FrameCounter;
 uniform int MaxBounce;
-layout(std140, binding = 9) uniform CameraData {
+layout(std140, binding = 0) uniform CameraData {
     vec3 camera_position;
     float camera_fov;
     vec3 camera_target;

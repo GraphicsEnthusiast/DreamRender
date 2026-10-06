@@ -3,7 +3,7 @@
 
 #include "color/color.glsl"
 
-layout(std430, binding = 2) readonly buffer SRGBToSpectrumSSBO {
+layout(std430, binding = 0) readonly buffer SRGBToSpectrumSSBO {
     float SRGBToSpectrumTableData[];
 };
 

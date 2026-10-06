@@ -8,7 +8,7 @@ const int CIE_OFFSET_Y = NCIESamples;
 const int CIE_OFFSET_Z = 2 * NCIESamples;
 const int CIE_OFFSET_D65 = 3 * NCIESamples;
 
-layout(std430, binding = 8) readonly buffer CIETable {
+layout(std430, binding = 2) readonly buffer CIETable {
     float CIEData[];
 };
 

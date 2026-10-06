@@ -138,29 +138,36 @@ SSBO& RenderPass::GetCIESSBO() noexcept {
 void RenderPass::SetSceneParameters(Shader& shader) {
 	auto& scene_manager = SceneManager::Instance();
 
+	// Bind camera UBO
+	scene_manager.BindCameraUBO(0);
+	shader.SetInt("CameraData", 0);
+
+	// Bind utility SSBOs
+	RenderPass::BindSRGBToSpectrumSSBO(0);
+	shader.SetInt("SRGBToSpectrumTable", 0);
+
+	RenderPass::BindSobolMatricesSSBO(1);
+	shader.SetInt("SobolMatricesTable", 1);
+
+	RenderPass::BindCIESSBO(2);
+	shader.SetInt("CIETable", 2);
+
 	// Bind regular geometry buffers (existing code)
 	scene_manager.GetTriangleTBO().BindTexture(0);
 	shader.SetInt("Triangles", 0);
 	scene_manager.GetBVHNodeTBO().BindTexture(1);
 	shader.SetInt("BVHNodes", 1);
 
-	// Bind utility SSBOs
-	RenderPass::BindSRGBToSpectrumSSBO(2);
-	shader.SetInt("SRGBToSpectrumTable", 2);
-
-	RenderPass::BindSobolMatricesSSBO(3);
-	shader.SetInt("SobolMatricesTable", 3);
-
 	if (scene_manager.GetMeshLightTableSize() > 0) {
 		// Bind light geometry buffers (existing code)
-		scene_manager.GetTriangleLightTBO().BindTexture(4);
-		shader.SetInt("TrianglesLight", 4);
-		scene_manager.GetBVHNodeLightTBO().BindTexture(5);
-		shader.SetInt("BVHNodesLight", 5);
+		scene_manager.GetTriangleLightTBO().BindTexture(2);
+		shader.SetInt("TrianglesLight", 2);
+		scene_manager.GetBVHNodeLightTBO().BindTexture(3);
+		shader.SetInt("BVHNodesLight", 3);
 
 		// Bind mesh light alias table texture buffer
-		scene_manager.GetMeshLightAliasTableTBO().BindTexture(6);
-		shader.SetInt("MeshLightTable", 6);
+		scene_manager.GetMeshLightAliasTableTBO().BindTexture(4);
+		shader.SetInt("MeshLightTable", 4);
 		shader.SetFloat("MeshLightTableMax", scene_manager.GetMeshLightTableMax());
 		shader.SetFloat("MeshLightTableSum", scene_manager.GetMeshLightTableSum());
 		shader.SetInt("MeshLightTableSize", scene_manager.GetMeshLightTableSize());
@@ -175,40 +182,31 @@ void RenderPass::SetSceneParameters(Shader& shader) {
 	int texture_count = scene_manager.GetTextureCount();
 
 	if (0 != texture_array && texture_count > 0) {
-		glActiveTexture(GL_TEXTURE7);
+		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
-		shader.SetInt("TextureArray", 7);
+		shader.SetInt("TextureArray", 5);
 		shader.SetInt("TextureCount", texture_count);
 	}
 	else {
-		shader.SetInt("TextureArray", 7);
 		shader.SetInt("TextureCount", 0);
 	}
 
-	// Bind CIE data SSBO
-	RenderPass::BindCIESSBO(8);
-	shader.SetInt("CIETable", 8);
-
-	// Bind camera UBO
-	scene_manager.BindCameraUBO(9);
-	shader.SetInt("CameraData", 9);
-
 	// Bind HDR environment map
 	if (0 != scene_manager.GetHDRTextureID()) {
-		glActiveTexture(GL_TEXTURE10);
+		glActiveTexture(GL_TEXTURE6);
 		glBindTexture(GL_TEXTURE_2D, scene_manager.GetHDRTextureID());
-		shader.SetInt("HDREnvMap", 10);
+		shader.SetInt("HDREnvMap", 6);
 		shader.SetInt("HDREnvMapWidth", scene_manager.GetHDRWidth());
 		shader.SetInt("HDREnvMapHeight", scene_manager.GetHDRHeight());
 		shader.SetFloat("HDREnvWeightMax", scene_manager.GetHDRWeightMax());
 		shader.SetFloat("HDREnvPower", scene_manager.GetHDREnvTotalPower());
 
-		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(11);
-		shader.SetInt("HDREnvRowAliasTable", 11);
-		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(12);
-		shader.SetInt("HDREnvColAliasTable", 12);
-		scene_manager.GetHDREnvRowMaxsTBO().BindTexture(13);
-		shader.SetInt("HDREnvRowMaxs", 13);
+		scene_manager.GetHDREnvRowAliasTableTBO().BindTexture(7);
+		shader.SetInt("HDREnvRowAliasTable", 7);
+		scene_manager.GetHDREnvColAliasTableTBO().BindTexture(8);
+		shader.SetInt("HDREnvColAliasTable", 8);
+		scene_manager.GetHDREnvRowMaxsTBO().BindTexture(9);
+		shader.SetInt("HDREnvRowMaxs", 9);
 	}
 	else {
 		shader.SetInt("HDREnvMapWidth", 0);
@@ -219,14 +217,14 @@ void RenderPass::SetSceneParameters(Shader& shader) {
 
 	// Bind density TBO for heterogeneous media (if any)
 	if (scene_manager.HasDensity()) {
-		scene_manager.GetDensityTBO().BindTexture(14);
-		shader.SetInt("DensityData", 14);
+		scene_manager.GetDensityTBO().BindTexture(10);
+		shader.SetInt("DensityData", 10);
 	}
 
 	// Bind temperature TBO for emissive media (if any)
 	if (scene_manager.HasTemperature()) {
-		scene_manager.GetTemperatureTBO().BindTexture(15);
-		shader.SetInt("TemperatureData", 15);
+		scene_manager.GetTemperatureTBO().BindTexture(11);
+		shader.SetInt("TemperatureData", 11);
 	}
 
 	shader.SetVector("SceneCenter", scene_manager.GetSceneCenter());
