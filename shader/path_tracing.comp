@@ -36,7 +36,6 @@ layout(std140, binding = 9) uniform CameraData {
  * @brief Init camera parameters and create a camera object
  */
 Camera InitCamera() {
-    // --- Construct medium from global UBO parameters ---
     Medium camera_medium;
     camera_medium.type = int(medium_type);
     camera_medium.phase_type = int(phase_type);
