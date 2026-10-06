@@ -404,6 +404,8 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		float in_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
 		float in_g = 0.0f;
 		float in_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
+		float in_is_emissive = 0.0f;  // Default: not emissive
+		float in_temperature_offset = 0.0f;  // Default: no offset
 		Vector3f in_sigma_s(0.0f, 0.0f, 0.0f);
 		Vector3f in_sigma_t(0.0f, 0.0f, 0.0f);
 		Vector3f in_density_min(0.0f, 0.0f, 0.0f);
@@ -419,6 +421,8 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 			in_phase_type = static_cast<float>(in_medium->phase_type);
 			in_g = in_medium->g;
 			in_medium_type = static_cast<float>(in_medium->type);
+			in_is_emissive = in_medium->is_emissive ? 1.0f : 0.0f;
+			in_temperature_offset = static_cast<float>(in_medium->temperature_offset);
 			in_sigma_s = in_medium->sigma_s;
 			in_sigma_t = in_medium->sigma_t;
 
@@ -436,6 +440,8 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		float out_phase_type = static_cast<float>(PhaseType::HenyeyGreenstein);
 		float out_g = 0.0f;
 		float out_medium_type = static_cast<float>(MediumType::HOMOGENEOUS);
+		float out_is_emissive = 0.0f;  // Default: not emissive
+		float out_temperature_offset = 0.0f;  // Default: no offset
 		Vector3f out_sigma_s(0.0f, 0.0f, 0.0f);
 		Vector3f out_sigma_t(0.0f, 0.0f, 0.0f);
 		Vector3f out_density_min(0.0f, 0.0f, 0.0f);
@@ -451,6 +457,8 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 			out_phase_type = static_cast<float>(out_medium->phase_type);
 			out_g = out_medium->g;
 			out_medium_type = static_cast<float>(out_medium->type);
+			out_is_emissive = out_medium->is_emissive ? 1.0f : 0.0f;
+			out_temperature_offset = static_cast<float>(out_medium->temperature_offset);
 			out_sigma_s = out_medium->sigma_s;
 			out_sigma_t = out_medium->sigma_t;
 
@@ -573,11 +581,16 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 			);
 
 			// Encode inside medium
+			float in_encoded_flag = -1.0f;
+			if (in_medium) {
+				in_encoded_flag = in_is_emissive > 0.0f ? 1.0f : 0.0f;
+			}
+
 			encoded_tri.in_type_info = Vector4f(
 				in_phase_type,   // x: phase_type
 				in_g,            // y: g (asymmetry parameter)
 				in_medium_type,  // z: medium_type
-				in_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
+				in_encoded_flag  // w: medium flag (-1 = no medium, 0 = non-emissive, 1 = emissive)
 			);
 
 			encoded_tri.in_sigma_s = Vector4f(
@@ -613,15 +626,20 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				in_density_nz,
 				in_density_inv_max,
 				in_density_offset,
-				0.0f
+				in_temperature_offset  // w: temperature_offset
 			);
 
 			// Encode outside medium
+			float out_encoded_flag = -1.0f;
+			if (out_medium) {
+				out_encoded_flag = out_is_emissive > 0.0f ? 1.0f : 0.0f;
+			}
+
 			encoded_tri.out_type_info = Vector4f(
 				out_phase_type,   // x: phase_type
 				out_g,            // y: g (asymmetry parameter)
 				out_medium_type,  // z: medium_type
-				out_medium_flag   // w: medium flag (-1 = no medium, otherwise medium exists)
+				out_encoded_flag  // w: medium flag (-1 = no medium, 0 = non-emissive, 1 = emissive)
 			);
 
 			encoded_tri.out_sigma_s = Vector4f(
@@ -657,7 +675,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				out_density_nz,
 				out_density_inv_max,
 				out_density_offset,
-				0.0f
+				out_temperature_offset  // w: temperature_offset
 			);
 
 			// Store in appropriate container based on the is_light parameter
@@ -905,6 +923,16 @@ void SceneManager::CreateGPUBuffers() {
 			GL_STATIC_DRAW
 		);
 	}
+
+	// Create GPU buffer for heterogeneous temperature data
+	if (!temperature_data_.empty()) {
+		temperature_tbo_ = std::make_unique<TBO>(
+			temperature_data_.data(),
+			temperature_data_.size() * sizeof(float),
+			GL_R32F,
+			GL_STATIC_DRAW
+		);
+	}
 }
 
 const TBO& SceneManager::GetTriangleTBO() const noexcept {
@@ -979,6 +1007,44 @@ std::pair<int, float> SceneManager::ReadDensityFromFile(const std::string& file_
 		file_path, nx, ny, nz, start, max_density);
 
 	return { start, max_density };
+}
+
+int SceneManager::ReadTemperatureFromFile(const std::string& file_path, int nx, int ny, int nz) {
+	FILE* fp = fopen(file_path.c_str(), "r");
+	if (!fp) {
+		ERROR("[error] Failed to open temperature file: {}", file_path);
+
+		return -1;
+	}
+
+	int start = static_cast<int>(temperature_data_.size());
+	temperature_data_.resize(start + nx * ny * nz);
+
+	for (int i = 0; i < nx * ny * nz; ++i) {
+		float c;
+		if (1 != fscanf(fp, "%f\n", &c)) {
+			ERROR("[error] Temperature file format error at index {}: {}.", i, file_path);
+			fclose(fp);
+			temperature_data_.resize(start);
+
+			return -1;
+		}
+		temperature_data_[start + i] = c;
+	}
+
+	fclose(fp);
+	INFO("[info] Temperature loaded: {} ({}x{}x{}, offset={}).",
+		file_path, nx, ny, nz, start);
+
+	return start;
+}
+
+const TBO& SceneManager::GetTemperatureTBO() const noexcept {
+	return *temperature_tbo_;
+}
+
+bool SceneManager::HasTemperature() const noexcept {
+	return !temperature_data_.empty();
 }
 
 NAMESPACE_END(dream)

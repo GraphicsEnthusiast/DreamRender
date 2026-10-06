@@ -209,14 +209,36 @@ public:
     Vector3f GetSceneCenter() const noexcept;
 
     /**
-     * @brief Reads density data from a text file and appends it to the global density buffer.
-     * @param file_path Path to the density file.
-     * @param nx Number of voxels along the x-axis.
-     * @param ny Number of voxels along the y-axis.
-     * @param nz Number of voxels along the z-axis.
-     * @return std::pair<int, float> First: offset of the appended density block in the global buffer (-1 on failure). Second: max density value of the block.
+     * @brief Reads density data from a text file and appends it to the global density buffer
+     * @param file_path Path to the density file
+     * @param nx Number of voxels along the x-axis
+     * @param ny Number of voxels along the y-axis
+     * @param nz Number of voxels along the z-axis
+     * @return std::pair<int, float> First: offset of the appended density block in the global buffer (-1 on failure). Second: max density value of the block
      */
     std::pair<int, float> ReadDensityFromFile(const std::string& file_path, int nx, int ny, int nz);
+
+    /**
+	 * @brief Reads temperature data from a text file and appends it to the global temperature buffer
+	 * @param file_path Path to the temperature file
+	 * @param nx Number of voxels along the x-axis
+	 * @param ny Number of voxels along the y-axis
+	 * @param nz Number of voxels along the z-axis
+	 * @return offset of the appended temperature block in the global buffer (-1 on failure)
+	 */
+    int ReadTemperatureFromFile(const std::string& file_path, int nx, int ny, int nz);
+
+    /**
+     * @brief Get the TBO containing medium temperature
+     * @return Const reference to the temperature TBO
+     */
+    const TBO& GetTemperatureTBO() const noexcept;
+
+    /**
+     * @brief Check if temperature data has been loaded
+     * @return True if temperature data exists, false otherwise
+     */
+    bool HasTemperature() const noexcept;
 
     /**
      * @brief Deleted copy constructor
@@ -316,6 +338,8 @@ protected:
 
 	std::vector<float> density_data_;                       ///< Global density buffer for all heterogeneous media
 	std::unique_ptr<TBO> density_tbo_;                      ///< TBO storing all density data
+	std::vector<float> temperature_data_;                   ///< Global temperature buffer for all emissive media
+	std::unique_ptr<TBO> temperature_tbo_;                  ///< TBO storing all temperature data
 
     static std::unique_ptr<SceneManager> instance_;         ///< Singleton instance pointer
 };

@@ -223,6 +223,12 @@ void RenderPass::SetSceneParameters(Shader& shader) {
 		shader.SetInt("DensityData", 14);
 	}
 
+	// Bind temperature TBO for emissive media (if any)
+	if (scene_manager.HasTemperature()) {
+		scene_manager.GetTemperatureTBO().BindTexture(15);
+		shader.SetInt("TemperatureData", 15);
+	}
+
 	shader.SetVector("SceneCenter", scene_manager.GetSceneCenter());
 	shader.SetFloat("SceneRadius", scene_manager.GetSceneRadius());
 

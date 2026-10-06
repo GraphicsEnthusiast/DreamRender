@@ -826,4 +826,81 @@ SampledSpectrum RGBIlluminantSpectrumSample(RGBIlluminantSpectrum spectrum, Samp
     return result;
 }
 
+/**
+ * @brief Computes blackbody radiance at given wavelength and temperature
+ * @param lambda Wavelength in nanometers
+ * @param temperature Temperature in Kelvin
+ * @return Blackbody spectral radiance (unormalized)
+ */
+float Blackbody(float lambda, float temperature) {
+    // Guard against invalid temperature
+    if (temperature <= 0.0f) {
+        return 0.0f;
+    }
+    
+    // Convert wavelength from nanometers to meters
+    float lambda_m = lambda * 1e-9f;
+    
+    // Physical constants
+    const float c = 299792458.0f;
+    const float h = 6.62606957e-34f;
+    const float kb = 1.3806488e-23f;
+    
+    // Compute blackbody radiance using Planck's law:
+    // B(λ, T) = (2hc²/λ⁵) / (exp(hc/(λkT)) - 1)
+    float c1 = 2.0f * h * c * c;
+    float c2 = h * c / kb;
+    
+    float lambda5 = lambda_m * lambda_m * lambda_m * lambda_m * lambda_m;
+    float exponent = c2 / (lambda_m * temperature);
+    
+    // Avoid overflow for large exponent
+    if (exponent > 100.0f) {
+        return 0.0f;
+    }
+    
+    return c1 / (lambda5 * (exp(exponent) - 1.0f));
+}
+
+/**
+ * @struct BlackbodySpectrum
+ * @brief Represents blackbody radiation spectrum for a given temperature
+ */
+struct BlackbodySpectrum {
+    float temperature;          ///< Temperature in Kelvin
+    float normalization_factor; ///< Normalization factor (1 / peak value)
+};
+
+/**
+ * @brief Creates a blackbody spectrum for given temperature
+ * @param temperature Temperature in Kelvin
+ * @return Initialized blackbody spectrum
+ */
+BlackbodySpectrum BlackbodySpectrumNew(float temperature) {
+    BlackbodySpectrum s;
+    s.temperature = temperature;
+    
+    // Compute blackbody normalization constant for given temperature
+    // Wien's displacement law: λ_max = b / T, where b = 2.8977721e-3 m·K
+    float lambda_max = 2.8977721e-3f / temperature;
+    s.normalization_factor = 1.0f / Blackbody(lambda_max * 1e9f, temperature);
+    
+    return s;
+}
+
+/**
+ * @brief Evaluates blackbody spectrum at multiple sampled wavelengths
+ * @param s Input blackbody spectrum
+ * @param lambda Sampled wavelengths with PDF values
+ * @return SampledSpectrum containing normalized blackbody radiance values
+ */
+SampledSpectrum GetBlackbodySpectrum(BlackbodySpectrum s, SampledWavelengths lambda) {
+    SampledSpectrum result;
+    for (int i = 0; i < NSpectrumSamples; i++) {
+        result.values[i] = Blackbody(lambda.lambda[i], s.temperature) * s.normalization_factor;
+    }
+    
+    return result;
+}
+
 #endif // SPECTRUM_GLSL

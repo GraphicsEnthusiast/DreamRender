@@ -196,6 +196,8 @@ struct Medium {
 	Vector3i density_resolution;      ///< Grid resolution (nx, ny, nz)
 	float inv_max_density;            ///< 1.0 / max(density_data), used for delta tracking
 	int density_offset;               ///< Precomputed offset into the global density buffer (filled at load time)
+    bool is_emissive;                 ///< Whether the medium is emissive
+    int temperature_offset;           ///< Precomputed offset into the global temperature buffer (filled at load time)
 
     /**
      * @brief Default constructor
@@ -346,7 +348,7 @@ struct alignas(16) TriangleEncoded {
 
 	alignas(16) Vector4f in_density_min;    ///< Heterogeneous inside medium: min corner (xyz), nx (w)
 	alignas(16) Vector4f in_density_max;    ///< Heterogeneous inside medium: max corner (xyz), ny (w)
-	alignas(16) Vector4f in_density_data;   ///< Heterogeneous inside medium: nz (x), inv_max_density (y), density_offset (z), reserved (w)
+	alignas(16) Vector4f in_density_data;   ///< Heterogeneous inside medium: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
 
 	alignas(16) Vector4f out_type_info;   ///< Outside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
 	alignas(16) Vector4f out_sigma_s;     ///< Outside medium scattering coefficient (xyz components)
@@ -354,7 +356,7 @@ struct alignas(16) TriangleEncoded {
 
 	alignas(16) Vector4f out_density_min;   ///< Heterogeneous outside medium: min corner (xyz), nx (w)
 	alignas(16) Vector4f out_density_max;   ///< Heterogeneous outside medium: max corner (xyz), ny (w)
-	alignas(16) Vector4f out_density_data;  ///< Heterogeneous outside medium: nz (x), inv_max_density (y), density_offset (z), reserved (w)
+	alignas(16) Vector4f out_density_data;  ///< Heterogeneous outside medium: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
 };
 
 /**

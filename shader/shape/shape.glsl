@@ -44,6 +44,7 @@ struct Triangle {
     float in_g;             ///< Inside medium asymmetry parameter
     int in_medium_type;     ///< Inside medium type
     bool has_in_medium;
+    bool in_is_emissive;    ///< Whether inside medium is emissive (blackbody)
     vec3 in_sigma_s;        ///< Inside medium scattering coefficient
     vec3 in_sigma_t;        ///< Inside medium extinction coefficient
 
@@ -51,16 +52,17 @@ struct Triangle {
     float out_g;            ///< Outside medium asymmetry parameter
     int out_medium_type;    ///< Outside medium type
     bool has_out_medium;
+    bool out_is_emissive;   ///< Whether outside medium is emissive (blackbody)
     vec3 out_sigma_s;       ///< Outside medium scattering coefficient
     vec3 out_sigma_t;       ///< Outside medium extinction coefficient
 
     vec4 in_density_min;    ///< Inside: min corner (xyz), nx (w)
     vec4 in_density_max;    ///< Inside: max corner (xyz), ny (w)
-    vec4 in_density_data;   ///< Inside: nz (x), inv_max_density (y), density_offset (z), reserved (w)
+    vec4 in_density_data;   ///< Inside: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
 
     vec4 out_density_min;   ///< Outside: min corner (xyz), nx (w)
     vec4 out_density_max;   ///< Outside: max corner (xyz), ny (w)
-    vec4 out_density_data;  ///< Outside: nz (x), inv_max_density (y), density_offset (z), reserved (w)
+    vec4 out_density_data;  ///< Outside: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
 };
 
 /**
@@ -143,7 +145,9 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.in_phase_type = int(in_type_info.x);
     tri.in_g = in_type_info.y;
     tri.in_medium_type = int(in_type_info.z);
+    // w: -1 = no medium, 0 = non-emissive, 1 = emissive
     tri.has_in_medium = in_type_info.w >= 0.0f ? true : false;
+    tri.in_is_emissive = in_type_info.w > 0.5f ? true : false;
     tri.in_sigma_s = in_sigma_s_data.xyz;
     tri.in_sigma_t = in_sigma_t_data.xyz;
     tri.in_density_min = in_density_min_data;
@@ -161,7 +165,9 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.out_phase_type = int(out_type_info.x);
     tri.out_g = out_type_info.y;
     tri.out_medium_type = int(out_type_info.z);
+    // w: -1 = no medium, 0 = non-emissive, 1 = emissive
     tri.has_out_medium = out_type_info.w >= 0.0f ? true : false;
+    tri.out_is_emissive = out_type_info.w > 0.5f ? true : false;
     tri.out_sigma_s = out_sigma_s_data.xyz;
     tri.out_sigma_t = out_sigma_t_data.xyz;
     tri.out_density_min = out_density_min_data;

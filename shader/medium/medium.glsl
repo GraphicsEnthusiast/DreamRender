@@ -4,6 +4,7 @@
 #include "medium/phase_function.glsl"
 
 uniform samplerBuffer DensityData; ///< Global density data for heterogeneous media
+uniform samplerBuffer TemperatureData;  ///< Global temperature data for emissive media
 
 // Medium type enumeration, consistent with C++ side
 const int MediumType_Homogeneous = 0;   ///< Homogeneous medium
@@ -47,6 +48,7 @@ struct MediumSampleInfo {
     float distance;
     float pdf;
     bool scattered;
+    SampledSpectrum emission;
 };
 
 /**
@@ -103,6 +105,55 @@ WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectru
 }
 
 /**
+ * @brief Get temperature at normalized position using trilinear interpolation
+ * @param medium Medium data containing temperature grid info
+ * @param p Normalized position in [0,1]^3
+ * @return Interpolated temperature value
+ */
+float GetTemperature(Medium medium, vec3 p) {
+    // Scale to grid coordinates
+    vec3 ps = p * vec3(medium.density_resolution);
+    vec3 psi = floor(ps);
+    vec3 delta = ps - psi;
+    
+    // Clamp base indices to valid range
+    ivec3 base = ivec3(psi);
+    base = max(base, ivec3(0));
+    base = min(base, medium.density_resolution - ivec3(1));
+    
+    // Compute neighbor indices with clamping
+    ivec3 x1 = min(base + ivec3(1, 0, 0), medium.density_resolution - ivec3(1));
+    ivec3 y1 = min(base + ivec3(0, 1, 0), medium.density_resolution - ivec3(1));
+    ivec3 z1 = min(base + ivec3(0, 0, 1), medium.density_resolution - ivec3(1));
+    ivec3 xy1 = min(base + ivec3(1, 1, 0), medium.density_resolution - ivec3(1));
+    ivec3 xz1 = min(base + ivec3(1, 0, 1), medium.density_resolution - ivec3(1));
+    ivec3 yz1 = min(base + ivec3(0, 1, 1), medium.density_resolution - ivec3(1));
+    ivec3 xyz1 = min(base + ivec3(1, 1, 1), medium.density_resolution - ivec3(1));
+    
+    // Fetch temperature values at 8 corners
+    // Index formula: offset + z * ny * nx + y * nx + x
+    float t000 = texelFetch(TemperatureData, medium.temperature_offset + base.z * medium.density_resolution.y * medium.density_resolution.x + base.y * medium.density_resolution.x + base.x).r;
+    float t100 = texelFetch(TemperatureData, medium.temperature_offset + x1.z * medium.density_resolution.y * medium.density_resolution.x + base.y * medium.density_resolution.x + x1.x).r;
+    float t010 = texelFetch(TemperatureData, medium.temperature_offset + y1.z * medium.density_resolution.y * medium.density_resolution.x + y1.y * medium.density_resolution.x + base.x).r;
+    float t110 = texelFetch(TemperatureData, medium.temperature_offset + xy1.z * medium.density_resolution.y * medium.density_resolution.x + xy1.y * medium.density_resolution.x + xy1.x).r;
+    float t001 = texelFetch(TemperatureData, medium.temperature_offset + z1.z * medium.density_resolution.y * medium.density_resolution.x + base.y * medium.density_resolution.x + base.x).r;
+    float t101 = texelFetch(TemperatureData, medium.temperature_offset + xz1.z * medium.density_resolution.y * medium.density_resolution.x + base.y * medium.density_resolution.x + xz1.x).r;
+    float t011 = texelFetch(TemperatureData, medium.temperature_offset + yz1.z * medium.density_resolution.y * medium.density_resolution.x + yz1.y * medium.density_resolution.x + base.x).r;
+    float t111 = texelFetch(TemperatureData, medium.temperature_offset + xyz1.z * medium.density_resolution.y * medium.density_resolution.x + xyz1.y * medium.density_resolution.x + xyz1.x).r;
+    
+    // Trilinear interpolation
+    float t00 = mix(t000, t100, delta.x);
+    float t10 = mix(t010, t110, delta.x);
+    float t01 = mix(t001, t101, delta.x);
+    float t11 = mix(t011, t111, delta.x);
+    
+    float t0 = mix(t00, t10, delta.y);
+    float t1 = mix(t01, t11, delta.y);
+    
+    return mix(t0, t1, delta.z);
+}
+
+/**
  * @brief Get density value at normalized position using trilinear interpolation
  * @param medium Medium data containing density grid info
  * @param p Normalized position in [0,1]^3
@@ -149,6 +200,27 @@ float GetDensity(Medium medium, vec3 p) {
     float d1 = mix(d01, d11, delta.y);
     
     return mix(d0, d1, delta.z);
+}
+
+/**
+ * @brief Compute blackbody emission at a point in an emissive medium
+ * @param medium Medium data containing emission properties
+ * @param p Normalized position in [0,1]^3
+ * @param lambda Sampled wavelengths
+ * @return SampledSpectrum of emitted radiance
+ */
+SampledSpectrum GetMediumEmission(Medium medium, vec3 p, SampledWavelengths lambda) {
+    SampledSpectrum Le = SampledSpectrumNewFloat(0.0f);
+    
+    if (medium.is_emissive) {
+        float temperature = GetTemperature(medium, p);
+        // Only emit if temperature is physically meaningful
+        if (temperature > 100.0f) {
+            Le = GetBlackbodySpectrum(BlackbodySpectrumNew(temperature), lambda);
+        }
+    }
+    
+    return Le;
 }
 
 /**
@@ -211,7 +283,7 @@ MediumEvalInfo DeltaTrackingEvaluate(Medium medium, vec3 origin, vec3 ray_dir, f
             SampledSpectrum sigma_t = MulFloat(medium.sigma_t, density);
             SampledSpectrum sigma_a = Sub(sigma_t, sigma_s);
             SampledSpectrum sigma_n = Sub(Sub(SampledSpectrumNewFloat(majorant), sigma_a), sigma_s);
-            
+
             // Russian roulette: P_n = sigma_n / majorant
             // Collision if random > P_n[channel]
             if (SobolSamplerGet1(sobol_sampler) > sigma_n.values[channel] * inv_majorant) {
@@ -254,15 +326,21 @@ MediumEvalInfo DeltaTrackingEvaluate(Medium medium, vec3 origin, vec3 ray_dir, f
  * @param ray_dir Ray direction (normalized)
  * @param tmax Maximum distance
  * @param beta Spectral beta (path contribution)
+ * @param lambda Sampled wavelengths for spectral rendering
  * @param sobol_sampler Sobol sampler (consumes random samples)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo DeltaTrackingSample(Medium medium, vec3 origin, vec3 ray_dir, float tmax, SampledSpectrum beta, inout SobolSampler sobol_sampler) {
+MediumSampleInfo DeltaTrackingSample(Medium medium, vec3 origin, vec3 ray_dir, float tmax, SampledSpectrum beta, SampledWavelengths lambda, inout SobolSampler sobol_sampler) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
     result.pdf = 0.0f;
     result.scattered = false;
+    result.emission = SampledSpectrumNewFloat(0.0f);
+    
+    // Compute wavelength-independent majorant
+    float max_sigma_t = Max(medium.sigma_t);
+    float majorant = max_sigma_t * (1.0f / medium.inv_max_density);
     
     // Sample wavelength channel
     SampledSpectrum albedo = Div(medium.sigma_s, medium.sigma_t);
@@ -276,6 +354,7 @@ MediumSampleInfo DeltaTrackingSample(Medium medium, vec3 origin, vec3 ray_dir, f
     float inv_majorant = medium.inv_max_density / sigma;
     
     float dist = 0.0f;
+    SampledSpectrum trans = SampledSpectrumNewFloat(1.0f);
     
     for (int iter = 0; iter < MaxMediumIterations; iter++) {
         // Sample collision-free distance
@@ -300,25 +379,39 @@ MediumSampleInfo DeltaTrackingSample(Medium medium, vec3 origin, vec3 ray_dir, f
             // Get density at point
             float density = GetDensity(medium, p_norm);
             
+            // Compute sigma_a, sigma_s, sigma_n at this point
+            SampledSpectrum sigma_s = MulFloat(medium.sigma_s, density);
+            SampledSpectrum sigma_t = MulFloat(medium.sigma_t, density);
+            SampledSpectrum sigma_a = Sub(sigma_t, sigma_s);
+            SampledSpectrum sigma_n = Sub(Sub(SampledSpectrumNewFloat(majorant), sigma_a), sigma_s);
+            
             // Collision test: density * invMaxDensity > random
             if (density * medium.inv_max_density > SobolSamplerGet1(sobol_sampler)) {
+                if (medium.is_emissive) {
+                    SampledSpectrum emission = GetMediumEmission(medium, p_norm, lambda);
+                    result.emission = Add(result.emission, Mul(Mul(beta, trans), emission));
+                }
+
                 // Scattering occurs
                 result.distance = dist;
                 result.scattered = true;
                 
                 // Transmittance at scattering point
                 float tr = exp(-sigma * dist);
-                SampledSpectrum trans = SampledSpectrumNewFloat(tr);
+                SampledSpectrum trans_at_scatter = SampledSpectrumNewFloat(tr);
                 
                 // PDF = σ_t * Tr(distance)
                 for (int i = 0; i < NSpectrumSamples; i++) {
-                    result.pdf += wavelength_pmf.values[i] * trans.values[i] * medium.sigma_t.values[i];
+                    result.pdf += wavelength_pmf.values[i] * trans_at_scatter.values[i] * medium.sigma_t.values[i];
                 }
                 
-                result.transmittance = Mul(trans, medium.sigma_s);
+                result.transmittance = Mul(trans_at_scatter, medium.sigma_s);
 
                 return result;
             }
+            
+            // No collision, update transmittance: trans *= sigma_n / sigma_n[channel]
+            trans = Mul(trans, DivFloat(sigma_n, sigma_n.values[channel]));
         }
     }
     
@@ -328,13 +421,13 @@ MediumSampleInfo DeltaTrackingSample(Medium medium, vec3 origin, vec3 ray_dir, f
     
     // Transmittance at tmax
     float tr = exp(-sigma * tmax);
-    SampledSpectrum trans = SampledSpectrumNewFloat(tr);
+    SampledSpectrum trans_at_tmax = SampledSpectrumNewFloat(tr);
     
     for (int i = 0; i < NSpectrumSamples; i++) {
-        result.pdf += wavelength_pmf.values[i] * trans.values[i];
+        result.pdf += wavelength_pmf.values[i] * trans_at_tmax.values[i];
     }
     
-    result.transmittance = trans;
+    result.transmittance = trans_at_tmax;
 
     return result;
 }
@@ -413,6 +506,7 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
     result.distance = 0.0f;
     result.pdf = 0.0f;
     result.scattered = false;
+    result.emission = SampledSpectrumNewFloat(0.0f);
     
     float max_distance = info.distance;
     
@@ -550,10 +644,11 @@ MediumEvalInfo HeterogeneousDistanceEvaluate(IntersectionInfo info, SampledSpect
  * @param beta Spectral beta (path contribution)
  * @param ray_dir Ray direction (normalized)
  * @param sobol_sampler Sobol sequence sampler
+ * @param lambda Sampled wavelengths for spectral rendering
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo HeterogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec3 ray_dir, inout SobolSampler sobol_sampler) {
-    return DeltaTrackingSample(info.medium, info.position, ray_dir, info.distance, beta, sobol_sampler);
+MediumSampleInfo HeterogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec3 ray_dir, SampledWavelengths lambda, inout SobolSampler sobol_sampler) {
+    return DeltaTrackingSample(info.medium, info.position, ray_dir, info.distance, beta, lambda, sobol_sampler);
 }
 
 /**
@@ -588,21 +683,23 @@ MediumEvalInfo MediumDistanceEvaluate(IntersectionInfo info, SampledSpectrum bet
  * @param beta Spectral beta (path contribution)
  * @param ray_dir Ray direction (normalized, needed for heterogeneous media)
  * @param sobol_sampler Sobol sequence sampler
+ * @param lambda Sampled wavelengths for spectral rendering
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec3 ray_dir, inout SobolSampler sobol_sampler) {
+MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec3 ray_dir, SampledWavelengths lambda, inout SobolSampler sobol_sampler) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
     result.pdf = 0.0f;
     result.scattered = false;
+    result.emission = SampledSpectrumNewFloat(0.0f);
     
     // Dispatch based on medium type
     if (MediumType_Homogeneous == info.medium.type) {
         return HomogeneousDistanceSample(info, beta, sobol_sampler);
     }
     else if (MediumType_Heterogeneous == info.medium.type) {
-        return HeterogeneousDistanceSample(info, beta, ray_dir, sobol_sampler);
+        return HeterogeneousDistanceSample(info, beta, ray_dir, lambda, sobol_sampler);
     }
     
     // Unknown medium type, return zero contribution

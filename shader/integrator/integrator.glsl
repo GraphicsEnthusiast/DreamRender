@@ -149,6 +149,8 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             medium.phase_type = tri.out_phase_type;
             medium.g = tri.out_g;
             medium.type = tri.out_medium_type;
+            medium.is_emissive = tri.out_is_emissive;
+            medium.temperature_offset = int(tri.out_density_data.w);
 
             RGB sigma_s_rgb = RGBNew(tri.out_sigma_s.r, tri.out_sigma_s.g, tri.out_sigma_s.b);
             RGB sigma_t_rgb = RGBNew(tri.out_sigma_t.r, tri.out_sigma_t.g, tri.out_sigma_t.b);
@@ -156,8 +158,6 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
-
-            // Heterogeneous density data
             medium.density_min = tri.out_density_min.xyz;
             medium.density_max = tri.out_density_max.xyz;
             medium.density_resolution = ivec3(
@@ -175,6 +175,8 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             medium.phase_type = tri.in_phase_type;
             medium.g = tri.in_g;
             medium.type = tri.in_medium_type;
+            medium.is_emissive = tri.in_is_emissive;
+            medium.temperature_offset = int(tri.in_density_data.w);
 
             RGB sigma_s_rgb = RGBNew(tri.in_sigma_s.r, tri.in_sigma_s.g, tri.in_sigma_s.b);
             RGB sigma_t_rgb = RGBNew(tri.in_sigma_t.r, tri.in_sigma_t.g, tri.in_sigma_t.b);
@@ -182,8 +184,6 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             RGBAlbedoSpectrum sigma_t_spectrum = RGBAlbedoSpectrumNew(sigma_t_rgb);
             medium.sigma_s = RGBAlbedoSpectrumSample(sigma_s_spectrum, lambda);
             medium.sigma_t = RGBAlbedoSpectrumSample(sigma_t_spectrum, lambda);
-
-            // Heterogeneous density data
             medium.density_min = tri.in_density_min.xyz;
             medium.density_max = tri.in_density_max.xyz;
             medium.density_resolution = ivec3(
