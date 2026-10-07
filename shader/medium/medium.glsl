@@ -3,12 +3,12 @@
 
 #include "medium/phase_function.glsl"
 
-uniform samplerBuffer DensityData; ///< Global density data for heterogeneous media
-uniform samplerBuffer TemperatureData;  ///< Global temperature data for emissive media
+uniform samplerBuffer DensityData;      // Global density data for heterogeneous media
+uniform samplerBuffer TemperatureData;  // Global temperature data for emissive media
 
 // Medium type enumeration, consistent with C++ side
-const int MediumType_Homogeneous = 0;   ///< Homogeneous medium
-const int MediumType_Heterogeneous = 1; ///< Heterogeneous medium
+const int MediumType_Homogeneous = 0;   // Homogeneous medium
+const int MediumType_Heterogeneous = 1; // Heterogeneous medium
 
 // Iteration depth for heterogeneous medium tracking
 const int MaxMediumIterations = 2048;
