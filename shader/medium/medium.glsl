@@ -10,7 +10,7 @@ uniform samplerBuffer TemperatureData;  ///< Global temperature data for emissiv
 const int MediumType_Homogeneous = 0;   ///< Homogeneous medium
 const int MediumType_Heterogeneous = 1; ///< Heterogeneous medium
 
-// Fixed iteration depth for heterogeneous medium tracking
+// Iteration depth for heterogeneous medium tracking
 const int MaxMediumIterations = 2048;
 
 /**
