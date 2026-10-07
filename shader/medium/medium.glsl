@@ -396,16 +396,12 @@ MediumSampleInfo DeltaTrackingSample(Medium medium, vec3 origin, vec3 ray_dir, f
                 result.distance = dist;
                 result.scattered = true;
                 
-                // Transmittance at scattering point
-                float tr = exp(-sigma * dist);
-                SampledSpectrum trans_at_scatter = SampledSpectrumNewFloat(tr);
-                
                 // PDF = σ_t * Tr(distance)
                 for (int i = 0; i < NSpectrumSamples; i++) {
-                    result.pdf += wavelength_pmf.values[i] * trans_at_scatter.values[i] * medium.sigma_t.values[i];
+                    result.pdf += wavelength_pmf.values[i] * trans.values[i] * medium.sigma_t.values[i];
                 }
                 
-                result.transmittance = Mul(trans_at_scatter, medium.sigma_s);
+                result.transmittance = Mul(trans, medium.sigma_s);
 
                 return result;
             }
@@ -418,16 +414,10 @@ MediumSampleInfo DeltaTrackingSample(Medium medium, vec3 origin, vec3 ray_dir, f
     // Transmission
     result.distance = tmax;
     result.scattered = false;
-    
-    // Transmittance at tmax
-    float tr = exp(-sigma * tmax);
-    SampledSpectrum trans_at_tmax = SampledSpectrumNewFloat(tr);
-    
+    result.transmittance = trans;
     for (int i = 0; i < NSpectrumSamples; i++) {
-        result.pdf += wavelength_pmf.values[i] * trans_at_tmax.values[i];
+        result.pdf += wavelength_pmf.values[i] * trans.values[i];
     }
-    
-    result.transmittance = trans_at_tmax;
 
     return result;
 }
