@@ -25,13 +25,13 @@ void Shader::SetFloat(const std::string& name, float value) {
 template<int N>
 void Shader::SetVector(const std::string& name, const glm::vec<N, float, glm::packed_highp>& vec) {
     GLint location = glGetUniformLocation(id_, name.c_str());
-    if constexpr (N == 2) {
+    if constexpr (2 == N) {
         glUniform2fv(location, 1, glm::value_ptr(vec));
     }
-    else if constexpr (N == 3) {
+    else if constexpr (3 == N) {
         glUniform3fv(location, 1, glm::value_ptr(vec));
     }
-    else if constexpr (N == 4) {
+    else if constexpr (4 == N) {
         glUniform4fv(location, 1, glm::value_ptr(vec));
     }
 }
@@ -39,13 +39,13 @@ void Shader::SetVector(const std::string& name, const glm::vec<N, float, glm::pa
 template<int N>
 void Shader::SetMatrix(const std::string& name, const glm::mat<N, N, float, glm::packed_highp>& mat) {
     GLint location = glGetUniformLocation(id_, name.c_str());
-    if constexpr (N == 2) {
+    if constexpr (2 == N) {
         glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat));
     }
-    else if constexpr (N == 3) {
+    else if constexpr (3 == N) {
         glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat));
     }
-    else if constexpr (N == 4) {
+    else if constexpr (4 == N) {
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
     }
 }
