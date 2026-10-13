@@ -42,6 +42,7 @@ struct Medium {
     int density_offset;       // Offset into the global density TBO
     bool is_emissive;         // Whether the medium is emissive
     int temperature_offset;   // Precomputed offset into the global temperature buffer (filled at load time) 
+    int temperature;
 };
 
 /**

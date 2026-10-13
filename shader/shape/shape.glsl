@@ -11,68 +11,70 @@ uniform samplerBuffer BVHNodesLight;
 
 /**
  * @brief Hit information structure for ray intersection results
- */
+ */s
 struct Hit {
-    float distance; ///< Intersection distance along the rays
-    float u;        ///< Barycentric u coordinate
-    float v;        ///< Barycentric v coordinate
-    int tri_index;  ///< Intersected triangle index
-    bool is_light;  ///< Whether the hit is on a light triangle
+    float distance; // Intersection distance along the rays
+    float u;        // Barycentric u coordinate
+    float v;        // Barycentric v coordinate
+    int tri_index;  // Intersected triangle index
+    bool is_light;  // Whether the hit is on a light triangle
 };
 
 /**
  * @brief Triangle data structure (must match CPU-side TriangleEncoded)
  */
 struct Triangle {
-    vec3 p1, p2, p3; ///< Vertex positions
-    vec3 n1, n2, n3; ///< Vertex normals
-    vec2 t1, t2, t3; ///< Vertex texcoords
+    vec3 p1, p2, p3; // Vertex positions
+    vec3 n1, n2, n3; // Vertex normals
+    vec2 t1, t2, t3; // Vertex texcoords
 
     vec4 material_type;
     vec4 emission;
-    vec4 diffuse;    ///< Diffuse color (rgb) and texture flag (a: 0=const, 1=texture)
-    vec4 roughness;  ///< (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
-    vec4 specular;        ///< Specular color (rgb) and texture flag (a: -1=const, >=0=texture)
-    vec3 eta;             ///< Conductor complex IOR real part (constant only)
-    vec3 k;               ///< Conductor complex IOR imaginary part (constant only)
-    float in_ior;          ///< Inside medium index of refraction
-    float out_ior;         ///< Outside medium index of refraction
-    vec4 metallic_coat;         ///< Metallic workflow parameters (x = metallic, y: -1=const, >=0=textures), z = clear coat
-    vec4 coat_roughness;   ///< Clear coat roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
+    vec4 diffuse;    // Diffuse color (rgb) and texture flag (a: 0=const, 1=texture)
+    vec4 roughness;  // (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
+    vec4 specular;        // Specular color (rgb) and texture flag (a: -1=const, >=0=texture)
+    vec3 eta;             // Conductor complex IOR real part (constant only)
+    vec3 k;               // Conductor complex IOR imaginary part (constant only)
+    float in_ior;          // Inside medium index of refraction
+    float out_ior;         // Outside medium index of refraction
+    vec4 metallic_coat;         // Metallic workflow parameters (x = metallic, y: -1=const, >=0=textures), z = clear coat
+    vec4 coat_roughness;   // Clear coat roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 
-    int in_phase_type;      ///< Inside medium phase function type
-    float in_g;             ///< Inside medium asymmetry parameter
-    int in_medium_type;     ///< Inside medium type
+    int in_phase_type;      // Inside medium phase function type
+    float in_g;             // Inside medium asymmetry parameter
+    int in_medium_type;     // Inside medium type
     bool has_in_medium;
-    bool in_is_emissive;    ///< Whether inside medium is emissive (blackbody)
-    vec3 in_sigma_s;        ///< Inside medium scattering coefficient
-    vec3 in_sigma_t;        ///< Inside medium extinction coefficient
+    bool in_is_emissive;    // Whether inside medium is emissive (blackbody)
+    vec3 in_sigma_s;        // Inside medium scattering coefficient
+    vec3 in_sigma_t;        // Inside medium extinction coefficient
+    int in_temperature;
 
-    int out_phase_type;     ///< Outside medium phase function type
-    float out_g;            ///< Outside medium asymmetry parameter
-    int out_medium_type;    ///< Outside medium type
+    int out_phase_type;     // Outside medium phase function type
+    float out_g;            // Outside medium asymmetry parameter
+    int out_medium_type;    // Outside medium type
     bool has_out_medium;
-    bool out_is_emissive;   ///< Whether outside medium is emissive (blackbody)
-    vec3 out_sigma_s;       ///< Outside medium scattering coefficient
-    vec3 out_sigma_t;       ///< Outside medium extinction coefficient
+    bool out_is_emissive;   // Whether outside medium is emissive (blackbody)
+    vec3 out_sigma_s;       // Outside medium scattering coefficient
+    vec3 out_sigma_t;       // Outside medium extinction coefficient
+    int out_temperature;
 
-    vec4 in_density_min;    ///< Inside: min corner (xyz), nx (w)
-    vec4 in_density_max;    ///< Inside: max corner (xyz), ny (w)
-    vec4 in_density_data;   ///< Inside: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
+    vec4 in_density_min;    // Inside: min corner (xyz), nx (w)
+    vec4 in_density_max;    // Inside: max corner (xyz), ny (w)
+    vec4 in_density_data;   // Inside: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
 
-    vec4 out_density_min;   ///< Outside: min corner (xyz), nx (w)
-    vec4 out_density_max;   ///< Outside: max corner (xyz), ny (w)
-    vec4 out_density_data;  ///< Outside: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
+    vec4 out_density_min;   // Outside: min corner (xyz), nx (w)
+    vec4 out_density_max;   // Outside: max corner (xyz), ny (w)
+    vec4 out_density_data;  // Outside: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
 };
 
 /**
  * @brief BVH Node structure for GPU traversal (must match CPU-side BVHNodeEncoded)
  */
 struct BVHNode {
-    vec4 lmin; ///< Left child AABB min + left child index in w component
-    vec4 lmax; ///< Left child AABB max + right child index in w component
-    vec4 rmin; ///< Right child AABB min + triangle count in w component
-    vec4 rmax; ///< Right child AABB max + first triangle index in w component
+    vec4 lmin; // Left child AABB min + left child index in w component
+    vec4 lmax; // Left child AABB max + right child index in w component
+    vec4 rmin; // Right child AABB min + triangle count in w component
+    vec4 rmax; // Right child AABB max + first triangle index in w component
 };
 
 /**
@@ -153,6 +155,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.in_density_min = in_density_min_data;
     tri.in_density_max = in_density_max_data;
     tri.in_density_data = in_density_data;
+    tri.in_temperature = int(in_sigma_s_data.w); // Assuming temperature is stored in the w component of in_density_data
 
     // Fetch outside medium parameters
     vec4 out_type_info = texelFetch(trangles_buffer, base + 21);
@@ -173,6 +176,7 @@ Triangle FetchTriangle(int index, samplerBuffer trangles_buffer) {
     tri.out_density_min = out_density_min_data;
     tri.out_density_max = out_density_max_data;
     tri.out_density_data = out_density_data;
+    tri.out_temperature = int(out_sigma_s_data.w); // Assuming temperature is stored in the w component of out_density_data
 
     return tri;
 }

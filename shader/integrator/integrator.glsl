@@ -167,6 +167,7 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             );
             medium.inv_max_density = tri.out_density_data.y;
             medium.density_offset = int(tri.out_density_data.z);
+            medium.temperature = tri.out_temperature;
         }
     }
     else {
@@ -193,6 +194,7 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
             );
             medium.inv_max_density = tri.in_density_data.y;
             medium.density_offset = int(tri.in_density_data.z);
+            medium.temperature = tri.in_temperature;
         }
     }
 

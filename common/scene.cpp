@@ -415,6 +415,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		float in_density_nz = -1.0f;
 		float in_density_inv_max = -1.0f;
 		float in_density_offset = -1.0f;
+        float in_temperature = -1.0f;
 
 		if (in_medium) {
 			in_medium_flag = 0.0f;  // Has medium
@@ -425,6 +426,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 			in_temperature_offset = static_cast<float>(in_medium->temperature_offset);
 			in_sigma_s = in_medium->sigma_s;
 			in_sigma_t = in_medium->sigma_t;
+			in_temperature = in_medium->temperature;
 
 			in_density_min = in_medium->density_min;
 			in_density_max = in_medium->density_max;
@@ -451,6 +453,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		float out_density_nz = -1.0f;
 		float out_density_inv_max = -1.0f;
 		float out_density_offset = -1.0f;
+		float out_temperature = -1.0f;
 
 		if (out_medium) {
 			out_medium_flag = 0.0f;  // Has medium
@@ -461,6 +464,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 			out_temperature_offset = static_cast<float>(out_medium->temperature_offset);
 			out_sigma_s = out_medium->sigma_s;
 			out_sigma_t = out_medium->sigma_t;
+			out_temperature = static_cast<float>(out_medium->temperature);
 
 			out_density_min = out_medium->density_min;
 			out_density_max = out_medium->density_max;
@@ -597,7 +601,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				in_sigma_s.x,
 				in_sigma_s.y,
 				in_sigma_s.z,
-				0.0f
+				in_temperature
 			);
 
 			encoded_tri.in_sigma_t = Vector4f(
@@ -646,7 +650,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 				out_sigma_s.x,
 				out_sigma_s.y,
 				out_sigma_s.z,
-				0.0f
+				out_temperature
 			);
 
 			encoded_tri.out_sigma_t = Vector4f(

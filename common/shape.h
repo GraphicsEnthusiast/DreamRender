@@ -198,6 +198,7 @@ struct Medium {
 	int density_offset;               ///< Precomputed offset into the global density buffer (filled at load time)
     bool is_emissive;                 ///< Whether the medium is emissive
     int temperature_offset;           ///< Precomputed offset into the global temperature buffer (filled at load time)
+    int temperature;
 
     /**
      * @brief Default constructor
@@ -343,7 +344,7 @@ struct alignas(16) TriangleEncoded {
     alignas(16) Vector4f coat_roughness;///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)
 
 	alignas(16) Vector4f in_type_info;    ///< Inside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
-	alignas(16) Vector4f in_sigma_s;      ///< Inside medium scattering coefficient (xyz components)
+	alignas(16) Vector4f in_sigma_s;      ///< Inside medium scattering coefficient (xyz components), w = constant temperature
 	alignas(16) Vector4f in_sigma_t;      ///< Inside medium extinction coefficient (xyz components)
 
 	alignas(16) Vector4f in_density_min;    ///< Heterogeneous inside medium: min corner (xyz), nx (w)
@@ -351,7 +352,7 @@ struct alignas(16) TriangleEncoded {
 	alignas(16) Vector4f in_density_data;   ///< Heterogeneous inside medium: nz (x), inv_max_density (y), density_offset (z), temperature_offset (w)
 
 	alignas(16) Vector4f out_type_info;   ///< Outside medium: x = phase_type, y = g, z = medium_type, w = medium flag (-1 = no medium, otherwise medium exists)
-	alignas(16) Vector4f out_sigma_s;     ///< Outside medium scattering coefficient (xyz components)
+	alignas(16) Vector4f out_sigma_s;     ///< Outside medium scattering coefficient (xyz components), w = constant temperature
 	alignas(16) Vector4f out_sigma_t;     ///< Outside medium extinction coefficient (xyz components)
 
 	alignas(16) Vector4f out_density_min;   ///< Heterogeneous outside medium: min corner (xyz), nx (w)

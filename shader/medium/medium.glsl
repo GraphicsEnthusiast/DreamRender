@@ -111,6 +111,10 @@ WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectru
  * @return Interpolated temperature value
  */
 float GetTemperature(Medium medium, vec3 p) {
+    if (medium.temperature > 0) {
+        return medium.temperature;
+    }
+
     // Scale to grid coordinates
     vec3 ps = p * vec3(medium.density_resolution);
     vec3 psi = floor(ps);
@@ -490,7 +494,7 @@ MediumEvalInfo HomogeneousDistanceEvaluate(IntersectionInfo info, SampledSpectru
  * @param sobol_sampler Sobol sequence sampler (consumes 2 samples)
  * @return MediumSampleInfo containing transmittance, distance, PDF, and scattering status
  */
-MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, inout SobolSampler sobol_sampler) {
+MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectrum beta, vec3 ray_dir, SampledWavelengths lambda, inout SobolSampler sobol_sampler) {
     MediumSampleInfo result;
     result.transmittance = SampledSpectrumNewFloat(0.0f);
     result.distance = 0.0f;
@@ -597,6 +601,11 @@ MediumSampleInfo HomogeneousDistanceSample(IntersectionInfo info, SampledSpectru
         
         // For scattering, multiply by σ_s for the contribution
         result.transmittance = Mul(trans, info.medium.sigma_s);
+
+        if (info.medium.is_emissive) {
+            SampledSpectrum emission = GetMediumEmission(info.medium, vec3(0.0f), lambda);
+            result.emission = Add(result.emission, Mul(Mul(beta, trans), emission));
+        }
     }
     
     // Check if transmittance is valid (non-zero)
@@ -686,7 +695,7 @@ MediumSampleInfo MediumDistanceSample(IntersectionInfo info, SampledSpectrum bet
     
     // Dispatch based on medium type
     if (MediumType_Homogeneous == info.medium.type) {
-        return HomogeneousDistanceSample(info, beta, sobol_sampler);
+        return HomogeneousDistanceSample(info, beta, ray_dir, lambda, sobol_sampler);
     }
     else if (MediumType_Heterogeneous == info.medium.type) {
         return HeterogeneousDistanceSample(info, beta, ray_dir, lambda, sobol_sampler);
