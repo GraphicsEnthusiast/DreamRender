@@ -14,86 +14,86 @@ auto Luminance = [](const Vector3f& rgb) -> float {
 std::unique_ptr<SceneManager> SceneManager::instance_ = nullptr;
 
 SceneManager& SceneManager::Instance() {
-    static std::once_flag init_flag;
-    std::call_once(init_flag, []() {
-        instance_ = std::unique_ptr<SceneManager>(new SceneManager());
-    });
+	static std::once_flag init_flag;
+	std::call_once(init_flag, []() {
+		instance_ = std::unique_ptr<SceneManager>(new SceneManager());
+		});
 
-    return *instance_;
+	return *instance_;
 }
 
 void SceneManager::Release() {
-    if (instance_) {
-        instance_.reset();
-    }
+	if (instance_) {
+		instance_.reset();
+	}
 }
 
 void SceneManager::InitCameraData(const Camera& camera) {
-    if (camera_ubo_) {
-        INFO("[info] Camera UBO already initialized.");
+	if (camera_ubo_) {
+		INFO("[info] Camera UBO already initialized.");
 
-        return;
-    }
+		return;
+	}
 
-    Camera camera_params = camera;
-    // Create UBO with camera parameters
+	Camera camera_params = camera;
+	// Create UBO with camera parameters
 	camera_ubo_ = std::make_unique<UBO>(
 		&camera_params,
 		sizeof(Camera),
 		GL_STATIC_DRAW
 		);
 
-    // Bind to binding point 0 (can be changed as needed)
-    camera_ubo_->BindBase(0);
+	// Bind to binding point 0 (can be changed as needed)
+	camera_ubo_->BindBase(0);
 }
 
 const UBO& SceneManager::GetCameraUBO() noexcept {
-    return *camera_ubo_;
+	return *camera_ubo_;
 }
 
 void SceneManager::BindCameraUBO(GLuint index) noexcept {
-    if (!camera_ubo_) {
-        ERROR("[error] Camera UBO not initialized. Call InitCameraData() first.");
+	if (!camera_ubo_) {
+		ERROR("[error] Camera UBO not initialized. Call InitCameraData() first.");
 
-        return;
-    }
+		return;
+	}
 
-    camera_ubo_->BindBase(index);
+	camera_ubo_->BindBase(index);
 }
 
 int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
-    INFO("[info] Loading texture: {}.", file_path);
+	INFO("[info] Loading texture: {}.", file_path);
 
-    // Check if texture already loaded
-    auto it = texture_name_to_id_.find(file_path);
-    if (texture_name_to_id_.end() != it) {
-        INFO("[info] Texture already loaded: {} (ID: {}).", file_path, it->second);
+	// Check if texture already loaded
+	auto it = texture_name_to_id_.find(file_path);
+	if (texture_name_to_id_.end() != it) {
+		INFO("[info] Texture already loaded: {} (ID: {}).", file_path, it->second);
 
-        return it->second;
-    }
+		return it->second;
+	}
 
-    stbi_set_flip_vertically_on_load(true);
-    int width, height, channels;
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, channels;
 	const int target_size = 2048;
 	const int target_channels = 4;  // RGBA
 
-    // Load texture as float data
-    float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, target_channels);
-    if (!data) {
-        ERROR("[error] Failed to load texture: {}.", file_path);
+	// Load texture as float data
+	float* data = stbi_loadf(file_path.c_str(), &width, &height, &channels, target_channels);
+	if (!data) {
+		ERROR("[error] Failed to load texture: {}.", file_path);
 
-        return -1;
-    }
+		return -1;
+	}
 
-    INFO("[info] Original texture: {}x{}, {} channels.", width, height, channels);
+	INFO("[info] Original texture: {}x{}, {} channels.", width, height, channels);
 
-    // Resize texture to 2048x2048
-    std::vector<float> resized_data(target_size * target_size * target_channels, 1.0f);
+	// Resize texture to 2048x2048
+	std::vector<float> resized_data(target_size * target_size * target_channels, 1.0f);
 
-    if (target_size == width && target_size == height) {
-        resized_data.assign(data, data + target_size * target_size * target_channels);
-    }
-    else {
+	if (target_size == width && target_size == height) {
+		resized_data.assign(data, data + target_size * target_size * target_channels);
+	}
+	else {
 		// Use bilinear interpolation for resizing
 		for (int y = 0; y < target_size; ++y) {
 			for (int x = 0; x < target_size; ++x) {
@@ -117,7 +117,7 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 					resized_data[dst_idx + 2] = data[src_idx + 2];
 					resized_data[dst_idx + 3] = data[src_idx + 3];
 				}
-                else {
+				else {
 					Vector4f color = BilinearSample(data, width, height, target_channels, u, v);
 
 					int idx = (y * target_size + x) * target_channels;
@@ -125,60 +125,60 @@ int SceneManager::LoadTexture(const std::string& file_path, TextureType type) {
 					resized_data[idx + 1] = color.g;
 					resized_data[idx + 2] = color.b;
 					resized_data[idx + 3] = color.a;
-                }
+				}
 			}
 		}
-    }
+	}
 
-    stbi_image_free(data);
+	stbi_image_free(data);
 
-    // Create texture object
-    Texture texture;
-    texture.path = file_path;
-    texture.width = target_size;
-    texture.height = target_size;
-    texture.channels = target_channels;
-    texture.data = std::move(resized_data);
-    texture.texture_array_layer = -1;  // Will be set when creating texture array
+	// Create texture object
+	Texture texture;
+	texture.path = file_path;
+	texture.width = target_size;
+	texture.height = target_size;
+	texture.channels = target_channels;
+	texture.data = std::move(resized_data);
+	texture.texture_array_layer = -1;  // Will be set when creating texture array
 
-    int texture_id = static_cast<int>(textures_.size());
-    textures_.push_back(std::move(texture));
-    texture_name_to_id_[file_path] = texture_id;
+	int texture_id = static_cast<int>(textures_.size());
+	textures_.push_back(std::move(texture));
+	texture_name_to_id_[file_path] = texture_id;
 
-    INFO("[info] Texture loaded: {} ({}x{}, ID: {}).", file_path, target_size, target_size, texture_id);
+	INFO("[info] Texture loaded: {} ({}x{}, ID: {}).", file_path, target_size, target_size, texture_id);
 
-    return texture_id;
+	return texture_id;
 }
 
 void SceneManager::CalculateSceneRadiusAndCenter() {
-    // Initialize bounding box with extreme values
-    Point3f min_bound(FLT_MAX), max_bound(-FLT_MAX);
-    
-    // Process all regular triangles to update bounding box
-    for (const auto& tri : triangles_encoded_) {
+	// Initialize bounding box with extreme values
+	Point3f min_bound(FLT_MAX), max_bound(-FLT_MAX);
+
+	// Process all regular triangles to update bounding box
+	for (const auto& tri : triangles_encoded_) {
 		min_bound = glm::min(min_bound, Point3f(tri.p1));
 		max_bound = glm::max(max_bound, Point3f(tri.p1));
 		min_bound = glm::min(min_bound, Point3f(tri.p2));
 		max_bound = glm::max(max_bound, Point3f(tri.p2));
 		min_bound = glm::min(min_bound, Point3f(tri.p3));
 		max_bound = glm::max(max_bound, Point3f(tri.p3));
-    }
+	}
 
-    // Process all light triangles to update bounding box
-    for (const auto& tri : triangles_light_encoded_) {
-        min_bound = glm::min(min_bound, Point3f(tri.p1));
-        max_bound = glm::max(max_bound, Point3f(tri.p1));
-        min_bound = glm::min(min_bound, Point3f(tri.p2));
-        max_bound = glm::max(max_bound, Point3f(tri.p2));
-        min_bound = glm::min(min_bound, Point3f(tri.p3));
-        max_bound = glm::max(max_bound, Point3f(tri.p3));
-    }
+	// Process all light triangles to update bounding box
+	for (const auto& tri : triangles_light_encoded_) {
+		min_bound = glm::min(min_bound, Point3f(tri.p1));
+		max_bound = glm::max(max_bound, Point3f(tri.p1));
+		min_bound = glm::min(min_bound, Point3f(tri.p2));
+		max_bound = glm::max(max_bound, Point3f(tri.p2));
+		min_bound = glm::min(min_bound, Point3f(tri.p3));
+		max_bound = glm::max(max_bound, Point3f(tri.p3));
+	}
 
-    // Calculate bounding sphere radius from AABB
-    Vector3f extent = max_bound - min_bound;
+	// Calculate bounding sphere radius from AABB
+	Vector3f extent = max_bound - min_bound;
 
-    scene_radius_ = glm::length(extent) * 0.5f;      // Half of the AABB's diagonal length
-    scene_center_ = 0.5f * (min_bound + max_bound);  // Center of the AABB
+	scene_radius_ = glm::length(extent) * 0.5f;      // Half of the AABB's diagonal length
+	scene_center_ = 0.5f * (min_bound + max_bound);  // Center of the AABB
 }
 
 void SceneManager::LoadHDRTexture(const std::string& file_path) {
@@ -227,32 +227,32 @@ void SceneManager::LoadHDRTexture(const std::string& file_path) {
 
 	// Compute weights for importance sampling
 	hdr_env_weights_.resize(width * height);
-    hdr_env_total_power_ = 0.0f;
-    for (int y = 0; y < height; ++y) {
-        float theta = PI * (y + 0.5f) / height;
-        float sin_theta = std::sin(theta);
-        
-        for (int x = 0; x < width; ++x) {
-            int idx = (y * width + x) * target_channels;
-            float r = hdr_env_data_[idx];
-            float g = hdr_env_data_[idx + 1];
-            float b = hdr_env_data_[idx + 2];
-            
-            // Calculate luminance using CIE standard coefficients
-            float luminance = Luminance(Vector3f(r, g, b));
-            
-            // Weight = luminance * sin(theta) to compensate for spherical distortion
-            float weight = luminance * sin_theta;
-            hdr_env_weights_[y * width + x] = weight;
-            
-            // Accumulate total power
-            hdr_env_total_power_ += weight;
-        }
-    }
-    
+	hdr_env_total_power_ = 0.0f;
+	for (int y = 0; y < height; ++y) {
+		float theta = PI * (y + 0.5f) / height;
+		float sin_theta = std::sin(theta);
+
+		for (int x = 0; x < width; ++x) {
+			int idx = (y * width + x) * target_channels;
+			float r = hdr_env_data_[idx];
+			float g = hdr_env_data_[idx + 1];
+			float b = hdr_env_data_[idx + 2];
+
+			// Calculate luminance using CIE standard coefficients
+			float luminance = Luminance(Vector3f(r, g, b));
+
+			// Weight = luminance * sin(theta) to compensate for spherical distortion
+			float weight = luminance * sin_theta;
+			hdr_env_weights_[y * width + x] = weight;
+
+			// Accumulate total power
+			hdr_env_total_power_ += weight;
+		}
+	}
+
 	// Integrating over the sphere, so 4pi for that.  Then one more for Pi
 	// r^2 for the area of the disk receiving illumination
-    hdr_env_total_power_ *= 4.0f * PI * PI * glm::pow2(scene_radius_) / (width * height);
+	hdr_env_total_power_ *= 4.0f * PI * PI * glm::pow2(scene_radius_) / (width * height);
 
 	INFO("[info] HDR texture ready: {} ({}x{}, ID: {}).", file_path, width, height, hdr_env_texture_);
 
@@ -260,7 +260,7 @@ void SceneManager::LoadHDRTexture(const std::string& file_path) {
 }
 
 float SceneManager::GetSceneRadius() const noexcept {
-    return scene_radius_;
+	return scene_radius_;
 }
 
 Point3f SceneManager::GetSceneCenter() const noexcept {
@@ -268,19 +268,19 @@ Point3f SceneManager::GetSceneCenter() const noexcept {
 }
 
 void SceneManager::BuildHDREnvAliasTable() {
-    if (hdr_env_weights_.empty()) {
-        return;
-    }
+	if (hdr_env_weights_.empty()) {
+		return;
+	}
 
 	hdr_env_alias_table_ = AliasTable2D(hdr_env_weights_, hdr_width_, hdr_height_);
 }
 
 const TBO& SceneManager::GetHDREnvRowAliasTableTBO() const noexcept {
-    return *hdr_env_row_alias_table_tbo_;
+	return *hdr_env_row_alias_table_tbo_;
 }
 
 const TBO& SceneManager::GetHDREnvColAliasTableTBO() const noexcept {
-    return *hdr_env_col_alias_table_tbo_;
+	return *hdr_env_col_alias_table_tbo_;
 }
 
 Vector4f SceneManager::BilinearSample(const float* data, int width, int height, int channels, float u, float v) const {
@@ -314,41 +314,41 @@ Vector4f SceneManager::BilinearSample(const float* data, int width, int height, 
 }
 
 void SceneManager::CreateTextureArray() {
-    if (textures_.empty()) {
-        INFO("[info] No textures to create texture array.");
+	if (textures_.empty()) {
+		INFO("[info] No textures to create texture array.");
 
-        return;
-    }
+		return;
+	}
 
-    INFO("[info] Creating texture array with {} textures (2048x2048 each).", textures_.size());
+	INFO("[info] Creating texture array with {} textures (2048x2048 each).", textures_.size());
 
-    // Create 2D texture array
-    glGenTextures(1, &texture_array_);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array_);
+	// Create 2D texture array
+	glGenTextures(1, &texture_array_);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array_);
 
-    int target_size = 2048;  // Target size
+	int target_size = 2048;  // Target size
 
-    // Allocate storage for texture array
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, target_size, target_size, static_cast<GLsizei>(textures_.size()));
+	// Allocate storage for texture array
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, target_size, target_size, static_cast<GLsizei>(textures_.size()));
 
-    // Upload each texture
-    for (unsigned int i = 0; i < textures_.size(); ++i) {
-        textures_[i].texture_array_layer = static_cast<int>(i);
+	// Upload each texture
+	for (unsigned int i = 0; i < textures_.size(); ++i) {
+		textures_[i].texture_array_layer = static_cast<int>(i);
 
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
-            0, 0, static_cast<GLint>(i),  // layer
-            target_size, target_size, 1,
-            GL_RGBA, GL_FLOAT,
-            textures_[i].data.data());
-    }
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
+			0, 0, static_cast<GLint>(i),  // layer
+			target_size, target_size, 1,
+			GL_RGBA, GL_FLOAT,
+			textures_[i].data.data());
+	}
 
-    // Set texture parameters
+	// Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
-    INFO("[info] Texture array created: ID={}, {} textures.", texture_array_, textures_.size());
+	INFO("[info] Texture array created: ID={}, {} textures.", texture_array_, textures_.size());
 }
 
 void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool is_light) {
@@ -416,7 +416,7 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 		float in_density_nz = -1.0f;
 		float in_density_inv_max = -1.0f;
 		float in_density_offset = -1.0f;
-        float in_temperature = -1.0f;
+		float in_temperature = -1.0f;
 
 		if (in_medium) {
 			in_medium_flag = 0.0f;  // Has medium
@@ -705,29 +705,29 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 }
 
 void SceneManager::BuildLightAliasTable() {
-    // Construct alias table using precomputed triangle weights
-    // This enables O(1) time complexity for light triangle sampling on GPU
-    mesh_light_alias_table_ = AliasTable1D(light_triangle_weights_);
+	// Construct alias table using precomputed triangle weights
+	// This enables O(1) time complexity for light triangle sampling on GPU
+	mesh_light_alias_table_ = AliasTable1D(light_triangle_weights_);
 }
 
 int SceneManager::GetHDRWidth() const noexcept {
-    return hdr_width_;
+	return hdr_width_;
 }
 
 int SceneManager::GetHDRHeight() const noexcept {
-    return hdr_height_;
+	return hdr_height_;
 }
 
 GLuint SceneManager::GetHDRTextureID() const noexcept {
-    return hdr_env_texture_;
+	return hdr_env_texture_;
 }
 
 float SceneManager::GetHDRWeightSum() const noexcept {
-    if (hdr_env_weights_.empty()) {
-        return 0.0f;
-    }
+	if (hdr_env_weights_.empty()) {
+		return 0.0f;
+	}
 
-    return hdr_env_alias_table_.Sum();
+	return hdr_env_alias_table_.Sum();
 }
 
 float SceneManager::GetHDRWeightMax() const noexcept {
@@ -739,7 +739,7 @@ float SceneManager::GetHDRWeightMax() const noexcept {
 }
 
 float SceneManager::GetHDREnvTotalPower() const noexcept {
-    return hdr_env_total_power_;
+	return hdr_env_total_power_;
 }
 
 const TBO& SceneManager::GetHDREnvRowMaxsTBO() const noexcept {
@@ -755,149 +755,149 @@ bool SceneManager::HasDensity() const noexcept {
 }
 
 std::vector<TriangleEncoded> SceneManager::BuildBVHForTriangles(const std::vector<TriangleEncoded>& triangles,
-    std::vector<BVHNodeEncoded>& bvh_nodes, bool is_light) {
+	std::vector<BVHNodeEncoded>& bvh_nodes, bool is_light) {
 
-    if (triangles.empty()) {
-        return std::vector<TriangleEncoded>();
-    }
+	if (triangles.empty()) {
+		return std::vector<TriangleEncoded>();
+	}
 
-    unsigned int triangles_size = static_cast<unsigned int>(triangles.size());
-    std::vector<tinybvh::bvhvec4> vertices;
-    vertices.reserve(triangles_size * 3);
+	unsigned int triangles_size = static_cast<unsigned int>(triangles.size());
+	std::vector<tinybvh::bvhvec4> vertices;
+	vertices.reserve(triangles_size * 3);
 
-    // Prepare vertex data for BVH construction
-    for (const auto& tri : triangles) {
-        vertices.push_back(tinybvh::bvhvec4{ tri.p1.x, tri.p1.y, tri.p1.z, 0.0f });
-        vertices.push_back(tinybvh::bvhvec4{ tri.p2.x, tri.p2.y, tri.p2.z, 0.0f });
-        vertices.push_back(tinybvh::bvhvec4{ tri.p3.x, tri.p3.y, tri.p3.z, 0.0f });
-    }
+	// Prepare vertex data for BVH construction
+	for (const auto& tri : triangles) {
+		vertices.push_back(tinybvh::bvhvec4{ tri.p1.x, tri.p1.y, tri.p1.z, 0.0f });
+		vertices.push_back(tinybvh::bvhvec4{ tri.p2.x, tri.p2.y, tri.p2.z, 0.0f });
+		vertices.push_back(tinybvh::bvhvec4{ tri.p3.x, tri.p3.y, tri.p3.z, 0.0f });
+	}
 
-    // Build BVH using external library
-    tinybvh::BVH_GPU bvh;
-    bvh.Build(vertices.data(), triangles_size);
+	// Build BVH using external library
+	tinybvh::BVH_GPU bvh;
+	bvh.Build(vertices.data(), triangles_size);
 
-    // Encode BVH nodes
-    unsigned int used_nodes = bvh.usedNodes;
-    bvh_nodes.resize(used_nodes);
+	// Encode BVH nodes
+	unsigned int used_nodes = bvh.usedNodes;
+	bvh_nodes.resize(used_nodes);
 
-    const tinybvh::BVH_GPU::BVHNode* src_nodes = bvh.bvhNode;
-    for (unsigned int i = 0; i < used_nodes; ++i) {
-        const auto& src_node = src_nodes[i];
-        auto& dst_node = bvh_nodes[i];
+	const tinybvh::BVH_GPU::BVHNode* src_nodes = bvh.bvhNode;
+	for (unsigned int i = 0; i < used_nodes; ++i) {
+		const auto& src_node = src_nodes[i];
+		auto& dst_node = bvh_nodes[i];
 
-        dst_node.lmin = Point4f(src_node.lmin.x, src_node.lmin.y, src_node.lmin.z,
-            static_cast<float>(src_node.left));
-        dst_node.lmax = Point4f(src_node.lmax.x, src_node.lmax.y, src_node.lmax.z,
-            static_cast<float>(src_node.right));
-        dst_node.rmin = Point4f(src_node.rmin.x, src_node.rmin.y, src_node.rmin.z,
-            static_cast<float>(src_node.triCount));
-        dst_node.rmax = Point4f(src_node.rmax.x, src_node.rmax.y, src_node.rmax.z,
-            static_cast<float>(src_node.firstTri));
-    }
+		dst_node.lmin = Point4f(src_node.lmin.x, src_node.lmin.y, src_node.lmin.z,
+			static_cast<float>(src_node.left));
+		dst_node.lmax = Point4f(src_node.lmax.x, src_node.lmax.y, src_node.lmax.z,
+			static_cast<float>(src_node.right));
+		dst_node.rmin = Point4f(src_node.rmin.x, src_node.rmin.y, src_node.rmin.z,
+			static_cast<float>(src_node.triCount));
+		dst_node.rmax = Point4f(src_node.rmax.x, src_node.rmax.y, src_node.rmax.z,
+			static_cast<float>(src_node.firstTri));
+	}
 
-    // Sort triangles based on BVH primitive indices
-    const unsigned int* indices = bvh.bvh.primIdx;
-    std::vector<float> sorted_light_triangle_weights(light_triangle_weights_.size());
-    std::vector<TriangleEncoded> sorted_triangles(triangles_size);
-    for (unsigned int i = 0; i < triangles_size; ++i) {
-        sorted_triangles[i] = triangles[indices[i]];
-        if (is_light) {
-            sorted_light_triangle_weights[i] = light_triangle_weights_[indices[i]];
-        }
-    }
-    if (is_light) {
-        light_triangle_weights_ = sorted_light_triangle_weights;
-    }
+	// Sort triangles based on BVH primitive indices
+	const unsigned int* indices = bvh.bvh.primIdx;
+	std::vector<float> sorted_light_triangle_weights(light_triangle_weights_.size());
+	std::vector<TriangleEncoded> sorted_triangles(triangles_size);
+	for (unsigned int i = 0; i < triangles_size; ++i) {
+		sorted_triangles[i] = triangles[indices[i]];
+		if (is_light) {
+			sorted_light_triangle_weights[i] = light_triangle_weights_[indices[i]];
+		}
+	}
+	if (is_light) {
+		light_triangle_weights_ = sorted_light_triangle_weights;
+	}
 
-    return sorted_triangles;
+	return sorted_triangles;
 }
 
 void SceneManager::BuildBVH() {
-    // Build BVH for regular geometry
-    if (!triangles_encoded_.empty()) {
-        triangles_encoded_ = BuildBVHForTriangles(triangles_encoded_, bvh_nodes_encoded_, false);
-    }
+	// Build BVH for regular geometry
+	if (!triangles_encoded_.empty()) {
+		triangles_encoded_ = BuildBVHForTriangles(triangles_encoded_, bvh_nodes_encoded_, false);
+	}
 
-    // Build BVH for light geometry
-    if (!triangles_light_encoded_.empty()) {
-        triangles_light_encoded_ = BuildBVHForTriangles(triangles_light_encoded_, bvh_nodes_light_encoded_, true);
-        if (!light_triangle_weights_.empty()) {
-            BuildLightAliasTable();
-        }
-    }
+	// Build BVH for light geometry
+	if (!triangles_light_encoded_.empty()) {
+		triangles_light_encoded_ = BuildBVHForTriangles(triangles_light_encoded_, bvh_nodes_light_encoded_, true);
+		if (!light_triangle_weights_.empty()) {
+			BuildLightAliasTable();
+		}
+	}
 
-    // Log build information
-    if (triangles_encoded_.empty() && triangles_light_encoded_.empty()) {
-        ERROR("[error] No triangles to build BVH!");
-    }
+	// Log build information
+	if (triangles_encoded_.empty() && triangles_light_encoded_.empty()) {
+		ERROR("[error] No triangles to build BVH!");
+	}
 
-    CalculateSceneRadiusAndCenter();
+	CalculateSceneRadiusAndCenter();
 }
 
 void SceneManager::CreateGPUBuffers() {
-    CreateTextureArray();
+	CreateTextureArray();
 
-    // Create GPU buffers for regular geometry
-    if (!triangles_encoded_.empty()) {
-        triangle_tbo_ = std::make_unique<TBO>(
-            triangles_encoded_.data(),
-            triangles_encoded_.size() * sizeof(TriangleEncoded),
-            GL_RGBA32F,
-            GL_STATIC_DRAW
-        );
-    }
+	// Create GPU buffers for regular geometry
+	if (!triangles_encoded_.empty()) {
+		triangle_tbo_ = std::make_unique<TBO>(
+			triangles_encoded_.data(),
+			triangles_encoded_.size() * sizeof(TriangleEncoded),
+			GL_RGBA32F,
+			GL_STATIC_DRAW
+		);
+	}
 
-    if (!bvh_nodes_encoded_.empty()) {
-        bvh_node_tbo_ = std::make_unique<TBO>(
-            bvh_nodes_encoded_.data(),
-            bvh_nodes_encoded_.size() * sizeof(BVHNodeEncoded),
-            GL_RGBA32F,
-            GL_STATIC_DRAW
-        );
-    }
+	if (!bvh_nodes_encoded_.empty()) {
+		bvh_node_tbo_ = std::make_unique<TBO>(
+			bvh_nodes_encoded_.data(),
+			bvh_nodes_encoded_.size() * sizeof(BVHNodeEncoded),
+			GL_RGBA32F,
+			GL_STATIC_DRAW
+		);
+	}
 
-    // Create GPU buffers for light geometry
-    if (!triangles_light_encoded_.empty()) {
-        triangle_light_tbo_ = std::make_unique<TBO>(
-            triangles_light_encoded_.data(),
-            triangles_light_encoded_.size() * sizeof(TriangleEncoded),
-            GL_RGBA32F,
-            GL_STATIC_DRAW
-        );
-    }
+	// Create GPU buffers for light geometry
+	if (!triangles_light_encoded_.empty()) {
+		triangle_light_tbo_ = std::make_unique<TBO>(
+			triangles_light_encoded_.data(),
+			triangles_light_encoded_.size() * sizeof(TriangleEncoded),
+			GL_RGBA32F,
+			GL_STATIC_DRAW
+		);
+	}
 
-    if (!bvh_nodes_light_encoded_.empty()) {
-        bvh_node_light_tbo_ = std::make_unique<TBO>(
-            bvh_nodes_light_encoded_.data(),
-            bvh_nodes_light_encoded_.size() * sizeof(BVHNodeEncoded),
-            GL_RGBA32F,
-            GL_STATIC_DRAW
-        );
-    }
+	if (!bvh_nodes_light_encoded_.empty()) {
+		bvh_node_light_tbo_ = std::make_unique<TBO>(
+			bvh_nodes_light_encoded_.data(),
+			bvh_nodes_light_encoded_.size() * sizeof(BVHNodeEncoded),
+			GL_RGBA32F,
+			GL_STATIC_DRAW
+		);
+	}
 
-    // Create GPU buffer for alias table data
-    if (!mesh_light_alias_table_.GetGPUData().empty()) {
-        mesh_light_alias_table_tbo_ = std::make_unique<TBO>(
-            mesh_light_alias_table_.GetGPUData().data(),
-            mesh_light_alias_table_.GetGPUData().size() * sizeof(AliasTableData),
-            GL_RG32F,  // Each element contains alias index and probability
-            GL_STATIC_DRAW
-        );
-    }
+	// Create GPU buffer for alias table data
+	if (!mesh_light_alias_table_.GetGPUData().empty()) {
+		mesh_light_alias_table_tbo_ = std::make_unique<TBO>(
+			mesh_light_alias_table_.GetGPUData().data(),
+			mesh_light_alias_table_.GetGPUData().size() * sizeof(AliasTableData),
+			GL_RG32F,  // Each element contains alias index and probability
+			GL_STATIC_DRAW
+		);
+	}
 
-    // Create GPU buffers for HDR environment alias table data
-    if (!hdr_env_alias_table_.GetRowTableGPUData().empty()) {
-        // Row table TBO
-        const auto& row_data = hdr_env_alias_table_.GetRowTableGPUData();
-        hdr_env_row_alias_table_tbo_ = std::make_unique<TBO>(
-            row_data.data(),
-            row_data.size() * sizeof(AliasTableData),
-            GL_RG32F,
-            GL_STATIC_DRAW
-        );
-    }
+	// Create GPU buffers for HDR environment alias table data
+	if (!hdr_env_alias_table_.GetRowTableGPUData().empty()) {
+		// Row table TBO
+		const auto& row_data = hdr_env_alias_table_.GetRowTableGPUData();
+		hdr_env_row_alias_table_tbo_ = std::make_unique<TBO>(
+			row_data.data(),
+			row_data.size() * sizeof(AliasTableData),
+			GL_RG32F,
+			GL_STATIC_DRAW
+		);
+	}
 
-    if (!hdr_env_alias_table_.GetColTableGPUData().empty()) {
+	if (!hdr_env_alias_table_.GetColTableGPUData().empty()) {
 		// Column table TBO
 		const auto& col_data = hdr_env_alias_table_.GetColTableGPUData();
 		hdr_env_col_alias_table_tbo_ = std::make_unique<TBO>(
@@ -906,7 +906,7 @@ void SceneManager::CreateGPUBuffers() {
 			GL_RG32F,
 			GL_STATIC_DRAW
 		);
-    }
+	}
 
 	if (!hdr_env_alias_table_.GetRowMaxsGPUData().empty()) {
 		const auto& row_sums = hdr_env_alias_table_.GetRowMaxsGPUData();
@@ -951,43 +951,43 @@ void SceneManager::CreateGPUBuffers() {
 }
 
 const TBO& SceneManager::GetTriangleTBO() const noexcept {
-    return *triangle_tbo_;
+	return *triangle_tbo_;
 }
 
 const TBO& SceneManager::GetBVHNodeTBO() const noexcept {
-    return *bvh_node_tbo_;
+	return *bvh_node_tbo_;
 }
 
 const TBO& SceneManager::GetTriangleLightTBO() const noexcept {
-    return *triangle_light_tbo_;
+	return *triangle_light_tbo_;
 }
 
 const TBO& SceneManager::GetMeshLightAliasTableTBO() const noexcept {
-    return *mesh_light_alias_table_tbo_;
+	return *mesh_light_alias_table_tbo_;
 }
 
 const TBO& SceneManager::GetBVHNodeLightTBO() const noexcept {
-    return *bvh_node_light_tbo_;
+	return *bvh_node_light_tbo_;
 }
 
 float SceneManager::GetMeshLightTableSum() const noexcept {
-    return mesh_light_alias_table_.Sum();
+	return mesh_light_alias_table_.Sum();
 }
 
 float SceneManager::GetMeshLightTableMax() const noexcept {
-    return mesh_light_alias_table_.Max();
+	return mesh_light_alias_table_.Max();
 }
 
 unsigned int SceneManager::GetMeshLightTableSize() const noexcept {
-    return static_cast<unsigned int>(light_triangle_weights_.size());
+	return static_cast<unsigned int>(light_triangle_weights_.size());
 }
 
 GLuint SceneManager::GetTextureArray() const noexcept {
-    return texture_array_;
+	return texture_array_;
 }
 
 int SceneManager::GetTextureCount() const noexcept {
-    return static_cast<int>(textures_.size());
+	return static_cast<int>(textures_.size());
 }
 
 std::pair<int, float> SceneManager::ReadDensityFromFile(const std::string& file_path, int nx, int ny, int nz) {
@@ -1174,7 +1174,7 @@ IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature
 				raw_scan = true;
 				sym_count = 1;
 
-				// drop trailing 360¡ã plane if it duplicates 0¡ã
+				// drop trailing 360ï¿½ï¿½ plane if it duplicates 0ï¿½ï¿½
 				if (nh >= 2 &&
 					std::fabs(h_last - 360.0f) < eps &&
 					std::fabs(horizontal_angles[0]) < eps) {
