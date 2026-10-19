@@ -1140,8 +1140,9 @@ IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature
 			const int nh = static_cast<int>(horizontal_angles.size());
 
 			// candela[j * nv + i] = I(vertical_angles[i], horizontal_angles[j])
-			if (candela.empty() || nv == 0 || nh == 0 ||
+			if (candela.empty() || 0 == nv || 0 == nh ||
 				static_cast<int>(candela.size()) != nv * nh) {
+
 				return 0.0f;
 			}
 
@@ -1155,7 +1156,7 @@ IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature
 
 			const float h_last = horizontal_angles[nh - 1];
 
-			if (nh == 1 || h_last <= 0.0f + eps) {
+			if (1 == nh || h_last <= 0.0f + eps) {
 				// axially symmetric
 				sym_count = 1;
 				raw_scan = false;
