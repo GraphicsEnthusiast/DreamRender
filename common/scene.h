@@ -241,6 +241,32 @@ public:
     bool HasTemperature() const noexcept;
 
     /**
+     * @brief Loads an IES photometric file and creates an IES area light
+     * @param file_path Path to the IES file
+     * @param temperature Temperature of the light source
+     * @return IESProfile containing parsed photometric data, or empty on failure
+     */
+    IESProfile LoadIES(const std::string& file_path, float temperature);
+
+    /**
+     * @brief Encodes IES profiles into GPU-friendly format and uploads to TBO
+     * @param ies_profiles Array of IES profiles to encode
+     */
+    void EncodeIESLights(const std::vector<IESProfile>& ies_profiles);
+
+    /**
+     * @brief Gets the TBO containing encoded IES light data
+     * @return Reference to the Texture Buffer Object
+     */
+    const TBO& GetIESLightTBO() const noexcept;
+
+    /**
+     * @brief Gets the number of loaded IES profiles
+     * @return The count of IES profiles
+     */
+    unsigned int GetIESLightCount() const noexcept;
+
+    /**
      * @brief Deleted copy constructor
      */
     SceneManager(const SceneManager&) = delete;
@@ -340,6 +366,9 @@ protected:
 	std::unique_ptr<TBO> density_tbo_;                      ///< TBO storing all density data
 	std::vector<float> temperature_data_;                   ///< Global temperature buffer for all emissive media
 	std::unique_ptr<TBO> temperature_tbo_;                  ///< TBO storing all temperature data
+
+    std::vector<IESLightEncoded> ies_lights_encoded_;       ///< Encoded IES light data
+	std::unique_ptr<TBO> ies_light_tbo_;                    ///< TBO for encoded IES light data
 
     static std::unique_ptr<SceneManager> instance_;         ///< Singleton instance pointer
 };

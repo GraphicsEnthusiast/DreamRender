@@ -1,6 +1,7 @@
 #include <scene.h>
 #include <tiny_bvh.h>
 #include <stb_image.h>
+#include <tiny_ies.hpp>
 #include <utils.h>
 
 NAMESPACE_BEGIN(dream)
@@ -937,6 +938,16 @@ void SceneManager::CreateGPUBuffers() {
 			GL_STATIC_DRAW
 		);
 	}
+
+	// Create GPU buffer for IES light data
+	if (!ies_lights_encoded_.empty()) {
+		ies_light_tbo_ = std::make_unique<TBO>(
+			ies_lights_encoded_.data(),
+			ies_lights_encoded_.size() * sizeof(IESLightEncoded),
+			GL_RGBA32F,
+			GL_STATIC_DRAW
+		);
+	}
 }
 
 const TBO& SceneManager::GetTriangleTBO() const noexcept {
@@ -1049,6 +1060,249 @@ const TBO& SceneManager::GetTemperatureTBO() const noexcept {
 
 bool SceneManager::HasTemperature() const noexcept {
 	return !temperature_data_.empty();
+}
+
+IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature) {
+	INFO("[info] Loading IES file: {}.", file_path);
+
+	tiny_ies<float>::light ies;
+	std::string err;
+	std::string warn;
+
+	if (!tiny_ies<float>::load_ies(file_path, err, warn, ies)) {
+		ERROR("[error] Failed to load IES file: {} ({})", file_path, err);
+
+		return IESProfile{};
+	}
+
+	if (!warn.empty()) {
+		WARN("[warn] IES file warning: {} ({})", file_path, warn);
+	}
+
+	if (ies.photometric_type != 1) {
+		WARN("[warn] Only IES Type C lights are supported: {}", file_path);
+	}
+
+	IESProfile profile;
+	profile.number_lights = ies.number_lights;
+	profile.lumens_per_lamp = ies.lumens_per_lamp;
+	profile.multiplier = ies.multiplier;
+	profile.ballast_factor = ies.ballast_factor;
+	profile.input_watts = ies.input_watts;
+	profile.photometric_type = ies.photometric_type;
+	profile.units_type = ies.units_type;
+	profile.width = ies.width;
+	profile.length = ies.length;
+	profile.height = ies.height;
+	profile.temperature = temperature;
+
+	// Convert units to meters (1 = feet, 2 = meters)
+	const float unit_scale = (1 == ies.units_type) ? 0.3048f : 1.0f;
+
+	// Classify shape based on luminous opening dimensions
+	if (ies.width < 0.0f && 0.0f == ies.length && 0.0f == ies.height) {
+		// Disk: -width = diameter, length = 0, height = 0
+		profile.shape = IESShape::DISK;
+		profile.radius = (-ies.width) * unit_scale * 0.5f;
+	}
+	else if (ies.width > 0.0f && ies.length > 0.0f && 0.0f == ies.height) {
+		// Rectangle: width > 0, length > 0, height = 0
+		profile.shape = IESShape::RECTANGLE;
+		profile.size_x = ies.length * unit_scale;  // Along C0-C180
+		profile.size_y = ies.width * unit_scale;   // Along C90-C270
+	}
+	else {
+		WARN("[warn] Unsupported IES shape (point/box/sphere/cylinder): {}", file_path);
+	}
+
+	// Copy angle grids
+	profile.vertical_angles = ies.vertical_angles;
+	profile.horizontal_angles = ies.horizontal_angles;
+	profile.min_vertical_angle = ies.min_vertical_angle;
+	profile.max_vertical_angle = ies.max_vertical_angle;
+	profile.min_horizontal_angle = ies.min_horizontal_angle;
+	profile.max_horizontal_angle = ies.max_horizontal_angle;
+
+	// Apply multiplier and ballast factor to candela values
+	const float scale = ies.multiplier * ies.ballast_factor;
+	profile.candela.resize(ies.candela.size());
+	for (int i = 0; i < ies.candela.size(); ++i) {
+		profile.candela[i] = ies.candela[i] * scale;
+	}
+	profile.max_candela = ies.max_candela * scale;
+
+	auto ComputeTotalLumens = [](
+		const std::vector<float>& candela,
+		const std::vector<float>& vertical_angles,
+		const std::vector<float>& horizontal_angles) -> float {
+
+			const int nv = static_cast<int>(vertical_angles.size());
+			const int nh = static_cast<int>(horizontal_angles.size());
+
+			// candela[j * nv + i] = I(vertical_angles[i], horizontal_angles[j])
+			if (candela.empty() || nv == 0 || nh == 0 ||
+				static_cast<int>(candela.size()) != nv * nh) {
+				return 0.0f;
+			}
+
+			const float deg2rad = PI / 180.0f;
+			const float eps = 1e-3f;
+
+			// decide horizontal symmetry from last horizontal angle
+			bool raw_scan = false;       // already full 0..360, do not multiply symmetry
+			int sym_count = 1;         // number of replicated sectors
+			int nh_eff = nh;           // effective planes to iterate
+
+			const float h_last = horizontal_angles[nh - 1];
+
+			if (nh == 1 || h_last <= 0.0f + eps) {
+				// axially symmetric
+				sym_count = 1;
+				raw_scan = false;
+			}
+			else if (h_last <= 90.0f + eps) {
+				sym_count = 4;
+				raw_scan = false;
+			}
+			else if (h_last <= 180.0f + eps) {
+				sym_count = 2;
+				raw_scan = false;
+			}
+			else {
+				// no lateral symmetry: stored planes already cover the horizon
+				raw_scan = true;
+				sym_count = 1;
+
+				// drop trailing 360бу plane if it duplicates 0бу
+				if (nh >= 2 &&
+					std::fabs(h_last - 360.0f) < eps &&
+					std::fabs(horizontal_angles[0]) < eps) {
+					nh_eff = nh - 1;
+				}
+			}
+
+			// vertical half-interval weight
+			auto dtheta_at = [&](int i) -> float {
+				if (1 == nv) {
+					return 0.0f;
+				}
+				if (0 == i) {
+					return (vertical_angles[1] - vertical_angles[0]) * deg2rad;
+				}
+				if (nv - 1 == i) {
+					return (vertical_angles[nv - 1] - vertical_angles[nv - 2]) * deg2rad;
+				}
+				return 0.5f * (vertical_angles[i + 1] - vertical_angles[i - 1]) * deg2rad;
+			};
+
+			float total = 0.0f;
+
+			for (int j = 0; j < nh_eff; ++j) {
+				float d_phi = 0.0f;
+
+				if (!raw_scan) {
+					// stored plane represents a whole symmetric sector
+					float sector_span = 360.0f / static_cast<float>(sym_count);
+					d_phi = sector_span * deg2rad;
+				}
+				else {
+					// full horizontal scan: trapezoid weight over stored planes
+					if (1 == nh_eff) {
+						d_phi = 2.0f * PI;
+					}
+					else if (0 == j) {
+						d_phi = (horizontal_angles[1] - horizontal_angles[0]) * deg2rad;
+					}
+					else if (nh_eff - 1 == j) {
+						d_phi = (horizontal_angles[nh_eff - 1] - horizontal_angles[nh_eff - 2]) * deg2rad;
+					}
+					else {
+						d_phi = 0.5f * (horizontal_angles[j + 1] - horizontal_angles[j - 1]) * deg2rad;
+					}
+				}
+
+				for (int i = 0; i < nv; ++i) {
+					const float theta = vertical_angles[i] * deg2rad;
+					const float sin_t = std::sin(theta);
+					const float d_theta = dtheta_at(i);
+
+					total += candela[j * nv + i] * sin_t * d_theta * d_phi;
+				}
+			}
+
+			return total;
+	};
+
+	profile.total_lumens = ComputeTotalLumens(profile.candela, profile.vertical_angles, profile.horizontal_angles);
+
+	INFO("[info] IES loaded: {} (shape={}, max_candela={:.2f} cd, {} vertical x {} horizontal angles, power={}, temperature={:.0f}K).",
+		file_path,
+		IESShape::DISK == profile.shape ? "disk" : (profile.shape == IESShape::RECTANGLE ? "rectangle" : "unsupported"),
+		profile.max_candela,
+		ies.number_vertical_angles,
+		ies.number_horizontal_angles,
+		profile.total_lumens, temperature);
+
+	return profile;
+}
+
+void SceneManager::EncodeIESLights(const std::vector<IESProfile>& ies_profiles) {
+	if (ies_profiles.empty()) {
+		return;
+	}
+
+	ies_lights_encoded_.clear();
+	ies_lights_encoded_.reserve(ies_profiles.size());
+
+	for (const auto& profile : ies_profiles) {
+		IESLightEncoded encoded = {};
+
+		// shape_info: x = shape, y = units_type, z = photometric_type, w = texture_id
+		encoded.shape_info = Vector4f(
+			static_cast<float>(profile.shape),
+			static_cast<float>(profile.units_type),
+			static_cast<float>(profile.photometric_type),
+			static_cast<float>(profile.texture_id)
+		);
+
+		// geometry: Disk = (radius, _, texture_height, temperature)
+		//           Rect = (size_x, size_y, texture_height, temperature)
+		const float texture_height = static_cast<float>(profile.texture_height);
+		if (IESShape::DISK == profile.shape) {
+			encoded.geometry = Vector4f(profile.radius, 0.0f, texture_height, profile.temperature);
+		}
+		else if (IESShape::RECTANGLE == profile.shape) {
+			encoded.geometry = Vector4f(profile.size_x, profile.size_y, texture_height, profile.temperature);
+		}
+
+		// angle_range: min_vertical, max_vertical, min_horizontal, max_horizontal
+		encoded.angle_range = Vector4f(
+			profile.min_vertical_angle,
+			profile.max_vertical_angle,
+			profile.min_horizontal_angle,
+			profile.max_horizontal_angle
+		);
+
+		// candela: max_candela, multiplier * ballast_factor, total_lumens, texture_width
+		encoded.candela = Vector4f(
+			profile.max_candela,
+			profile.multiplier * profile.ballast_factor,
+			profile.total_lumens,
+			static_cast<float>(profile.texture_width)
+		);
+
+		ies_lights_encoded_.push_back(encoded);
+	}
+
+	INFO("[info] Encoded {} IES lights.", ies_lights_encoded_.size());
+}
+
+const TBO& SceneManager::GetIESLightTBO() const noexcept {
+	return *ies_light_tbo_;
+}
+
+unsigned int SceneManager::GetIESLightCount() const noexcept {
+	return static_cast<unsigned int>(ies_lights_encoded_.size());
 }
 
 NAMESPACE_END(dream)
