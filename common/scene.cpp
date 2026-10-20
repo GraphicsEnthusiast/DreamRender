@@ -332,8 +332,8 @@ void SceneManager::CreateTextureArray() {
 	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA32F, target_size, target_size, static_cast<GLsizei>(textures_.size()));
 
 	// Upload each texture
-	for (unsigned int i = 0; i < textures_.size(); ++i) {
-		textures_[i].texture_array_layer = static_cast<int>(i);
+	for (int i = 0; i < textures_.size(); ++i) {
+		textures_[i].texture_array_layer = i;
 
 		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
 			0, 0, static_cast<GLint>(i),  // layer
@@ -1062,7 +1062,148 @@ bool SceneManager::HasTemperature() const noexcept {
 	return !temperature_data_.empty();
 }
 
-IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature) {
+void SceneManager::ResampleIESProfile() {
+	for (int i = 0; i < ies_profiles_.size(); i++) {
+		auto& profile = ies_profiles_[i];
+		const int nv = static_cast<int>(profile.vertical_angles.size());
+		const int nh = static_cast<int>(profile.horizontal_angles.size());
+
+		if (0 == nv || 0 == nh) {
+			ERROR("[error] IES profile has no angle data.");
+			continue;
+		}
+
+		// Texture resolution: 256x256
+		const int tex_width = 256;
+		const int tex_height = 256;
+
+		std::vector<float> tex_data(tex_width * tex_height, 0.0f);
+
+		// Generate vertical angle samples
+		std::vector<float> sample_vertical_angles;
+		sample_vertical_angles.reserve(tex_height);
+		for (int ty = 0; ty < tex_height; ++ty) {
+			float vertical_angle;
+			if (1 == tex_height) {
+				vertical_angle = profile.min_vertical_angle;
+			}
+			else {
+				vertical_angle = profile.min_vertical_angle +
+					(profile.max_vertical_angle - profile.min_vertical_angle) *
+					static_cast<float>(ty) / static_cast<float>(tex_height - 1);
+			}
+			sample_vertical_angles.push_back(vertical_angle);
+		}
+
+		// Generate texture data with bilinear interpolation
+		for (int tx = 0; tx < tex_width; ++tx) {
+			float horizontal_angle;
+			if (1 == tex_width) {
+				horizontal_angle = profile.min_horizontal_angle;
+			}
+			else {
+				horizontal_angle = profile.min_horizontal_angle +
+					(profile.max_horizontal_angle - profile.min_horizontal_angle) *
+					static_cast<float>(tx) / static_cast<float>(tex_width - 1);
+			}
+
+			for (int ty = 0; ty < tex_height; ++ty) {
+				const float theta_deg = sample_vertical_angles[ty];
+				const float phi_deg = horizontal_angle;
+
+				// Find surrounding vertical grid points
+				int v_offset = 0;
+				for (const float& v : profile.vertical_angles) {
+					if (v > theta_deg) {
+						break;
+					}
+					v_offset++;
+				}
+
+				// Find surrounding horizontal planes
+				int h_offset = 0;
+				for (const float& h : profile.horizontal_angles) {
+					if (h > phi_deg) {
+						break;
+					}
+					h_offset++;
+				}
+
+				const int i0 = std::clamp(v_offset - 1, 0, nv - 1);
+				const int i1 = std::clamp(v_offset, 0, nv - 1);
+				const int j0 = std::clamp(h_offset - 1, 0, nh - 1);
+				const int j1 = std::clamp(h_offset, 0, nh - 1);
+
+				const float v0_angle = profile.vertical_angles[i0];
+				const float v1_angle = profile.vertical_angles[i1];
+				const float h0_angle = profile.horizontal_angles[j0];
+				const float h1_angle = profile.horizontal_angles[j1];
+
+				// Get candela values
+				const float c00 = profile.candela[j0 * nv + i0];
+				const float c10 = profile.candela[j0 * nv + i1];
+				const float c01 = profile.candela[j1 * nv + i0];
+				const float c11 = profile.candela[j1 * nv + i1];
+
+				// Compute interpolation factors
+				float t = 0.0f;
+				float v_denom = v1_angle - v0_angle;
+				if (0.0f != v_denom) {
+					t = (theta_deg - v0_angle) / v_denom;
+				}
+
+				float s = 0.0f;
+				float h_denom = h1_angle - h0_angle;
+				if (0.0f != h_denom) {
+					s = (phi_deg - h0_angle) / h_denom;
+				}
+
+				// Bilinear interpolation
+				const float c_int0 = c00 * (1.0f - t) + c10 * t;
+				const float c_int1 = c01 * (1.0f - t) + c11 * t;
+				const float c_interp = c_int0 * (1.0f - s) + c_int1 * s;
+
+				// Normalize by max_candela
+				tex_data[ty * tex_width + tx] = c_interp / profile.max_candela;
+			}
+		}
+
+		// Upload to GPU as a layer in the IES texture array
+		if (0 == ies_texture_array_) {
+			// First IES texture: create the array
+			glGenTextures(1, &ies_texture_array_);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, ies_texture_array_);
+			glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_R32F, tex_width, tex_height, ies_profiles_.size());
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		}
+		else {
+			glBindTexture(GL_TEXTURE_2D_ARRAY, ies_texture_array_);
+		}
+
+		// Upload as a new layer
+		const int layer = ies_texture_count_;
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
+			0, 0, layer,
+			tex_width, tex_height, 1,
+			GL_RED, GL_FLOAT,
+			tex_data.data());
+
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+		// Update profile
+		profile.texture_id = layer;
+
+		ies_texture_count_++;
+
+		INFO("[info] Resampled IES profile to texture: {}x{} (layer {}).",
+			tex_width, tex_height, layer);
+	}
+}
+
+void SceneManager::LoadIES(const std::string& file_path, float temperature) {
 	INFO("[info] Loading IES file: {}.", file_path);
 
 	tiny_ies<float>::light ies;
@@ -1072,7 +1213,7 @@ IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature
 	if (!tiny_ies<float>::load_ies(file_path, err, warn, ies)) {
 		ERROR("[error] Failed to load IES file: {} ({})", file_path, err);
 
-		return IESProfile{};
+		return;
 	}
 
 	if (!warn.empty()) {
@@ -1174,7 +1315,6 @@ IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature
 				raw_scan = true;
 				sym_count = 1;
 
-				// drop trailing 360�� plane if it duplicates 0��
 				if (nh >= 2 &&
 					std::fabs(h_last - 360.0f) < eps &&
 					std::fabs(horizontal_angles[0]) < eps) {
@@ -1238,24 +1378,26 @@ IESProfile SceneManager::LoadIES(const std::string& file_path, float temperature
 
 	INFO("[info] IES loaded: {} (shape={}, max_candela={:.2f} cd, {} vertical x {} horizontal angles, power={}, temperature={:.0f}K).",
 		file_path,
-		IESShape::DISK == profile.shape ? "disk" : (profile.shape == IESShape::RECTANGLE ? "rectangle" : "unsupported"),
+		IESShape::DISK == profile.shape ? "disk" : (IESShape::RECTANGLE == profile.shape ? "rectangle" : "unsupported"),
 		profile.max_candela,
 		ies.number_vertical_angles,
 		ies.number_horizontal_angles,
 		profile.total_lumens, temperature);
 
-	return profile;
+	ies_profiles_.emplace_back(profile);
 }
 
-void SceneManager::EncodeIESLights(const std::vector<IESProfile>& ies_profiles) {
-	if (ies_profiles.empty()) {
+void SceneManager::EncodeIESLights() {
+	if (ies_profiles_.empty()) {
 		return;
 	}
 
-	ies_lights_encoded_.clear();
-	ies_lights_encoded_.reserve(ies_profiles.size());
+	ResampleIESProfile();
 
-	for (const auto& profile : ies_profiles) {
+	ies_lights_encoded_.clear();
+	ies_lights_encoded_.reserve(ies_profiles_.size());
+
+	for (const auto& profile : ies_profiles_) {
 		IESLightEncoded encoded = {};
 
 		// shape_info: x = shape, y = units_type, z = photometric_type, w = texture_id
@@ -1266,14 +1408,13 @@ void SceneManager::EncodeIESLights(const std::vector<IESProfile>& ies_profiles) 
 			static_cast<float>(profile.texture_id)
 		);
 
-		// geometry: Disk = (radius, _, texture_height, temperature)
-		//           Rect = (size_x, size_y, texture_height, temperature)
-		const float texture_height = static_cast<float>(profile.texture_height);
+		// geometry: Disk = (radius, _, _, temperature)
+		//           Rect = (size_x, size_y, _, temperature)
 		if (IESShape::DISK == profile.shape) {
-			encoded.geometry = Vector4f(profile.radius, 0.0f, texture_height, profile.temperature);
+			encoded.geometry = Vector4f(profile.radius, 0.0f, 0.0f, profile.temperature);
 		}
 		else if (IESShape::RECTANGLE == profile.shape) {
-			encoded.geometry = Vector4f(profile.size_x, profile.size_y, texture_height, profile.temperature);
+			encoded.geometry = Vector4f(profile.size_x, profile.size_y, 0.0f, profile.temperature);
 		}
 
 		// angle_range: min_vertical, max_vertical, min_horizontal, max_horizontal
@@ -1289,7 +1430,7 @@ void SceneManager::EncodeIESLights(const std::vector<IESProfile>& ies_profiles) 
 			profile.max_candela,
 			profile.multiplier * profile.ballast_factor,
 			profile.total_lumens,
-			static_cast<float>(profile.texture_width)
+			0.0f
 		);
 
 		ies_lights_encoded_.push_back(encoded);
@@ -1304,6 +1445,10 @@ const TBO& SceneManager::GetIESLightTBO() const noexcept {
 
 unsigned int SceneManager::GetIESLightCount() const noexcept {
 	return static_cast<unsigned int>(ies_lights_encoded_.size());
+}
+
+GLuint SceneManager::GetIESTextureArray() const noexcept {
+	return ies_texture_array_;
 }
 
 NAMESPACE_END(dream)

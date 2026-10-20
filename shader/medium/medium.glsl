@@ -111,7 +111,7 @@ WavelengthSampleInfo MediumWavelengthSample(SampledSpectrum beta, SampledSpectru
  * @return Interpolated temperature value
  */
 float GetTemperature(Medium medium, vec3 p) {
-    if (medium.temperature > 0) {
+    if (MediumType_Homogeneous == medium.type) {
         return medium.temperature;
     }
 

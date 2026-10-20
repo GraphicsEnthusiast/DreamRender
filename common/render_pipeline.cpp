@@ -24,6 +24,8 @@ RenderPipeline::~RenderPipeline() {
 void RenderPipeline::Init() {
 	auto& scene_manager = SceneManager::Instance();
 
+	scene_manager.LoadIES("C:\\Users\\17199\\Desktop\\DreamRender\\1f77ca08eade28c5dcda415253097e9a.ies", 4000.0f);
+
 	Material medium_material;
 	medium_material.type = MaterialType::BOUNDARY;
 	TriangleMesh medium_mesh("C:\\Users\\17199\\Desktop\\DreamRender\\density_render.obj",
@@ -33,7 +35,7 @@ void RenderPipeline::Init() {
 	smoke_medium->phase_type = PhaseType::HenyeyGreenstein;
 	smoke_medium->g = 0.2f;
 	smoke_medium->type = MediumType::HETEROGENEOUS;
-	smoke_medium->sigma_s = Vector3f(20.0f);
+	smoke_medium->sigma_s = Vector3f(90.0f);
 	smoke_medium->sigma_t = Vector3f(100.0f);
 	smoke_medium->density_resolution = Vector3i(100, 100, 40);
 	smoke_medium->density_min = medium_mesh.GetMinBound();
@@ -54,6 +56,7 @@ void RenderPipeline::Init() {
 	smoke_medium->inv_max_density = 1.0f / max_density;
 	smoke_medium->is_emissive = true;
 	smoke_medium->temperature_offset = temperature_offset;
+	smoke_medium->temperature = 3000.0f;
 	medium_mesh.SetInMedium(std::move(smoke_medium));
 
 	Camera camera;
@@ -134,8 +137,9 @@ void RenderPipeline::Init() {
 		std::make_unique<Material>(light_material)
 	);
 
+	scene_manager.EncodeIESLights();
 	scene_manager.EncodeTriangles(meshes, false);
-	scene_manager.EncodeTriangles(meshes2, true);
+	//scene_manager.EncodeTriangles(meshes2, true);
 	scene_manager.BuildBVH();
 
 	// Calculating the power of ambient light depends on the size of the scene, 

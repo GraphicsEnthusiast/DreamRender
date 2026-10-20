@@ -244,15 +244,13 @@ public:
      * @brief Loads an IES photometric file and creates an IES area light
      * @param file_path Path to the IES file
      * @param temperature Temperature of the light source
-     * @return IESProfile containing parsed photometric data, or empty on failure
      */
-    IESProfile LoadIES(const std::string& file_path, float temperature);
+    void LoadIES(const std::string& file_path, float temperature);
 
     /**
      * @brief Encodes IES profiles into GPU-friendly format and uploads to TBO
-     * @param ies_profiles Array of IES profiles to encode
      */
-    void EncodeIESLights(const std::vector<IESProfile>& ies_profiles);
+    void EncodeIESLights();
 
     /**
      * @brief Gets the TBO containing encoded IES light data
@@ -265,6 +263,12 @@ public:
      * @return The count of IES profiles
      */
     unsigned int GetIESLightCount() const noexcept;
+
+    /**
+     * @brief Gets the IES texture array for GPU sampling
+     * @return OpenGL texture array ID
+     */
+    GLuint GetIESTextureArray() const noexcept;
 
     /**
      * @brief Deleted copy constructor
@@ -280,12 +284,11 @@ protected:
     /**
      * @brief Default constructor
      */
-    SceneManager() : texture_array_(0), hdr_env_texture_(0), hdr_env_total_power_(0.0f), scene_radius_(0.0f), scene_center_(Point3f(0.0f)) {}
+    SceneManager() : texture_array_(0), hdr_env_texture_(0), hdr_env_total_power_(0.0f), scene_radius_(0.0f), scene_center_(Point3f(0.0f)),
+        ies_texture_array_(0), ies_texture_count_(0) {}
 
     /**
      * Calculate the radius and center of the scene's bounding sphere
-     * @return float The radius of the scene's bounding sphere
-     *         Returns 0.0f if no triangles are present in the scene
      */
     void CalculateSceneRadiusAndCenter();
 
@@ -325,6 +328,11 @@ protected:
      * @brief Creates texture array from loaded textures
      */
     void CreateTextureArray();
+
+    /**
+     * @brief Resamples an IES profile's candela grid into a 2D normalized texture
+     */
+    void ResampleIESProfile();
 
 protected:
     std::vector<TriangleEncoded> triangles_encoded_;        ///< Encoded regular triangle data
@@ -369,6 +377,9 @@ protected:
 
     std::vector<IESLightEncoded> ies_lights_encoded_;       ///< Encoded IES light data
 	std::unique_ptr<TBO> ies_light_tbo_;                    ///< TBO for encoded IES light data
+    std::vector<IESProfile> ies_profiles_;                  ///< IES profiles
+	GLuint ies_texture_array_;                              ///< Texture array for IES distributions
+	int ies_texture_count_;                                 ///< Number of IES textures uploaded
 
     static std::unique_ptr<SceneManager> instance_;         ///< Singleton instance pointer
 };

@@ -49,41 +49,29 @@ enum class IESShape {
  */
 struct IESProfile {
     IESShape shape;
-
     int number_lights;
     int lumens_per_lamp;                 ///< -1 means absolute photometry
     float multiplier;
     float ballast_factor;
     float input_watts;
-
     int photometric_type;                ///< 1 = Type C (architectural)
     int units_type;                      ///< 1 = feet, 2 = meters
-
     float width;                         ///< IES width  (C90-C270); negative => disk diameter
     float length;                        ///< IES length (C0-C180)
     float height;                        ///< IES height; 0 for flat area lights
-
     float radius;                        ///< Disk radius in meters
     float size_x;                        ///< Rectangle size along length (meters)
     float size_y;                        ///< Rectangle size along width  (meters)
-
     std::vector<float> vertical_angles;  ///< Gamma angles: 0 = forward/nadir
     std::vector<float> horizontal_angles;///< C-plane angles
-
     float min_vertical_angle;
     float max_vertical_angle;
     float min_horizontal_angle;
     float max_horizontal_angle;
-
     std::vector<float> candela;          ///< Raw candela grid, row-major per horizontal angle
     float max_candela;                   ///< Peak candela before normalization
-
     int texture_id;                      ///< Normalized candela texture in the texture array
-    int texture_width;                   ///< Resampled candela texture width
-    int texture_height;                  ///< Resampled candela texture height
-
     float total_lumens;                  ///< Integrated luminous flux (if computed)
-
     float temperature;                   ///< Temperature in Kelvin
 };
 
@@ -93,9 +81,9 @@ struct IESProfile {
  */
 struct alignas(16) IESLightEncoded {
     alignas(16) Vector4f shape_info; ///< x = shape, y = units_type, z = photometric_type, w = texture_id
-    alignas(16) Vector4f geometry;   ///< Disk: (radius, _, texture_height, temperature); Rect: (size_x, size_y, texture_height, temperature)
+    alignas(16) Vector4f geometry;   ///< Disk: (radius, _, _, temperature); Rect: (size_x, size_y, _, temperature)
     alignas(16) Vector4f angle_range;///< min_vertical, max_vertical, min_horizontal, max_horizontal
-    alignas(16) Vector4f candela;    ///< max_candela, multiplier * ballast_factor, total_lumens, texture_width
+    alignas(16) Vector4f candela;    ///< max_candela, multiplier * ballast_factor, total_lumens, _
 };
 
 /**
