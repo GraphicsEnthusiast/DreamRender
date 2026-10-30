@@ -453,6 +453,7 @@ bool IESLoader::Load(const std::string& path, IESProfile& target) {
 	}
 	if (!tilt_ok) {
 		ERROR("[error] Missing TILT keyword.");
+
 		return false;
 	}
 
@@ -487,12 +488,14 @@ bool IESLoader::Load(const std::string& path, IESProfile& target) {
 	if (!ParseInt(hs, photo)) {
 		return false;
 	}
-
 	switch (photo) {
 		case 1: target.photometric_type = IESPhotometricType::TYPE_C; break;
 		case 2: target.photometric_type = IESPhotometricType::TYPE_B; break;
 		case 3: target.photometric_type = IESPhotometricType::TYPE_A; break;
 		default: target.photometric_type = IESPhotometricType::TYPE_C; break;
+	}
+	if (IESPhotometricType::TYPE_A == target.photometric_type) {
+		return false;
 	}
 
 	if (!ParseInt(hs, target.units)) {
@@ -515,6 +518,12 @@ bool IESLoader::Load(const std::string& path, IESProfile& target) {
 	}
 	if (!ParseFloat(hs, target.input_watts)) {
 		return false;
+	}
+
+	if (1 == target.units) {  // feet -> meters
+		target.width *= 0.3048f;
+		target.length *= 0.3048f;
+		target.height *= 0.3048f;
 	}
 
 	target.raw_vertical_angles.resize(num_v);
@@ -550,7 +559,7 @@ bool IESLoader::Load(const std::string& path, IESProfile& target) {
 
 	INFO("[info] Inferred luminous shape: {}", target.IsDisk() ? "DISK" : "RECT");
 
-	return true;
+	return Process(target);
 }
 
 LuminousShape IESLoader::InferShape(const IESProfile& profile) {
@@ -589,6 +598,57 @@ LuminousShape IESLoader::InferShape(const IESProfile& profile) {
 	return LuminousShape::RECT;
 }
 
+float IESLoader::ComputeTotalPower(const IESProfile& profile) {
+	const auto& h = profile.angles_h_rad;
+	const auto& v = profile.angles_v_rad;
+	const auto& cd = profile.candela_table;
+
+	const int nh = static_cast<int>(h.size());
+	const int nv = static_cast<int>(v.size());
+	if (nh < 2 || nv < 2) {
+		return 0.0f;
+	}
+
+	// Integrate vertically for each horizontal angle.
+	std::vector<float> G(nh, 0.0f);
+	for (int i = 0; i < nh; ++i) {
+		float sum = 0.0f;
+		for (int j = 0; j < nv - 1; ++j) {
+			const float v0 = v[j];
+			const float v1 = v[j + 1];
+			const float dv = v1 - v0;
+			if (dv <= 0.0f) {
+				continue;
+			}
+
+			const float c0 = cd[i][j];
+			const float c1 = cd[i][j + 1];
+
+			// Exact integral of sin(v) over [v0, v1].
+			const float sin_integral = std::cos(v0) - std::cos(v1);
+
+			// Exact integral for linearly interpolated candela:
+			// กา I(v) sin(v) dv = c0 * (cos v0 - cos v1)
+			//   + (c1 - c0) / dv * (sin v1 - sin v0 - dv * cos v1)
+			const float sin_v0 = std::sin(v0);
+			const float sin_v1 = std::sin(v1);
+			const float linear_correction =
+				(c1 - c0) / dv * (sin_v1 - sin_v0 - dv * std::cos(v1));
+
+			sum += c0 * sin_integral + linear_correction;
+		}
+		G[i] = sum;
+	}
+
+	// Integrate horizontally with the trapezoidal rule.
+	float lumens = 0.0f;
+	for (int i = 0; i < nh - 1; ++i) {
+		lumens += (G[i] + G[i + 1]) * 0.5f * (h[i + 1] - h[i]);
+	}
+
+	return lumens;
+}
+
 bool IESLoader::Process(IESProfile& profile) {
 	if (profile.raw_candela.empty()) {
 		return false;
@@ -598,7 +658,7 @@ bool IESLoader::Process(IESProfile& profile) {
 	auto& v = profile.raw_vertical_angles;
 	auto& cd = profile.raw_candela;
 
-	if (profile.photometric_type == IESPhotometricType::TYPE_B) {
+	if (IESPhotometricType::TYPE_B == profile.photometric_type) {
 		// Transpose candela table and swap angle axes
 		std::vector<std::vector<float>> new_cd;
 		new_cd.resize(v.size());
@@ -757,6 +817,8 @@ bool IESLoader::Process(IESProfile& profile) {
 
 	INFO("[info] Processed IES: {}H x {}V (radians)", profile.angles_h_rad.size(), profile.angles_v_rad.size());
 
+	profile.power = IESLoader::ComputeTotalPower(profile);
+
 	return true;
 }
 
@@ -866,7 +928,7 @@ void IESLoader::Bake1D(const IESProfile& profile, std::vector<float>& out, int w
 
 void IESLoader::Bake2D(const IESProfile& profile, std::vector<float>& out,
 	int width, int height) {
-	out.resize(static_cast<size_t>(width) * height, 0.0f);
+	out.resize(width * height, 0.0f);
 	if (!profile.IsValid()) {
 		return;
 	}

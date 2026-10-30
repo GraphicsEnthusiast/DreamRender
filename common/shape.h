@@ -343,16 +343,13 @@ enum class IESPhotometricType {
 /**
  * @struct IESProfile
  * @brief Parsed IES photometric data with post-processed lookup tables
- *
- * Raw data is stored in degrees; after @ref IESLoader::Process the tables are
- * mirrored to a full sphere and converted to radians for efficient sampling.
  */
 struct IESProfile {
-    // ---- File header ----
     std::string version;          ///< IES version string (e.g. "IESNA:LM-63-2002")
     float total_lights;           ///< Number of fixtures represented
     float total_lumens;           ///< Total luminous flux (lumens)
     float candela_multiplier;     ///< Multiplier applied to all raw candela values
+    float power;                  ///< Total power calculated by numerical methods
 
     LuminousShape shape;                 ///< Inferred luminous opening shape (disk or rectangle)
     IESPhotometricType photometric_type; ///< Photometric coordinate system
@@ -364,14 +361,12 @@ struct IESProfile {
     float ballast_factor;         ///< Ballast factor
     float input_watts;            ///< Input power in watts
 
-    // ---- Raw angle tables (degrees) ----
     std::vector<float> raw_vertical_angles;   ///< Vertical angles (0 = nadir, 90 = horizon)
     std::vector<float> raw_horizontal_angles; ///< Horizontal angles (0..360)
 
     // raw_candela[h][v]
     std::vector<std::vector<float>> raw_candela;
 
-    // ---- Processed tables (radians, fully mirrored) ----
     std::vector<float> angles_v_rad;  ///< Vertical angles in radians [0, PI]
     std::vector<float> angles_h_rad;  ///< Horizontal angles in radians [0, 2PI]
 
@@ -440,13 +435,6 @@ public:
     static LuminousShape InferShape(const IESProfile& profile);
 
     /**
-     * @brief Post-processes raw IES data
-     * @param profile Profile to process in-place
-     * @return True if processing succeeded
-     */
-    static bool Process(IESProfile& profile);
-
-    /**
      * @brief Bilinear sampling of the IES candela table
      * @param profile Processed profile
      * @param h_angle Horizontal angle in radians [0, 2PI]
@@ -509,6 +497,22 @@ public:
      * @return Interpolated value
      */
     static float Cubic(float p0, float p1, float p2, float p3, float t);
+
+protected:
+    /**
+	 * Compute the total luminous flux (lumens) of an IES profile by integrating
+	 * the candela distribution over the full sphere: Φ = ∫₀²π ∫₀^π I(h, v) · sin(v) dv dh
+	 * @param profile The parsed IES profile.
+	 * @return The integrated luminous power, or 0.0f if the angle tables contain fewer than two entries.
+	 */
+    static float ComputeTotalPower(const IESProfile& profile);
+
+    /**
+     * @brief Post-processes raw IES data
+     * @param profile Profile to process in-place
+     * @return True if processing succeeded
+     */
+    static bool Process(IESProfile& profile);
 };
 
 /**
