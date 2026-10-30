@@ -866,6 +866,7 @@ float IESLoader::SampleBilinear(const IESProfile& profile, float h_angle, float 
 
 	float c0 = Lerp(c00, c10, th);
 	float c1 = Lerp(c01, c11, th);
+
 	return std::max(0.0f, Lerp(c0, c1, tv));
 }
 
