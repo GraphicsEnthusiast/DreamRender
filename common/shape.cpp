@@ -538,7 +538,7 @@ bool IESLoader::Load(const std::string& path, IESProfile& target) {
 			if (!ParseFloat(hs, cd)) {
 				return false;
 			}
-			target.raw_candela[h][v] = cd * target.candela_multiplier;
+			target.raw_candela[h][v] = cd * target.candela_multiplier * target.ballast_factor;
 		}
 	}
 
@@ -755,8 +755,8 @@ bool IESLoader::Process(IESProfile& profile) {
 
 	profile.candela_table = cd;
 
-	INFO("[info] Processed IES: {}H x {}V (radians)",
-		profile.angles_h_rad.size(), profile.angles_v_rad.size());
+	INFO("[info] Processed IES: {}H x {}V (radians)", profile.angles_h_rad.size(), profile.angles_v_rad.size());
+
 	return true;
 }
 
