@@ -80,4 +80,7 @@ using Point2u = Vector2u;
 using Point3u = Vector3u;
 using Point4u = Vector4u;
 
+const float PI = 3.1415926535897932385f;
+const float EPS = 1e-5f;
+
 NAMESPACE_END(dream)

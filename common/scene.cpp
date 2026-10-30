@@ -5,7 +5,6 @@
 
 NAMESPACE_BEGIN(dream)
 
-const float PI = 3.1415926535897932385f;
 auto Luminance = [](const Vector3f& rgb) -> float {
 	return 0.2126f * rgb.r + 0.7152f * rgb.g + 0.0722f * rgb.b;
 };

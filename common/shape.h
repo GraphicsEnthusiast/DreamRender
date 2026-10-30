@@ -322,6 +322,204 @@ private:
 };
 
 /**
+ * @enum LuminousShape
+ * @brief Luminous opening shape inferred from IES width/length/height signs(Only disk and rectangle shapes are supported in this build.)
+ */
+enum class LuminousShape {
+    DISK = 0,   ///< Circular opening: width < 0 (absolute value is diameter), length = height = 0
+    RECT = 1,   ///< Rectangular opening: width > 0 and length > 0
+};
+
+/**
+ * @enum IESPhotometricType
+ * @brief Photometric coordinate system types defined by IESNA LM-63 standard
+ */
+enum class IESPhotometricType {
+    TYPE_A = 0, ///< Type A photometry (mostly obsolete, automotive-style coordinate)
+    TYPE_B = 1, ///< Type B photometry (tilted coordinate, road lighting)
+    TYPE_C = 2, ///< Type C photometry (most common, polar axis is vertical)
+};
+
+/**
+ * @struct IESProfile
+ * @brief Parsed IES photometric data with post-processed lookup tables
+ *
+ * Raw data is stored in degrees; after @ref IESLoader::Process the tables are
+ * mirrored to a full sphere and converted to radians for efficient sampling.
+ */
+struct IESProfile {
+    // ---- File header ----
+    std::string version;          ///< IES version string (e.g. "IESNA:LM-63-2002")
+    float total_lights;           ///< Number of fixtures represented
+    float total_lumens;           ///< Total luminous flux (lumens)
+    float candela_multiplier;     ///< Multiplier applied to all raw candela values
+
+    LuminousShape shape;                 ///< Inferred luminous opening shape (disk or rectangle)
+    IESPhotometricType photometric_type; ///< Photometric coordinate system
+    int units;                    ///< 1 = feet, 2 = meters
+
+    float width;                  ///< Luminaire width
+    float length;                 ///< Luminaire length
+    float height;                 ///< Luminaire height
+    float ballast_factor;         ///< Ballast factor
+    float input_watts;            ///< Input power in watts
+
+    // ---- Raw angle tables (degrees) ----
+    std::vector<float> raw_vertical_angles;   ///< Vertical angles (0 = nadir, 90 = horizon)
+    std::vector<float> raw_horizontal_angles; ///< Horizontal angles (0..360)
+
+    // raw_candela[h][v]
+    std::vector<std::vector<float>> raw_candela;
+
+    // ---- Processed tables (radians, fully mirrored) ----
+    std::vector<float> angles_v_rad;  ///< Vertical angles in radians [0, PI]
+    std::vector<float> angles_h_rad;  ///< Horizontal angles in radians [0, 2PI]
+
+    // candela_table[h][v] (fully populated)
+    std::vector<std::vector<float>> candela_table;
+
+    /**
+     * @brief Default constructor
+     */
+    IESProfile()
+        : total_lights(0.0f)
+        , total_lumens(0.0f)
+        , candela_multiplier(1.0f)
+        , photometric_type(IESPhotometricType::TYPE_C)
+        , units(0)
+        , width(0.0f)
+        , length(0.0f)
+        , height(0.0f)
+        , ballast_factor(1.0f)
+        , input_watts(0.0f)
+        , shape(LuminousShape::RECT)
+    {}
+
+    /**
+     * @brief Returns the maximum candela value in the processed table
+     */
+    float MaxCandela() const noexcept;
+
+    /**
+     * @brief Returns true if the profile contains valid processed data
+     */
+    bool IsValid() const noexcept;
+
+    /**
+     * @brief Checks if the luminaire is a circular disk source
+     * @return True if shape is DISK
+     */
+    bool IsDisk() const noexcept;
+
+    /**
+     * @brief Checks if the luminaire is a rectangular source
+     * @return True if shape is RECT
+     */
+    bool IsRect() const noexcept;
+};
+
+/**
+ * @class IESLoader
+ * @brief Loads, processes and samples IES photometric profiles
+ */
+class IESLoader {
+public:
+    /**
+     * @brief Loads an IES file from disk
+     * @param path File system path to the .ies file
+     * @param out Profile structure to populate
+     * @return True if parsing succeeded
+     */
+    static bool Load(const std::string& path, IESProfile& target);
+
+    /**
+     * @brief Infers the luminous opening shape from signed dimension fields
+     * @param profile Profile with parsed width/length/height
+     * @return Inferred LuminousShape (DISK or RECT)
+     */
+    static LuminousShape InferShape(const IESProfile& profile);
+
+    /**
+     * @brief Post-processes raw IES data
+     * @param profile Profile to process in-place
+     * @return True if processing succeeded
+     */
+    static bool Process(IESProfile& profile);
+
+    /**
+     * @brief Bilinear sampling of the IES candela table
+     * @param profile Processed profile
+     * @param h_angle Horizontal angle in radians [0, 2PI]
+     * @param v_angle Vertical angle in radians [0, PI]
+     * @return Interpolated candela value
+     */
+    static float SampleBilinear(const IESProfile& profile, float h_angle, float v_angle);
+
+    /**
+     * @brief Cubic (Catmull-Rom) sampling of the IES candela table
+     * @param profile Processed profile
+     * @param h_angle Horizontal angle in radians [0, 2PI]
+     * @param v_angle Vertical angle in radians [0, PI]
+     * @return Interpolated candela value (clamped to >= 0)
+     */
+    static float SampleCubic(const IESProfile& profile, float h_angle, float v_angle);
+
+    /**
+     * @brief Bakes a 1D radial profile (averaged over horizontal angles)
+     * @param profile Processed profile
+     * @param out Output float array (normalized 0..1)
+     * @param width Number of samples
+     */
+    static void Bake1D(const IESProfile& profile, std::vector<float>& out, int width = 256);
+
+    /**
+     * @brief Bakes a 2D lat-long texture (x = horizontal, y = vertical)
+     * @param profile Processed profile
+     * @param out Output float array, row-major, normalized 0..1
+     * @param width Horizontal resolution
+     * @param height Vertical resolution
+     */
+    static void Bake2D(const IESProfile& profile, std::vector<float>& out,
+        int width = 256, int height = 256);
+
+    /**
+     * @brief Generates a grayscale BMP preview of the IES light shape
+     * @param profile Processed profile
+     * @param path Output .bmp path
+     * @param size Image size (square)
+     * @return True if written successfully
+     */
+    static bool WritePreviewBMP(const IESProfile& profile, const std::string& path, int size = 256);
+
+    /**
+     * @brief Locates the fractional index of a value inside a sorted angle array
+     * @param angles Sorted angle array (radians)
+     * @param val Query angle
+     * @return Fractional index into the angle array
+     */
+    static float FindSegment(const std::vector<float>& angles, float val);
+
+    /**
+     * @brief Uniform Catmull-Rom cubic interpolation between four control points
+     * @param p0 Left outer neighbour
+     * @param p1 Left inner point (segment start)
+     * @param p2 Right inner point (segment end)
+     * @param p3 Right outer neighbour
+     * @param t  Interpolation parameter in [0, 1]
+     * @return Interpolated value
+     */
+    static float Cubic(float p0, float p1, float p2, float p3, float t);
+};
+
+/**
+ * @struct IESProfileEncoded
+ * @brief GPU-friendly encoded IES profile
+ */
+struct alignas(16) IESProfileEncoded {
+
+};
+
+/**
  * @struct TriangleEncoded
  * @brief Encoded triangle structure for GPU storage with packed UV coordinates
  */
