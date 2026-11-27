@@ -39,6 +39,19 @@ struct MaterialSampleInfo {
 };
 
 /**
+ * @brief Cauchy dispersion: n(λ) = A + B/λ²
+ * @param cauchy_a Base IOR (A term)
+ * @param cauchy_b Dispersion strength (B term, unit µm²)
+ * @param lambda_um Wavelength in micrometers
+ */
+float IORAtLambda(float cauchy_a, float cauchy_b, float lambda_um) {
+    lambda_um = max(lambda_um, 0.1f);
+    float inv_l2 = 1.0f / (lambda_um * lambda_um);
+
+    return cauchy_a + cauchy_b * inv_l2;
+}
+
+/**
  * @brief Validates texture index to ensure it's within the valid range
  * @param tex_id Texture index to be checked
  * @return Boolean indicating if the texture index is valid (true if tex_id is between 0 and TextureCount-1 inclusive)
@@ -243,6 +256,25 @@ float GetInIOR(IntersectionInfo info) {
  */
 float GetOutIOR(IntersectionInfo info) {
     return info.material.out_ior;
+}
+
+/**
+ * @brief Computes scalar relative IOR for dielectrics (Cauchy-aware)
+ * @param info Intersection data (reads material.cauchy_a/b and front_face)
+ * @param lambda Sampled wavelengths (read-only, uses primary wavelength)
+ * @return etai_over_etat as a scalar
+ */
+float GetDielectricEtaOverEta(IntersectionInfo info, SampledWavelengths lambda) {
+    if (0.0f == info.material.cauchy_b) {
+        return info.front_face ? (1.0f / GetInIOR(info)) : GetInIOR(info);
+    }
+
+    float lambda0_um = max(lambda.lambda[0] * 0.001f, 0.1f); // nm → µm
+    float n = max(IORAtLambda(info.material.cauchy_a,
+                              info.material.cauchy_b,
+                              lambda0_um), 1.0f);
+
+    return info.front_face ? (1.0f / n) : n;
 }
 
 /**
@@ -468,7 +500,7 @@ MaterialEvalInfo DielectricEvaluate(IntersectionInfo info, vec3 world_in, vec3 w
     float roughness_v = GetFinalRoughnessV(info);
     float alpha_u = roughness_u * roughness_u;
     float alpha_v = roughness_v * roughness_v;
-    float etai_over_etat = info.front_face ? (1.0f / GetInIOR(info)) : GetInIOR(info);
+    float etai_over_etat = GetDielectricEtaOverEta(info, lambda);
 
     vec3 n = normalize(info.shading_normal);
     vec3 v = normalize(world_in);
@@ -550,7 +582,7 @@ MaterialSampleInfo DielectricSample(IntersectionInfo info, vec3 world_in, inout 
     float roughness_v = GetFinalRoughnessV(info);
     float alpha_u = roughness_u * roughness_u;
     float alpha_v = roughness_v * roughness_v;
-    float etai_over_etat = info.front_face ? (1.0f / GetInIOR(info)) : GetInIOR(info);
+    float etai_over_etat = GetDielectricEtaOverEta(info, lambda);
 
     vec3 n = normalize(info.shading_normal);
     vec3 v = normalize(world_in);

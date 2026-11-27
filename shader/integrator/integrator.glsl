@@ -135,6 +135,9 @@ IntersectionInfo GetIntersectionInfo(Hit hit, vec3 ray_direction, SampledWavelen
     mat.coat_roughness_aniso_texture_u = int(tri.coat_roughness.z);
     mat.coat_roughness_aniso_texture_v = int(tri.coat_roughness.w);
 
+    mat.cauchy_a = tri.material_type.z;
+    mat.cauchy_b = tri.material_type.w;
+
     // Set the material
     info.material = mat;
 

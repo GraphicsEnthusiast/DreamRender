@@ -92,6 +92,9 @@ struct Material {
     float coat_roughness_v;
     int coat_roughness_aniso_texture_u;
     int coat_roughness_aniso_texture_v;
+
+    float cauchy_a;
+    float cauchy_b;
 };
 
 /**

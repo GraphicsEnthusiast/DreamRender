@@ -523,8 +523,8 @@ void SceneManager::EncodeTriangles(const std::vector<TriangleMesh>& meshes, bool
 			encoded_tri.material_type = Vector4f(
 				static_cast<float>(material->type),
 				static_cast<float>(normal_tex_id),
-				0.0f,
-				0.0f
+				material->cauchy_a,
+				material->cauchy_b
 			);
 
 			encoded_tri.emission = Vector4f(

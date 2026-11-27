@@ -115,6 +115,8 @@ struct Material {
     float clear_coat;                                 ///< ‌Clearcoat strength (0.0-1.0)
     float coat_roughness_u;                           ///< Coat roughness value (0.0-1.0)
     float coat_roughness_v;                           ///< Coat roughness value (0.0-1.0)
+	float cauchy_a;                                   ///< Cauchy A term: base IOR at reference wavelength (default = in_ior)
+	float cauchy_b;                                   ///< Cauchy B term: dispersion strength in µm² (0 = no dispersion)
 
     /**
      * @brief Default constructor
@@ -333,7 +335,7 @@ struct alignas(16) TriangleEncoded {
     alignas(16) Vector4f n2;   ///< Vertex normals (w stores uv2.y)
     alignas(16) Vector4f n3;   ///< Vertex normals (w stores uv3.y)
 
-    alignas(16) Vector4f material_type; ///< x = material type, y = normal texture ID (-1 = no normal map, >=0 = texture layer index)
+	alignas(16) Vector4f material_type; ///< x = material type, y = normal texture ID (-1 = none), z = cauchy_a (base IOR, µm-independent), w = cauchy_b (dispersion strength, µm²; 0 = no dispersion)
     alignas(16) Vector4f emission;      ///< Emission (xyz components) and texture flag (w component: -1 = constant color, other = texture)
     alignas(16) Vector4f diffuse;       ///< Diffuse color (xyz components) and texture flag (w component: -1 = constant color, other = texture)
 	alignas(16) Vector4f roughness;     ///< Anisotropic roughness (x = roughness_u, y = roughness_v) and texture flag (z, w = texture ID, -1 for constant)

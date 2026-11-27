@@ -215,6 +215,11 @@ void LightTracing(ivec2 pixel_coords) {
     for (int bounce = 0; bounce < MaxBounce; ++bounce) {
         Hit hit = BVHTraverse(ray, has_mesh_light);
         IntersectionInfo info = GetIntersectionInfo(hit, world_out, lambda, ray.transport_mode);
+        if (MaterialType_Dielectric == info.material.type && 0.0f != info.material.cauchy_b) {
+            if (!SampledWavelengthsSecondaryTerminated(lambda)) {
+                lambda = SampledWavelengthsTerminateSecondary(lambda);
+            }
+        }
         
         // Handle medium scattering
         bool is_medium_scattered = false;
